@@ -25,6 +25,12 @@ jobs:
         run: nora validate
       - name: Test
         run: pytest -q
+      - name: JS tests
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - name: Run JS tests
+        run: node --test "tests/js/*.test.mjs"
       - name: Build site
         run: nora build --out site
       - uses: actions/upload-artifact@v7
