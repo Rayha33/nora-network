@@ -9,6 +9,13 @@ ekofisk,Ekofisk,field,NO,56.55,3.21,ConocoPhillips,25,operating,,Field complex a
 ormen_lange,Ormen Lange,field,NO,63.40,5.35,Shell,50,operating,,Subsea field tied back to Nyhamna
 asgard,Åsgard area,field,NO,65.07,6.79,Equinor,70,operating,,Norwegian Sea fields exporting through Åsgard Transport
 aasta_hansteen,Aasta Hansteen,field,NO,67.07,6.98,Equinor,23,operating,,Norwegian Sea field exporting through Polarled
+gullfaks,Gullfaks,field,NO,61.18,2.19,Equinor,10,operating,,Gas exported through Statfjord into Statpipe
+visund,Visund,field,NO,61.37,2.46,Equinor,12,operating,,Gas exported through the Kvitebjørn gas pipeline
+johan_sverdrup,Johan Sverdrup,field,NO,58.87,2.63,Equinor,6,operating,,Associated gas exported through Statpipe to Kårstø
+gudrun,Gudrun,field,NO,58.85,1.72,Equinor,5,operating,,Gas exported to Sleipner
+edvard_grieg,Edvard Grieg,field,NO,58.84,2.25,Aker BP,6,operating,,Gas exported through the Utsira High Gas Pipeline to SAGE
+heidrun,Heidrun,field,NO,65.33,7.32,Equinor,6,operating,,Norwegian Sea; gas to Tjeldbergodden and Åsgard Transport
+norne,Norne,field,NO,66.02,8.08,Equinor,4,operating,,Norwegian Sea; gas through the Norne Gas Transport System
 heimdal,Heimdal,hub,NO,59.57,2.23,Equinor,,operating,,Riser and processing hub
 draupner_s,Draupner S,hub,NO,58.22,2.42,Gassco,,operating,,Riser platform bridge-linked to Draupner E
 draupner_e,Draupner E,hub,NO,58.16,2.52,Gassco,,operating,,Riser platform where Europipe I and Franpipe start
@@ -51,3 +58,4 @@ ztp,ZTP (Belgium),market,BE,50.90,4.40,,,operating,,Virtual trading point; map p
 peg,PEG (France),market,FR,50.40,2.60,,,operating,,Virtual trading point; map placement is schematic
 etf,ETF (Denmark),market,DK,55.60,9.60,,,operating,,Virtual trading point; map placement is schematic
 pl_vtp,Poland VTP,market,PL,54.60,11.00,,,operating,,Reached through Baltic Pipe; map placement is schematic
+tjeldbergodden,Tjeldbergodden,market,NO,63.41,8.70,Equinor,,operating,,Methanol plant: the gas consumer at the end of Haltenpipe

@@ -154,6 +154,16 @@
    "id": "easington"
   },
   {
+   "name": "Edvard Grieg",
+   "type": "field",
+   "country": "NO",
+   "lat": 58.84,
+   "lon": 2.25,
+   "capacity_msm3d": 6.0,
+   "status": "operating",
+   "id": "edvard_grieg"
+  },
+  {
    "name": "Eemshaven LNG",
    "type": "lng",
    "country": "NL",
@@ -254,6 +264,36 @@
    "id": "grain_lng"
   },
   {
+   "name": "Gudrun",
+   "type": "field",
+   "country": "NO",
+   "lat": 58.85,
+   "lon": 1.72,
+   "capacity_msm3d": 5.0,
+   "status": "operating",
+   "id": "gudrun"
+  },
+  {
+   "name": "Gullfaks",
+   "type": "field",
+   "country": "NO",
+   "lat": 61.18,
+   "lon": 2.19,
+   "capacity_msm3d": 10.0,
+   "status": "operating",
+   "id": "gullfaks"
+  },
+  {
+   "name": "Heidrun",
+   "type": "field",
+   "country": "NO",
+   "lat": 65.33,
+   "lon": 7.32,
+   "capacity_msm3d": 6.0,
+   "status": "operating",
+   "id": "heidrun"
+  },
+  {
    "name": "Heimdal",
    "type": "hub",
    "country": "NO",
@@ -262,6 +302,16 @@
    "capacity_msm3d": null,
    "status": "operating",
    "id": "heimdal"
+  },
+  {
+   "name": "Johan Sverdrup",
+   "type": "field",
+   "country": "NO",
+   "lat": 58.87,
+   "lon": 2.63,
+   "capacity_msm3d": 6.0,
+   "status": "operating",
+   "id": "johan_sverdrup"
   },
   {
    "name": "K13-A",
@@ -322,6 +372,16 @@
    "capacity_msm3d": null,
    "status": "operating",
    "id": "nbp"
+  },
+  {
+   "name": "Norne",
+   "type": "field",
+   "country": "NO",
+   "lat": 66.02,
+   "lon": 8.08,
+   "capacity_msm3d": 4.0,
+   "status": "operating",
+   "id": "norne"
   },
   {
    "name": "Nybro",
@@ -444,6 +504,16 @@
    "id": "the"
   },
   {
+   "name": "Tjeldbergodden",
+   "type": "market",
+   "country": "NO",
+   "lat": 63.41,
+   "lon": 8.7,
+   "capacity_msm3d": null,
+   "status": "operating",
+   "id": "tjeldbergodden"
+  },
+  {
    "name": "Troll",
    "type": "field",
    "country": "NO",
@@ -482,6 +552,16 @@
    "capacity_msm3d": null,
    "status": "operating",
    "id": "uithuizen"
+  },
+  {
+   "name": "Visund",
+   "type": "field",
+   "country": "NO",
+   "lat": 61.37,
+   "lon": 2.46,
+   "capacity_msm3d": 12.0,
+   "status": "operating",
+   "id": "visund"
   },
   {
    "name": "Wilhelmshaven LNG",
@@ -747,6 +827,16 @@
    "target": "nbp"
   },
   {
+   "pipeline": "uhgp",
+   "name": "Utsira High Gas Pipeline",
+   "type": "feeder",
+   "from_id": "edvard_grieg",
+   "length_km": 88.95873919671244,
+   "capacity": 6.0,
+   "source": "edvard_grieg",
+   "target": "beryl"
+  },
+  {
    "pipeline": "eemshaven_ttf",
    "name": "Eemshaven grid entry",
    "type": "onshore",
@@ -833,6 +923,46 @@
    "target": "nbp"
   },
   {
+   "pipeline": "gudrun_sleipner",
+   "name": "Gudrun - Sleipner",
+   "type": "feeder",
+   "from_id": "gudrun",
+   "length_km": 54.496093978992356,
+   "capacity": 5.0,
+   "source": "gudrun",
+   "target": "sleipner"
+  },
+  {
+   "pipeline": "gullfaks_statfjord",
+   "name": "Gullfaks gas export",
+   "type": "feeder",
+   "from_id": "gullfaks",
+   "length_km": 19.798807304672337,
+   "capacity": 10.0,
+   "source": "gullfaks",
+   "target": "statfjord"
+  },
+  {
+   "pipeline": "haltenpipe",
+   "name": "Haltenpipe",
+   "type": "trunk",
+   "from_id": "heidrun",
+   "length_km": 250.0,
+   "capacity": 6.0,
+   "source": "heidrun",
+   "target": "tjeldbergodden"
+  },
+  {
+   "pipeline": "heidrun_asgard",
+   "name": "Heidrun - \u00c5sgard Transport",
+   "type": "link",
+   "from_id": "heidrun",
+   "length_km": 38.03776636847955,
+   "capacity": 6.0,
+   "source": "heidrun",
+   "target": "asgard"
+  },
+  {
    "pipeline": "statpipe_heimdal",
    "name": "Statpipe (Heimdal leg)",
    "type": "trunk",
@@ -851,6 +981,16 @@
    "capacity": 39.0,
    "source": "heimdal",
    "target": "st_fergus"
+  },
+  {
+   "pipeline": "sverdrup_karsto",
+   "name": "Johan Sverdrup gas export",
+   "type": "feeder",
+   "from_id": "johan_sverdrup",
+   "length_km": 171.31001648364764,
+   "capacity": 6.0,
+   "source": "johan_sverdrup",
+   "target": "karsto"
   },
   {
    "pipeline": "wgt",
@@ -930,6 +1070,16 @@
    "length_km": 181.42234027469667,
    "source": "nbp",
    "target": "bacton"
+  },
+  {
+   "pipeline": "ngts",
+   "name": "Norne Gas Transport System",
+   "type": "feeder",
+   "from_id": "norne",
+   "length_km": 126.0,
+   "capacity": 6.0,
+   "source": "norne",
+   "target": "asgard"
   },
   {
    "pipeline": "baltic_pipe_east",
@@ -1106,6 +1256,16 @@
    "length_km": 148.62878591991145,
    "source": "uithuizen",
    "target": "ttf"
+  },
+  {
+   "pipeline": "visund_kvitebjorn",
+   "name": "Visund gas export",
+   "type": "feeder",
+   "from_id": "visund",
+   "length_km": 32.28648460515922,
+   "capacity": 12.0,
+   "source": "visund",
+   "target": "kvitebjorn"
   },
   {
    "pipeline": "wilhelmshaven_the",
