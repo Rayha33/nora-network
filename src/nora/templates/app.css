@@ -205,6 +205,11 @@ div.vis-tooltip {
   border: 1px solid var(--rule); border-radius: var(--r); box-shadow: none; padding: 5px 8px; white-space: pre-line;
 }
 .maplibregl-ctrl-attrib { font: 10.5px var(--font); }
+.maplibregl-popup-content {
+  font: 12px/1.4 var(--font); color: var(--text); background: var(--surface);
+  border: 1px solid var(--rule); border-radius: var(--r); box-shadow: none; padding: 5px 8px;
+}
+.maplibregl-popup-tip { display: none; }
 .maplibregl-canvas { outline: none; }
 
 .bank .rate-inline { display: none; }

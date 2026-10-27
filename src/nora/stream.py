@@ -47,7 +47,11 @@ METRICS = {
     "pressure_bar": "Pressure (bar)",
     "nomination_msm3d": "Hourly nomination (MSm3/d)",
     "booked_msm3d": "Booked capacity (MSm3/d)",
+    "h2s_ppm": "H2S (ppm)",
+    "co2_molpct": "CO2 (mol %)",
 }
+# Typical gas quality at a field: each field gets a steady level in this range.
+QUALITY_BASE = {"h2s_ppm": (0.2, 1.2), "co2_molpct": (0.5, 1.5)}
 HELD = ("nomination_msm3d", "booked_msm3d")  # valid until the next value arrives
 Row = tuple[datetime, str, str, float]  # time, asset, metric, value
 
@@ -76,12 +80,14 @@ class Event:
 
 @dataclass(frozen=True)
 class Pig:
-    """A pig run: launched into a pipeline, travelling with the gas at about `speed_mps`."""
+    """A pig run: launched into a pipeline, travelling with the gas at about `speed_mps`,
+    and launched again every `every_hours` when that is set (a pigging programme)."""
 
     label: str
     pipeline: str
     launch: datetime
     speed_mps: float
+    every_hours: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -147,6 +153,7 @@ class Stream:
                     "pipeline": pig.pipeline,
                     "launch": int(pig.launch.timestamp()),
                     "speed": pig.speed_mps,
+                    "every": round(pig.every_hours * 3600),
                 }
                 for pig in self.pigs
             ],
@@ -329,6 +336,8 @@ def synthesize(
       booked_msm3d      booked capacity at each terminal, one exit booked tight
       pressure_bar      pressure at each node, following the gas actually moving
                         through it with a lag, inside its operating window
+    With `quality = true`, H2S (ppm) and CO2 (mol %) at each field: a steady level
+    with a little noise, plus the `excursions` the spec lists.
     The same spec and seed always give the same rows.
     """
     start = parse_time(spec.get("start", "2026-01-05T00:00:00Z"))
@@ -362,7 +371,55 @@ def synthesize(
             planned.append(_throughput(net, flow if graph is base else routed_flow(base, supply)))
     if operations:
         rows += _operations_rows(net, times, actual, planned, pressure_windows, rng)
+    if spec.get("quality", False):
+        rows += _quality_rows(net, times, spec.get("excursions", []), spec.get("seed", 1))
     return rows
+
+
+def _quality_rows(net: Network, times: list[datetime], excursions: list, seed) -> list[Row]:
+    """H2S and CO2 at each field. An excursion ramps up over an hour to `peak`, holds
+    it for `hours`, and ramps down again: a slug of off-spec gas to follow. With
+    `every_hours` it comes back that often."""
+    rng = random.Random(f"quality-{seed}")  # its own generator: flows stay as they were
+    fields = sorted(n.id for n in net.nodes if n.type == "field")
+    problems, bumps = [], []
+    for i, spec in enumerate(excursions, start=1):
+        asset, metric = spec.get("asset", ""), spec.get("metric", "")
+        where = f"synthetic excursion {i}"
+        if asset not in fields:
+            problems.append(f"{where}: '{asset}' is not a field" + suggest(asset, fields))
+        if metric not in QUALITY_BASE:
+            problems.append(f"{where}: metric must be one of {', '.join(QUALITY_BASE)}")
+        try:
+            peak, hours = float(spec["peak"]), float(spec.get("hours", 3))
+            start, every = parse_time(spec["start"]), float(spec.get("every_hours", 0))
+            while start <= times[-1]:
+                bumps.append((asset, metric, peak, start, hours))
+                if every <= 0:
+                    break
+                start += timedelta(hours=every)
+        except (KeyError, ValueError) as error:
+            problems.append(f"{where}: needs a peak and a start time ({error})")
+    if problems:
+        raise DataError(problems)
+    rows: list[Row] = []
+    for metric, (low, high) in QUALITY_BASE.items():
+        for node in fields:
+            base, noise = rng.uniform(low, high), 0.0
+            for when in times:
+                noise = 0.7 * noise + rng.gauss(0, 0.02)
+                value = base * (1 + noise)
+                for asset, kind, peak, start, hours in bumps:
+                    if asset == node and kind == metric:
+                        value += max(0.0, peak - base) * _plateau(when, start, hours)
+                rows.append((when, node, metric, round(max(0.0, value), 2)))
+    return rows
+
+
+def _plateau(when: datetime, start: datetime, hours: float) -> float:
+    """0 before and after, 1 from `start` for `hours`, with one-hour ramps."""
+    t = (when - start).total_seconds() / 3600
+    return max(0.0, min(1.0, t + 1, hours + 1 - t))
 
 
 def _throughput(net: Network, flow) -> dict[str, float]:
@@ -509,12 +566,15 @@ def _pigs(meta: dict, net: Network, where: str, problems: list[str]) -> tuple[Pi
                 pipeline=pipeline,
                 launch=parse_time(spec["launch"]),
                 speed_mps=float(spec.get("speed_mps", 4.0)),
+                every_hours=float(spec.get("every_hours", 0.0)),
             )
         except (KeyError, ValueError) as error:
             problems.append(f"{where}/stream.toml pig {i}: needs a launch time ({error})")
             continue
         if pig.speed_mps <= 0:
             problems.append(f"{where}/stream.toml pig {i}: speed_mps must be above 0")
+        elif pig.every_hours < 0:
+            problems.append(f"{where}/stream.toml pig {i}: every_hours must be 0 or more")
         else:
             pigs.append(pig)
     return tuple(pigs)

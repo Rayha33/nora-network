@@ -39,6 +39,14 @@ plan_lookahead_hours = 6              # how far ahead the plan check looks
 gas_velocity_mps = 8.0     # how fast a change in flow travels down a pipeline
 step_min = 0.05            # smallest flow change (share of capacity) shown as a peak
 
+# Gas quality: H2S and CO2 peaks are followed with the gas from the field to the exit
+# point, diluted where other gas joins. Limits are [warning, medium, critical]; the
+# critical values are common entry limits (about 5 mg/Sm3 H2S, 2.5 mol % CO2).
+[quality]
+h2s_ppm = [2.5, 3.0, 3.3]
+co2_molpct = [2.2, 2.35, 2.5]
+follow_from = 0.8          # follow a peak once a field's reading reaches 80% of its warning
+
 # Operating pressure windows (bar) by asset type. Illustrative values for the model;
 # replace them with real limits per asset when they are known.
 [pressure]
@@ -66,6 +74,8 @@ text_dim = "#50575d"
 warning = "#ffbf00"      # amber: warning (priority 3)
 medium = "#ff7a1a"       # orange: medium-priority alarm (priority 2)
 critical = "#e5322d"     # red: critical alarm (priority 1)
+h2s = "#857c3a"          # muted sulphur olive: an H2S peak moving with the gas
+co2 = "#4d7391"          # muted steel blue: a CO2 peak moving with the gas
 
 # The same roles on dark grey paper, for the dark theme.
 [colors_dark]
@@ -81,6 +91,8 @@ text_dim = "#9aa1a7"
 warning = "#ffbf00"
 medium = "#ff7a1a"
 critical = "#ff4d47"
+h2s = "#bcb26e"
+co2 = "#86a8c4"
 
 [map]
 style = "https://tiles.openfreemap.org/styles/positron"   # recoloured to the paper greys
