@@ -1,0 +1,11 @@
+{
+  "nodes": [
+    { "name": "Germany", "value": 156.78 },
+    { "name": "France", "value": 42.9 },
+    { "name": "Belgium", "value": 43.6 },
+    { "name": "Great Britain", "value": 62.1 },
+    { "name": "Other", "value": 18.29 },
+    { "name": "Total", "value": 323.7 }
+  ],
+  "timestamp": 1793101090000
+}

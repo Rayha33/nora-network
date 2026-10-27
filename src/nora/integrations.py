@@ -15,14 +15,19 @@ the plan check and the overview then use them like any other reading.
 
 Live: subclass Connector, implement `fetch`, and serve it with nora.live like `replay`
 (yield (wait, frame) pairs; the server writes keepalive comments while it waits).
+
+Gassco's real-time endpoint is the one live source that needs no credentials:
+`nora live --source gassco` polls it (see GasscoRealTime below and live.poll).
 """
 
 from __future__ import annotations
 
+import json
 import os
+import urllib.request
 from collections.abc import Iterator
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 
 # Gassco's names for the exit points where Norwegian gas lands, mapped to NORA nodes.
 EXIT_POINTS = {
@@ -35,6 +40,21 @@ EXIT_POINTS = {
     "Dunkerque": "dunkirk",
     "Dunkirk": "dunkirk",
 }
+
+# Gassco's real-time endpoint aggregates flow by receiving country, not by terminal;
+# a country total lands on that country's market node. "Other" and "Total" have no node.
+GASSCO_URL = "https://gassco.eu/wp-json/gassco/v1/realTimeGraphData"
+RECEIVING_COUNTRIES = {
+    "Germany": "the",
+    "France": "peg",
+    "Belgium": "ztp",
+    "Great Britain": "nbp",
+}
+# Cloudflare in front of gassco.eu rejects anything that does not look like a browser.
+USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/131.0 Safari/537.36"
+)
 
 
 class NotConfigured(RuntimeError):
@@ -86,4 +106,61 @@ class GassocoBooking(Connector):
     env = ("NORA_GBS_URL", "NORA_GBS_TOKEN")
 
 
-CONNECTORS = (Origo(), GassocoBooking())
+class GasscoRealTime(Connector):
+    """Gassco's public real-time export: aggregate Norwegian flow by receiving country.
+
+    Endpoint: GASSCO_URL (open, no key; the figures on Gassco's home page chart come
+    from it). Values are MSm3/d and the timestamp is epoch milliseconds; Gassco
+    publishes every 5 minutes, so that is the poll interval the CLI defaults to.
+    Cloudflare blocks requests without a browser User-Agent, so `fetch` sends one.
+
+    The endpoint aggregates per country, not per terminal, so a reading lands on the
+    receiving country's market node (a country total is closest to "gas delivered
+    there") rather than pretending a single terminal measured it. NORA keeps no
+    record of which share went to which terminal; the map shows the honest aggregate.
+    """
+
+    name = "Gassco real-time exports"
+    metric = "gassco_exit_msm3d"
+    env = ()  # open endpoint; NORA_GASSCO_URL only overrides where to read it
+
+    def url(self) -> str:
+        return os.environ.get("NORA_GASSCO_URL", GASSCO_URL)
+
+    def status(self) -> str:
+        return f"ready ({self.url()})"
+
+    def meta(self) -> dict:
+        """The SSE `meta` event for `nora live --source gassco`: same shape as a
+        stream's, minus the arrays (a poller has no pre-loaded times or values)."""
+        return {
+            "name": "gassco",
+            "title": self.name,
+            "description": (
+                "Aggregate Norwegian export flow by receiving country, polled from "
+                "Gassco's real-time endpoint; a country total lands on that country's "
+                "market node (THE, PEG, ZTP, NBP). Values in MSm3/d."
+            ),
+            "source": GASSCO_URL,
+            "synthetic": False,
+        }
+
+    def fetch(self, start: datetime, end: datetime) -> Iterator[Reading]:
+        request = urllib.request.Request(
+            self.url(),
+            headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
+        )
+        with urllib.request.urlopen(request, timeout=30) as response:
+            payload = json.load(response)
+        when = datetime.fromtimestamp(payload["timestamp"] / 1000, tz=UTC)
+        for node in payload["nodes"]:
+            if asset := RECEIVING_COUNTRIES.get(node["name"]):
+                yield Reading(when, asset, self.metric, float(node["value"]))
+
+
+gassco = GasscoRealTime()
+
+# Live sources `nora live --source <name>` can poll.
+SOURCES = {"gassco": gassco}
+
+CONNECTORS = (Origo(), GassocoBooking(), gassco)

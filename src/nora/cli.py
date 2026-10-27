@@ -7,13 +7,15 @@ import contextlib
 import functools
 import sys
 import webbrowser
+from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from .analysis import analyse
 from .config import load_config
 from .data import DATA_DIR, DataError, load_network
-from .integrations import CONNECTORS
+from .integrations import CONNECTORS, SOURCES
+from .live import POLL_SECONDS
 from .ops import plan_timeline
 from .site import build_site
 from .stream import describe, list_streams, load_stream, scaffold, write_flows
@@ -93,11 +95,23 @@ def cmd_serve(args) -> int:
 
 
 def cmd_live(args) -> int:
-    from .live import serve
+    from .live import poll, serve
 
     # build_site has already loaded the network and every stream; reuse them
     # instead of loading (and re-solving synthetic streams) a second time.
     summary = _build(args)
+    if args.source:
+        source = SOURCES[args.source]
+        serve(
+            args.out,
+            meta=source.meta(),
+            frames=partial(poll, source, args.poll_seconds),
+            plan=None,
+            host=args.host,
+            port=args.port,
+            open_browser=not args.no_browser,
+        )
+        return 0
     streams = summary["streams"]
     names = list_streams(_streams_dir(args))
     name = args.stream or (names[0] if names else None)
@@ -183,6 +197,17 @@ def main(argv: list[str] | None = None) -> int:
     live = commands.add_parser("live", help="build, then replay a stream as a live feed")
     site_options(live, 8765)
     live.add_argument("--stream", help="stream name (default: the first one)")
+    live.add_argument(
+        "--source",
+        choices=sorted(SOURCES),
+        help="poll a live source instead of replaying a stream",
+    )
+    live.add_argument(
+        "--poll-seconds",
+        type=float,
+        default=POLL_SECONDS,
+        help="seconds between polls for --source (default 300, Gassco publishes every 5 min)",
+    )
     live.add_argument(
         "--speed",
         type=float,
