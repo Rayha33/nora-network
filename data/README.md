@@ -41,6 +41,8 @@ One row per asset.
 | `operator` | optional |
 | `capacity_msm3d` | supply for `field`, `lng` and `storage` (required); processing capacity for plants; otherwise optional |
 | `status` | `operating`, `planned` or `decommissioned` (only `operating` takes part in the analysis) |
+| `startup` | year the asset started, or is planned to start, operating; blank when unknown. For Norwegian fields this comes from the field's SODIR fact page (`norskpetroleum.no`) |
+| `shutdown` | the first year the asset was no longer in operation (it is shown up to and including the year before); blank while it operates |
 | `source` | link backing up the row |
 | `notes` | free text; wrap it in quotes if it contains a comma |
 
