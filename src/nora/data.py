@@ -26,7 +26,7 @@ NODE_TYPES = {
     "terminal": "Receiving terminal",
     "lng": "LNG import terminal",
     "storage": "Gas storage site",
-    "market": "Market (virtual trading point)",
+    "market": "Market or large consumer",
 }
 # Node types that put gas into the network; their capacity_msm3d is their supply.
 SUPPLY_TYPES = ("field", "lng", "storage")

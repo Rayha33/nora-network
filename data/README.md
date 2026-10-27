@@ -24,8 +24,9 @@ One row per asset.
 | `source` | link backing up the row |
 | `notes` | free text; wrap it in quotes if it contains a comma |
 
-`market` nodes are virtual trading points (NBP, TTF, THE and so on), where the analysis
-counts gas as delivered. Their map position is schematic.
+`market` nodes are where the analysis counts gas as delivered: virtual trading points
+(NBP, TTF, THE and so on, placed schematically on the map) and large consumers such as
+the Tjeldbergodden methanol plant.
 
 ## pipelines.csv
 

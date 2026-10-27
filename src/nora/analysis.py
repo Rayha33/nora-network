@@ -7,6 +7,11 @@ All quantities are in MSm3/d (million standard cubic metres per day).
                routing stays stable from step to step, so streams use it
   n_minus_1    for every single asset outage, the deliverable gas that is lost
   analyse      everything the site shows, as JSON-ready data
+
+The amount max_flow finds is unique, but how it splits between suppliers sharing a
+full pipeline is not, and networkx's choice can change with PYTHONHASHSEED. Anything
+that reports per-pipeline flows therefore uses routed_flow, which breaks those ties by
+distance and always gives the same answer.
 """
 
 from __future__ import annotations
@@ -133,7 +138,7 @@ def _outage(kind: str, asset: str, name: str, base: float, remaining: float) -> 
 def analyse(net: Network) -> dict:
     """Everything the site shows, as plain JSON-ready data."""
     graph = build_graph(net)
-    best = max_flow(graph)
+    best = routed_flow(graph)  # same total as max_flow, with a reproducible split
     lengths = {attrs["pipeline"]: attrs["length_km"] for _, _, attrs in graph.edges(data=True)}
     offshore = [p for p in net.pipelines if p.status == "operating" and p.type != "onshore"]
     supply = [n for n in net.nodes if n.status == "operating" and n.type in SUPPLY_TYPES]

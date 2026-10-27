@@ -14,6 +14,14 @@ langeled_north,Langeled (north),nyhamna,sleipner,trunk,627,42,72,false,2007,oper
 asgard_transport,Åsgard Transport,asgard,karsto,trunk,707,42,70,false,2000,operating,Gassco,,
 polarled,Polarled,aasta_hansteen,nyhamna,trunk,482,36,70,false,2018,operating,Gassco,,
 ormen_lange_nyhamna,Ormen Lange - Nyhamna,ormen_lange,nyhamna,feeder,120,30,70,false,2007,operating,Shell,,Two parallel lines modelled as one
+gullfaks_statfjord,Gullfaks gas export,gullfaks,statfjord,feeder,,,10,false,,operating,,,Gullfaks gas joins Statpipe at Statfjord
+visund_kvitebjorn,Visund gas export,visund,kvitebjorn,feeder,,,12,false,2005,operating,,,Joins the Kvitebjørn gas pipeline to Kollsnes
+sverdrup_karsto,Johan Sverdrup gas export,johan_sverdrup,karsto,feeder,,,6,false,2019,operating,,,Through Statpipe to Kårstø
+gudrun_sleipner,Gudrun - Sleipner,gudrun,sleipner,feeder,,,5,false,2014,operating,,,
+uhgp,Utsira High Gas Pipeline,edvard_grieg,beryl,feeder,,,6,false,2015,operating,,,Ties into SAGE for St Fergus
+haltenpipe,Haltenpipe,heidrun,tjeldbergodden,trunk,250,16,6,false,1996,operating,Gassco,,Feeds the Tjeldbergodden methanol plant
+heidrun_asgard,Heidrun - Åsgard Transport,heidrun,asgard,link,,,6,false,2001,operating,,,
+ngts,Norne Gas Transport System,norne,asgard,feeder,126,16,6,false,2001,operating,Gassco,,Ties into Åsgard Transport
 norpipe,Norpipe Gas,ekofisk,emden,export,440,36,44,false,1977,operating,Gassco,,
 europipe_1,Europipe I,draupner_e,dornum,export,660,40,46,false,1995,operating,Gassco,,
 europipe_2_north,Europipe II (Kårstø - Baltic tie-in),karsto,baltic_tie,export,400,42,71,false,1999,operating,Gassco,,Split at the Baltic Pipe tie-in

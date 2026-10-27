@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NORA network</title>
+<meta name="description" content="The North Sea gas network on a real map and as a gas flow overview, with recorded flows replayed as a live feed.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&display=swap">
+<link rel="stylesheet" href="{{ maplibre }}.css" integrity="sha512-6AYkNPc8EvA9WwC0CvbRQHWpK1zV1+QeW+lVBfYqN2zTfG9IfWMRMyUDOw6GdF5US0poI/C/pz8tkiL+nfmYHg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>{{ inline.vis_css|safe }}</style>
+<style>{{ inline.css|safe }}</style>
+</head>
+<body>
+<main class="stage">
+  <div id="view-map" class="view" aria-label="Map of the North Sea gas network"></div>
+  <div id="view-flow" class="view paper" hidden aria-label="Gas flow overview"></div>
+</main>
+
+<header class="bar">
+  <div class="group">
+    <a class="brand" id="brand" href="./">NORA</a>
+    <div class="seg" role="tablist" aria-label="View">
+      <button type="button" role="tab" data-view="map" aria-selected="true">Map</button>
+      <button type="button" role="tab" data-view="flow" aria-selected="false">Flow</button>
+    </div>
+    <div class="seg" role="tablist" aria-label="What the lines show">
+      <button type="button" role="tab" data-mode="network" aria-selected="true">Network</button>
+      <button type="button" role="tab" data-mode="load" aria-selected="false">Load</button>
+      <button type="button" role="tab" data-mode="risk" aria-selected="false">Risk</button>
+      <button type="button" role="tab" data-mode="live" aria-selected="false" hidden>Live</button>
+    </div>
+  </div>
+  <div class="group">
+    <label class="search">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span class="sr-only">Find an asset</span>
+      <input id="search" list="asset-names" placeholder="Find" autocomplete="off" spellcheck="false">
+      <datalist id="asset-names"></datalist>
+    </label>
+    <button type="button" class="icon" id="key-toggle" aria-expanded="false" aria-controls="key" aria-label="Key"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="4" cy="4.5" r="1.6"/><circle cx="4" cy="11.5" r="1.6"/><path d="M8 4.5h5.5M8 11.5h5.5"/></svg></button>
+    <button type="button" class="icon" id="fit" aria-label="Show the whole network"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button>
+    <button type="button" class="icon" id="theme" aria-label="Switch light and dark"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/><path d="M8 2.5a5.5 5.5 0 0 1 0 11z" class="fill"/></svg></button>
+  </div>
+</header>
+
+<aside class="key panel" id="key" hidden aria-label="Key"><div id="key-body"></div></aside>
+
+<aside class="details panel" id="details" hidden aria-live="polite">
+  <button type="button" class="icon close" id="details-close" aria-label="Close details"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+  <div id="details-body"></div>
+</aside>
+
+<section class="player panel" id="player" hidden aria-label="Stream player">
+  <button type="button" class="play" id="play" aria-label="Play">
+    <svg viewBox="0 0 16 16" aria-hidden="true" class="when-paused"><path d="M5 3.5v9l7.5-4.5z"/></svg>
+    <svg viewBox="0 0 16 16" aria-hidden="true" class="when-playing"><path d="M4.5 3.5h2.5v9H4.5zM9 3.5h2.5v9H9z"/></svg>
+  </button>
+  <div class="now">
+    <div class="stream-name"><select id="stream-select" aria-label="Dataset"></select><span class="tag" id="stream-tag"></span></div>
+    <time id="clock"></time>
+  </div>
+  <div class="track">
+    <canvas id="spark" aria-hidden="true"></canvas>
+    <input type="range" id="scrub" min="0" max="0" step="1" value="0" aria-label="Position in the stream">
+  </div>
+  <label class="speed"><span class="sr-only">Playback speed</span>
+    <select id="speed">
+      <option value="3600">1 hour / s</option>
+      <option value="21600">6 hours / s</option>
+      <option value="86400">1 day / s</option>
+      <option value="1">Real time</option>
+    </select>
+  </label>
+  <div class="total"><strong><span id="total">–</span> <small>MSm³/d</small></strong><span id="total-label">delivered to markets</span></div>
+</section>
+<ol class="alarms" id="alarms" aria-live="polite" aria-label="Alarms"></ol>
+
+<script src="{{ maplibre }}.js" integrity="sha512-x8Bt/82VRs91xVTqHDpQ1t8c4qit3QCRbo9BVqnUsyw5yKqzvL4BAgcz7R34BDCiCwx9ypXPTnxPaNnazQz1ag==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>{{ inline.vis_js|safe }}</script>
+<script>
+var nodes = new vis.DataSet({{ nodes|tojson }});
+var edges = new vis.DataSet({{ edges|tojson }});
+var flowOptions = {{ options|safe }};
+var NORA = {{ nora|tojson }};
+{{ inline.app_js|safe }}
+{{ inline.map_js|safe }}
+{{ inline.flow_js|safe }}
+App.start();
+</script>
+</body>
+</html>

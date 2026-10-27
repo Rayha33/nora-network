@@ -2,8 +2,9 @@
 
 NORA (Network Operations and Realtime Analysis) is an open model of the North Sea gas
 network: CSV data, a networkx graph, flow and outage analysis, streams replayed as live
-data, and a pyvis chart published to GitHub Pages. Many people change it, often through
-an assistant, so keep changes small, tested and easy to review.
+data, and an app with a real map and a pyvis gas flow overview, published to GitHub
+Pages. Many people change it, often through an assistant, so keep changes small, tested
+and easy to review.
 
 ## Commands
 
@@ -28,8 +29,12 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 | `src/nora/analysis.py` | max flow, min-cost routing, N-1 outages, `analyse()` for the site |
 | `src/nora/stream.py` | load, import, synthesise and scaffold streams |
 | `src/nora/live.py` | serve a stream as Server-Sent Events (`/stream`) |
-| `src/nora/render.py` | pyvis nodes, edges and options, rendered through our own template |
-| `src/nora/templates/network.*` | the chart page: template, CSS and all browser behaviour |
+| `src/nora/layout.py` | Flow view positions: stage columns, rows north to south |
+| `src/nora/icons.py` | one icon per asset type, shared by both views |
+| `src/nora/render.py` | the app page: one payload for both views, map GeoJSON, the pyvis flow network |
+| `src/nora/templates/app.*` | the app shell: page, styles, shared state, styling rules, player, details |
+| `src/nora/templates/map.js` | Map view: MapLibre on OpenFreeMap tiles, assets at true coordinates |
+| `src/nora/templates/flow.js` | Flow view: the pyvis network on dotted paper |
 | `src/nora/templates/index.html.j2` | the home page |
 | `src/nora/site.py` | writes the site folder that GitHub Pages serves |
 | `src/nora/cli.py` | the `nora` command |
@@ -43,8 +48,13 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
   `DataError` with file and line, so a contributor can fix them all in one pass.
 - **Deterministic output.** Graphs are built in id order and flow results must not depend
   on `PYTHONHASHSEED` (a test checks this). No wall-clock times in the built site.
-- **network.html stays one self-contained file.** No external scripts; vis-network is
-  inlined from pyvis. Web fonts are the only optional external resource.
+- **network.html stays one file.** vis-network and NORA's scripts are inlined, so the Flow
+  view works offline. Only MapLibre (pinned, integrity-checked), map tiles and fonts
+  come from the web; a test enforces this.
+- **Style in one place.** `App.pipeStyle` and `App.nodeStyle` in app.js decide colour,
+  width and labels for every mode; the views only apply them, so both stay in step.
+- **Views are independent.** map.js and flow.js each implement the view contract at the
+  top of app.js. Work on one without touching the other.
 - **Data in the browser is untrusted.** Anyone can edit the CSVs, so build DOM with
   `textContent` (the `h()` helper), never `innerHTML` with data.
 - **Units are MSm3/d** everywhere in code and data.
@@ -58,7 +68,7 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 - *Add or fix assets:* edit the CSVs, add a `source`, run `make check`.
 - *Add a dataset:* `nora stream new NAME --from file.csv`, fix the mapping, `nora stream show NAME`.
 - *New analysis:* add a function to `analysis.py`, include its result in `analyse()`,
-  show it in `index.html.j2` or as a chart mode in `network.js`, and test it.
+  show it in `index.html.j2` or as a mode in `app.js` (pipeStyle / nodeStyle), and test it.
 - *Connect a real live source:* write a generator yielding `(datetime, {asset: flow})`
   frames and serve it the way `live.serve` serves `replay`; the browser needs no change.
 
