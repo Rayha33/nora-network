@@ -4,7 +4,9 @@ import subprocess
 import sys
 
 from nora.analysis import analyse, max_flow, n_minus_1, routed_flow
+from nora.data import load_network
 from nora.graph import build_graph, great_circle_km
+from tests.conftest import NODES, write_network
 
 
 def test_max_flow_is_limited_by_the_export_lines(tiny):
@@ -24,6 +26,18 @@ def test_routed_flow_prefers_the_shorter_route(tiny):
 
 def test_supply_override_scales_the_flow(tiny):
     assert max_flow(build_graph(tiny), {"gas": 25}).value == 25
+
+
+def test_processing_capacity_limits_the_flow(tmp_path):
+    """A capacitated plant is split into in- and out-nodes, so its capacity —
+    not just the pipelines around it — caps the flow through it."""
+    nodes = list(NODES)
+    nodes[2] = "a_terminal,Terminal A,processing,GB,57,-1,,25,operating,,"
+    net = load_network(write_network(tmp_path / "capped", nodes=nodes))
+    flow = max_flow(build_graph(net))
+    assert flow.value == 55  # 25 through the plant + 30 through pipe_b
+    assert flow.pipelines["pipe_a"] == 25
+    assert flow.pipelines["pipe_b"] == 30
 
 
 def test_n_minus_1_ranks_by_gas_lost(tiny):
