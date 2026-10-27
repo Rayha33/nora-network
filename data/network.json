@@ -809,7 +809,7 @@
    "name": "Gate grid entry",
    "type": "onshore",
    "from_id": "gate_lng",
-   "length_km": 111.968616616417,
+   "length_km": 111.96861661641702,
    "source": "gate_lng",
    "target": "ttf"
   },
@@ -1140,7 +1140,7 @@
    "name": "Zeebrugge LNG grid entry",
    "type": "onshore",
    "from_id": "zeebrugge_lng",
-   "length_km": 99.35732584921121,
+   "length_km": 99.35732584921122,
    "source": "zeebrugge_lng",
    "target": "ztp"
   },
