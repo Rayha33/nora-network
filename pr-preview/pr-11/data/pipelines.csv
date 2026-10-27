@@ -1,0 +1,67 @@
+id,name,from,to,type,length_km,diameter_in,capacity_msm3d,bidirectional,commissioned,status,operator,source,notes
+troll_kollsnes,Troll - Kollsnes,troll,kollsnes,feeder,65,36,120,false,1996,operating,Gassco,,Several parallel lines modelled as one
+kvitebjorn_kollsnes,Kvitebjørn gas pipeline,kvitebjorn,kollsnes,feeder,147,30,25,false,2004,operating,Gassco,,
+ogt,Oseberg Gas Transport,oseberg,heimdal,feeder,109,36,40,false,2000,operating,Gassco,,
+statpipe_rich,Statpipe (rich gas),statfjord,karsto,trunk,308,30,25,false,1985,operating,Gassco,,
+statpipe_dry,Statpipe (dry gas),karsto,draupner_s,trunk,228,28,20,false,1985,operating,Gassco,,
+statpipe_heimdal,Statpipe (Heimdal leg),heimdal,draupner_s,trunk,155,36,30,false,1985,operating,Gassco,,
+statpipe_ekofisk,Statpipe (Draupner - Ekofisk),draupner_s,ekofisk,trunk,203,36,30,false,1985,operating,Gassco,,
+draupner_bridge,Draupner S - E bridge,draupner_s,draupner_e,link,0.1,,,true,1985,operating,Gassco,,Platforms are bridge-linked
+sleipner_draupner,Sleipner - Draupner,sleipner,draupner_s,link,,,60,true,,operating,Gassco,,Interconnection between the two riser hubs
+zeepipe_2a,Zeepipe IIA,kollsnes,sleipner,trunk,303,40,58,false,1996,operating,Gassco,,
+zeepipe_2b,Zeepipe IIB,kollsnes,draupner_e,trunk,300,40,70,false,1997,operating,Gassco,,
+langeled_north,Langeled (north),nyhamna,sleipner,trunk,627,42,72,false,2007,operating,Gassco,,
+asgard_transport,Åsgard Transport,asgard,karsto,trunk,707,42,70,false,2000,operating,Gassco,,
+polarled,Polarled,aasta_hansteen,nyhamna,trunk,482,36,70,false,2018,operating,Gassco,,
+ormen_lange_nyhamna,Ormen Lange - Nyhamna,ormen_lange,nyhamna,feeder,120,30,70,false,2007,operating,Shell,,Two parallel lines modelled as one
+gullfaks_statfjord,Gullfaks gas export,gullfaks,statfjord,feeder,,,10,false,,operating,,,Gullfaks gas joins Statpipe at Statfjord
+visund_kvitebjorn,Visund gas export,visund,kvitebjorn,feeder,,,12,false,2005,operating,,,Joins the Kvitebjørn gas pipeline to Kollsnes
+sverdrup_karsto,Johan Sverdrup gas export,johan_sverdrup,karsto,feeder,,,6,false,2019,operating,,,Through Statpipe to Kårstø
+gudrun_sleipner,Gudrun - Sleipner,gudrun,sleipner,feeder,,,5,false,2014,operating,,,
+uhgp,Utsira High Gas Pipeline,edvard_grieg,beryl,feeder,,,6,false,2015,operating,,,Ties into SAGE for St Fergus
+haltenpipe,Haltenpipe,heidrun,tjeldbergodden,trunk,250,16,6,false,1996,operating,Gassco,,Feeds the Tjeldbergodden methanol plant
+heidrun_asgard,Heidrun - Åsgard Transport,heidrun,asgard,link,,,6,false,2001,operating,,,
+ngts,Norne Gas Transport System,norne,asgard,feeder,126,16,6,false,2001,operating,Gassco,,Ties into Åsgard Transport
+norpipe,Norpipe Gas,ekofisk,emden,export,440,36,44,false,1977,operating,Gassco,,
+europipe_1,Europipe I,draupner_e,dornum,export,660,40,46,false,1995,operating,Gassco,,
+europipe_2_north,Europipe II (Kårstø - Baltic tie-in),karsto,baltic_tie,export,400,42,71,false,1999,operating,Gassco,,Split at the Baltic Pipe tie-in
+europipe_2_south,Europipe II (Baltic tie-in - Dornum),baltic_tie,dornum,export,258,42,71,false,1999,operating,Gassco,,Split at the Baltic Pipe tie-in
+franpipe,Franpipe,draupner_e,dunkirk,export,840,42,55,false,1998,operating,Gassco,,
+zeepipe_1,Zeepipe I,sleipner,zeebrugge,export,814,40,42,false,1993,operating,Gassco,,
+langeled_south,Langeled (south),sleipner,easington,export,543,44,72,false,2006,operating,Gassco,,
+vesterled,Vesterled,heimdal,st_fergus,export,360,32,39,false,1978,operating,Gassco,,
+baltic_pipe_ns,Baltic Pipe (North Sea leg),baltic_tie,nybro,export,110,,27,false,2022,operating,Energinet,,Offshore leg plus the short onshore run to Nybro
+baltic_pipe_east,Baltic Pipe (Denmark - Poland),nybro,pl_vtp,export,,,27,false,2022,operating,Energinet / GAZ-SYSTEM,,Onshore Denmark plus the Baltic Sea offshore section
+tyra_nybro,Tyra - Nybro,tyra,nybro,export,220,30,30,false,1984,operating,,,
+tyra_f3,Tyra West - F3,tyra,f3fb,link,,,10,false,,operating,,,Carries Danish gas into NOGAT
+tampen_link,Tampen Link,statfjord,flags_brent,link,23,32,25,false,2007,operating,,,
+gjoa_flags,Gjøa gas export,gjoa,flags_brent,feeder,130,28,17,false,2010,operating,,,
+flags,FLAGS,flags_brent,st_fergus,export,450,36,33,false,1982,operating,,,
+sage,SAGE,beryl,st_fergus,export,323,30,30,false,1992,operating,,,
+culzean_cats,Culzean - CATS,culzean,cats_riser,feeder,,,15,false,2019,operating,,,
+cats,CATS,cats_riser,teesside,export,404,36,48,false,1993,operating,,,
+seal,SEAL,elgin_franklin,bacton,export,474,34,35,false,2000,operating,,,
+sns_bacton,Southern North Sea gathering,sns_fields,bacton,feeder,,,15,false,,operating,,,Several pipelines modelled as one
+iuk,Interconnector (IUK),bacton,zeebrugge,interconnector,235,40,70,true,1998,operating,,,
+bbl,BBL,balgzand,bacton,interconnector,235,36,53,true,2006,operating,,,Physical reverse flow added in 2019 at lower capacity
+nogat,NOGAT,f3fb,den_helder,export,260,36,30,false,1992,operating,,,
+ngt,NGT,l10a,uithuizen,export,,36,42,false,1975,operating,,,Main line of the NGT system
+wgt,WGT,k13a,den_helder,export,,36,30,false,,operating,,,
+st_fergus_nbp,St Fergus grid entry,st_fergus,nbp,onshore,,,,false,,operating,,,Notional entry into the national grid
+teesside_nbp,Teesside grid entry,teesside,nbp,onshore,,,,false,,operating,,,Notional entry into the national grid
+easington_nbp,Easington grid entry,easington,nbp,onshore,,,,false,,operating,,,Notional entry into the national grid
+bacton_nbp,Bacton grid entry,bacton,nbp,onshore,,,,true,,operating,,,Notional entry into the national grid
+grain_nbp,Grain grid entry,grain_lng,nbp,onshore,,,,false,,operating,,,Notional entry into the national grid
+den_helder_ttf,Den Helder grid entry,den_helder,ttf,onshore,,,,false,,operating,,,Notional entry into the national grid
+balgzand_ttf,Balgzand grid entry,balgzand,ttf,onshore,,,,true,,operating,,,Notional entry into the national grid
+uithuizen_ttf,Uithuizen grid entry,uithuizen,ttf,onshore,,,,false,,operating,,,Notional entry into the national grid
+gate_ttf,Gate grid entry,gate_lng,ttf,onshore,,,,false,,operating,,,Notional entry into the national grid
+eemshaven_ttf,Eemshaven grid entry,eemshaven_lng,ttf,onshore,,,,false,,operating,,,Notional entry into the national grid
+emden_the,Emden grid entry,emden,the,onshore,,,,false,,operating,,,Notional entry into the national grid
+dornum_the,Dornum grid entry,dornum,the,onshore,,,,false,,operating,,,Notional entry into the national grid
+wilhelmshaven_the,Wilhelmshaven grid entry,wilhelmshaven_lng,the,onshore,,,,false,,operating,,,Notional entry into the national grid
+zeebrugge_ztp,Zeebrugge grid entry,zeebrugge,ztp,onshore,,,,true,,operating,,,Notional entry into the national grid
+zeebrugge_lng_ztp,Zeebrugge LNG grid entry,zeebrugge_lng,ztp,onshore,,,,false,,operating,,,Notional entry into the national grid
+dunkirk_peg,Dunkirk grid entry,dunkirk,peg,onshore,,,,false,,operating,,,Notional entry into the national grid
+dunkirk_lng_peg,Dunkirk LNG grid entry,dunkirk_lng,peg,onshore,,,,false,,operating,,,Notional entry into the national grid
+nybro_etf,Nybro grid entry,nybro,etf,onshore,,,10,false,,operating,,,Notional grid entry capped near Danish demand so Baltic Pipe gas continues to Poland
