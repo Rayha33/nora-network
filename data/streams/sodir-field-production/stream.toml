@@ -1,0 +1,33 @@
+title = "Norwegian field production, Sep 2024 to Aug 2026"
+description = "Monthly net gas produced by Norwegian offshore fields, from the Norwegian Offshore Directorate (SODIR) factpages. Real monthly averages for the fields NORA models; Sleipner Vest and Øst are summed into the Sleipner node. The rest of the chart has no readings."
+source = "https://factpages.sodir.no/"
+license = "Norwegian Licence for Open Government Data (NLOD), https://data.norge.no/nlod/en; credit SODIR as the source"
+
+# Refresh with: python scripts/fetch_sodir.py 2024-09 2026-08 data/streams/sodir-field-production/raw.csv
+[import]
+file = "raw.csv"
+layout = "long"          # one row per field and month
+timestamp = "month"      # derived: prfYear + prfMonth as the month's first day
+asset = "prfInformationCarrier"  # the field name
+value = "gas_msm3d"      # derived: prfPrdGasNetBillSm3 (billion Sm3/month) / days -> MSm3/d
+timezone = "UTC"
+
+[import.assets]
+"TROLL" = "troll"
+"KVITEBJØRN" = "kvitebjorn"
+"OSEBERG" = "oseberg"
+"STATFJORD" = "statfjord"
+"GJØA" = "gjoa"
+"SLEIPNER VEST" = "sleipner"  # summed with Sleipner Øst into one node
+"SLEIPNER ØST" = "sleipner"
+"EKOFISK" = "ekofisk"
+"ORMEN LANGE" = "ormen_lange"
+"ÅSGARD" = "asgard"
+"AASTA HANSTEEN" = "aasta_hansteen"
+"GULLFAKS" = "gullfaks"
+"VISUND" = "visund"
+"JOHAN SVERDRUP" = "johan_sverdrup"
+"GUDRUN" = "gudrun"
+"EDVARD GRIEG" = "edvard_grieg"
+"HEIDRUN" = "heidrun"
+"NORNE" = "norne"

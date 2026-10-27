@@ -142,6 +142,22 @@ Refresh it with:
 python scripts/fetch_energinet.py 2026-08-01 2026-10-27 data/streams/denmark-gas-energinet/raw.csv
 ```
 
+### SODIR (Norway): in the repository
+
+`sodir-field-production/` holds monthly net gas production per Norwegian
+offshore field from the [SODIR factpages](https://factpages.sodir.no/). The raw
+CSV keeps SODIR's own columns plus two derived ones: `month` (the month's first
+day, from prfYear and prfMonth) and `gas_msm3d` (net gas converted from billion
+Sm3 per month to MSm3/d, NORA's unit). Data licence: NLOD. Refresh with:
+
+```bash
+python scripts/fetch_sodir.py 2024-09 2026-08 data/streams/sodir-field-production/raw.csv
+```
+
+Fields that map to a node in `data/nodes.csv` are committed; the others
+(Gullfaks Sør, Oseberg Sør/Øst, Statfjord Nord/Øst, Vest Ekofisk, Visund Sør
+and the rest of SODIR's 136 fields) are left out for now.
+
 ### ENTSOG Transparency Platform: help wanted
 
 ENTSOG publishes physical flows at Europe's interconnection points, including the
