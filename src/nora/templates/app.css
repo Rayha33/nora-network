@@ -71,6 +71,12 @@ svg .fill { fill: currentColor; stroke: none; }
 .seg button { border: 0; background: transparent; padding: 3px 9px; border-radius: 3px; cursor: pointer; color: var(--text-dim); }
 .seg button[aria-selected="true"] { background: var(--raised); color: var(--text); box-shadow: 0 0 0 1px var(--rule); }
 .spacer { flex: 1; }
+/* Timeline: a year track beside the modes; the readout counts assets appearing
+   (+) and disappearing (−) in the chosen year, driven by the status years */
+.year { display: flex; align-items: center; gap: 6px; }
+.year input { width: 130px; margin: 0; accent-color: var(--active); cursor: ew-resize; transition: accent-color 0.15s; }
+.year output { font: 600 12px/1 Archivo, system-ui, sans-serif; color: var(--text); min-width: 5.5em; }
+.year output .dim { color: var(--text-dim); font-weight: 400; }
 .icon {
   display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 0;
   border-radius: var(--r); background: transparent; color: var(--text); cursor: pointer;

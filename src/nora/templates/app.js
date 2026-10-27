@@ -268,6 +268,7 @@ const App = (() => {
   const unitById = Object.fromEntries(NORA.units.map((u) => [u.id, u]));
   function visible(id) {
     const d = assets[id];
+    if (!yearActive(id)) return false;
     if (d.kind === "node") return !settings.hide.includes(d.type);
     if (d.type === "onshore" && !settings.gridEntries) return false;
     return !settings.hide.includes(assets[d.from].type) && !settings.hide.includes(assets[d.to].type);
@@ -275,7 +276,40 @@ const App = (() => {
 
   // ------------------------------------------------------------------ state
   const route = { screen: "overview", unit: "all", asset: null, focus: null };
-  const state = { view: C.screen.network_view, mode: C.screen.network_mode };
+  const state = { view: C.screen.network_view, mode: C.screen.network_mode, year: null };
+
+  // ---------------------------------------------------------------- timeline
+  /* Planned and decommissioned assets on a timeline: the year on the track
+     decides which assets both views show, on top of App.nodeStyle / pipeStyle.
+     A node is shown from its startup year until the year before its shutdown
+     year; a blank year means the data does not know, so the asset has always
+     been there. The track is data-driven and deterministic: it spans the years
+     in the CSVs, starts at today and only restyles (no animation). */
+  const YEARS = [...nodeIds, ...pipeIds].flatMap((id) => {
+    const d = assets[id];
+    return [d.startup, d.shutdown, d.commissioned].filter((y) => y != null);
+  });
+  const yearInput = $("year"), yearOut = $("year-out");
+  function yearActive(id) {
+    const d = assets[id], year = state.year;
+    if (year == null) return true;
+    if (d.kind === "pipeline") return yearActive(d.from) && yearActive(d.to);
+    return !(d.startup && year < d.startup) && !(d.shutdown && year >= d.shutdown);
+  }
+  function setYear(year) {
+    state.year = year;
+    yearInput.value = String(year);
+    const appearing = nodeIds.filter((id) => assets[id].startup === year);
+    const shutting = nodeIds.filter((id) => assets[id].shutdown === year);
+    yearOut.replaceChildren(String(year), h("span", { class: "dim" },
+      `${appearing.length ? ` +${appearing.length}` : ""}${shutting.length ? ` −${shutting.length}` : ""}`));
+    yearInput.title = [
+      appearing.length ? `Appearing in ${year}: ${appearing.map(nameOf).join(", ")}` : "",
+      shutting.length ? `No longer shown from ${year}: ${shutting.map(nameOf).join(", ")}` : "",
+    ].filter(Boolean).join("; ") || "No asset starts or shuts down in this year";
+    restyle();
+  }
+  yearInput.addEventListener("input", () => setYear(Number(yearInput.value)));
   const live = {
     stream: null, // recorded stream being replayed
     feed: null, // EventSource when connected to a live feed
@@ -1037,6 +1071,7 @@ const App = (() => {
         h("li", null, "Overview answers one question: is the plan holding? Problems are listed with their likely cause and what to do."),
         h("li", null, "Press ▶ to play the data, drag the timeline, or press Next problem."),
         h("li", null, "Choose a unit, or All units, to see it on the Map or as a Flow: gas moves from the top to the bottom."),
+        h("li", null, "Drag the year, top right, to show the network as it was, or will be: planned assets appear at their startup year, shut-down ones disappear from their shutdown year."),
         h("li", null, "Click any asset or line for its detail. Diagnostics shows the numbers behind it.")),
       h("h3", null, "Grey means all is well"),
       h("p", { class: "dim" }, "Colour appears only when something needs attention, always with a shape and a number as well:"),
@@ -1364,6 +1399,12 @@ const App = (() => {
     if (embed) document.body.classList.add("embed");
     if (views[params.get("view")]) state.view = params.get("view");
     if (["live", "load", "risk", "plain"].includes(params.get("mode"))) state.mode = params.get("mode");
+    if (YEARS.length) {
+      const today = new Date().getFullYear(); // the default view is today, in the browser
+      yearInput.min = String(Math.min(...YEARS));
+      yearInput.max = String(Math.max(...YEARS, today));
+      setYear(Math.min(Math.max(today, Number(yearInput.min)), Number(yearInput.max)));
+    } else $("year-wrap").hidden = true;
     markTabs();
     buildKey();
     buildSettings();

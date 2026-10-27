@@ -8,11 +8,11 @@ from nora.data import NODE_COLUMNS, PIPELINE_COLUMNS, load_network
 #   gas (60) -> hub -> a_terminal -> market   via pipe_a (cap 40)
 #                   -> b_terminal -> market   via pipe_b (cap 30)
 NODES = [
-    "gas,Gas field,field,NO,60,3,,60,operating,,",
-    "hub,Hub,hub,NO,58,2,,,operating,,",
-    "a_terminal,Terminal A,terminal,GB,57,-1,,,operating,,",
-    "b_terminal,Terminal B,terminal,DE,53,7,,,operating,,",
-    "market,Market,market,DE,52,8,,,operating,,",
+    "gas,Gas field,field,NO,60,3,,60,operating,,,",
+    "hub,Hub,hub,NO,58,2,,,operating,,,",
+    "a_terminal,Terminal A,terminal,GB,57,-1,,,operating,,,",
+    "b_terminal,Terminal B,terminal,DE,53,7,,,operating,,,",
+    "market,Market,market,DE,52,8,,,operating,,,",
 ]
 PIPELINES = [
     "feed,Feed,gas,hub,feeder,100,36,100,false,2000,operating,,,",

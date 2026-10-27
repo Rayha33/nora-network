@@ -116,6 +116,8 @@ def assets_payload(net: Network, analysis: dict) -> dict[str, dict]:
             "operator": node.operator,
             "capacity": node.capacity_msm3d,
             "status": node.status,
+            "startup": node.startup,
+            "shutdown": node.shutdown,
             "source": node.source,
             "notes": node.notes,
             "line": node.line,

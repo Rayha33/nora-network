@@ -43,7 +43,7 @@ STATUSES = ("operating", "planned", "decommissioned")
 
 NODE_COLUMNS = (
     "id", "name", "type", "country", "lat", "lon", "operator",
-    "capacity_msm3d", "status", "source", "notes",
+    "capacity_msm3d", "status", "startup", "shutdown", "source", "notes",
 )  # fmt: skip
 PIPELINE_COLUMNS = (
     "id", "name", "from", "to", "type", "length_km", "diameter_in", "capacity_msm3d",
@@ -73,9 +73,24 @@ class Node:
     operator: str
     capacity_msm3d: float | None
     status: str
+    startup: int | None
+    shutdown: int | None
     source: str
     notes: str
     line: int
+
+    def active_in(self, year: int) -> bool:
+        """Whether the asset was, is or is planned to be in operation in `year`.
+
+        A node with no `startup` has always existed so far; one with no `shutdown`
+        is still in operation. `shutdown` is the first year it was no longer in
+        operation, so the year before is the last one it is shown for.
+        """
+        if self.startup is not None and year < self.startup:
+            return False
+        if self.shutdown is not None:
+            return year < self.shutdown
+        return True
 
 
 @dataclass(frozen=True)
@@ -114,6 +129,10 @@ class Network:
     def asset_ids(self) -> list[str]:
         """Every node and pipeline id; stream rows may refer to either."""
         return [node.id for node in self.nodes] + [pipe.id for pipe in self.pipelines]
+
+    def nodes_in_year(self, year: int) -> tuple[Node, ...]:
+        """The nodes in operation in `year`, in id order (the timeline's filter)."""
+        return tuple(sorted((n for n in self.nodes if n.active_in(year)), key=lambda n: n.id))
 
     def asset_name(self, asset_id: str) -> str:
         asset = self.node_by_id.get(asset_id) or self.pipeline_by_id.get(asset_id)
@@ -242,6 +261,10 @@ def _read_nodes(path: Path, seen: dict[str, str], problems: list[str]) -> list[N
         lat = row.number("lat", required=True, low=-90, high=90)
         lon = row.number("lon", required=True, low=-180, high=180)
         capacity = row.number("capacity_msm3d", low=0)
+        startup = row.number("startup", low=1900, high=2100)
+        shutdown = row.number("shutdown", low=1900, high=2100)
+        if startup is not None and shutdown is not None and shutdown < startup:
+            row.problem(f"'shutdown' = {int(shutdown)} is before 'startup' = {int(startup)}")
         if kind in SUPPLY_TYPES and status == "operating" and not row.text("capacity_msm3d"):
             row.problem(f"a {kind} needs 'capacity_msm3d': how much gas it can supply")
         nodes.append(
@@ -255,6 +278,8 @@ def _read_nodes(path: Path, seen: dict[str, str], problems: list[str]) -> list[N
                 operator=row.text("operator"),
                 capacity_msm3d=capacity,
                 status=status,
+                startup=int(startup) if startup is not None else None,
+                shutdown=int(shutdown) if shutdown is not None else None,
                 source=row.text("source"),
                 notes=row.text("notes"),
                 line=int(row.where.rsplit(" ", 1)[1]),
