@@ -10,6 +10,8 @@
    "operator": "Equinor",
    "capacity": 120.0,
    "status": "operating",
+   "startup": 1995,
+   "shutdown": null,
    "source": "https://www.equinor.com/energy/troll",
    "notes": "Largest gas field on the Norwegian shelf; gas is processed at Kollsnes",
    "line": 2,
@@ -28,6 +30,8 @@
    "operator": "Equinor",
    "capacity": 20.0,
    "status": "operating",
+   "startup": 2004,
+   "shutdown": null,
    "source": "https://www.equinor.com/energy/kvitebjorn",
    "notes": "",
    "line": 3,
@@ -46,6 +50,8 @@
    "operator": "Equinor",
    "capacity": 30.0,
    "status": "operating",
+   "startup": 1988,
+   "shutdown": null,
    "source": "https://www.equinor.com/energy/oseberg",
    "notes": "Gas exported through Oseberg Gas Transport",
    "line": 4,
@@ -64,6 +70,8 @@
    "operator": "Equinor",
    "capacity": 15.0,
    "status": "operating",
+   "startup": 1979,
+   "shutdown": null,
    "source": "https://www.equinor.com/energy/statfjord",
    "notes": "Straddles the Norway-UK median line",
    "line": 5,
@@ -82,6 +90,8 @@
    "operator": "V\u00e5r Energi",
    "capacity": 15.0,
    "status": "operating",
+   "startup": 2010,
+   "shutdown": null,
    "source": "https://www.norskpetroleum.no/en/facts/field/gjoa/",
    "notes": "",
    "line": 6,
@@ -100,6 +110,8 @@
    "operator": "Equinor",
    "capacity": 30.0,
    "status": "operating",
+   "startup": 1993,
+   "shutdown": null,
    "source": "https://www.equinor.com/energy/sleipner",
    "notes": "Field and riser hub for Langeled and Zeepipe",
    "line": 7,
@@ -118,6 +130,8 @@
    "operator": "ConocoPhillips",
    "capacity": 25.0,
    "status": "operating",
+   "startup": 1972,
+   "shutdown": null,
    "source": "https://conocophillips.no/our-norway-operations/greater-ekofisk-area/ekofisk",
    "notes": "Field complex and start of Norpipe",
    "line": 8,
@@ -136,6 +150,8 @@
    "operator": "Shell",
    "capacity": 50.0,
    "status": "operating",
+   "startup": 2007,
+   "shutdown": null,
    "source": "https://www.norskpetroleum.no/en/facts/field/ormen-lange/",
    "notes": "Subsea field tied back to Nyhamna",
    "line": 9,
@@ -154,6 +170,8 @@
    "operator": "Equinor",
    "capacity": 70.0,
    "status": "operating",
+   "startup": 1999,
+   "shutdown": null,
    "source": "https://www.equinor.com/energy/asgard",
    "notes": "Norwegian Sea fields exporting through \u00c5sgard Transport",
    "line": 10,
@@ -172,6 +190,8 @@
    "operator": "Equinor",
    "capacity": 23.0,
    "status": "operating",
+   "startup": 2018,
+   "shutdown": null,
    "source": "https://equinor.com/energy/aasta-hansteen",
    "notes": "Norwegian Sea field exporting through Polarled",
    "line": 11,
@@ -190,6 +210,8 @@
    "operator": "Equinor",
    "capacity": 10.0,
    "status": "operating",
+   "startup": 1986,
+   "shutdown": null,
    "source": "https://equinor.com/energy/gullfaks",
    "notes": "Gas exported through Statfjord into Statpipe",
    "line": 12,
@@ -208,6 +230,8 @@
    "operator": "Equinor",
    "capacity": 12.0,
    "status": "operating",
+   "startup": 1999,
+   "shutdown": null,
    "source": "https://equinor.com/energy/visund",
    "notes": "Gas exported through the Kvitebj\u00f8rn gas pipeline",
    "line": 13,
@@ -226,6 +250,8 @@
    "operator": "Equinor",
    "capacity": 6.0,
    "status": "operating",
+   "startup": 2019,
+   "shutdown": null,
    "source": "https://equinor.com/en/what-we-do/johan-sverdrup",
    "notes": "Associated gas exported through Statpipe to K\u00e5rst\u00f8",
    "line": 14,
@@ -244,6 +270,8 @@
    "operator": "Equinor",
    "capacity": 5.0,
    "status": "operating",
+   "startup": 2014,
+   "shutdown": null,
    "source": "https://equinor.com/energy/gudrun",
    "notes": "Gas exported to Sleipner",
    "line": 15,
@@ -262,6 +290,8 @@
    "operator": "Aker BP",
    "capacity": 6.0,
    "status": "operating",
+   "startup": 2015,
+   "shutdown": null,
    "source": "https://akerbp.com/en/asset/edvard-grieg-2",
    "notes": "Gas exported through the Utsira High Gas Pipeline to SAGE",
    "line": 16,
@@ -280,6 +310,8 @@
    "operator": "Equinor",
    "capacity": 6.0,
    "status": "operating",
+   "startup": 1995,
+   "shutdown": null,
    "source": "https://equinor.com/energy/heidrun",
    "notes": "Norwegian Sea; gas to Tjeldbergodden and \u00c5sgard Transport",
    "line": 17,
@@ -298,6 +330,8 @@
    "operator": "Equinor",
    "capacity": 4.0,
    "status": "operating",
+   "startup": 1997,
+   "shutdown": null,
    "source": "https://equinor.com/energy/norne",
    "notes": "Norwegian Sea; gas through the Norne Gas Transport System",
    "line": 18,
@@ -316,6 +350,8 @@
    "operator": "Equinor",
    "capacity": null,
    "status": "operating",
+   "startup": 1985,
+   "shutdown": null,
    "source": "https://equinor.com/energy/heimdal",
    "notes": "Riser and processing hub",
    "line": 19,
@@ -323,6 +359,66 @@
    "share": 0.0333,
    "modelFlow": 30.0,
    "supply": false
+  },
+  "frigg": {
+   "kind": "node",
+   "name": "Frigg",
+   "type": "field",
+   "country": "NO",
+   "lat": 59.9,
+   "lon": 1.67,
+   "operator": "TotalEnergies",
+   "capacity": null,
+   "status": "decommissioned",
+   "startup": 1977,
+   "shutdown": 2004,
+   "source": "https://www.norskpetroleum.no/en/facts/field/frigg",
+   "notes": "Gas field straddling the UK-Norway median line; exported via the Frigg Norwegian Pipeline to St Fergus; position approximate",
+   "line": 20,
+   "lost": 0.0,
+   "share": 0.0,
+   "modelFlow": null,
+   "supply": true
+  },
+  "odin": {
+   "kind": "node",
+   "name": "Odin",
+   "type": "field",
+   "country": "NO",
+   "lat": 59.96,
+   "lon": 1.8,
+   "operator": "TotalEnergies",
+   "capacity": null,
+   "status": "decommissioned",
+   "startup": 1984,
+   "shutdown": 1994,
+   "source": "https://www.norskpetroleum.no/en/facts/field/odin",
+   "notes": "Gas treated at Frigg TCP2 before export to St Fergus; position approximate",
+   "line": 21,
+   "lost": 0.0,
+   "share": 0.0,
+   "modelFlow": null,
+   "supply": true
+  },
+  "irpa": {
+   "kind": "node",
+   "name": "Irpa",
+   "type": "field",
+   "country": "NO",
+   "lat": 67.0,
+   "lon": 5.2,
+   "operator": "Equinor",
+   "capacity": null,
+   "status": "planned",
+   "startup": 2026,
+   "shutdown": null,
+   "source": "https://www.norskpetroleum.no/en/facts/field/irpa",
+   "notes": "Subsea tie-back to Aasta Hansteen; gas exported via Polarled to Nyhamna; start planned 2026; position approximate",
+   "line": 22,
+   "lost": 0.0,
+   "share": 0.0,
+   "modelFlow": 0.0,
+   "supply": true
   },
   "draupner_s": {
    "kind": "node",
@@ -334,9 +430,11 @@
    "operator": "Gassco",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Draupner_platform",
    "notes": "Riser platform bridge-linked to Draupner E",
-   "line": 20,
+   "line": 23,
    "lost": 50.0,
    "share": 0.0555,
    "modelFlow": 50.0,
@@ -352,9 +450,11 @@
    "operator": "Gassco",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Draupner_platform",
    "notes": "Riser platform where Europipe I and Franpipe start",
-   "line": 21,
+   "line": 24,
    "lost": 101.0,
    "share": 0.1121,
    "modelFlow": 101.0,
@@ -370,9 +470,11 @@
    "operator": "Gassco",
    "capacity": 144.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://gassco.eu/en/prosessanlegg/kollsnes",
    "notes": "Gas processing plant near Bergen",
-   "line": 22,
+   "line": 25,
    "lost": 115.0,
    "share": 0.1276,
    "modelFlow": 128.0,
@@ -388,9 +490,11 @@
    "operator": "Gassco",
    "capacity": 88.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://equinor.com/energy/karsto",
    "notes": "Gas processing plant in Rogaland",
-   "line": 23,
+   "line": 26,
    "lost": 71.0,
    "share": 0.0788,
    "modelFlow": 83.0,
@@ -406,9 +510,11 @@
    "operator": "Gassco",
    "capacity": 84.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://equinor.com/energy/gas-terminals-and-storage",
    "notes": "Processing plant for Ormen Lange and Polarled gas",
-   "line": 24,
+   "line": 27,
    "lost": 59.0,
    "share": 0.0655,
    "modelFlow": 59.0,
@@ -424,9 +530,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/FLAGS",
    "notes": "Northern end of FLAGS; receives Tampen Link and Gj\u00f8a gas",
-   "line": 25,
+   "line": 28,
    "lost": 33.0,
    "share": 0.0366,
    "modelFlow": 33.0,
@@ -442,9 +550,11 @@
    "operator": "",
    "capacity": 10.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Beryl_oil_field",
    "notes": "Start of SAGE",
-   "line": 26,
+   "line": 29,
    "lost": 16.0,
    "share": 0.0178,
    "modelFlow": 10.0,
@@ -460,9 +570,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Central_Area_Transmission_System",
    "notes": "Central North Sea entry point to CATS",
-   "line": 27,
+   "line": 30,
    "lost": 15.0,
    "share": 0.0166,
    "modelFlow": 15.0,
@@ -478,9 +590,11 @@
    "operator": "TotalEnergies",
    "capacity": 15.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://totalenergies.com/newsroom/uk-total-starts-production-culzean-field?lang=eng",
    "notes": "High-pressure high-temperature field exporting through CATS",
-   "line": 28,
+   "line": 31,
    "lost": 15.0,
    "share": 0.0166,
    "modelFlow": 15.0,
@@ -496,9 +610,11 @@
    "operator": "TotalEnergies",
    "capacity": 15.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Elgin%E2%80%93Franklin_fields",
    "notes": "Exports through SEAL",
-   "line": 29,
+   "line": 32,
    "lost": 15.0,
    "share": 0.0166,
    "modelFlow": 15.0,
@@ -514,9 +630,11 @@
    "operator": "",
    "capacity": 15.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/List%20of%20oil%20and%20gas%20fields%20of%20the%20North%20Sea",
    "notes": "Aggregate of mature southern gas fields",
-   "line": 30,
+   "line": 33,
    "lost": 15.0,
    "share": 0.0166,
    "modelFlow": 15.0,
@@ -532,9 +650,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/St_Fergus_Gas_Plant",
    "notes": "Gas terminal in Aberdeenshire",
-   "line": 31,
+   "line": 34,
    "lost": 79.0,
    "share": 0.0877,
    "modelFlow": 79.0,
@@ -550,9 +670,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://nstauthority.co.uk/the-move-to-net-zero/ukcs-oil-and-gas-terminals/teesside",
    "notes": "CATS receiving terminal at Seal Sands",
-   "line": 32,
+   "line": 35,
    "lost": 15.0,
    "share": 0.0166,
    "modelFlow": 15.0,
@@ -568,9 +690,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Easington_Gas_Terminal",
    "notes": "Langeled receiving terminal",
-   "line": 33,
+   "line": 36,
    "lost": 117.0,
    "share": 0.1298,
    "modelFlow": 117.0,
@@ -586,9 +710,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Bacton_Gas_Terminal",
    "notes": "Terminal for SEAL and the IUK and BBL interconnectors",
-   "line": 34,
+   "line": 37,
    "lost": 30.0,
    "share": 0.0333,
    "modelFlow": 30.0,
@@ -604,9 +730,11 @@
    "operator": "National Grid",
    "capacity": 58.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://nationalgrid.com/our-businesses/national-grid-ventures/grain-lng/who-we-are",
    "notes": "LNG import terminal on the Thames estuary",
-   "line": 35,
+   "line": 38,
    "lost": 58.0,
    "share": 0.0644,
    "modelFlow": 58.0,
@@ -622,9 +750,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Tyra_West_%E2%80%93_F3_pipeline",
    "notes": "Start of NOGAT; tie-in point for Danish gas",
-   "line": 36,
+   "line": 39,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 0.0,
@@ -640,9 +770,11 @@
    "operator": "",
    "capacity": 10.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/L10_gas_field",
    "notes": "Main hub of the NGT system; aggregate of tied-in fields",
-   "line": 37,
+   "line": 40,
    "lost": 10.0,
    "share": 0.0111,
    "modelFlow": 10.0,
@@ -658,9 +790,11 @@
    "operator": "",
    "capacity": 5.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/K13_gas_fields",
    "notes": "Start of WGT; aggregate of tied-in fields",
-   "line": 38,
+   "line": 41,
    "lost": 5.0,
    "share": 0.0055,
    "modelFlow": 5.0,
@@ -676,9 +810,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/NOGAT_Pipeline_System",
    "notes": "Terminal for NOGAT and WGT",
-   "line": 39,
+   "line": 42,
    "lost": 5.0,
    "share": 0.0055,
    "modelFlow": 5.0,
@@ -694,9 +830,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/BBL_Pipeline",
    "notes": "BBL compressor station",
-   "line": 40,
+   "line": 43,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 0.0,
@@ -712,9 +850,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Uithuizen_Gas_Plant",
    "notes": "NGT receiving terminal",
-   "line": 41,
+   "line": 44,
    "lost": 10.0,
    "share": 0.0111,
    "modelFlow": 10.0,
@@ -730,9 +870,11 @@
    "operator": "Gasunie / Vopak",
    "capacity": 44.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://gateterminal.com/en",
    "notes": "LNG import terminal at Rotterdam",
-   "line": 42,
+   "line": 45,
    "lost": 44.0,
    "share": 0.0488,
    "modelFlow": 44.0,
@@ -748,9 +890,11 @@
    "operator": "Gasunie",
    "capacity": 22.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://gasunie.nl/en/projects/eemsenergyterminal",
    "notes": "Floating LNG import terminal",
-   "line": 43,
+   "line": 46,
    "lost": 22.0,
    "share": 0.0244,
    "modelFlow": 22.0,
@@ -766,9 +910,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Norpipe",
    "notes": "Norpipe receiving terminal",
-   "line": 44,
+   "line": 47,
    "lost": 44.0,
    "share": 0.0488,
    "modelFlow": 44.0,
@@ -784,9 +930,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Europipe_II",
    "notes": "Landfall of Europipe I and II",
-   "line": 45,
+   "line": 48,
    "lost": 90.0,
    "share": 0.0999,
    "modelFlow": 90.0,
@@ -802,9 +950,11 @@
    "operator": "",
    "capacity": 27.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://wilhelmshaven-lng.de/en",
    "notes": "Floating LNG import terminal",
-   "line": 46,
+   "line": 49,
    "lost": 27.0,
    "share": 0.03,
    "modelFlow": 27.0,
@@ -820,9 +970,11 @@
    "operator": "Fluxys",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://fluxys.com/en/about-us/fluxys-belgium/infrastructure",
    "notes": "Terminal for Zeepipe and IUK",
-   "line": 47,
+   "line": 50,
    "lost": 42.0,
    "share": 0.0466,
    "modelFlow": 42.0,
@@ -838,9 +990,11 @@
    "operator": "Fluxys",
    "capacity": 30.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://fluxys.com/en/about-us/zeebrugge-lng",
    "notes": "LNG import terminal",
-   "line": 48,
+   "line": 51,
    "lost": 30.0,
    "share": 0.0333,
    "modelFlow": 30.0,
@@ -856,9 +1010,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Franpipe",
    "notes": "Franpipe receiving terminal",
-   "line": 49,
+   "line": 52,
    "lost": 55.0,
    "share": 0.061,
    "modelFlow": 55.0,
@@ -874,9 +1030,11 @@
    "operator": "",
    "capacity": 36.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://edf.fr/en/dunkerquelng",
    "notes": "LNG import terminal",
-   "line": 50,
+   "line": 53,
    "lost": 36.0,
    "share": 0.0399,
    "modelFlow": 36.0,
@@ -892,9 +1050,11 @@
    "operator": "TotalEnergies",
    "capacity": 8.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://totalenergies.com/company/projects/gas/tyra-offshore-gas-hub-north-sea-denmark",
    "notes": "Redeveloped Danish hub; restarted in 2024",
-   "line": 51,
+   "line": 54,
    "lost": 8.0,
    "share": 0.0089,
    "modelFlow": 8.0,
@@ -910,9 +1070,11 @@
    "operator": "Energinet",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.energinet.dk/about-our-news/news/2022/11/01/nybro-commissioning",
    "notes": "Gas treatment plant and Baltic Pipe compression",
-   "line": 52,
+   "line": 55,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 35.0,
@@ -928,9 +1090,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Baltic_Pipe",
    "notes": "Subsea tie-in on Europipe II",
-   "line": 53,
+   "line": 56,
    "lost": 71.0,
    "share": 0.0788,
    "modelFlow": 71.0,
@@ -946,9 +1110,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/National_Balancing_Point_(UK)",
    "notes": "Virtual trading point; map placement is schematic",
-   "line": 54,
+   "line": 57,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 299.0,
@@ -964,9 +1130,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://gasunie.nl/en/gas-infrastructure/ttf---dutch-gas-trading-platform",
    "notes": "Virtual trading point; map placement is schematic",
-   "line": 55,
+   "line": 58,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 208.0,
@@ -982,9 +1150,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://tradinghub.eu/en-gb",
    "notes": "Virtual trading point; map placement is schematic",
-   "line": 56,
+   "line": 59,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 175.1,
@@ -1000,9 +1170,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://balansys.eu/commercial-information",
    "notes": "Virtual trading point; map placement is schematic",
-   "line": 57,
+   "line": 60,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 72.0,
@@ -1018,9 +1190,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://ice.com/products/82426582/French-PEG-Natural-Gas-Futures",
    "notes": "Virtual trading point; map placement is schematic",
-   "line": 58,
+   "line": 61,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 91.0,
@@ -1036,9 +1210,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://hedgeweek.com/news/pegas-launches-danish-etf-contracts",
    "notes": "Virtual trading point; map placement is schematic",
-   "line": 59,
+   "line": 62,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 25.1,
@@ -1054,9 +1230,11 @@
    "operator": "",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://gaz-system.pl/en/for-customers/market-information/data-exchange.html",
    "notes": "Reached through Baltic Pipe; map placement is schematic",
-   "line": 60,
+   "line": 63,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 25.0,
@@ -1072,9 +1250,11 @@
    "operator": "Equinor",
    "capacity": null,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://equinor.com/energy/tjeldbergodden",
    "notes": "Methanol plant: the gas consumer at the end of Haltenpipe",
-   "line": 61,
+   "line": 64,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 6.0,
@@ -1090,9 +1270,11 @@
    "operator": "Centrica Energy Storage+",
    "capacity": 45.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Rough_(facility)",
    "notes": "Depleted field 29 km east of Easington; 44.8 MSm3/d design withdrawal",
-   "line": 62,
+   "line": 65,
    "lost": 45.0,
    "share": 0.0499,
    "modelFlow": 45.0,
@@ -1108,9 +1290,11 @@
    "operator": "NAM (Shell / ExxonMobil)",
    "capacity": 70.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://ebn.nl/en/projects/norg-gas-storage",
    "notes": "Largest Dutch seasonal storage in a depleted field; around 31 GW delivery capacity",
-   "line": 63,
+   "line": 66,
    "lost": 70.0,
    "share": 0.0777,
    "modelFlow": 70.0,
@@ -1126,9 +1310,11 @@
    "operator": "TAQA Energy",
    "capacity": 57.0,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Bergermeer_gas_storage",
    "notes": "Depleted-field storage near Alkmaar; 4.1 bcm working volume",
-   "line": 64,
+   "line": 67,
    "lost": 57.0,
    "share": 0.0632,
    "modelFlow": 57.0,
@@ -1144,9 +1330,11 @@
    "operator": "Equinor Storage Deutschland",
    "capacity": 7.5,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://equinorstorage.de/en.html",
    "notes": "Salt-cavern storage near Wilhelmshaven; firm withdrawal 312840 Sm3/h",
-   "line": 65,
+   "line": 68,
    "lost": 7.5,
    "share": 0.0083,
    "modelFlow": 7.5,
@@ -1162,9 +1350,11 @@
    "operator": "EWE Gasspeicher",
    "capacity": 6.6,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://ewe-gasspeicher.de/en/transparency/storage-capacities/jemgum",
    "notes": "Salt-cavern storage on the Ems; maximum withdrawal 2875 MWh/h",
-   "line": 66,
+   "line": 69,
    "lost": 6.6,
    "share": 0.0073,
    "modelFlow": 6.6,
@@ -1180,9 +1370,11 @@
    "operator": "Gas Storage Denmark / Energinet",
    "capacity": 7.9,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://cdn.orsted.com/-/media/www/docs/corp/com/sustainability/reports---en/dong_energy_annual_report_2007_en.pdf",
    "notes": "Depleted-field storage on Zealand; withdrawal capacity 7.9 MSm3/d",
-   "line": 67,
+   "line": 70,
    "lost": 7.9,
    "share": 0.0088,
    "modelFlow": 7.9,
@@ -1198,9 +1390,11 @@
    "operator": "Gas Storage Denmark / Energinet",
    "capacity": 7.2,
    "status": "operating",
+   "startup": null,
+   "shutdown": null,
    "source": "https://ogj.com/home/article/17238459/danish-projects-reveal-characteristics-and-limits-of-gas-cavern-storage",
    "notes": "Salt-cavern storage in northern Jutland; design delivery 7.2 MSm3/d",
-   "line": 68,
+   "line": 71,
    "lost": 7.2,
    "share": 0.008,
    "modelFlow": 7.2,
@@ -1514,6 +1708,28 @@
    "utilization": 0.1286,
    "km": 482.0
   },
+  "irpa_tieback": {
+   "kind": "pipeline",
+   "name": "Irpa tie-back",
+   "type": "feeder",
+   "from": "irpa",
+   "to": "aasta_hansteen",
+   "capacity": null,
+   "length": 80.0,
+   "diameter": null,
+   "commissioned": 2026,
+   "bidirectional": false,
+   "status": "planned",
+   "operator": "Equinor",
+   "source": "https://www.norskpetroleum.no/en/facts/field/irpa",
+   "notes": "Subsea template tied back to the Aasta Hansteen facility",
+   "line": 16,
+   "lost": 0.0,
+   "share": 0.0,
+   "modelFlow": null,
+   "utilization": null,
+   "km": 80.0
+  },
   "ormen_lange_nyhamna": {
    "kind": "pipeline",
    "name": "Ormen Lange - Nyhamna",
@@ -1529,7 +1745,7 @@
    "operator": "Shell",
    "source": "https://en.wikipedia.org/wiki/Ormen_Lange",
    "notes": "Two parallel lines modelled as one",
-   "line": 16,
+   "line": 17,
    "lost": 36.0,
    "share": 0.0399,
    "modelFlow": 50.0,
@@ -1551,7 +1767,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "Gullfaks gas joins Statpipe at Statfjord",
-   "line": 17,
+   "line": 18,
    "lost": 3.0,
    "share": 0.0033,
    "modelFlow": 10.0,
@@ -1573,7 +1789,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "Joins the Kvitebj\u00f8rn gas pipeline to Kollsnes",
-   "line": 18,
+   "line": 19,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 0.0,
@@ -1595,7 +1811,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "Through Statpipe to K\u00e5rst\u00f8",
-   "line": 19,
+   "line": 20,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 6.0,
@@ -1617,7 +1833,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "",
-   "line": 20,
+   "line": 21,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 5.0,
@@ -1639,7 +1855,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "Ties into SAGE for St Fergus",
-   "line": 21,
+   "line": 22,
    "lost": 6.0,
    "share": 0.0067,
    "modelFlow": 6.0,
@@ -1661,7 +1877,7 @@
    "operator": "Gassco",
    "source": "https://gassco.no/en/our-activities/pipelines-and-platforms",
    "notes": "Feeds the Tjeldbergodden methanol plant",
-   "line": 22,
+   "line": 23,
    "lost": 6.0,
    "share": 0.0067,
    "modelFlow": 6.0,
@@ -1683,7 +1899,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "",
-   "line": 23,
+   "line": 24,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 0.0,
@@ -1705,7 +1921,7 @@
    "operator": "Gassco",
    "source": "https://gassco.no/en/our-activities/pipelines-and-platforms",
    "notes": "Ties into \u00c5sgard Transport",
-   "line": 24,
+   "line": 25,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 0.0,
@@ -1727,7 +1943,7 @@
    "operator": "Gassco",
    "source": "https://en.wikipedia.org/wiki/Norpipe",
    "notes": "",
-   "line": 25,
+   "line": 26,
    "lost": 44.0,
    "share": 0.0488,
    "modelFlow": 44.0,
@@ -1749,7 +1965,7 @@
    "operator": "Gassco",
    "source": "https://en.wikipedia.org/wiki/Europipe_I",
    "notes": "",
-   "line": 26,
+   "line": 27,
    "lost": 46.0,
    "share": 0.051,
    "modelFlow": 46.0,
@@ -1771,7 +1987,7 @@
    "operator": "Gassco",
    "source": "https://en.wikipedia.org/wiki/Europipe_II",
    "notes": "Split at the Baltic Pipe tie-in",
-   "line": 27,
+   "line": 28,
    "lost": 71.0,
    "share": 0.0788,
    "modelFlow": 71.0,
@@ -1793,7 +2009,7 @@
    "operator": "Gassco",
    "source": "https://en.wikipedia.org/wiki/Europipe_II",
    "notes": "Split at the Baltic Pipe tie-in",
-   "line": 28,
+   "line": 29,
    "lost": 44.0,
    "share": 0.0488,
    "modelFlow": 44.0,
@@ -1815,7 +2031,7 @@
    "operator": "Gassco",
    "source": "https://en.wikipedia.org/wiki/Franpipe",
    "notes": "",
-   "line": 29,
+   "line": 30,
    "lost": 55.0,
    "share": 0.061,
    "modelFlow": 55.0,
@@ -1837,7 +2053,7 @@
    "operator": "Gassco",
    "source": "https://en.wikipedia.org/wiki/Zeepipe",
    "notes": "",
-   "line": 30,
+   "line": 31,
    "lost": 42.0,
    "share": 0.0466,
    "modelFlow": 42.0,
@@ -1859,7 +2075,7 @@
    "operator": "Gassco",
    "source": "https://en.wikipedia.org/wiki/Langeled_pipeline",
    "notes": "",
-   "line": 31,
+   "line": 32,
    "lost": 72.0,
    "share": 0.0799,
    "modelFlow": 72.0,
@@ -1881,7 +2097,7 @@
    "operator": "Gassco",
    "source": "https://en.wikipedia.org/wiki/Vesterled",
    "notes": "",
-   "line": 32,
+   "line": 33,
    "lost": 30.0,
    "share": 0.0333,
    "modelFlow": 30.0,
@@ -1903,7 +2119,7 @@
    "operator": "Energinet",
    "source": "https://www.baltic-pipe.eu/",
    "notes": "Offshore leg plus the short onshore run to Nybro",
-   "line": 33,
+   "line": 34,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 27.0,
@@ -1925,7 +2141,7 @@
    "operator": "Energinet / GAZ-SYSTEM",
    "source": "https://www.baltic-pipe.eu/",
    "notes": "Onshore Denmark plus the Baltic Sea offshore section",
-   "line": 34,
+   "line": 35,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 25.0,
@@ -1947,7 +2163,7 @@
    "operator": "",
    "source": "https://en.wikipedia.org/wiki/Tyra_field",
    "notes": "",
-   "line": 35,
+   "line": 36,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 8.0,
@@ -1969,7 +2185,7 @@
    "operator": "",
    "source": "https://en.wikipedia.org/wiki/Tyra_field",
    "notes": "Carries Danish gas into NOGAT",
-   "line": 36,
+   "line": 37,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 0.0,
@@ -1991,7 +2207,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "",
-   "line": 37,
+   "line": 38,
    "lost": 18.0,
    "share": 0.02,
    "modelFlow": 18.0,
@@ -2013,7 +2229,7 @@
    "operator": "",
    "source": "https://gassco.no/en/our-activities/pipelines-and-platforms",
    "notes": "",
-   "line": 38,
+   "line": 39,
    "lost": 8.0,
    "share": 0.0089,
    "modelFlow": 15.0,
@@ -2035,7 +2251,7 @@
    "operator": "",
    "source": "https://en.wikipedia.org/wiki/FLAGS",
    "notes": "",
-   "line": 39,
+   "line": 40,
    "lost": 33.0,
    "share": 0.0366,
    "modelFlow": 33.0,
@@ -2057,7 +2273,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "",
-   "line": 40,
+   "line": 41,
    "lost": 16.0,
    "share": 0.0178,
    "modelFlow": 16.0,
@@ -2079,7 +2295,7 @@
    "operator": "",
    "source": "https://en.wikipedia.org/wiki/Central_Area_Transmission_System",
    "notes": "",
-   "line": 41,
+   "line": 42,
    "lost": 15.0,
    "share": 0.0166,
    "modelFlow": 15.0,
@@ -2101,7 +2317,7 @@
    "operator": "",
    "source": "https://en.wikipedia.org/wiki/Central_Area_Transmission_System",
    "notes": "",
-   "line": 42,
+   "line": 43,
    "lost": 15.0,
    "share": 0.0166,
    "modelFlow": 15.0,
@@ -2123,7 +2339,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "",
-   "line": 43,
+   "line": 44,
    "lost": 15.0,
    "share": 0.0166,
    "modelFlow": 15.0,
@@ -2145,7 +2361,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "Several pipelines modelled as one",
-   "line": 44,
+   "line": 45,
    "lost": 15.0,
    "share": 0.0166,
    "modelFlow": 15.0,
@@ -2167,7 +2383,7 @@
    "operator": "",
    "source": "https://www.interconnector.com/",
    "notes": "",
-   "line": 45,
+   "line": 46,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 0.0,
@@ -2189,7 +2405,7 @@
    "operator": "",
    "source": "https://bblcompany.com/",
    "notes": "Physical reverse flow added in 2019 at lower capacity",
-   "line": 46,
+   "line": 47,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 0.0,
@@ -2211,7 +2427,7 @@
    "operator": "",
    "source": "https://en.wikipedia.org/wiki/NOGAT",
    "notes": "",
-   "line": 47,
+   "line": 48,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 0.0,
@@ -2233,7 +2449,7 @@
    "operator": "",
    "source": "https://en.wikipedia.org/wiki/Noordgastransport",
    "notes": "Main line of the NGT system",
-   "line": 48,
+   "line": 49,
    "lost": 10.0,
    "share": 0.0111,
    "modelFlow": 10.0,
@@ -2255,7 +2471,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "",
-   "line": 49,
+   "line": 50,
    "lost": 5.0,
    "share": 0.0055,
    "modelFlow": 5.0,
@@ -2277,7 +2493,7 @@
    "operator": "",
    "source": "https://www.nationalgrid.com/",
    "notes": "Notional entry into the national grid",
-   "line": 50,
+   "line": 51,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 79.0,
@@ -2299,7 +2515,7 @@
    "operator": "",
    "source": "https://www.nationalgrid.com/",
    "notes": "Notional entry into the national grid",
-   "line": 51,
+   "line": 52,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 15.0,
@@ -2321,7 +2537,7 @@
    "operator": "",
    "source": "https://www.nationalgrid.com/",
    "notes": "Notional entry into the national grid",
-   "line": 52,
+   "line": 53,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 117.0,
@@ -2343,7 +2559,7 @@
    "operator": "",
    "source": "https://www.nationalgrid.com/",
    "notes": "Notional entry into the national grid",
-   "line": 53,
+   "line": 54,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 30.0,
@@ -2365,7 +2581,7 @@
    "operator": "",
    "source": "https://www.nationalgrid.com/",
    "notes": "Notional entry into the national grid",
-   "line": 54,
+   "line": 55,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 58.0,
@@ -2387,7 +2603,7 @@
    "operator": "",
    "source": "https://www.gasunie.nl/",
    "notes": "Notional entry into the national grid",
-   "line": 55,
+   "line": 56,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 5.0,
@@ -2409,7 +2625,7 @@
    "operator": "",
    "source": "https://www.gasunie.nl/",
    "notes": "Notional entry into the national grid",
-   "line": 56,
+   "line": 57,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 0.0,
@@ -2431,7 +2647,7 @@
    "operator": "",
    "source": "https://www.gasunie.nl/",
    "notes": "Notional entry into the national grid",
-   "line": 57,
+   "line": 58,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 10.0,
@@ -2453,7 +2669,7 @@
    "operator": "",
    "source": "https://www.gasunie.nl/",
    "notes": "Notional entry into the national grid",
-   "line": 58,
+   "line": 59,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 44.0,
@@ -2475,7 +2691,7 @@
    "operator": "",
    "source": "https://www.gasunie.nl/",
    "notes": "Notional entry into the national grid",
-   "line": 59,
+   "line": 60,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 22.0,
@@ -2497,7 +2713,7 @@
    "operator": "",
    "source": "https://www.tradinghub.eu/",
    "notes": "Notional entry into the national grid",
-   "line": 60,
+   "line": 61,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 44.0,
@@ -2519,7 +2735,7 @@
    "operator": "",
    "source": "https://www.tradinghub.eu/",
    "notes": "Notional entry into the national grid",
-   "line": 61,
+   "line": 62,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 90.0,
@@ -2541,7 +2757,7 @@
    "operator": "",
    "source": "https://www.tradinghub.eu/",
    "notes": "Notional entry into the national grid",
-   "line": 62,
+   "line": 63,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 27.0,
@@ -2563,7 +2779,7 @@
    "operator": "",
    "source": "https://www.fluxys.com/",
    "notes": "Notional entry into the national grid",
-   "line": 63,
+   "line": 64,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 42.0,
@@ -2585,7 +2801,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "Notional entry into the national grid",
-   "line": 64,
+   "line": 65,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 30.0,
@@ -2607,7 +2823,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "Notional entry into the national grid",
-   "line": 65,
+   "line": 66,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 55.0,
@@ -2629,7 +2845,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "Notional entry into the national grid",
-   "line": 66,
+   "line": 67,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 36.0,
@@ -2651,7 +2867,7 @@
    "operator": "",
    "source": "https://www.energinet.dk/",
    "notes": "Notional grid entry capped near Danish demand so Baltic Pipe gas continues to Poland",
-   "line": 67,
+   "line": 68,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 10.0,
@@ -2673,7 +2889,7 @@
    "operator": "Centrica Energy Storage+",
    "source": "https://en.wikipedia.org/wiki/Rough_(facility)",
    "notes": "Storage line between the Rough Bravo complex and the Easington terminal",
-   "line": 68,
+   "line": 69,
    "lost": 45.0,
    "share": 0.0499,
    "modelFlow": 45.0,
@@ -2695,7 +2911,7 @@
    "operator": "",
    "source": "https://www.gasunie.nl/",
    "notes": "Notional entry into the national grid",
-   "line": 69,
+   "line": 70,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 70.0,
@@ -2717,7 +2933,7 @@
    "operator": "",
    "source": "https://www.gasunie.nl/",
    "notes": "Notional entry into the national grid",
-   "line": 70,
+   "line": 71,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 57.0,
@@ -2739,7 +2955,7 @@
    "operator": "",
    "source": "https://www.tradinghub.eu/",
    "notes": "Notional entry into the national grid",
-   "line": 71,
+   "line": 72,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 7.5,
@@ -2761,7 +2977,7 @@
    "operator": "",
    "source": "https://www.tradinghub.eu/",
    "notes": "Notional entry into the national grid",
-   "line": 72,
+   "line": 73,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 6.6,
@@ -2783,7 +2999,7 @@
    "operator": "",
    "source": "https://www.energinet.dk/",
    "notes": "Notional entry into the national grid",
-   "line": 73,
+   "line": 74,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 7.9,
@@ -2805,7 +3021,7 @@
    "operator": "",
    "source": "https://www.energinet.dk/",
    "notes": "Notional entry into the national grid",
-   "line": 74,
+   "line": 75,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 7.2,
@@ -3221,6 +3437,22 @@
      "type": "Feature",
      "id": 25,
      "properties": {
+      "asset": "frigg",
+      "name": "Frigg",
+      "type": "field"
+     },
+     "geometry": {
+      "type": "Point",
+      "coordinates": [
+       1.67,
+       59.9
+      ]
+     }
+    },
+    {
+     "type": "Feature",
+     "id": 26,
+     "properties": {
       "asset": "gate_lng",
       "name": "Gate terminal",
       "type": "lng"
@@ -3235,7 +3467,7 @@
     },
     {
      "type": "Feature",
-     "id": 26,
+     "id": 27,
      "properties": {
       "asset": "gjoa",
       "name": "Gj\u00f8a",
@@ -3251,7 +3483,7 @@
     },
     {
      "type": "Feature",
-     "id": 27,
+     "id": 28,
      "properties": {
       "asset": "grain_lng",
       "name": "Grain LNG",
@@ -3267,7 +3499,7 @@
     },
     {
      "type": "Feature",
-     "id": 28,
+     "id": 29,
      "properties": {
       "asset": "gudrun",
       "name": "Gudrun",
@@ -3283,7 +3515,7 @@
     },
     {
      "type": "Feature",
-     "id": 29,
+     "id": 30,
      "properties": {
       "asset": "gullfaks",
       "name": "Gullfaks",
@@ -3299,7 +3531,7 @@
     },
     {
      "type": "Feature",
-     "id": 30,
+     "id": 31,
      "properties": {
       "asset": "heidrun",
       "name": "Heidrun",
@@ -3315,7 +3547,7 @@
     },
     {
      "type": "Feature",
-     "id": 31,
+     "id": 32,
      "properties": {
       "asset": "heimdal",
       "name": "Heimdal",
@@ -3331,7 +3563,23 @@
     },
     {
      "type": "Feature",
-     "id": 32,
+     "id": 33,
+     "properties": {
+      "asset": "irpa",
+      "name": "Irpa",
+      "type": "field"
+     },
+     "geometry": {
+      "type": "Point",
+      "coordinates": [
+       5.2,
+       67.0
+      ]
+     }
+    },
+    {
+     "type": "Feature",
+     "id": 34,
      "properties": {
       "asset": "jemgum",
       "name": "Jemgum Gas Storage",
@@ -3347,7 +3595,7 @@
     },
     {
      "type": "Feature",
-     "id": 33,
+     "id": 35,
      "properties": {
       "asset": "johan_sverdrup",
       "name": "Johan Sverdrup",
@@ -3363,7 +3611,7 @@
     },
     {
      "type": "Feature",
-     "id": 34,
+     "id": 36,
      "properties": {
       "asset": "k13a",
       "name": "K13-A",
@@ -3379,7 +3627,7 @@
     },
     {
      "type": "Feature",
-     "id": 35,
+     "id": 37,
      "properties": {
       "asset": "karsto",
       "name": "K\u00e5rst\u00f8",
@@ -3395,7 +3643,7 @@
     },
     {
      "type": "Feature",
-     "id": 36,
+     "id": 38,
      "properties": {
       "asset": "kollsnes",
       "name": "Kollsnes",
@@ -3411,7 +3659,7 @@
     },
     {
      "type": "Feature",
-     "id": 37,
+     "id": 39,
      "properties": {
       "asset": "kvitebjorn",
       "name": "Kvitebj\u00f8rn",
@@ -3427,7 +3675,7 @@
     },
     {
      "type": "Feature",
-     "id": 38,
+     "id": 40,
      "properties": {
       "asset": "l10a",
       "name": "L10-A",
@@ -3443,7 +3691,7 @@
     },
     {
      "type": "Feature",
-     "id": 39,
+     "id": 41,
      "properties": {
       "asset": "lille_torup",
       "name": "Lille Torup Gas Storage",
@@ -3459,7 +3707,7 @@
     },
     {
      "type": "Feature",
-     "id": 40,
+     "id": 42,
      "properties": {
       "asset": "nbp",
       "name": "NBP (Great Britain)",
@@ -3475,7 +3723,7 @@
     },
     {
      "type": "Feature",
-     "id": 41,
+     "id": 43,
      "properties": {
       "asset": "norg",
       "name": "Norg Gas Storage",
@@ -3491,7 +3739,7 @@
     },
     {
      "type": "Feature",
-     "id": 42,
+     "id": 44,
      "properties": {
       "asset": "norne",
       "name": "Norne",
@@ -3507,7 +3755,7 @@
     },
     {
      "type": "Feature",
-     "id": 43,
+     "id": 45,
      "properties": {
       "asset": "nybro",
       "name": "Nybro",
@@ -3523,7 +3771,7 @@
     },
     {
      "type": "Feature",
-     "id": 44,
+     "id": 46,
      "properties": {
       "asset": "nyhamna",
       "name": "Nyhamna",
@@ -3539,7 +3787,23 @@
     },
     {
      "type": "Feature",
-     "id": 45,
+     "id": 47,
+     "properties": {
+      "asset": "odin",
+      "name": "Odin",
+      "type": "field"
+     },
+     "geometry": {
+      "type": "Point",
+      "coordinates": [
+       1.8,
+       59.96
+      ]
+     }
+    },
+    {
+     "type": "Feature",
+     "id": 48,
      "properties": {
       "asset": "ormen_lange",
       "name": "Ormen Lange",
@@ -3555,7 +3819,7 @@
     },
     {
      "type": "Feature",
-     "id": 46,
+     "id": 49,
      "properties": {
       "asset": "oseberg",
       "name": "Oseberg",
@@ -3571,7 +3835,7 @@
     },
     {
      "type": "Feature",
-     "id": 47,
+     "id": 50,
      "properties": {
       "asset": "peg",
       "name": "PEG (France)",
@@ -3587,7 +3851,7 @@
     },
     {
      "type": "Feature",
-     "id": 48,
+     "id": 51,
      "properties": {
       "asset": "pl_vtp",
       "name": "Poland VTP",
@@ -3603,7 +3867,7 @@
     },
     {
      "type": "Feature",
-     "id": 49,
+     "id": 52,
      "properties": {
       "asset": "rough",
       "name": "Rough Gas Storage",
@@ -3619,7 +3883,7 @@
     },
     {
      "type": "Feature",
-     "id": 50,
+     "id": 53,
      "properties": {
       "asset": "sleipner",
       "name": "Sleipner",
@@ -3635,7 +3899,7 @@
     },
     {
      "type": "Feature",
-     "id": 51,
+     "id": 54,
      "properties": {
       "asset": "sns_fields",
       "name": "Southern North Sea fields",
@@ -3651,7 +3915,7 @@
     },
     {
      "type": "Feature",
-     "id": 52,
+     "id": 55,
      "properties": {
       "asset": "st_fergus",
       "name": "St Fergus",
@@ -3667,7 +3931,7 @@
     },
     {
      "type": "Feature",
-     "id": 53,
+     "id": 56,
      "properties": {
       "asset": "statfjord",
       "name": "Statfjord",
@@ -3683,7 +3947,7 @@
     },
     {
      "type": "Feature",
-     "id": 54,
+     "id": 57,
      "properties": {
       "asset": "stenlille",
       "name": "Stenlille Gas Storage",
@@ -3699,7 +3963,7 @@
     },
     {
      "type": "Feature",
-     "id": 55,
+     "id": 58,
      "properties": {
       "asset": "teesside",
       "name": "Teesside (CATS)",
@@ -3715,7 +3979,7 @@
     },
     {
      "type": "Feature",
-     "id": 56,
+     "id": 59,
      "properties": {
       "asset": "the",
       "name": "THE (Germany)",
@@ -3731,7 +3995,7 @@
     },
     {
      "type": "Feature",
-     "id": 57,
+     "id": 60,
      "properties": {
       "asset": "tjeldbergodden",
       "name": "Tjeldbergodden",
@@ -3747,7 +4011,7 @@
     },
     {
      "type": "Feature",
-     "id": 58,
+     "id": 61,
      "properties": {
       "asset": "troll",
       "name": "Troll",
@@ -3763,7 +4027,7 @@
     },
     {
      "type": "Feature",
-     "id": 59,
+     "id": 62,
      "properties": {
       "asset": "ttf",
       "name": "TTF (Netherlands)",
@@ -3779,7 +4043,7 @@
     },
     {
      "type": "Feature",
-     "id": 60,
+     "id": 63,
      "properties": {
       "asset": "tyra",
       "name": "Tyra",
@@ -3795,7 +4059,7 @@
     },
     {
      "type": "Feature",
-     "id": 61,
+     "id": 64,
      "properties": {
       "asset": "uithuizen",
       "name": "Uithuizen",
@@ -3811,7 +4075,7 @@
     },
     {
      "type": "Feature",
-     "id": 62,
+     "id": 65,
      "properties": {
       "asset": "visund",
       "name": "Visund",
@@ -3827,7 +4091,7 @@
     },
     {
      "type": "Feature",
-     "id": 63,
+     "id": 66,
      "properties": {
       "asset": "wilhelmshaven_lng",
       "name": "Wilhelmshaven LNG",
@@ -3843,7 +4107,7 @@
     },
     {
      "type": "Feature",
-     "id": 64,
+     "id": 67,
      "properties": {
       "asset": "zeebrugge",
       "name": "Zeebrugge",
@@ -3859,7 +4123,7 @@
     },
     {
      "type": "Feature",
-     "id": 65,
+     "id": 68,
      "properties": {
       "asset": "zeebrugge_lng",
       "name": "Zeebrugge LNG",
@@ -3875,7 +4139,7 @@
     },
     {
      "type": "Feature",
-     "id": 66,
+     "id": 69,
      "properties": {
       "asset": "ztp",
       "name": "ZTP (Belgium)",
@@ -4528,6 +4792,27 @@
      "type": "Feature",
      "id": 30,
      "properties": {
+      "asset": "irpa_tieback",
+      "onshore": false
+     },
+     "geometry": {
+      "type": "LineString",
+      "coordinates": [
+       [
+        5.2,
+        67.0
+       ],
+       [
+        6.98,
+        67.07
+       ]
+      ]
+     }
+    },
+    {
+     "type": "Feature",
+     "id": 31,
+     "properties": {
       "asset": "iuk",
       "onshore": false
      },
@@ -4547,7 +4832,7 @@
     },
     {
      "type": "Feature",
-     "id": 31,
+     "id": 32,
      "properties": {
       "asset": "jemgum_the",
       "onshore": true
@@ -4568,7 +4853,7 @@
     },
     {
      "type": "Feature",
-     "id": 32,
+     "id": 33,
      "properties": {
       "asset": "kvitebjorn_kollsnes",
       "onshore": false
@@ -4589,7 +4874,7 @@
     },
     {
      "type": "Feature",
-     "id": 33,
+     "id": 34,
      "properties": {
       "asset": "langeled_north",
       "onshore": false
@@ -4610,7 +4895,7 @@
     },
     {
      "type": "Feature",
-     "id": 34,
+     "id": 35,
      "properties": {
       "asset": "langeled_south",
       "onshore": false
@@ -4631,7 +4916,7 @@
     },
     {
      "type": "Feature",
-     "id": 35,
+     "id": 36,
      "properties": {
       "asset": "lille_torup_etf",
       "onshore": true
@@ -4652,7 +4937,7 @@
     },
     {
      "type": "Feature",
-     "id": 36,
+     "id": 37,
      "properties": {
       "asset": "ngt",
       "onshore": false
@@ -4673,7 +4958,7 @@
     },
     {
      "type": "Feature",
-     "id": 37,
+     "id": 38,
      "properties": {
       "asset": "ngts",
       "onshore": false
@@ -4694,7 +4979,7 @@
     },
     {
      "type": "Feature",
-     "id": 38,
+     "id": 39,
      "properties": {
       "asset": "nogat",
       "onshore": false
@@ -4715,7 +5000,7 @@
     },
     {
      "type": "Feature",
-     "id": 39,
+     "id": 40,
      "properties": {
       "asset": "norg_ttf",
       "onshore": true
@@ -4736,7 +5021,7 @@
     },
     {
      "type": "Feature",
-     "id": 40,
+     "id": 41,
      "properties": {
       "asset": "norpipe",
       "onshore": false
@@ -4757,7 +5042,7 @@
     },
     {
      "type": "Feature",
-     "id": 41,
+     "id": 42,
      "properties": {
       "asset": "nybro_etf",
       "onshore": true
@@ -4778,7 +5063,7 @@
     },
     {
      "type": "Feature",
-     "id": 42,
+     "id": 43,
      "properties": {
       "asset": "ogt",
       "onshore": false
@@ -4799,7 +5084,7 @@
     },
     {
      "type": "Feature",
-     "id": 43,
+     "id": 44,
      "properties": {
       "asset": "ormen_lange_nyhamna",
       "onshore": false
@@ -4820,7 +5105,7 @@
     },
     {
      "type": "Feature",
-     "id": 44,
+     "id": 45,
      "properties": {
       "asset": "polarled",
       "onshore": false
@@ -4841,7 +5126,7 @@
     },
     {
      "type": "Feature",
-     "id": 45,
+     "id": 46,
      "properties": {
       "asset": "rough_easington",
       "onshore": false
@@ -4862,7 +5147,7 @@
     },
     {
      "type": "Feature",
-     "id": 46,
+     "id": 47,
      "properties": {
       "asset": "sage",
       "onshore": false
@@ -4883,7 +5168,7 @@
     },
     {
      "type": "Feature",
-     "id": 47,
+     "id": 48,
      "properties": {
       "asset": "seal",
       "onshore": false
@@ -4904,7 +5189,7 @@
     },
     {
      "type": "Feature",
-     "id": 48,
+     "id": 49,
      "properties": {
       "asset": "sleipner_draupner",
       "onshore": false
@@ -4925,7 +5210,7 @@
     },
     {
      "type": "Feature",
-     "id": 49,
+     "id": 50,
      "properties": {
       "asset": "sns_bacton",
       "onshore": false
@@ -4946,7 +5231,7 @@
     },
     {
      "type": "Feature",
-     "id": 50,
+     "id": 51,
      "properties": {
       "asset": "st_fergus_nbp",
       "onshore": true
@@ -4967,7 +5252,7 @@
     },
     {
      "type": "Feature",
-     "id": 51,
+     "id": 52,
      "properties": {
       "asset": "statpipe_dry",
       "onshore": false
@@ -4988,7 +5273,7 @@
     },
     {
      "type": "Feature",
-     "id": 52,
+     "id": 53,
      "properties": {
       "asset": "statpipe_ekofisk",
       "onshore": false
@@ -5009,7 +5294,7 @@
     },
     {
      "type": "Feature",
-     "id": 53,
+     "id": 54,
      "properties": {
       "asset": "statpipe_heimdal",
       "onshore": false
@@ -5030,7 +5315,7 @@
     },
     {
      "type": "Feature",
-     "id": 54,
+     "id": 55,
      "properties": {
       "asset": "statpipe_rich",
       "onshore": false
@@ -5051,7 +5336,7 @@
     },
     {
      "type": "Feature",
-     "id": 55,
+     "id": 56,
      "properties": {
       "asset": "stenlille_etf",
       "onshore": true
@@ -5072,7 +5357,7 @@
     },
     {
      "type": "Feature",
-     "id": 56,
+     "id": 57,
      "properties": {
       "asset": "sverdrup_karsto",
       "onshore": false
@@ -5093,7 +5378,7 @@
     },
     {
      "type": "Feature",
-     "id": 57,
+     "id": 58,
      "properties": {
       "asset": "tampen_link",
       "onshore": false
@@ -5114,7 +5399,7 @@
     },
     {
      "type": "Feature",
-     "id": 58,
+     "id": 59,
      "properties": {
       "asset": "teesside_nbp",
       "onshore": true
@@ -5135,7 +5420,7 @@
     },
     {
      "type": "Feature",
-     "id": 59,
+     "id": 60,
      "properties": {
       "asset": "troll_kollsnes",
       "onshore": false
@@ -5156,7 +5441,7 @@
     },
     {
      "type": "Feature",
-     "id": 60,
+     "id": 61,
      "properties": {
       "asset": "tyra_f3",
       "onshore": false
@@ -5177,7 +5462,7 @@
     },
     {
      "type": "Feature",
-     "id": 61,
+     "id": 62,
      "properties": {
       "asset": "tyra_nybro",
       "onshore": false
@@ -5198,7 +5483,7 @@
     },
     {
      "type": "Feature",
-     "id": 62,
+     "id": 63,
      "properties": {
       "asset": "uhgp",
       "onshore": false
@@ -5219,7 +5504,7 @@
     },
     {
      "type": "Feature",
-     "id": 63,
+     "id": 64,
      "properties": {
       "asset": "uithuizen_ttf",
       "onshore": true
@@ -5240,7 +5525,7 @@
     },
     {
      "type": "Feature",
-     "id": 64,
+     "id": 65,
      "properties": {
       "asset": "vesterled",
       "onshore": false
@@ -5261,7 +5546,7 @@
     },
     {
      "type": "Feature",
-     "id": 65,
+     "id": 66,
      "properties": {
       "asset": "visund_kvitebjorn",
       "onshore": false
@@ -5282,7 +5567,7 @@
     },
     {
      "type": "Feature",
-     "id": 66,
+     "id": 67,
      "properties": {
       "asset": "wgt",
       "onshore": false
@@ -5303,7 +5588,7 @@
     },
     {
      "type": "Feature",
-     "id": 67,
+     "id": 68,
      "properties": {
       "asset": "wilhelmshaven_the",
       "onshore": true
@@ -5324,7 +5609,7 @@
     },
     {
      "type": "Feature",
-     "id": 68,
+     "id": 69,
      "properties": {
       "asset": "zeebrugge_lng_ztp",
       "onshore": true
@@ -5345,7 +5630,7 @@
     },
     {
      "type": "Feature",
-     "id": 69,
+     "id": 70,
      "properties": {
       "asset": "zeebrugge_ztp",
       "onshore": true
@@ -5366,7 +5651,7 @@
     },
     {
      "type": "Feature",
-     "id": 70,
+     "id": 71,
      "properties": {
       "asset": "zeepipe_1",
       "onshore": false
@@ -5387,7 +5672,7 @@
     },
     {
      "type": "Feature",
-     "id": 71,
+     "id": 72,
      "properties": {
       "asset": "zeepipe_2a",
       "onshore": false
@@ -5408,7 +5693,7 @@
     },
     {
      "type": "Feature",
-     "id": 72,
+     "id": 73,
      "properties": {
       "asset": "zeepipe_2b",
       "onshore": false
@@ -5432,272 +5717,284 @@
  },
  "grid": {
   "aasta_hansteen": [
-   0,
-   -5.04
+   1,
+   -5.18
   ],
   "asgard": [
    1,
-   -0.09
+   1.02
   ],
   "bacton": [
    6,
-   -4.75
+   -4.07
   ],
   "balgzand": [
    6,
-   -1.2
+   -0.87
   ],
   "baltic_tie": [
    3,
-   2.09
+   3.55
   ],
   "bergermeer": [
    7,
-   0.34
+   1.07
   ],
   "beryl": [
    1,
-   -7.29
+   -7.18
   ],
   "cats_riser": [
    1,
-   -8.29
+   -8.18
   ],
   "culzean": [
    0,
-   -8.29
+   -8.17
   ],
   "den_helder": [
    6,
-   -0.2
+   0.13
   ],
   "dornum": [
    6,
-   2.8
+   4.29
   ],
   "draupner_e": [
    5,
-   -1.41
+   0.95
   ],
   "draupner_s": [
    4,
-   -0.25
+   0.87
   ],
   "dunkirk": [
    6,
-   -2.75
+   -2.07
   ],
   "dunkirk_lng": [
    7,
-   -2.91
+   -2.03
   ],
   "easington": [
    6,
-   -5.75
+   -5.07
   ],
   "edvard_grieg": [
    0,
-   -7.29
+   -7.17
   ],
   "eemshaven_lng": [
    7,
-   2.54
+   3.07
   ],
   "ekofisk": [
    5,
-   2.14
+   3.15
   ],
   "elgin_franklin": [
    5,
-   -4.39
+   -3.75
   ],
   "emden": [
    6,
-   1.8
+   3.29
   ],
   "etf": [
    8,
-   7.45
+   8.31
   ],
   "etzel": [
    7,
-   5.09
+   5.97
   ],
   "f3fb": [
    1,
-   0.91
+   2.02
   ],
   "flags_brent": [
    2,
-   -4.4
+   -4.96
+  ],
+  "frigg": [
+   0,
+   -9.17
   ],
   "gate_lng": [
    7,
-   -0.66
+   -0.13
   ],
   "gjoa": [
    1,
-   -6.29
+   -6.18
   ],
   "grain_lng": [
    7,
-   -6.21
+   -5.56
   ],
   "gudrun": [
    2,
-   -3.18
+   -2.2
   ],
   "gullfaks": [
    0,
-   -1.59
+   -2.18
   ],
   "heidrun": [
    0,
-   -0.59
+   -0.13
   ],
   "heimdal": [
    1,
-   -4.29
+   -3.18
+  ],
+  "irpa": [
+   0,
+   -5.16
   ],
   "jemgum": [
    7,
-   4.09
+   4.97
   ],
   "johan_sverdrup": [
    1,
-   1.91
+   3.02
   ],
   "k13a": [
    5,
-   0.14
+   -0.05
   ],
   "karsto": [
    2,
-   0.58
+   1.31
   ],
   "kollsnes": [
    2,
-   -2.18
+   -1.0
   ],
   "kvitebjorn": [
    1,
-   -3.29
+   -0.98
   ],
   "l10a": [
    5,
-   1.14
+   1.95
   ],
   "lille_torup": [
    7,
-   7.29
+   8.17
   ],
   "nbp": [
    8,
-   -6.19
+   -5.55
   ],
   "norg": [
    7,
-   1.54
+   2.07
   ],
   "norne": [
    0,
-   0.41
+   1.02
   ],
   "nybro": [
    4,
-   1.52
+   3.3
   ],
   "nyhamna": [
-   1,
-   -5.29
+   2,
+   -3.96
+  ],
+  "odin": [
+   0,
+   -6.16
   ],
   "ormen_lange": [
-   0,
-   -6.04
+   1,
+   -4.18
   ],
   "oseberg": [
    0,
-   -4.04
+   -3.18
   ],
   "peg": [
    8,
-   -3.45
+   -2.38
   ],
   "pl_vtp": [
    8,
-   -1.45
+   3.67
   ],
   "rough": [
    5,
-   -5.39
+   -4.75
   ],
   "sleipner": [
    3,
-   -2.74
+   -2.09
   ],
   "sns_fields": [
    5,
-   -3.39
+   -2.75
   ],
   "st_fergus": [
    6,
-   -6.75
+   -6.07
   ],
   "statfjord": [
    1,
-   -1.29
+   -2.18
   ],
   "stenlille": [
    7,
-   8.29
+   9.17
   ],
   "teesside": [
    6,
-   -7.75
+   -7.07
   ],
   "the": [
    8,
-   4.4
+   5.26
   ],
   "tjeldbergodden": [
    8,
-   -2.45
+   -1.38
   ],
   "troll": [
    1,
-   -2.29
+   0.02
   ],
   "ttf": [
    8,
-   0.28
+   0.68
   ],
   "tyra": [
    0,
-   1.71
+   2.82
   ],
   "uithuizen": [
    6,
-   0.8
+   1.21
   ],
   "visund": [
    0,
-   -3.04
+   -1.13
   ],
   "wilhelmshaven_lng": [
    7,
-   6.09
+   6.97
   ],
   "zeebrugge": [
    6,
-   -3.75
+   -3.07
   ],
   "zeebrugge_lng": [
    7,
-   -4.11
+   -3.23
   ],
   "ztp": [
    8,
-   -4.45
+   -3.53
   ]
  },
  "units": [
@@ -5711,12 +6008,14 @@
     "asgard",
     "ormen_lange",
     "nyhamna",
-    "tjeldbergodden"
+    "tjeldbergodden",
+    "irpa"
    ],
    "pipelines": [
     "asgard_transport",
     "haltenpipe",
     "heidrun_asgard",
+    "irpa_tieback",
     "langeled_north",
     "ngts",
     "ormen_lange_nyhamna",
@@ -5738,7 +6037,9 @@
     "kollsnes",
     "heimdal",
     "beryl",
-    "edvard_grieg"
+    "edvard_grieg",
+    "frigg",
+    "odin"
    ],
    "pipelines": [
     "flags",
@@ -21051,15 +21352,18 @@
       "edvard_grieg",
       "ekofisk",
       "elgin_franklin",
+      "frigg",
       "gjoa",
       "gudrun",
       "gullfaks",
       "heidrun",
+      "irpa",
       "johan_sverdrup",
       "k13a",
       "kvitebjorn",
       "l10a",
       "norne",
+      "odin",
       "ormen_lange",
       "oseberg",
       "sleipner",
@@ -21071,9 +21375,6 @@
      ],
      "values": [
       [
-       0.85,
-       1.5,
-       1.42,
        0.9,
        1.33,
        1.44,
@@ -21094,12 +21395,15 @@
        1.01,
        0.9,
        0.95,
-       0.93
+       0.93,
+       0.92,
+       0.7,
+       1.43,
+       1.49,
+       0.78,
+       1.23
       ],
       [
-       0.84,
-       1.47,
-       1.37,
        0.89,
        1.33,
        1.43,
@@ -21120,12 +21424,15 @@
        0.98,
        0.9,
        0.95,
-       0.94
+       0.94,
+       0.95,
+       0.69,
+       1.43,
+       1.48,
+       0.79,
+       1.25
       ],
       [
-       0.84,
-       1.48,
-       1.35,
        0.9,
        1.32,
        1.46,
@@ -21146,12 +21453,15 @@
        0.97,
        0.9,
        0.98,
-       0.94
+       0.94,
+       0.97,
+       0.69,
+       1.39,
+       1.5,
+       0.77,
+       1.25
       ],
       [
-       0.89,
-       1.47,
-       1.38,
        0.86,
        1.33,
        1.41,
@@ -21172,22 +21482,25 @@
        0.97,
        0.88,
        1.0,
-       0.93
+       0.93,
+       0.98,
+       0.71,
+       1.42,
+       1.51,
+       0.78,
+       1.22
       ],
       [
-       0.88,
-       1.45,
-       1.47,
        0.86,
        1.31,
        1.43,
        1.45,
        0.86,
-       3.11,
+       1.25,
        1.18,
        1.22,
        1.33,
-       0.76,
+       3.09,
        1.48,
        1.19,
        1.18,
@@ -21198,22 +21511,25 @@
        0.97,
        0.91,
        1.01,
-       0.93
+       0.93,
+       1.0,
+       0.71,
+       1.41,
+       1.5,
+       0.77,
+       1.23
       ],
       [
-       0.9,
-       1.43,
-       1.41,
        0.86,
        1.3,
        1.49,
        1.47,
        0.88,
-       3.11,
+       1.25,
        1.16,
        1.22,
        1.38,
-       0.76,
+       3.08,
        1.49,
        1.17,
        1.17,
@@ -21224,22 +21540,25 @@
        0.97,
        0.94,
        1.01,
-       0.93
+       0.93,
+       0.96,
+       0.72,
+       1.4,
+       1.49,
+       0.79,
+       1.26
       ],
       [
-       0.91,
-       1.45,
-       1.42,
        0.86,
        1.3,
        1.46,
        1.51,
        0.9,
-       3.12,
+       1.26,
        1.17,
        1.18,
        1.38,
-       0.77,
+       3.09,
        1.51,
        1.16,
        1.14,
@@ -21250,22 +21569,25 @@
        1.01,
        0.93,
        0.98,
-       0.93
+       0.93,
+       0.95,
+       0.71,
+       1.42,
+       1.52,
+       0.79,
+       1.28
       ],
       [
-       0.92,
-       1.46,
-       1.47,
        0.87,
        1.31,
        1.48,
        1.49,
        0.89,
-       3.12,
+       1.27,
        1.19,
        1.21,
        1.33,
-       0.77,
+       3.09,
        1.46,
        1.16,
        1.12,
@@ -21276,22 +21598,25 @@
        0.99,
        0.9,
        0.97,
-       0.93
+       0.93,
+       0.95,
+       0.69,
+       1.45,
+       1.5,
+       0.76,
+       1.26
       ],
       [
-       0.9,
-       1.43,
-       1.51,
        0.89,
        1.26,
        1.5,
        1.5,
        0.89,
-       3.09,
+       1.23,
        1.19,
        1.22,
        1.33,
-       0.76,
+       3.09,
        1.47,
        1.17,
        1.16,
@@ -21302,12 +21627,15 @@
        0.98,
        0.86,
        0.99,
-       0.93
+       0.93,
+       0.97,
+       0.7,
+       1.5,
+       1.47,
+       0.74,
+       1.26
       ],
       [
-       0.88,
-       1.49,
-       1.48,
        0.86,
        1.27,
        1.49,
@@ -21328,12 +21656,15 @@
        1.01,
        0.86,
        0.95,
-       0.91
+       0.91,
+       0.96,
+       0.7,
+       1.49,
+       1.47,
+       0.74,
+       1.25
       ],
       [
-       0.88,
-       1.51,
-       1.51,
        0.86,
        1.25,
        1.44,
@@ -21354,12 +21685,15 @@
        1.01,
        0.89,
        0.95,
-       0.92
+       0.92,
+       0.96,
+       0.69,
+       1.47,
+       1.43,
+       0.74,
+       1.23
       ],
       [
-       0.91,
-       1.53,
-       1.46,
        0.88,
        1.16,
        1.46,
@@ -21380,12 +21714,15 @@
        1.03,
        0.91,
        0.97,
-       0.91
+       0.91,
+       0.96,
+       0.69,
+       1.44,
+       1.42,
+       0.76,
+       1.23
       ],
       [
-       0.89,
-       1.55,
-       1.44,
        0.86,
        1.19,
        1.42,
@@ -21406,12 +21743,15 @@
        1.04,
        0.92,
        0.98,
-       0.94
+       0.94,
+       0.95,
+       0.71,
+       1.39,
+       1.38,
+       0.74,
+       1.26
       ],
       [
-       0.92,
-       1.54,
-       1.43,
        0.87,
        1.2,
        1.48,
@@ -21432,12 +21772,15 @@
        1.02,
        0.93,
        0.96,
-       0.93
+       0.93,
+       0.96,
+       0.71,
+       1.45,
+       1.41,
+       0.72,
+       1.29
       ],
       [
-       0.93,
-       1.49,
-       1.43,
        0.85,
        1.27,
        1.47,
@@ -21458,12 +21801,15 @@
        1.02,
        0.9,
        0.94,
-       0.93
+       0.93,
+       0.98,
+       0.7,
+       1.43,
+       1.41,
+       0.71,
+       1.27
       ],
       [
-       0.95,
-       1.51,
-       1.38,
        0.84,
        1.23,
        1.45,
@@ -21484,12 +21830,15 @@
        1.04,
        0.92,
        0.91,
-       0.95
+       0.95,
+       0.96,
+       0.69,
+       1.45,
+       1.41,
+       0.74,
+       1.21
       ],
       [
-       0.91,
-       1.47,
-       1.36,
        0.85,
        1.27,
        1.45,
@@ -21510,12 +21859,15 @@
        1.02,
        0.92,
        0.89,
-       0.96
+       0.96,
+       0.98,
+       0.71,
+       1.48,
+       1.45,
+       0.73,
+       1.28
       ],
       [
-       0.92,
-       1.47,
-       1.35,
        0.87,
        1.27,
        1.47,
@@ -21536,12 +21888,15 @@
        1.05,
        0.88,
        0.9,
-       0.91
+       0.91,
+       1.0,
+       0.71,
+       1.46,
+       1.45,
+       0.75,
+       1.26
       ],
       [
-       0.94,
-       1.45,
-       1.34,
        0.84,
        1.27,
        1.49,
@@ -21562,12 +21917,15 @@
        1.04,
        0.86,
        0.89,
-       0.95
+       0.95,
+       0.97,
+       0.69,
+       1.43,
+       1.48,
+       0.75,
+       1.21
       ],
       [
-       0.93,
-       1.47,
-       1.37,
        0.86,
        1.23,
        1.53,
@@ -21588,12 +21946,15 @@
        1.02,
        0.89,
        0.92,
-       0.97
+       0.97,
+       0.95,
+       0.71,
+       1.41,
+       1.47,
+       0.74,
+       1.22
       ],
       [
-       0.91,
-       1.45,
-       1.37,
        0.88,
        1.2,
        1.48,
@@ -21614,12 +21975,15 @@
        1.03,
        0.87,
        0.95,
-       0.96
+       0.96,
+       0.95,
+       0.7,
+       1.44,
+       1.43,
+       0.78,
+       1.2
       ],
       [
-       0.91,
-       1.44,
-       1.42,
        0.9,
        1.21,
        1.51,
@@ -21640,12 +22004,15 @@
        1.02,
        0.91,
        0.95,
-       0.95
+       0.95,
+       0.93,
+       0.72,
+       1.49,
+       1.44,
+       0.77,
+       1.23
       ],
       [
-       0.89,
-       1.41,
-       1.4,
        0.91,
        1.22,
        1.53,
@@ -21666,12 +22033,15 @@
        1.03,
        0.94,
        0.94,
-       0.96
+       0.96,
+       0.94,
+       0.73,
+       1.5,
+       1.48,
+       0.79,
+       1.23
       ],
       [
-       0.9,
-       1.45,
-       1.38,
        0.92,
        1.25,
        1.53,
@@ -21692,12 +22062,15 @@
        1.04,
        0.9,
        0.9,
-       0.95
+       0.95,
+       0.93,
+       0.71,
+       1.47,
+       1.5,
+       0.76,
+       1.22
       ],
       [
-       0.93,
-       1.49,
-       1.42,
        0.92,
        1.28,
        1.49,
@@ -21718,12 +22091,15 @@
        1.01,
        0.88,
        0.95,
-       0.97
+       0.97,
+       0.93,
+       0.7,
+       1.49,
+       1.48,
+       0.76,
+       1.21
       ],
       [
-       0.9,
-       1.49,
-       1.43,
        0.92,
        1.25,
        1.46,
@@ -21744,12 +22120,15 @@
        1.03,
        0.9,
        0.94,
-       0.95
+       0.95,
+       0.93,
+       0.69,
+       1.43,
+       1.44,
+       0.77,
+       1.23
       ],
       [
-       0.86,
-       1.47,
-       1.45,
        0.94,
        1.25,
        1.47,
@@ -21770,12 +22149,15 @@
        1.02,
        0.92,
        0.94,
-       0.96
+       0.96,
+       0.95,
+       0.69,
+       1.42,
+       1.45,
+       0.77,
+       1.22
       ],
       [
-       0.85,
-       1.5,
-       1.46,
        0.94,
        1.25,
        1.49,
@@ -21796,12 +22178,15 @@
        1.01,
        0.9,
        0.97,
-       0.96
+       0.96,
+       0.93,
+       0.68,
+       1.42,
+       1.47,
+       0.75,
+       1.23
       ],
       [
-       0.84,
-       1.45,
-       1.48,
        0.91,
        1.25,
        1.49,
@@ -21822,12 +22207,15 @@
        1.01,
        0.94,
        0.95,
-       0.99
+       0.99,
+       0.95,
+       0.7,
+       1.42,
+       1.47,
+       0.74,
+       1.24
       ],
       [
-       0.85,
-       1.48,
-       1.46,
        0.88,
        1.31,
        1.45,
@@ -21848,12 +22236,15 @@
        0.99,
        0.93,
        0.92,
-       0.98
+       0.98,
+       0.94,
+       0.71,
+       1.4,
+       1.49,
+       0.75,
+       1.23
       ],
       [
-       0.85,
-       1.48,
-       1.44,
        0.89,
        1.3,
        1.46,
@@ -21862,24 +22253,27 @@
        1.24,
        1.14,
        1.2,
-       2.78,
+       1.33,
        0.76,
        1.38,
        1.11,
        1.16,
-       0.84,
+       2.75,
        0.95,
        1.27,
        1.03,
        1.01,
        0.94,
        0.9,
-       0.93
+       0.93,
+       0.92,
+       0.69,
+       1.36,
+       1.45,
+       0.73,
+       1.23
       ],
       [
-       0.84,
-       1.48,
-       1.41,
        0.86,
        1.29,
        1.44,
@@ -21888,24 +22282,27 @@
        1.26,
        1.15,
        1.16,
-       2.78,
+       1.32,
        0.78,
        1.43,
        1.12,
        1.17,
-       0.84,
+       2.75,
        0.96,
        1.28,
        1.04,
        1.02,
        0.91,
        0.88,
-       0.92
+       0.92,
+       0.93,
+       0.7,
+       1.34,
+       1.43,
+       0.72,
+       1.25
       ],
       [
-       0.84,
-       1.43,
-       1.44,
        0.86,
        1.34,
        1.48,
@@ -21914,24 +22311,27 @@
        1.26,
        1.13,
        1.2,
-       2.77,
+       1.32,
        0.79,
        1.42,
        1.14,
        1.14,
-       0.84,
+       2.75,
        0.95,
        1.31,
        1.04,
        1.06,
        0.91,
        0.89,
-       0.94
+       0.94,
+       0.94,
+       0.69,
+       1.34,
+       1.42,
+       0.75,
+       1.25
       ],
       [
-       0.87,
-       1.46,
-       1.44,
        0.87,
        1.32,
        1.45,
@@ -21940,24 +22340,27 @@
        1.3,
        1.14,
        1.24,
-       2.76,
+       1.3,
        0.78,
        1.41,
        1.16,
        1.16,
-       0.84,
+       2.74,
        0.99,
        1.31,
        1.06,
        1.03,
        0.9,
        0.9,
-       0.95
+       0.95,
+       0.96,
+       0.71,
+       1.36,
+       1.42,
+       0.74,
+       1.23
       ],
       [
-       0.86,
-       1.47,
-       1.4,
        0.85,
        1.31,
        1.48,
@@ -21966,24 +22369,27 @@
        1.28,
        1.16,
        1.19,
-       2.78,
+       1.33,
        0.76,
        1.39,
        1.19,
        1.2,
-       0.9,
+       2.81,
        1.0,
        1.26,
        1.06,
        1.04,
        0.92,
        0.92,
-       0.95
+       0.95,
+       0.93,
+       0.7,
+       1.37,
+       1.44,
+       0.74,
+       1.25
       ],
       [
-       0.86,
-       1.47,
-       1.43,
        0.84,
        1.29,
        1.46,
@@ -22004,12 +22410,15 @@
        1.03,
        0.91,
        0.93,
-       0.95
+       0.95,
+       0.94,
+       0.69,
+       1.42,
+       1.46,
+       0.74,
+       1.25
       ],
       [
-       0.9,
-       1.5,
-       1.42,
        0.81,
        1.28,
        1.46,
@@ -22030,12 +22439,15 @@
        0.98,
        0.91,
        0.94,
-       0.95
+       0.95,
+       0.96,
+       0.7,
+       1.49,
+       1.47,
+       0.72,
+       1.26
       ],
       [
-       0.89,
-       1.55,
-       1.4,
        0.84,
        1.3,
        1.46,
@@ -22056,12 +22468,15 @@
        1.0,
        0.95,
        0.92,
-       0.95
+       0.95,
+       0.97,
+       0.72,
+       1.43,
+       1.48,
+       0.73,
+       1.25
       ],
       [
-       0.88,
-       1.52,
-       1.38,
        0.82,
        1.24,
        1.45,
@@ -22082,12 +22497,15 @@
        1.0,
        0.93,
        0.9,
-       0.97
+       0.97,
+       0.95,
+       0.71,
+       1.49,
+       1.48,
+       0.73,
+       1.26
       ],
       [
-       0.88,
-       1.5,
-       1.4,
        0.77,
        1.24,
        1.44,
@@ -22108,22 +22526,25 @@
        1.01,
        0.94,
        0.9,
-       0.97
+       0.97,
+       0.95,
+       0.72,
+       1.45,
+       1.47,
+       0.75,
+       1.26
       ],
       [
-       0.9,
-       1.52,
-       1.38,
        0.76,
        1.22,
        1.44,
        1.42,
        0.88,
-       3.13,
+       1.27,
        1.21,
        1.21,
        1.34,
-       0.74,
+       3.07,
        1.39,
        1.26,
        1.21,
@@ -22134,74 +22555,83 @@
        1.0,
        0.92,
        0.89,
-       0.98
+       0.98,
+       0.96,
+       0.7,
+       1.5,
+       1.44,
+       0.73,
+       1.28
       ],
       [
-       0.94,
-       1.51,
-       1.42,
        0.78,
        1.21,
        1.4,
        1.44,
        0.89,
-       3.1,
+       1.24,
        1.23,
        1.18,
        1.36,
-       0.75,
-       1.38,
-       1.24,
-       1.24,
-       0.91,
-       0.99,
-       1.29,
-       1.08,
-       1.04,
-       0.92,
-       0.91,
-       0.96
-      ],
-      [
-       0.91,
-       1.52,
-       1.46,
-       0.8,
-       1.24,
-       1.46,
-       1.48,
-       0.92,
-       3.12,
-       1.24,
-       1.2,
-       1.35,
-       0.78,
-       1.4,
-       1.25,
-       1.21,
-       0.91,
-       0.97,
-       1.34,
-       1.06,
-       1.03,
-       0.89,
-       0.92,
-       0.96
-      ],
-      [
-       0.93,
-       1.53,
-       1.45,
-       0.8,
-       1.21,
-       1.41,
-       1.48,
-       0.91,
        3.08,
+       1.38,
+       1.24,
+       1.24,
+       0.91,
+       0.99,
+       1.29,
+       1.08,
+       1.04,
+       0.92,
+       0.91,
+       0.96,
+       0.93,
+       0.7,
+       1.49,
+       1.44,
+       0.74,
+       1.3
+      ],
+      [
+       0.8,
+       1.24,
+       1.46,
+       1.48,
+       0.92,
+       1.26,
+       1.24,
+       1.2,
+       1.35,
+       3.11,
+       1.4,
+       1.25,
+       1.21,
+       0.91,
+       0.97,
+       1.34,
+       1.06,
+       1.03,
+       0.89,
+       0.92,
+       0.96,
+       0.93,
+       0.73,
+       1.49,
+       1.5,
+       0.73,
+       1.29
+      ],
+      [
+       0.8,
+       1.21,
+       1.41,
+       1.48,
+       0.91,
+       1.22,
        1.23,
        1.2,
        1.31,
-       0.81,
+       3.14,
        1.42,
        1.25,
        1.22,
@@ -22212,22 +22642,25 @@
        1.04,
        0.9,
        0.91,
-       0.95
+       0.95,
+       0.94,
+       0.72,
+       1.49,
+       1.5,
+       0.76,
+       1.33
       ],
       [
-       0.93,
-       1.54,
-       1.46,
        0.83,
        1.24,
        1.4,
        1.46,
        0.88,
-       3.09,
+       1.23,
        1.23,
        1.22,
        1.32,
-       0.79,
+       3.11,
        1.47,
        1.25,
        1.19,
@@ -22238,12 +22671,15 @@
        1.03,
        0.93,
        0.93,
-       0.94
+       0.94,
+       0.92,
+       0.71,
+       1.45,
+       1.49,
+       0.73,
+       1.32
       ],
       [
-       0.96,
-       1.54,
-       1.44,
        0.84,
        1.25,
        1.41,
@@ -22264,12 +22700,15 @@
        1.04,
        0.91,
        0.94,
-       0.91
+       0.91,
+       0.92,
+       0.71,
+       1.46,
+       1.55,
+       0.74,
+       1.3
       ],
       [
-       0.94,
-       1.56,
-       1.47,
        0.85,
        1.26,
        1.41,
@@ -22290,12 +22729,15 @@
        1.03,
        0.89,
        0.94,
-       0.94
+       0.94,
+       0.92,
+       0.7,
+       1.46,
+       1.47,
+       0.73,
+       1.3
       ],
       [
-       0.91,
-       1.54,
-       1.46,
        0.83,
        1.32,
        1.45,
@@ -22316,12 +22758,15 @@
        1.01,
        0.87,
        0.96,
-       0.94
+       0.94,
+       0.92,
+       0.72,
+       1.47,
+       1.39,
+       0.73,
+       1.34
       ],
       [
-       0.89,
-       1.51,
-       1.45,
        0.82,
        1.33,
        1.43,
@@ -22342,12 +22787,15 @@
        1.02,
        0.86,
        0.98,
-       0.93
+       0.93,
+       0.91,
+       0.71,
+       1.44,
+       1.44,
+       0.74,
+       1.32
       ],
       [
-       0.91,
-       1.53,
-       1.44,
        0.82,
        1.27,
        1.48,
@@ -22368,12 +22816,15 @@
        1.02,
        0.87,
        0.98,
-       0.92
+       0.92,
+       0.91,
+       0.7,
+       1.41,
+       1.44,
+       0.74,
+       1.3
       ],
       [
-       0.89,
-       1.54,
-       1.48,
        0.83,
        1.26,
        1.45,
@@ -22394,12 +22845,15 @@
        1.02,
        0.87,
        0.97,
-       0.89
+       0.89,
+       0.89,
+       0.69,
+       1.41,
+       1.48,
+       0.7,
+       1.36
       ],
       [
-       0.86,
-       1.55,
-       1.51,
        0.85,
        1.25,
        1.49,
@@ -22420,12 +22874,15 @@
        1.06,
        0.87,
        0.96,
-       0.92
+       0.92,
+       0.94,
+       0.66,
+       1.43,
+       1.49,
+       0.71,
+       1.32
       ],
       [
-       0.86,
-       1.53,
-       1.48,
        0.83,
        1.26,
        1.48,
@@ -22446,12 +22903,15 @@
        1.03,
        0.91,
        0.97,
-       0.92
+       0.92,
+       0.91,
+       0.67,
+       1.41,
+       1.46,
+       0.74,
+       1.31
       ],
       [
-       0.87,
-       1.51,
-       1.46,
        0.85,
        1.27,
        1.5,
@@ -22472,12 +22932,15 @@
        1.04,
        0.93,
        0.97,
-       0.96
+       0.96,
+       0.93,
+       0.68,
+       1.38,
+       1.49,
+       0.75,
+       1.32
       ],
       [
-       0.87,
-       1.49,
-       1.43,
        0.86,
        1.28,
        1.48,
@@ -22498,12 +22961,15 @@
        1.03,
        0.88,
        0.96,
-       0.96
+       0.96,
+       0.93,
+       0.71,
+       1.38,
+       1.49,
+       0.79,
+       1.29
       ],
       [
-       0.86,
-       1.48,
-       1.39,
        0.9,
        1.25,
        1.5,
@@ -22524,12 +22990,15 @@
        1.02,
        0.9,
        0.92,
-       1.0
+       1.0,
+       0.91,
+       0.71,
+       1.36,
+       1.43,
+       0.79,
+       1.33
       ],
       [
-       0.86,
-       1.51,
-       1.38,
        0.9,
        1.26,
        1.46,
@@ -22550,12 +23019,15 @@
        1.01,
        0.9,
        0.94,
-       0.98
+       0.98,
+       0.93,
+       0.72,
+       1.4,
+       1.42,
+       0.79,
+       1.29
       ],
       [
-       0.85,
-       1.47,
-       1.37,
        0.88,
        1.29,
        1.46,
@@ -22576,12 +23048,15 @@
        1.01,
        0.91,
        0.97,
-       0.95
+       0.95,
+       0.96,
+       0.72,
+       1.42,
+       1.46,
+       0.81,
+       1.29
       ],
       [
-       0.85,
-       1.44,
-       1.34,
        0.89,
        1.25,
        1.5,
@@ -22602,12 +23077,15 @@
        1.01,
        0.91,
        0.95,
-       0.95
+       0.95,
+       0.94,
+       0.71,
+       1.46,
+       1.5,
+       0.79,
+       1.26
       ],
       [
-       0.89,
-       1.45,
-       1.34,
        0.9,
        1.27,
        1.47,
@@ -22628,12 +23106,15 @@
        1.02,
        0.93,
        0.9,
-       0.93
+       0.93,
+       0.95,
+       0.73,
+       1.44,
+       1.53,
+       0.78,
+       1.31
       ],
       [
-       0.87,
-       1.5,
-       1.36,
        0.9,
        1.25,
        1.4,
@@ -22654,12 +23135,15 @@
        1.05,
        0.92,
        0.93,
-       0.91
+       0.91,
+       0.96,
+       0.71,
+       1.46,
+       1.53,
+       0.77,
+       1.3
       ],
       [
-       0.89,
-       1.48,
-       1.41,
        0.88,
        1.25,
        1.44,
@@ -22680,12 +23164,15 @@
        1.07,
        0.93,
        0.95,
-       0.93
+       0.93,
+       0.96,
+       0.71,
+       1.42,
+       1.53,
+       0.79,
+       1.29
       ],
       [
-       0.92,
-       1.47,
-       1.45,
        0.88,
        1.28,
        1.47,
@@ -22706,12 +23193,15 @@
        1.05,
        0.91,
        0.94,
-       0.95
+       0.95,
+       0.96,
+       0.72,
+       1.39,
+       1.55,
+       0.79,
+       1.28
       ],
       [
-       0.91,
-       1.44,
-       1.41,
        0.87,
        1.27,
        1.45,
@@ -22732,12 +23222,15 @@
        1.07,
        0.92,
        0.92,
-       0.92
+       0.92,
+       0.97,
+       0.73,
+       1.42,
+       1.46,
+       0.77,
+       1.26
       ],
       [
-       0.93,
-       1.44,
-       1.42,
        0.84,
        1.28,
        1.44,
@@ -22758,12 +23251,15 @@
        0.99,
        0.94,
        0.92,
-       0.95
+       0.95,
+       0.95,
+       0.71,
+       1.48,
+       1.43,
+       0.77,
+       1.27
       ],
       [
-       0.93,
-       1.47,
-       1.39,
        0.84,
        1.26,
        1.48,
@@ -22784,12 +23280,15 @@
        1.0,
        0.93,
        0.93,
-       0.92
+       0.92,
+       0.98,
+       0.73,
+       1.51,
+       1.44,
+       0.78,
+       1.27
       ],
       [
-       0.91,
-       1.45,
-       1.41,
        0.83,
        1.34,
        1.48,
@@ -22810,12 +23309,15 @@
        0.99,
        0.92,
        0.94,
-       0.93
+       0.93,
+       0.93,
+       0.74,
+       1.47,
+       1.52,
+       0.78,
+       1.28
       ],
       [
-       0.89,
-       1.4,
-       1.44,
        0.82,
        1.35,
        1.51,
@@ -22836,12 +23338,15 @@
        0.96,
        0.9,
        0.92,
-       0.95
+       0.95,
+       0.91,
+       0.72,
+       1.47,
+       1.49,
+       0.77,
+       1.24
       ],
       [
-       0.88,
-       1.45,
-       1.42,
        0.81,
        1.34,
        1.52,
@@ -22862,12 +23367,15 @@
        0.96,
        0.92,
        0.91,
-       0.96
+       0.96,
+       0.96,
+       0.72,
+       1.46,
+       1.46,
+       0.75,
+       1.23
       ],
       [
-       0.89,
-       1.44,
-       1.38,
        0.83,
        1.27,
        1.48,
@@ -22888,12 +23396,15 @@
        0.97,
        0.91,
        0.92,
-       0.96
+       0.96,
+       0.96,
+       0.68,
+       1.45,
+       1.46,
+       0.75,
+       1.24
       ],
       [
-       0.9,
-       1.46,
-       1.4,
        0.81,
        1.3,
        1.45,
@@ -22902,24 +23413,27 @@
        1.25,
        1.19,
        1.28,
-       2.8,
+       1.34,
        0.78,
        1.48,
        1.22,
        1.19,
-       0.83,
+       2.74,
        0.98,
        1.29,
        1.11,
        0.97,
        0.92,
        0.93,
-       0.93
+       0.93,
+       0.95,
+       0.7,
+       1.44,
+       1.45,
+       0.73,
+       1.24
       ],
       [
-       0.88,
-       1.42,
-       1.4,
        0.82,
        1.32,
        1.47,
@@ -22928,24 +23442,27 @@
        1.24,
        1.22,
        1.29,
-       2.8,
+       1.35,
        0.8,
        1.43,
        1.22,
        1.2,
-       0.8,
+       2.71,
        0.98,
        1.28,
        1.08,
        0.97,
        0.9,
        0.96,
-       0.93
+       0.93,
+       0.95,
+       0.69,
+       1.45,
+       1.46,
+       0.72,
+       1.25
       ],
       [
-       0.87,
-       1.44,
-       1.44,
        0.84,
        1.35,
        1.5,
@@ -22954,24 +23471,27 @@
        1.25,
        1.21,
        1.24,
-       2.86,
+       1.4,
        0.81,
        1.45,
        1.19,
        1.18,
-       0.81,
+       2.72,
        0.96,
        1.28,
        1.11,
        0.98,
        0.9,
        0.97,
-       0.94
+       0.94,
+       0.94,
+       0.69,
+       1.44,
+       1.48,
+       0.73,
+       1.26
       ],
       [
-       0.89,
-       1.46,
-       1.46,
        0.88,
        1.36,
        1.48,
@@ -22980,24 +23500,27 @@
        1.26,
        1.18,
        1.25,
-       2.84,
+       1.38,
        0.83,
        1.51,
        1.17,
        1.14,
-       0.83,
+       2.74,
        0.93,
        1.28,
        1.08,
        0.99,
        0.9,
        0.97,
-       0.96
+       0.96,
+       0.97,
+       0.69,
+       1.47,
+       1.43,
+       0.73,
+       1.25
       ],
       [
-       0.88,
-       1.46,
-       1.51,
        0.86,
        1.32,
        1.47,
@@ -23006,24 +23529,27 @@
        1.27,
        1.16,
        1.26,
-       2.88,
+       1.42,
        0.81,
        1.51,
        1.2,
        1.14,
-       0.83,
+       2.74,
        0.93,
        1.26,
        1.1,
        0.99,
        0.91,
        0.98,
-       0.96
+       0.96,
+       0.96,
+       0.69,
+       1.48,
+       1.45,
+       0.76,
+       1.26
       ],
       [
-       0.9,
-       1.45,
-       1.53,
        0.85,
        1.28,
        1.47,
@@ -23044,22 +23570,25 @@
        0.97,
        0.9,
        0.98,
-       0.96
+       0.96,
+       0.97,
+       0.7,
+       1.48,
+       1.46,
+       0.74,
+       1.26
       ],
       [
-       0.92,
-       1.55,
-       1.47,
        0.9,
        1.28,
        1.46,
        1.52,
        0.92,
-       3.16,
+       1.3,
        1.22,
        1.2,
        1.44,
-       0.8,
+       3.13,
        1.42,
        1.21,
        1.12,
@@ -23070,22 +23599,25 @@
        0.99,
        0.89,
        0.96,
-       0.97
+       0.97,
+       0.95,
+       0.69,
+       1.46,
+       1.45,
+       0.73,
+       1.24
       ],
       [
-       0.91,
-       1.52,
-       1.42,
        0.9,
        1.31,
        1.38,
        1.47,
        0.92,
-       3.14,
+       1.28,
        1.16,
        1.21,
        1.42,
-       0.76,
+       3.09,
        1.43,
        1.24,
        1.13,
@@ -23096,22 +23628,25 @@
        1.0,
        0.88,
        0.98,
-       0.95
+       0.95,
+       0.97,
+       0.67,
+       1.49,
+       1.42,
+       0.73,
+       1.27
       ],
       [
-       0.94,
-       1.55,
-       1.45,
        0.88,
        1.35,
        1.42,
        1.49,
        0.9,
-       3.1,
+       1.24,
        1.2,
        1.18,
        1.42,
-       0.78,
+       3.1,
        1.43,
        1.2,
        1.14,
@@ -23122,22 +23657,25 @@
        1.02,
        0.87,
        0.92,
-       0.96
+       0.96,
+       0.97,
+       0.67,
+       1.5,
+       1.4,
+       0.71,
+       1.25
       ],
       [
-       0.92,
-       1.5,
-       1.47,
        0.85,
        1.31,
        1.41,
        1.48,
        0.9,
-       3.08,
+       1.22,
        1.21,
        1.18,
        1.41,
-       0.77,
+       3.1,
        1.47,
        1.24,
        1.12,
@@ -23148,22 +23686,25 @@
        0.99,
        0.87,
        0.89,
-       0.97
+       0.97,
+       0.95,
+       0.68,
+       1.5,
+       1.42,
+       0.72,
+       1.19
       ],
       [
-       0.89,
-       1.5,
-       1.39,
        0.92,
        1.31,
        1.4,
        1.44,
        0.89,
-       3.08,
+       1.22,
        1.18,
        1.18,
        1.4,
-       0.77,
+       3.09,
        1.45,
        1.25,
        1.17,
@@ -23174,12 +23715,15 @@
        0.97,
        0.87,
        0.91,
-       0.96
+       0.96,
+       0.94,
+       0.67,
+       1.42,
+       1.44,
+       0.74,
+       1.23
       ],
       [
-       0.9,
-       1.47,
-       1.4,
        0.91,
        1.32,
        1.43,
@@ -23200,12 +23744,15 @@
        0.97,
        0.87,
        0.93,
-       0.93
+       0.93,
+       0.94,
+       0.66,
+       1.42,
+       1.44,
+       0.75,
+       1.22
       ],
       [
-       0.9,
-       1.44,
-       1.41,
        0.88,
        1.31,
        1.45,
@@ -23226,12 +23773,15 @@
        0.97,
        0.88,
        0.94,
-       0.96
+       0.96,
+       0.98,
+       0.68,
+       1.37,
+       1.48,
+       0.75,
+       1.26
       ],
       [
-       0.89,
-       1.45,
-       1.41,
        0.89,
        1.31,
        1.41,
@@ -23252,12 +23802,15 @@
        0.99,
        0.86,
        0.94,
-       0.96
+       0.96,
+       0.97,
+       0.69,
+       1.4,
+       1.51,
+       0.78,
+       1.23
       ],
       [
-       0.9,
-       1.45,
-       1.37,
        0.87,
        1.29,
        1.45,
@@ -23278,12 +23831,15 @@
        0.98,
        0.86,
        0.96,
-       0.92
+       0.92,
+       0.99,
+       0.7,
+       1.45,
+       1.54,
+       0.77,
+       1.26
       ],
       [
-       0.92,
-       1.45,
-       1.36,
        0.87,
        1.3,
        1.47,
@@ -23304,12 +23860,15 @@
        1.01,
        0.86,
        0.98,
-       0.91
+       0.91,
+       0.98,
+       0.72,
+       1.37,
+       1.5,
+       0.77,
+       1.28
       ],
       [
-       0.89,
-       1.45,
-       1.38,
        0.88,
        1.26,
        1.43,
@@ -23330,12 +23889,15 @@
        1.02,
        0.89,
        0.97,
-       0.91
+       0.91,
+       0.99,
+       0.71,
+       1.34,
+       1.46,
+       0.77,
+       1.26
       ],
       [
-       0.85,
-       1.46,
-       1.43,
        0.88,
        1.26,
        1.45,
@@ -23356,12 +23918,15 @@
        1.04,
        0.9,
        0.98,
-       0.93
+       0.93,
+       0.96,
+       0.72,
+       1.39,
+       1.43,
+       0.77,
+       1.25
       ],
       [
-       0.86,
-       1.48,
-       1.45,
        0.88,
        1.26,
        1.45,
@@ -23382,12 +23947,15 @@
        1.01,
        0.93,
        0.94,
-       0.94
+       0.94,
+       0.95,
+       0.74,
+       1.45,
+       1.42,
+       0.75,
+       1.25
       ],
       [
-       0.89,
-       1.49,
-       1.44,
        0.86,
        1.27,
        1.39,
@@ -23408,12 +23976,15 @@
        1.0,
        0.92,
        0.93,
-       0.94
+       0.94,
+       0.94,
+       0.72,
+       1.44,
+       1.4,
+       0.76,
+       1.28
       ],
       [
-       0.89,
-       1.48,
-       1.38,
        0.87,
        1.25,
        1.45,
@@ -23434,12 +24005,15 @@
        1.01,
        0.91,
        0.94,
-       0.94
+       0.94,
+       0.96,
+       0.71,
+       1.41,
+       1.43,
+       0.76,
+       1.28
       ],
       [
-       0.9,
-       1.47,
-       1.34,
        0.84,
        1.25,
        1.45,
@@ -23460,12 +24034,15 @@
        0.97,
        0.91,
        0.95,
-       0.94
+       0.94,
+       0.96,
+       0.72,
+       1.41,
+       1.44,
+       0.75,
+       1.26
       ],
       [
-       0.91,
-       1.47,
-       1.41,
        0.85,
        1.25,
        1.46,
@@ -23486,12 +24063,15 @@
        0.98,
        0.88,
        0.97,
-       0.96
+       0.96,
+       0.93,
+       0.7,
+       1.45,
+       1.47,
+       0.75,
+       1.24
       ],
       [
-       0.9,
-       1.47,
-       1.39,
        0.86,
        1.27,
        1.5,
@@ -23512,12 +24092,15 @@
        1.0,
        0.87,
        1.0,
-       1.0
+       1.0,
+       0.94,
+       0.68,
+       1.46,
+       1.49,
+       0.77,
+       1.2
       ],
       [
-       0.87,
-       1.48,
-       1.37,
        0.87,
        1.28,
        1.49,
@@ -23538,12 +24121,15 @@
        0.99,
        0.85,
        0.98,
-       0.99
+       0.99,
+       0.95,
+       0.67,
+       1.5,
+       1.5,
+       0.76,
+       1.21
       ],
       [
-       0.9,
-       1.49,
-       1.36,
        0.87,
        1.3,
        1.48,
@@ -23564,12 +24150,15 @@
        1.01,
        0.86,
        0.98,
-       1.0
+       1.0,
+       0.91,
+       0.67,
+       1.49,
+       1.49,
+       0.75,
+       1.17
       ],
       [
-       0.89,
-       1.48,
-       1.37,
        0.86,
        1.28,
        1.47,
@@ -23590,12 +24179,15 @@
        0.99,
        0.88,
        0.96,
-       1.01
+       1.01,
+       0.94,
+       0.7,
+       1.46,
+       1.48,
+       0.75,
+       1.2
       ],
       [
-       0.91,
-       1.46,
-       1.36,
        0.83,
        1.24,
        1.5,
@@ -23616,12 +24208,15 @@
        1.0,
        0.88,
        0.97,
-       1.0
+       1.0,
+       0.93,
+       0.7,
+       1.46,
+       1.44,
+       0.77,
+       1.24
       ],
       [
-       0.92,
-       1.45,
-       1.4,
        0.85,
        1.23,
        1.48,
@@ -23642,12 +24237,15 @@
        1.0,
        0.88,
        0.95,
-       0.99
+       0.99,
+       0.91,
+       0.7,
+       1.46,
+       1.44,
+       0.77,
+       1.24
       ],
       [
-       0.87,
-       1.43,
-       1.35,
        0.82,
        1.19,
        1.46,
@@ -23668,12 +24266,15 @@
        0.99,
        0.86,
        0.94,
-       0.98
+       0.98,
+       0.91,
+       0.7,
+       1.45,
+       1.47,
+       0.77,
+       1.25
       ],
       [
-       0.84,
-       1.45,
-       1.37,
        0.83,
        1.21,
        1.45,
@@ -23694,12 +24295,15 @@
        1.01,
        0.88,
        0.91,
-       0.97
+       0.97,
+       0.92,
+       0.71,
+       1.47,
+       1.43,
+       0.77,
+       1.24
       ],
       [
-       0.88,
-       1.44,
-       1.38,
        0.85,
        1.25,
        1.44,
@@ -23720,12 +24324,15 @@
        0.98,
        0.87,
        0.93,
-       0.96
+       0.96,
+       0.94,
+       0.7,
+       1.47,
+       1.44,
+       0.73,
+       1.23
       ],
       [
-       0.87,
-       1.49,
-       1.39,
        0.85,
        1.26,
        1.41,
@@ -23746,12 +24353,15 @@
        0.98,
        0.86,
        0.93,
-       0.92
+       0.92,
+       0.98,
+       0.72,
+       1.46,
+       1.44,
+       0.73,
+       1.23
       ],
       [
-       0.85,
-       1.48,
-       1.38,
        0.85,
        1.19,
        1.44,
@@ -23772,12 +24382,15 @@
        0.96,
        0.85,
        0.92,
-       0.89
+       0.89,
+       0.98,
+       0.72,
+       1.44,
+       1.44,
+       0.76,
+       1.23
       ],
       [
-       0.88,
-       1.49,
-       1.43,
        0.84,
        1.23,
        1.42,
@@ -23798,12 +24411,15 @@
        0.99,
        0.85,
        0.96,
-       0.91
+       0.91,
+       0.99,
+       0.69,
+       1.47,
+       1.42,
+       0.75,
+       1.23
       ],
       [
-       0.85,
-       1.46,
-       1.39,
        0.86,
        1.25,
        1.37,
@@ -23824,12 +24440,15 @@
        0.97,
        0.87,
        0.98,
-       0.91
+       0.91,
+       0.98,
+       0.71,
+       1.45,
+       1.47,
+       0.74,
+       1.24
       ],
       [
-       0.87,
-       1.45,
-       1.49,
        0.89,
        1.3,
        1.39,
@@ -23850,12 +24469,15 @@
        0.95,
        0.88,
        0.97,
-       0.94
+       0.94,
+       0.96,
+       0.7,
+       1.41,
+       1.49,
+       0.75,
+       1.23
       ],
       [
-       0.89,
-       1.44,
-       1.47,
        0.86,
        1.3,
        1.38,
@@ -23876,12 +24498,15 @@
        1.01,
        0.88,
        0.91,
-       0.93
+       0.93,
+       0.93,
+       0.66,
+       1.38,
+       1.46,
+       0.73,
+       1.26
       ],
       [
-       0.91,
-       1.43,
-       1.5,
        0.87,
        1.31,
        1.39,
@@ -23902,12 +24527,15 @@
        1.01,
        0.9,
        0.89,
-       0.96
+       0.96,
+       0.95,
+       0.69,
+       1.39,
+       1.48,
+       0.76,
+       1.25
       ],
       [
-       0.92,
-       1.46,
-       1.49,
        0.88,
        1.33,
        1.42,
@@ -23928,12 +24556,15 @@
        1.01,
        0.9,
        0.93,
-       0.94
+       0.94,
+       0.97,
+       0.68,
+       1.42,
+       1.47,
+       0.76,
+       1.25
       ],
       [
-       0.91,
-       1.47,
-       1.47,
        0.84,
        1.28,
        1.43,
@@ -23942,24 +24573,27 @@
        1.26,
        1.16,
        1.19,
-       2.82,
+       1.36,
        0.77,
        1.44,
        1.16,
        1.15,
-       0.86,
+       2.77,
        1.01,
        1.33,
        1.03,
        1.0,
        0.89,
        0.92,
-       0.93
+       0.93,
+       0.94,
+       0.67,
+       1.41,
+       1.5,
+       0.75,
+       1.26
       ],
       [
-       0.92,
-       1.42,
-       1.5,
        0.85,
        1.25,
        1.38,
@@ -23968,112 +24602,124 @@
        1.25,
        1.18,
        1.22,
-       2.81,
+       1.36,
        0.77,
        1.49,
        1.18,
        1.16,
-       0.89,
+       2.8,
        0.97,
        1.31,
        1.0,
        1.01,
        0.91,
        0.92,
-       0.93
+       0.93,
+       0.94,
+       0.67,
+       1.4,
+       1.5,
+       0.73,
+       1.25
       ],
       [
-       0.87,
-       1.44,
-       1.44,
        0.84,
        1.26,
        1.44,
        1.48,
        0.83,
-       3.13,
+       1.27,
        1.19,
        1.21,
-       2.81,
-       0.77,
+       1.35,
+       3.09,
        1.57,
        1.2,
        1.2,
-       0.89,
+       2.79,
        0.98,
        1.29,
        1.0,
        1.02,
        0.88,
        0.9,
-       0.97
+       0.97,
+       0.95,
+       0.69,
+       1.4,
+       1.48,
+       0.72,
+       1.25
       ],
       [
-       0.91,
-       1.46,
-       1.38,
        0.87,
        1.26,
        1.46,
        1.5,
        0.85,
-       3.09,
+       1.23,
        1.18,
        1.2,
-       2.79,
-       0.76,
+       1.34,
+       3.08,
        1.55,
        1.2,
        1.19,
-       0.87,
+       2.78,
        0.99,
        1.3,
        1.04,
        1.0,
        0.86,
        0.89,
-       0.97
+       0.97,
+       0.93,
+       0.71,
+       1.44,
+       1.55,
+       0.74,
+       1.22
       ],
       [
-       0.92,
-       1.45,
-       1.4,
        0.88,
        1.28,
        1.44,
        1.53,
        0.87,
-       3.13,
+       1.27,
        1.15,
        1.17,
-       2.8,
-       0.75,
+       1.35,
+       3.08,
        1.49,
        1.22,
        1.18,
-       0.87,
+       2.78,
        0.94,
        1.29,
        1.04,
        1.0,
        0.86,
        0.95,
-       0.95
+       0.95,
+       0.95,
+       0.68,
+       1.41,
+       1.54,
+       0.74,
+       1.2
       ],
       [
-       0.91,
-       1.46,
-       1.43,
        0.91,
        1.27,
        1.47,
        1.55,
        0.87,
-       3.09,
+       1.23,
        1.18,
        1.21,
        1.37,
-       0.75,
+       3.08,
        1.44,
        1.18,
        1.18,
@@ -24084,22 +24730,25 @@
        0.98,
        0.88,
        0.95,
-       0.96
+       0.96,
+       0.95,
+       0.69,
+       1.45,
+       1.58,
+       0.73,
+       1.22
       ],
       [
-       0.88,
-       1.48,
-       1.41,
        0.93,
        1.24,
        1.45,
        1.57,
        0.87,
-       3.08,
+       1.22,
        1.18,
        1.18,
        1.38,
-       0.74,
+       3.07,
        1.48,
        1.19,
        1.16,
@@ -24110,12 +24759,15 @@
        0.99,
        0.89,
        0.94,
-       0.95
+       0.95,
+       0.95,
+       0.73,
+       1.47,
+       1.54,
+       0.77,
+       1.25
       ],
       [
-       0.86,
-       1.48,
-       1.43,
        0.91,
        1.26,
        1.44,
@@ -24136,12 +24788,15 @@
        1.0,
        0.92,
        0.93,
-       0.92
+       0.92,
+       0.99,
+       0.73,
+       1.41,
+       1.53,
+       0.77,
+       1.24
       ],
       [
-       0.88,
-       1.45,
-       1.43,
        0.89,
        1.27,
        1.48,
@@ -24162,12 +24817,15 @@
        0.99,
        0.91,
        0.97,
-       0.93
+       0.93,
+       0.98,
+       0.72,
+       1.43,
+       1.5,
+       0.77,
+       1.25
       ],
       [
-       0.89,
-       1.42,
-       1.42,
        0.89,
        1.23,
        1.49,
@@ -24188,12 +24846,15 @@
        1.0,
        0.94,
        0.94,
-       0.91
+       0.91,
+       0.93,
+       0.73,
+       1.42,
+       1.46,
+       0.73,
+       1.26
       ],
       [
-       0.87,
-       1.41,
-       1.37,
        0.89,
        1.21,
        1.46,
@@ -24214,12 +24875,15 @@
        0.99,
        0.93,
        0.93,
-       0.94
+       0.94,
+       0.95,
+       0.73,
+       1.48,
+       1.5,
+       0.74,
+       1.22
       ],
       [
-       0.85,
-       1.47,
-       1.39,
        0.88,
        1.23,
        1.48,
@@ -24240,12 +24904,15 @@
        1.0,
        0.92,
        0.92,
-       0.92
+       0.92,
+       0.97,
+       0.72,
+       1.46,
+       1.53,
+       0.76,
+       1.24
       ],
       [
-       0.91,
-       1.48,
-       1.38,
        0.89,
        1.28,
        1.53,
@@ -24266,12 +24933,15 @@
        1.02,
        0.89,
        0.91,
-       0.92
+       0.92,
+       0.92,
+       0.73,
+       1.46,
+       1.49,
+       0.77,
+       1.24
       ],
       [
-       0.91,
-       1.49,
-       1.43,
        0.89,
        1.22,
        1.47,
@@ -24292,12 +24962,15 @@
        1.02,
        0.9,
        0.93,
-       0.89
+       0.89,
+       0.9,
+       0.74,
+       1.46,
+       1.48,
+       0.76,
+       1.27
       ],
       [
-       0.86,
-       1.48,
-       1.4,
        0.86,
        1.24,
        1.49,
@@ -24318,12 +24991,15 @@
        0.99,
        0.87,
        0.94,
-       0.93
+       0.93,
+       0.91,
+       0.73,
+       1.48,
+       1.46,
+       0.75,
+       1.28
       ],
       [
-       0.87,
-       1.41,
-       1.43,
        0.87,
        1.24,
        1.43,
@@ -24344,12 +25020,15 @@
        1.0,
        0.88,
        0.91,
-       0.93
+       0.93,
+       0.92,
+       0.73,
+       1.44,
+       1.51,
+       0.74,
+       1.25
       ],
       [
-       0.87,
-       1.45,
-       1.45,
        0.85,
        1.29,
        1.44,
@@ -24370,12 +25049,15 @@
        1.02,
        0.88,
        0.91,
-       0.94
+       0.94,
+       0.93,
+       0.72,
+       1.43,
+       1.47,
+       0.74,
+       1.28
       ],
       [
-       0.88,
-       1.48,
-       1.44,
        0.86,
        1.3,
        1.47,
@@ -24396,12 +25078,15 @@
        1.02,
        0.89,
        0.94,
-       0.94
+       0.94,
+       0.94,
+       0.71,
+       1.36,
+       1.5,
+       0.73,
+       1.25
       ],
       [
-       0.9,
-       1.45,
-       1.45,
        0.85,
        1.28,
        1.44,
@@ -24422,12 +25107,15 @@
        0.97,
        0.85,
        0.91,
-       0.92
+       0.92,
+       0.93,
+       0.69,
+       1.4,
+       1.49,
+       0.74,
+       1.23
       ],
       [
-       0.87,
-       1.45,
-       1.41,
        0.87,
        1.31,
        1.47,
@@ -24448,12 +25136,15 @@
        0.97,
        0.84,
        0.91,
-       0.89
+       0.89,
+       0.96,
+       0.68,
+       1.39,
+       1.47,
+       0.75,
+       1.27
       ],
       [
-       0.87,
-       1.44,
-       1.35,
        0.86,
        1.28,
        1.45,
@@ -24474,12 +25165,15 @@
        0.99,
        0.88,
        0.89,
-       0.91
+       0.91,
+       0.95,
+       0.7,
+       1.38,
+       1.49,
+       0.72,
+       1.25
       ],
       [
-       0.9,
-       1.5,
-       1.35,
        0.85,
        1.32,
        1.44,
@@ -24500,12 +25194,15 @@
        0.97,
        0.9,
        0.9,
-       0.89
+       0.89,
+       0.93,
+       0.71,
+       1.39,
+       1.49,
+       0.69,
+       1.27
       ],
       [
-       0.88,
-       1.47,
-       1.37,
        0.88,
        1.31,
        1.47,
@@ -24526,12 +25223,15 @@
        0.95,
        0.9,
        0.94,
-       0.93
+       0.93,
+       0.93,
+       0.7,
+       1.42,
+       1.5,
+       0.73,
+       1.27
       ],
       [
-       0.93,
-       1.47,
-       1.37,
        0.9,
        1.3,
        1.47,
@@ -24552,12 +25252,15 @@
        0.94,
        0.88,
        0.95,
-       0.92
+       0.92,
+       0.94,
+       0.72,
+       1.44,
+       1.47,
+       0.74,
+       1.27
       ],
       [
-       0.91,
-       1.47,
-       1.37,
        0.88,
        1.27,
        1.47,
@@ -24578,12 +25281,15 @@
        0.98,
        0.91,
        0.97,
-       0.91
+       0.91,
+       0.97,
+       0.71,
+       1.45,
+       1.53,
+       0.77,
+       1.3
       ],
       [
-       0.92,
-       1.44,
-       1.35,
        0.85,
        1.23,
        1.41,
@@ -24604,12 +25310,15 @@
        0.97,
        0.92,
        0.95,
-       0.91
+       0.91,
+       0.95,
+       0.7,
+       1.41,
+       1.46,
+       0.75,
+       1.28
       ],
       [
-       0.91,
-       1.42,
-       1.4,
        0.82,
        1.24,
        1.42,
@@ -24630,12 +25339,15 @@
        0.98,
        0.9,
        0.94,
-       0.91
+       0.91,
+       0.93,
+       0.69,
+       1.41,
+       1.46,
+       0.74,
+       1.28
       ],
       [
-       0.89,
-       1.43,
-       1.4,
        0.87,
        1.25,
        1.41,
@@ -24656,12 +25368,15 @@
        1.02,
        0.91,
        0.92,
-       0.91
+       0.91,
+       0.94,
+       0.69,
+       1.44,
+       1.47,
+       0.74,
+       1.3
       ],
       [
-       0.88,
-       1.43,
-       1.42,
        0.85,
        1.28,
        1.39,
@@ -24682,12 +25397,15 @@
        1.0,
        0.95,
        0.93,
-       0.93
+       0.93,
+       0.91,
+       0.69,
+       1.43,
+       1.45,
+       0.74,
+       1.33
       ],
       [
-       0.9,
-       1.42,
-       1.42,
        0.86,
        1.21,
        1.35,
@@ -24708,12 +25426,15 @@
        0.99,
        0.92,
        0.92,
-       0.93
+       0.93,
+       0.94,
+       0.71,
+       1.39,
+       1.4,
+       0.76,
+       1.27
       ],
       [
-       0.93,
-       1.41,
-       1.44,
        0.87,
        1.22,
        1.41,
@@ -24734,12 +25455,15 @@
        0.96,
        0.95,
        0.92,
-       0.93
+       0.93,
+       0.94,
+       0.7,
+       1.37,
+       1.44,
+       0.77,
+       1.24
       ],
       [
-       0.92,
-       1.48,
-       1.39,
        0.9,
        1.22,
        1.41,
@@ -24760,12 +25484,15 @@
        1.0,
        0.94,
        0.92,
-       0.94
+       0.94,
+       0.92,
+       0.7,
+       1.36,
+       1.47,
+       0.79,
+       1.21
       ],
       [
-       0.88,
-       1.49,
-       1.4,
        0.91,
        1.26,
        1.4,
@@ -24786,12 +25513,15 @@
        1.0,
        0.93,
        0.94,
-       0.93
+       0.93,
+       0.92,
+       0.71,
+       1.36,
+       1.51,
+       0.78,
+       1.24
       ],
       [
-       0.88,
-       1.45,
-       1.39,
        0.89,
        1.28,
        1.4,
@@ -24812,12 +25542,15 @@
        1.02,
        0.96,
        0.95,
-       0.94
+       0.94,
+       0.93,
+       0.72,
+       1.38,
+       1.45,
+       0.75,
+       1.22
       ],
       [
-       0.87,
-       1.45,
-       1.44,
        0.86,
        1.28,
        1.44,
@@ -24838,12 +25571,15 @@
        1.03,
        0.91,
        0.97,
-       0.95
+       0.95,
+       0.95,
+       0.74,
+       1.38,
+       1.46,
+       0.73,
+       1.23
       ],
       [
-       0.84,
-       1.44,
-       1.41,
        0.85,
        1.25,
        1.47,
@@ -24864,12 +25600,15 @@
        1.04,
        0.92,
        0.95,
-       0.94
+       0.94,
+       0.91,
+       0.74,
+       1.37,
+       1.44,
+       0.74,
+       1.25
       ],
       [
-       0.85,
-       1.45,
-       1.44,
        0.88,
        1.23,
        1.45,
@@ -24890,12 +25629,15 @@
        1.02,
        0.93,
        1.0,
-       0.97
+       0.97,
+       0.92,
+       0.73,
+       1.36,
+       1.43,
+       0.75,
+       1.25
       ],
       [
-       0.86,
-       1.45,
-       1.46,
        0.86,
        1.23,
        1.43,
@@ -24916,22 +25658,25 @@
        1.02,
        0.91,
        1.0,
-       0.94
+       0.94,
+       0.95,
+       0.73,
+       1.39,
+       1.38,
+       0.73,
+       1.21
       ],
       [
-       0.85,
-       1.49,
-       1.43,
        0.85,
        1.27,
        1.42,
        1.56,
        0.91,
-       3.12,
+       1.26,
        1.14,
        1.23,
        1.37,
-       0.76,
+       3.09,
        1.42,
        1.14,
        1.18,
@@ -24942,22 +25687,25 @@
        1.0,
        0.9,
        0.95,
-       0.97
+       0.97,
+       0.94,
+       0.72,
+       1.38,
+       1.41,
+       0.74,
+       1.24
       ],
       [
-       0.85,
-       1.46,
-       1.43,
        0.87,
        1.25,
        1.44,
        1.47,
        0.94,
-       3.1,
+       1.24,
        1.15,
        1.21,
        1.39,
-       0.77,
+       3.1,
        1.41,
        1.13,
        1.18,
@@ -24968,90 +25716,102 @@
        0.99,
        0.89,
        0.94,
-       0.97
+       0.97,
+       1.01,
+       0.71,
+       1.36,
+       1.41,
+       0.74,
+       1.24
       ],
       [
-       0.87,
-       1.48,
-       1.44,
        0.88,
        1.26,
        1.48,
        1.47,
        0.94,
-       3.11,
+       1.25,
        1.11,
        1.21,
-       2.79,
-       0.77,
+       1.33,
+       3.1,
        1.44,
        1.13,
        1.17,
-       0.9,
+       2.81,
        0.98,
        1.28,
        1.07,
        0.98,
        0.92,
        0.96,
-       0.97
+       0.97,
+       1.01,
+       0.7,
+       1.4,
+       1.42,
+       0.75,
+       1.28
       ],
       [
-       0.87,
-       1.47,
-       1.46,
        0.87,
        1.28,
        1.52,
        1.45,
        0.93,
-       3.15,
+       1.29,
        1.12,
        1.23,
-       2.75,
-       0.75,
+       1.3,
+       3.07,
        1.49,
        1.1,
        1.14,
-       0.9,
+       2.81,
        0.95,
        1.31,
        1.08,
        0.98,
        0.92,
        0.94,
-       0.92
+       0.92,
+       1.04,
+       0.69,
+       1.41,
+       1.4,
+       0.76,
+       1.27
       ],
       [
-       0.89,
-       1.44,
-       1.47,
        0.87,
        1.26,
        1.45,
        1.5,
        0.93,
-       3.13,
+       1.27,
        1.16,
        1.25,
-       2.8,
-       0.77,
+       1.34,
+       3.1,
        1.41,
        1.13,
        1.12,
-       0.9,
+       2.81,
        0.98,
        1.26,
        1.06,
        1.0,
        0.9,
        0.92,
-       0.91
+       0.91,
+       1.03,
+       0.67,
+       1.43,
+       1.36,
+       0.77,
+       1.22
       ],
       [
-       0.87,
-       1.44,
-       1.49,
        0.88,
        1.29,
        1.45,
@@ -25060,24 +25820,27 @@
        1.27,
        1.12,
        1.24,
-       2.81,
+       1.35,
        0.78,
        1.45,
        1.09,
        1.16,
-       0.92,
+       2.83,
        0.98,
        1.23,
        1.04,
        0.97,
        0.87,
        0.95,
-       0.9
+       0.9,
+       1.01,
+       0.67,
+       1.37,
+       1.43,
+       0.8,
+       1.21
       ],
       [
-       0.89,
-       1.45,
-       1.45,
        0.86,
        1.29,
        1.45,
@@ -25086,24 +25849,27 @@
        1.27,
        1.13,
        1.25,
-       2.8,
+       1.34,
        0.77,
        1.41,
        1.11,
        1.18,
-       0.93,
+       2.84,
        0.98,
        1.22,
        1.04,
        0.95,
        0.88,
        0.97,
-       0.91
+       0.91,
+       1.0,
+       0.66,
+       1.38,
+       1.42,
+       0.81,
+       1.22
       ],
       [
-       0.9,
-       1.46,
-       1.47,
        0.88,
        1.34,
        1.42,
@@ -25124,12 +25890,15 @@
        0.97,
        0.9,
        0.95,
-       0.93
+       0.93,
+       0.98,
+       0.66,
+       1.4,
+       1.45,
+       0.81,
+       1.22
       ],
       [
-       0.89,
-       1.42,
-       1.46,
        0.85,
        1.32,
        1.43,
@@ -25150,12 +25919,15 @@
        0.96,
        0.94,
        0.95,
-       0.94
+       0.94,
+       0.96,
+       0.66,
+       1.32,
+       1.43,
+       0.77,
+       1.19
       ],
       [
-       0.89,
-       1.42,
-       1.47,
        0.86,
        1.33,
        1.43,
@@ -25176,12 +25948,15 @@
        0.98,
        0.92,
        0.94,
-       0.96
+       0.96,
+       0.96,
+       0.67,
+       1.35,
+       1.47,
+       0.76,
+       1.18
       ],
       [
-       0.87,
-       1.4,
-       1.45,
        0.88,
        1.33,
        1.42,
@@ -25202,12 +25977,15 @@
        0.98,
        0.91,
        0.93,
-       0.97
+       0.97,
+       0.97,
+       0.67,
+       1.4,
+       1.44,
+       0.75,
+       1.25
       ],
       [
-       0.9,
-       1.37,
-       1.44,
        0.89,
        1.3,
        1.4,
@@ -25228,12 +26006,15 @@
        0.95,
        0.9,
        0.93,
-       0.95
+       0.95,
+       0.91,
+       0.7,
+       1.39,
+       1.46,
+       0.72,
+       1.26
       ],
       [
-       0.89,
-       1.4,
-       1.4,
        0.88,
        1.32,
        1.4,
@@ -25254,12 +26035,15 @@
        0.93,
        0.88,
        0.93,
-       0.97
+       0.97,
+       0.93,
+       0.69,
+       1.39,
+       1.45,
+       0.75,
+       1.21
       ],
       [
-       0.86,
-       1.39,
-       1.4,
        0.89,
        1.3,
        1.44,
@@ -25280,12 +26064,15 @@
        0.96,
        0.88,
        0.91,
-       0.96
+       0.96,
+       0.95,
+       0.69,
+       1.4,
+       1.45,
+       0.75,
+       1.24
       ],
       [
-       0.87,
-       1.39,
-       1.45,
        0.88,
        1.29,
        1.46,
@@ -25306,12 +26093,15 @@
        0.99,
        0.87,
        0.92,
-       0.94
+       0.94,
+       0.98,
+       0.71,
+       1.41,
+       1.47,
+       0.75,
+       1.21
       ],
       [
-       0.86,
-       1.32,
-       1.46,
        0.87,
        1.31,
        1.43,
@@ -25332,12 +26122,15 @@
        1.0,
        0.86,
        0.91,
-       0.95
+       0.95,
+       0.96,
+       0.72,
+       1.43,
+       1.43,
+       0.74,
+       1.17
       ],
       [
-       0.85,
-       1.33,
-       1.43,
        0.87,
        1.33,
        1.42,
@@ -25358,12 +26151,15 @@
        1.01,
        0.89,
        0.9,
-       0.95
+       0.95,
+       0.93,
+       0.7,
+       1.45,
+       1.46,
+       0.72,
+       1.16
       ],
       [
-       0.87,
-       1.37,
-       1.43,
        0.88,
        1.25,
        1.45,
@@ -25384,12 +26180,15 @@
        0.97,
        0.88,
        0.92,
-       0.92
+       0.92,
+       0.93,
+       0.71,
+       1.45,
+       1.43,
+       0.7,
+       1.17
       ],
       [
-       0.85,
-       1.4,
-       1.39,
        0.86,
        1.25,
        1.43,
@@ -25410,12 +26209,15 @@
        1.0,
        0.9,
        0.94,
-       0.91
+       0.91,
+       0.9,
+       0.68,
+       1.42,
+       1.42,
+       0.7,
+       1.22
       ],
       [
-       0.86,
-       1.43,
-       1.38,
        0.87,
        1.27,
        1.44,
@@ -25436,7 +26238,13 @@
        1.0,
        0.89,
        0.93,
-       0.97
+       0.97,
+       0.93,
+       0.7,
+       1.4,
+       1.39,
+       0.7,
+       1.21
       ]
      ]
     },
@@ -25449,15 +26257,18 @@
       "edvard_grieg",
       "ekofisk",
       "elgin_franklin",
+      "frigg",
       "gjoa",
       "gudrun",
       "gullfaks",
       "heidrun",
+      "irpa",
       "johan_sverdrup",
       "k13a",
       "kvitebjorn",
       "l10a",
       "norne",
+      "odin",
       "ormen_lange",
       "oseberg",
       "sleipner",
@@ -25492,7 +26303,10 @@
        0.78,
        1.21,
        0.79,
-       0.42
+       0.42,
+       0.56,
+       1.2,
+       1.12
       ],
       [
        1.01,
@@ -25518,7 +26332,10 @@
        0.77,
        1.19,
        0.8,
-       0.42
+       0.42,
+       0.55,
+       1.17,
+       1.08
       ],
       [
        4.6,
@@ -25544,7 +26361,10 @@
        0.78,
        1.2,
        0.8,
-       0.43
+       0.43,
+       0.56,
+       1.18,
+       1.07
       ],
       [
        4.57,
@@ -25570,7 +26390,10 @@
        0.8,
        1.18,
        0.8,
-       0.44
+       0.44,
+       0.59,
+       1.17,
+       1.09
       ],
       [
        4.6,
@@ -25596,7 +26419,10 @@
        0.79,
        1.17,
        0.77,
-       0.43
+       0.43,
+       0.58,
+       1.15,
+       1.16
       ],
       [
        4.54,
@@ -25622,7 +26448,10 @@
        0.79,
        1.19,
        0.79,
-       0.42
+       0.42,
+       0.6,
+       1.14,
+       1.11
       ],
       [
        0.94,
@@ -25648,7 +26477,10 @@
        0.8,
        1.15,
        0.79,
-       0.42
+       0.42,
+       0.6,
+       1.15,
+       1.12
       ],
       [
        1.0,
@@ -25674,7 +26506,10 @@
        0.78,
        1.15,
        0.81,
-       0.43
+       0.43,
+       0.61,
+       1.16,
+       1.16
       ],
       [
        1.03,
@@ -25700,7 +26535,10 @@
        0.79,
        1.14,
        0.81,
-       0.43
+       0.43,
+       0.6,
+       1.14,
+       1.19
       ],
       [
        1.03,
@@ -25726,7 +26564,10 @@
        0.79,
        1.15,
        0.77,
-       0.42
+       0.42,
+       0.58,
+       1.19,
+       1.17
       ],
       [
        1.07,
@@ -25752,7 +26593,10 @@
        0.79,
        1.19,
        0.77,
-       0.43
+       0.43,
+       0.58,
+       1.2,
+       1.19
       ],
       [
        1.03,
@@ -25778,7 +26622,10 @@
        0.79,
        1.2,
        0.79,
-       0.43
+       0.43,
+       0.6,
+       1.22,
+       1.15
       ],
       [
        1.04,
@@ -25804,7 +26651,10 @@
        0.79,
        1.21,
        0.8,
-       0.44
+       0.44,
+       0.59,
+       1.24,
+       1.14
       ],
       [
        1.01,
@@ -25830,7 +26680,10 @@
        0.79,
        1.17,
        0.79,
-       0.44
+       0.44,
+       0.61,
+       1.22,
+       1.12
       ],
       [
        1.03,
@@ -25854,9 +26707,12 @@
        0.6,
        0.74,
        0.81,
-       3.93,
+       1.21,
        0.8,
-       0.44
+       0.44,
+       3.93,
+       1.19,
+       1.13
       ],
       [
        0.99,
@@ -25880,9 +26736,12 @@
        0.57,
        0.73,
        0.8,
-       3.92,
+       1.2,
        0.78,
-       0.44
+       0.44,
+       3.94,
+       1.2,
+       1.09
       ],
       [
        1.0,
@@ -25906,9 +26765,12 @@
        0.57,
        0.75,
        0.82,
-       3.88,
+       1.16,
        0.79,
-       0.43
+       0.43,
+       3.92,
+       1.17,
+       1.07
       ],
       [
        1.0,
@@ -25932,9 +26794,12 @@
        0.59,
        0.75,
        0.81,
-       3.9,
+       1.19,
        0.77,
-       0.44
+       0.44,
+       3.92,
+       1.17,
+       1.06
       ],
       [
        1.02,
@@ -25958,9 +26823,12 @@
        0.57,
        0.75,
        0.82,
-       3.9,
+       1.19,
        0.75,
-       0.43
+       0.43,
+       3.94,
+       1.16,
+       1.05
       ],
       [
        1.05,
@@ -25984,9 +26852,12 @@
        0.58,
        0.73,
        0.82,
-       3.9,
+       1.18,
        0.78,
-       0.42
+       0.42,
+       3.93,
+       1.17,
+       1.08
       ],
       [
        1.02,
@@ -26012,7 +26883,10 @@
        0.83,
        1.21,
        0.78,
-       0.43
+       0.43,
+       0.6,
+       1.15,
+       1.08
       ],
       [
        1.02,
@@ -26038,7 +26912,10 @@
        0.82,
        1.21,
        0.79,
-       0.42
+       0.42,
+       0.6,
+       1.14,
+       1.12
       ],
       [
        1.02,
@@ -26064,7 +26941,10 @@
        0.84,
        1.19,
        0.79,
-       0.44
+       0.44,
+       0.59,
+       1.12,
+       1.1
       ],
       [
        1.03,
@@ -26090,7 +26970,10 @@
        0.83,
        1.23,
        0.8,
-       0.43
+       0.43,
+       0.59,
+       1.15,
+       1.08
       ],
       [
        1.03,
@@ -26116,7 +26999,10 @@
        0.83,
        1.24,
        0.78,
-       0.44
+       0.44,
+       0.61,
+       1.19,
+       1.12
       ],
       [
        1.08,
@@ -26142,7 +27028,10 @@
        0.84,
        1.19,
        0.76,
-       0.43
+       0.43,
+       0.59,
+       1.18,
+       1.13
       ],
       [
        1.06,
@@ -26168,7 +27057,10 @@
        0.82,
        1.2,
        0.79,
-       0.42
+       0.42,
+       0.57,
+       1.17,
+       1.14
       ],
       [
        1.08,
@@ -26194,7 +27086,10 @@
        0.79,
        1.18,
        0.79,
-       0.44
+       0.44,
+       0.56,
+       1.19,
+       1.15
       ],
       [
        1.06,
@@ -26220,7 +27115,10 @@
        0.83,
        1.21,
        0.8,
-       0.43
+       0.43,
+       0.56,
+       1.16,
+       1.16
       ],
       [
        1.07,
@@ -26246,7 +27144,10 @@
        0.83,
        1.18,
        0.78,
-       0.43
+       0.43,
+       0.56,
+       1.17,
+       1.15
       ],
       [
        1.06,
@@ -26272,7 +27173,10 @@
        0.82,
        1.2,
        0.77,
-       0.42
+       0.42,
+       0.56,
+       1.18,
+       1.14
       ],
       [
        1.09,
@@ -26298,7 +27202,10 @@
        0.8,
        1.23,
        0.8,
-       0.42
+       0.42,
+       0.56,
+       1.18,
+       1.12
       ],
       [
        4.62,
@@ -26324,7 +27231,10 @@
        0.77,
        1.21,
        0.82,
-       0.42
+       0.42,
+       0.56,
+       1.14,
+       1.13
       ],
       [
        4.61,
@@ -26350,7 +27260,10 @@
        0.81,
        1.2,
        0.79,
-       0.42
+       0.42,
+       0.58,
+       1.16,
+       1.13
       ],
       [
        4.61,
@@ -26376,7 +27289,10 @@
        0.8,
        1.23,
        0.8,
-       0.42
+       0.42,
+       0.57,
+       1.17,
+       1.1
       ],
       [
        4.6,
@@ -26402,7 +27318,10 @@
        0.8,
        1.23,
        0.83,
-       0.42
+       0.42,
+       0.57,
+       1.17,
+       1.13
       ],
       [
        1.07,
@@ -26428,7 +27347,10 @@
        0.81,
        1.2,
        0.82,
-       0.43
+       0.43,
+       0.6,
+       1.19,
+       1.12
       ],
       [
        1.02,
@@ -26454,7 +27376,10 @@
        0.81,
        1.18,
        0.79,
-       0.42
+       0.42,
+       0.59,
+       1.23,
+       1.11
       ],
       [
        1.03,
@@ -26480,7 +27405,10 @@
        0.81,
        1.18,
        0.76,
-       0.42
+       0.42,
+       0.58,
+       1.21,
+       1.09
       ],
       [
        1.03,
@@ -26506,7 +27434,10 @@
        0.81,
        1.17,
        0.77,
-       0.4
+       0.4,
+       0.58,
+       1.19,
+       1.11
       ],
       [
        1.03,
@@ -26532,7 +27463,10 @@
        0.8,
        1.17,
        0.76,
-       0.4
+       0.4,
+       0.59,
+       1.21,
+       1.09
       ],
       [
        1.01,
@@ -26558,7 +27492,10 @@
        0.81,
        1.16,
        0.77,
-       0.42
+       0.42,
+       0.62,
+       1.2,
+       1.12
       ],
       [
        0.98,
@@ -26584,7 +27521,10 @@
        0.81,
        1.17,
        0.75,
-       0.43
+       0.43,
+       0.6,
+       1.21,
+       1.15
       ],
       [
        1.0,
@@ -26610,7 +27550,10 @@
        0.83,
        1.16,
        0.75,
-       0.44
+       0.44,
+       0.61,
+       1.22,
+       1.14
       ],
       [
        1.01,
@@ -26636,7 +27579,10 @@
        0.86,
        1.18,
        0.76,
-       0.43
+       0.43,
+       0.61,
+       1.23,
+       1.15
       ],
       [
        1.0,
@@ -26662,7 +27608,10 @@
        0.82,
        1.17,
        0.78,
-       0.44
+       0.44,
+       0.63,
+       1.23,
+       1.14
       ],
       [
        1.03,
@@ -26688,7 +27637,10 @@
        0.8,
        1.17,
        0.78,
-       0.44
+       0.44,
+       0.62,
+       1.24,
+       1.16
       ],
       [
        1.0,
@@ -26714,7 +27666,10 @@
        0.8,
        1.18,
        0.78,
-       0.43
+       0.43,
+       0.6,
+       1.22,
+       1.15
       ],
       [
        1.0,
@@ -26740,7 +27695,10 @@
        0.8,
        1.17,
        0.77,
-       0.42
+       0.42,
+       0.59,
+       1.2,
+       1.14
       ],
       [
        1.01,
@@ -26766,7 +27724,10 @@
        0.81,
        1.14,
        0.78,
-       0.42
+       0.42,
+       0.6,
+       1.22,
+       1.13
       ],
       [
        1.03,
@@ -26792,7 +27753,10 @@
        0.82,
        1.12,
        0.78,
-       0.41
+       0.41,
+       0.59,
+       1.23,
+       1.17
       ],
       [
        1.03,
@@ -26818,7 +27782,10 @@
        0.79,
        1.11,
        0.77,
-       0.4
+       0.4,
+       0.57,
+       1.23,
+       1.19
       ],
       [
        1.02,
@@ -26844,7 +27811,10 @@
        0.77,
        1.15,
        0.78,
-       0.42
+       0.42,
+       0.57,
+       1.22,
+       1.17
       ],
       [
        1.1,
@@ -26870,7 +27840,10 @@
        0.77,
        1.17,
        0.77,
-       0.43
+       0.43,
+       0.57,
+       1.2,
+       1.15
       ],
       [
        1.1,
@@ -26896,7 +27869,10 @@
        0.77,
        1.18,
        0.78,
-       0.42
+       0.42,
+       0.57,
+       1.18,
+       1.13
       ],
       [
        1.11,
@@ -26922,7 +27898,10 @@
        0.78,
        1.18,
        0.81,
-       0.41
+       0.41,
+       0.57,
+       1.17,
+       1.1
       ],
       [
        1.09,
@@ -26948,7 +27927,10 @@
        0.79,
        1.18,
        0.78,
-       0.43
+       0.43,
+       0.57,
+       1.2,
+       1.09
       ],
       [
        1.06,
@@ -26974,7 +27956,10 @@
        0.78,
        1.21,
        0.78,
-       0.42
+       0.42,
+       0.56,
+       1.17,
+       1.08
       ],
       [
        1.07,
@@ -27000,7 +27985,10 @@
        0.79,
        1.21,
        0.76,
-       0.41
+       0.41,
+       0.57,
+       1.15,
+       1.06
       ],
       [
        1.09,
@@ -27026,7 +28014,10 @@
        0.81,
        1.16,
        0.76,
-       0.41
+       0.41,
+       0.59,
+       1.15,
+       1.06
       ],
       [
        1.06,
@@ -27052,7 +28043,10 @@
        0.8,
        1.14,
        0.75,
-       0.4
+       0.4,
+       0.58,
+       1.2,
+       1.07
       ],
       [
        1.08,
@@ -27078,7 +28072,10 @@
        0.81,
        1.15,
        0.75,
-       0.41
+       0.41,
+       0.59,
+       1.17,
+       1.11
       ],
       [
        4.64,
@@ -27102,9 +28099,12 @@
        0.58,
        0.77,
        0.79,
-       3.88,
+       1.17,
        0.77,
-       0.42
+       0.42,
+       3.92,
+       1.17,
+       1.14
       ],
       [
        4.65,
@@ -27128,9 +28128,12 @@
        0.6,
        0.77,
        0.77,
-       3.89,
+       1.17,
        0.76,
-       0.42
+       0.42,
+       3.92,
+       1.15,
+       1.11
       ],
       [
        4.66,
@@ -27154,9 +28157,12 @@
        0.58,
        0.74,
        0.77,
-       3.86,
+       1.15,
        0.77,
-       0.42
+       0.42,
+       3.93,
+       1.15,
+       1.12
       ],
       [
        4.66,
@@ -27180,9 +28186,12 @@
        0.58,
        0.73,
        0.78,
-       3.84,
+       1.12,
        0.79,
-       0.43
+       0.43,
+       3.93,
+       1.17,
+       1.1
       ],
       [
        1.09,
@@ -27206,9 +28215,12 @@
        0.58,
        0.74,
        0.8,
-       3.85,
+       1.14,
        0.81,
-       0.42
+       0.42,
+       3.92,
+       1.15,
+       1.11
       ],
       [
        1.08,
@@ -27232,9 +28244,12 @@
        0.58,
        0.73,
        0.8,
-       3.9,
+       1.18,
        0.8,
-       0.43
+       0.43,
+       3.9,
+       1.12,
+       1.14
       ],
       [
        1.09,
@@ -27260,7 +28275,10 @@
        0.8,
        1.16,
        0.77,
-       0.41
+       0.41,
+       0.59,
+       1.15,
+       1.12
       ],
       [
        1.06,
@@ -27286,7 +28304,10 @@
        0.81,
        1.16,
        0.79,
-       0.41
+       0.41,
+       0.59,
+       1.14,
+       1.09
       ],
       [
        1.02,
@@ -27312,7 +28333,10 @@
        0.78,
        1.14,
        0.77,
-       0.42
+       0.42,
+       0.6,
+       1.16,
+       1.1
       ],
       [
        1.0,
@@ -27338,7 +28362,10 @@
        0.81,
        1.17,
        0.79,
-       0.4
+       0.4,
+       0.58,
+       1.13,
+       1.1
       ],
       [
        1.02,
@@ -27364,7 +28391,10 @@
        0.81,
        1.14,
        0.78,
-       0.42
+       0.42,
+       0.57,
+       1.15,
+       1.14
       ],
       [
        1.02,
@@ -27390,7 +28420,10 @@
        0.82,
        1.17,
        0.78,
-       0.42
+       0.42,
+       0.59,
+       1.16,
+       1.15
       ],
       [
        1.04,
@@ -27416,7 +28449,10 @@
        0.81,
        1.16,
        0.79,
-       0.41
+       0.41,
+       0.58,
+       1.16,
+       1.19
       ],
       [
        1.07,
@@ -27442,7 +28478,10 @@
        0.81,
        1.17,
        0.8,
-       0.42
+       0.42,
+       0.6,
+       1.15,
+       1.21
       ],
       [
        1.07,
@@ -27468,7 +28507,10 @@
        0.81,
        1.17,
        0.79,
-       0.42
+       0.42,
+       0.61,
+       1.23,
+       1.16
       ],
       [
        1.06,
@@ -27494,7 +28536,10 @@
        0.82,
        1.19,
        0.77,
-       0.43
+       0.43,
+       0.6,
+       1.21,
+       1.12
       ],
       [
        1.05,
@@ -27520,7 +28565,10 @@
        0.8,
        1.18,
        0.76,
-       0.44
+       0.44,
+       0.62,
+       1.23,
+       1.14
       ],
       [
        1.01,
@@ -27546,7 +28594,10 @@
        0.8,
        1.19,
        0.78,
-       0.44
+       0.44,
+       0.61,
+       1.19,
+       1.16
       ],
       [
        1.0,
@@ -27572,7 +28623,10 @@
        0.82,
        1.17,
        0.79,
-       0.44
+       0.44,
+       0.59,
+       1.19,
+       1.1
       ],
       [
        1.01,
@@ -27598,7 +28652,10 @@
        0.8,
        1.18,
        0.78,
-       0.43
+       0.43,
+       0.6,
+       1.17,
+       1.1
       ],
       [
        1.0,
@@ -27624,7 +28681,10 @@
        0.81,
        1.19,
        0.75,
-       0.43
+       0.43,
+       0.6,
+       1.15,
+       1.11
       ],
       [
        0.96,
@@ -27650,7 +28710,10 @@
        0.8,
        1.15,
        0.76,
-       0.44
+       0.44,
+       0.59,
+       1.16,
+       1.11
       ],
       [
        0.99,
@@ -27676,7 +28739,10 @@
        0.79,
        1.15,
        0.76,
-       0.44
+       0.44,
+       0.6,
+       1.15,
+       1.08
       ],
       [
        0.99,
@@ -27702,7 +28768,10 @@
        0.77,
        1.18,
        0.77,
-       0.42
+       0.42,
+       0.61,
+       1.15,
+       1.08
       ],
       [
        1.01,
@@ -27728,7 +28797,10 @@
        0.77,
        1.17,
        0.78,
-       0.41
+       0.41,
+       0.59,
+       1.16,
+       1.09
       ],
       [
        1.01,
@@ -27754,7 +28826,10 @@
        0.79,
        1.15,
        0.79,
-       0.41
+       0.41,
+       0.56,
+       1.16,
+       1.13
       ],
       [
        1.01,
@@ -27780,7 +28855,10 @@
        0.79,
        1.14,
        0.79,
-       0.42
+       0.42,
+       0.57,
+       1.18,
+       1.14
       ],
       [
        1.0,
@@ -27806,7 +28884,10 @@
        0.8,
        1.2,
        0.75,
-       0.41
+       0.41,
+       0.59,
+       1.18,
+       1.14
       ],
       [
        1.0,
@@ -27832,7 +28913,10 @@
        0.77,
        1.23,
        0.76,
-       0.41
+       0.41,
+       0.59,
+       1.18,
+       1.09
       ],
       [
        0.98,
@@ -27858,7 +28942,10 @@
        0.78,
        1.21,
        0.79,
-       0.42
+       0.42,
+       0.59,
+       1.17,
+       1.06
       ],
       [
        4.56,
@@ -27884,7 +28971,10 @@
        0.79,
        1.23,
        0.79,
-       0.43
+       0.43,
+       0.6,
+       1.17,
+       1.11
       ],
       [
        4.59,
@@ -27910,7 +29000,10 @@
        0.8,
        1.24,
        0.76,
-       0.43
+       0.43,
+       0.59,
+       1.17,
+       1.1
       ],
       [
        4.62,
@@ -27936,7 +29029,10 @@
        0.78,
        1.25,
        0.75,
-       0.42
+       0.42,
+       0.58,
+       1.18,
+       1.08
       ],
       [
        4.63,
@@ -27962,7 +29058,10 @@
        0.78,
        1.23,
        0.76,
-       0.42
+       0.42,
+       0.59,
+       1.19,
+       1.07
       ],
       [
        1.07,
@@ -27988,7 +29087,10 @@
        0.79,
        1.19,
        0.76,
-       0.43
+       0.43,
+       0.59,
+       1.18,
+       1.08
       ],
       [
        1.07,
@@ -28014,7 +29116,10 @@
        0.82,
        1.21,
        0.77,
-       0.42
+       0.42,
+       0.6,
+       1.16,
+       1.07
       ],
       [
        1.05,
@@ -28040,7 +29145,10 @@
        0.85,
        1.2,
        0.78,
-       0.42
+       0.42,
+       0.61,
+       1.15,
+       1.11
       ],
       [
        1.06,
@@ -28066,7 +29174,10 @@
        0.87,
        1.2,
        0.8,
-       0.43
+       0.43,
+       0.58,
+       1.14,
+       1.06
       ],
       [
        1.07,
@@ -28092,7 +29203,10 @@
        0.86,
        1.14,
        0.79,
-       0.42
+       0.42,
+       0.56,
+       1.15,
+       1.08
       ],
       [
        1.08,
@@ -28118,7 +29232,10 @@
        0.83,
        1.15,
        0.8,
-       0.42
+       0.42,
+       0.58,
+       1.15,
+       1.09
       ],
       [
        1.09,
@@ -28144,7 +29261,10 @@
        0.82,
        1.15,
        0.79,
-       0.42
+       0.42,
+       0.57,
+       1.18,
+       1.09
       ],
       [
        1.07,
@@ -28170,7 +29290,10 @@
        0.83,
        1.18,
        0.78,
-       0.42
+       0.42,
+       0.56,
+       1.18,
+       1.09
       ],
       [
        1.04,
@@ -28196,7 +29319,10 @@
        0.8,
        1.18,
        0.75,
-       0.43
+       0.43,
+       0.58,
+       1.19,
+       1.13
       ],
       [
        1.02,
@@ -28222,7 +29348,10 @@
        0.82,
        1.23,
        0.79,
-       0.44
+       0.44,
+       0.56,
+       1.16,
+       1.09
       ],
       [
        1.05,
@@ -28248,7 +29377,10 @@
        0.83,
        1.18,
        0.78,
-       0.43
+       0.43,
+       0.58,
+       1.16,
+       1.17
       ],
       [
        1.05,
@@ -28274,7 +29406,10 @@
        0.81,
        1.16,
        0.76,
-       0.42
+       0.42,
+       0.59,
+       1.14,
+       1.16
       ],
       [
        1.05,
@@ -28300,7 +29435,10 @@
        0.82,
        1.15,
        0.78,
-       0.42
+       0.42,
+       0.6,
+       1.14,
+       1.19
       ],
       [
        1.02,
@@ -28326,7 +29464,10 @@
        0.85,
        1.22,
        0.78,
-       0.43
+       0.43,
+       0.61,
+       1.17,
+       1.18
       ],
       [
        1.0,
@@ -28350,9 +29491,12 @@
        0.57,
        0.75,
        0.84,
-       3.88,
+       1.17,
        0.75,
-       0.42
+       0.42,
+       3.92,
+       1.17,
+       1.16
       ],
       [
        1.0,
@@ -28376,9 +29520,12 @@
        0.58,
        0.76,
        0.87,
-       3.88,
+       1.17,
        0.76,
-       0.44
+       0.44,
+       3.92,
+       1.13,
+       1.18
       ],
       [
        1.01,
@@ -28402,9 +29549,12 @@
        0.59,
        0.77,
        0.83,
-       3.91,
+       1.2,
        0.77,
-       0.44
+       0.44,
+       3.89,
+       1.15,
+       1.14
       ],
       [
        1.03,
@@ -28428,9 +29578,12 @@
        0.58,
        0.75,
        0.84,
-       3.92,
+       1.2,
        0.78,
-       0.43
+       0.43,
+       3.91,
+       1.16,
+       1.09
       ],
       [
        1.0,
@@ -28454,9 +29607,12 @@
        0.59,
        0.74,
        0.81,
-       3.92,
+       1.21,
        0.77,
-       0.43
+       0.43,
+       3.92,
+       1.15,
+       1.1
       ],
       [
        0.96,
@@ -28480,9 +29636,12 @@
        0.58,
        0.76,
        0.79,
-       3.92,
+       1.21,
        0.79,
-       0.43
+       0.43,
+       3.91,
+       1.16,
+       1.13
       ],
       [
        0.97,
@@ -28508,7 +29667,10 @@
        0.81,
        1.18,
        0.78,
-       0.43
+       0.43,
+       0.58,
+       1.18,
+       1.11
       ],
       [
        0.95,
@@ -28534,7 +29696,10 @@
        0.8,
        1.19,
        0.79,
-       0.41
+       0.41,
+       0.57,
+       1.18,
+       1.13
       ],
       [
        0.99,
@@ -28560,7 +29725,10 @@
        0.8,
        1.23,
        0.77,
-       0.42
+       0.42,
+       0.58,
+       1.15,
+       1.13
       ],
       [
        0.98,
@@ -28586,7 +29754,10 @@
        0.82,
        1.21,
        0.78,
-       0.43
+       0.43,
+       0.59,
+       1.13,
+       1.12
       ],
       [
        0.98,
@@ -28612,7 +29783,10 @@
        0.84,
        1.21,
        0.78,
-       0.44
+       0.44,
+       0.57,
+       1.12,
+       1.08
       ],
       [
        0.97,
@@ -28638,7 +29812,10 @@
        0.85,
        1.22,
        0.74,
-       0.43
+       0.43,
+       0.57,
+       1.17,
+       1.1
       ],
       [
        4.56,
@@ -28664,7 +29841,10 @@
        0.86,
        1.22,
        0.77,
-       0.44
+       0.44,
+       0.6,
+       1.18,
+       1.09
       ],
       [
        4.57,
@@ -28690,7 +29870,10 @@
        0.86,
        1.28,
        0.77,
-       0.42
+       0.42,
+       0.6,
+       1.18,
+       1.13
       ],
       [
        4.58,
@@ -28716,7 +29899,10 @@
        0.85,
        1.19,
        0.77,
-       0.44
+       0.44,
+       0.57,
+       1.18,
+       1.11
       ],
       [
        4.55,
@@ -28742,7 +29928,10 @@
        0.82,
        1.2,
        0.75,
-       0.43
+       0.43,
+       0.58,
+       1.12,
+       1.13
       ],
       [
        0.99,
@@ -28768,7 +29957,10 @@
        0.83,
        1.18,
        0.77,
-       0.44
+       0.44,
+       0.58,
+       1.16,
+       1.14
       ],
       [
        1.01,
@@ -28794,7 +29986,10 @@
        0.81,
        1.19,
        0.77,
-       0.42
+       0.42,
+       0.58,
+       1.18,
+       1.14
       ],
       [
        0.99,
@@ -28820,7 +30015,10 @@
        0.8,
        1.17,
        0.74,
-       0.43
+       0.43,
+       0.59,
+       1.15,
+       1.14
       ],
       [
        1.04,
@@ -28846,7 +30044,10 @@
        0.82,
        1.19,
        0.73,
-       0.44
+       0.44,
+       0.58,
+       1.15,
+       1.11
       ],
       [
        1.03,
@@ -28872,7 +30073,10 @@
        0.81,
        1.2,
        0.73,
-       0.43
+       0.43,
+       0.58,
+       1.15,
+       1.07
       ],
       [
        1.05,
@@ -28898,7 +30102,10 @@
        0.81,
        1.16,
        0.76,
-       0.43
+       0.43,
+       0.59,
+       1.19,
+       1.07
       ],
       [
        1.06,
@@ -28924,7 +30131,10 @@
        0.81,
        1.19,
        0.78,
-       0.45
+       0.45,
+       0.58,
+       1.17,
+       1.08
       ],
       [
        1.01,
@@ -28950,7 +30160,10 @@
        0.82,
        1.2,
        0.79,
-       0.43
+       0.43,
+       0.61,
+       1.17,
+       1.08
       ],
       [
        1.03,
@@ -28976,7 +30189,10 @@
        0.81,
        1.18,
        0.78,
-       0.44
+       0.44,
+       0.6,
+       1.17,
+       1.08
       ],
       [
        1.06,
@@ -29002,7 +30218,10 @@
        0.82,
        1.23,
        0.8,
-       0.43
+       0.43,
+       0.61,
+       1.15,
+       1.06
       ],
       [
        1.01,
@@ -29028,7 +30247,10 @@
        0.83,
        1.24,
        0.79,
-       0.43
+       0.43,
+       0.6,
+       1.13,
+       1.1
       ],
       [
        0.97,
@@ -29054,7 +30276,10 @@
        0.83,
        1.23,
        0.79,
-       0.43
+       0.43,
+       0.59,
+       1.14,
+       1.1
       ],
       [
        0.99,
@@ -29080,7 +30305,10 @@
        0.82,
        1.25,
        0.8,
-       0.44
+       0.44,
+       0.58,
+       1.13,
+       1.12
       ],
       [
        1.0,
@@ -29106,7 +30334,10 @@
        0.8,
        1.29,
        0.8,
-       0.42
+       0.42,
+       0.59,
+       1.13,
+       1.12
       ],
       [
        1.03,
@@ -29132,7 +30363,10 @@
        0.78,
        1.26,
        0.82,
-       0.44
+       0.44,
+       0.61,
+       1.12,
+       1.14
       ],
       [
        1.04,
@@ -29158,7 +30392,10 @@
        0.79,
        1.23,
        0.83,
-       0.44
+       0.44,
+       0.61,
+       1.18,
+       1.1
       ],
       [
        1.03,
@@ -29184,7 +30421,10 @@
        0.77,
        1.25,
        0.84,
-       0.43
+       0.43,
+       0.58,
+       1.19,
+       1.1
       ],
       [
        1.01,
@@ -29210,7 +30450,10 @@
        0.77,
        1.22,
        0.83,
-       0.42
+       0.42,
+       0.58,
+       1.15,
+       1.09
       ],
       [
        1.01,
@@ -29236,7 +30479,10 @@
        0.78,
        1.21,
        0.81,
-       0.41
+       0.41,
+       0.57,
+       1.15,
+       1.14
       ],
       [
        1.03,
@@ -29262,7 +30508,10 @@
        0.77,
        1.19,
        0.79,
-       0.41
+       0.41,
+       0.56,
+       1.15,
+       1.11
       ],
       [
        1.01,
@@ -29288,7 +30537,10 @@
        0.78,
        1.18,
        0.77,
-       0.42
+       0.42,
+       0.56,
+       1.15,
+       1.14
       ],
       [
        1.01,
@@ -29314,7 +30566,10 @@
        0.77,
        1.21,
        0.76,
-       0.43
+       0.43,
+       0.57,
+       1.15,
+       1.15
       ],
       [
        1.04,
@@ -29340,7 +30595,10 @@
        0.75,
        1.24,
        0.78,
-       0.43
+       0.43,
+       0.56,
+       1.19,
+       1.13
       ],
       [
        1.03,
@@ -29366,7 +30624,10 @@
        0.77,
        1.22,
        0.77,
-       0.43
+       0.43,
+       0.56,
+       1.17,
+       1.13
       ],
       [
        1.01,
@@ -29392,7 +30653,10 @@
        0.77,
        1.22,
        0.77,
-       0.43
+       0.43,
+       0.57,
+       1.18,
+       1.14
       ],
       [
        1.06,
@@ -29418,7 +30682,10 @@
        0.76,
        1.23,
        0.79,
-       0.41
+       0.41,
+       0.57,
+       1.17,
+       1.15
       ],
       [
        4.62,
@@ -29444,7 +30711,10 @@
        0.78,
        1.18,
        0.78,
-       0.42
+       0.42,
+       0.59,
+       1.15,
+       1.16
       ],
       [
        4.57,
@@ -29470,7 +30740,10 @@
        0.77,
        1.18,
        0.75,
-       0.44
+       0.44,
+       0.58,
+       1.15,
+       1.17
       ],
       [
        4.59,
@@ -29496,7 +30769,10 @@
        0.78,
        1.17,
        0.78,
-       0.42
+       0.42,
+       0.59,
+       1.15,
+       1.15
       ],
       [
        4.63,
@@ -29522,7 +30798,10 @@
        0.78,
        1.15,
        0.8,
-       0.43
+       0.43,
+       0.6,
+       1.16,
+       1.16
       ],
       [
        1.07,
@@ -29548,7 +30827,10 @@
        0.77,
        1.16,
        0.81,
-       0.43
+       0.43,
+       0.59,
+       1.13,
+       1.15
       ],
       [
        1.05,
@@ -29574,7 +30856,10 @@
        0.82,
        1.21,
        0.82,
-       0.42
+       0.42,
+       0.59,
+       1.13,
+       1.16
       ],
       [
        1.04,
@@ -29598,9 +30883,12 @@
        0.59,
        0.73,
        0.82,
-       3.96,
+       1.24,
        0.83,
-       0.42
+       0.42,
+       3.89,
+       1.11,
+       1.15
       ],
       [
        1.03,
@@ -29624,9 +30912,12 @@
        0.59,
        0.77,
        0.8,
-       3.91,
+       1.19,
        0.8,
-       0.43
+       0.43,
+       3.91,
+       1.09,
+       1.14
       ],
       [
        1.02,
@@ -29650,9 +30941,12 @@
        0.6,
        0.76,
        0.8,
-       3.88,
+       1.16,
        0.8,
-       0.43
+       0.43,
+       3.91,
+       1.12,
+       1.1
       ],
       [
        1.03,
@@ -29676,9 +30970,12 @@
        0.61,
        0.77,
        0.79,
-       3.87,
+       1.15,
        0.8,
-       0.43
+       0.43,
+       3.88,
+       1.1,
+       1.1
       ],
       [
        1.01,
@@ -29702,9 +30999,12 @@
        0.62,
        0.76,
        0.79,
-       3.9,
+       1.19,
        0.79,
-       0.44
+       0.44,
+       3.89,
+       1.11,
+       1.15
       ],
       [
        1.02,
@@ -29728,9 +31028,12 @@
        0.6,
        0.77,
        0.8,
-       3.91,
+       1.19,
        0.78,
-       0.45
+       0.45,
+       3.88,
+       1.05,
+       1.15
       ],
       [
        1.01,
@@ -29756,7 +31059,10 @@
        0.8,
        1.18,
        0.77,
-       0.44
+       0.44,
+       0.56,
+       1.06,
+       1.13
       ],
       [
        1.01,
@@ -29782,7 +31088,10 @@
        0.82,
        1.18,
        0.77,
-       0.43
+       0.43,
+       0.57,
+       1.09,
+       1.13
       ],
       [
        1.02,
@@ -29808,7 +31117,10 @@
        0.82,
        1.18,
        0.78,
-       0.44
+       0.44,
+       0.56,
+       1.11,
+       1.1
       ],
       [
        1.03,
@@ -29834,7 +31146,10 @@
        0.81,
        1.18,
        0.78,
-       0.45
+       0.45,
+       0.57,
+       1.13,
+       1.09
       ]
      ]
     },

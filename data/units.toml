@@ -4,13 +4,13 @@
 
 [units.norwegian_sea]
 name = "Norwegian Sea"
-nodes = ["aasta_hansteen", "norne", "heidrun", "asgard", "ormen_lange", "nyhamna", "tjeldbergodden"]
+nodes = ["aasta_hansteen", "norne", "heidrun", "asgard", "ormen_lange", "nyhamna", "tjeldbergodden", "irpa"]
 
 [units.northern_north_sea]
 name = "Northern North Sea"
 nodes = [
     "gjoa", "visund", "statfjord", "gullfaks", "flags_brent", "kvitebjorn", "troll",
-    "oseberg", "kollsnes", "heimdal", "beryl", "edvard_grieg",
+    "oseberg", "kollsnes", "heimdal", "beryl", "edvard_grieg", "frigg", "odin",
 ]
 
 [units.hubs]

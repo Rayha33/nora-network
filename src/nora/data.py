@@ -88,8 +88,8 @@ class Node:
         """
         if self.startup is not None and year < self.startup:
             return False
-        if self.shutdown is not None and year >= self.shutdown:
-            return False
+        if self.shutdown is not None:
+            return year < self.shutdown
         return True
 
 
@@ -264,7 +264,7 @@ def _read_nodes(path: Path, seen: dict[str, str], problems: list[str]) -> list[N
         startup = row.number("startup", low=1900, high=2100)
         shutdown = row.number("shutdown", low=1900, high=2100)
         if startup is not None and shutdown is not None and shutdown < startup:
-            row.problem(f"'shutdown' = {shutdown} is before 'startup' = {startup}")
+            row.problem(f"'shutdown' = {int(shutdown)} is before 'startup' = {int(startup)}")
         if kind in SUPPLY_TYPES and status == "operating" and not row.text("capacity_msm3d"):
             row.problem(f"a {kind} needs 'capacity_msm3d': how much gas it can supply")
         nodes.append(

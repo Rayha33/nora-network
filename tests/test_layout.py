@@ -28,9 +28,10 @@ def test_rows_are_spaced_without_overlap(north_sea):
 
 
 def test_pipelines_cross_as_little_as_possible(north_sea):
-    # the layered layout trades row-geography for clarity: 31 straight-line
-    # crossings on the real network with the storage sites (15 before they
-    # joined), still far under the 120+ of the geographic row order
+    # the layered layout trades row-geography for clarity: 23 straight-line
+    # crossings on the real network, against 112 for the geographic order
+    # (the timeline's frigg, odin and irpa rows add 8)
+    # (the timeline's frigg, odin and irpa rows, and the storage sites, add 16)
     assert crossings(north_sea, flow_positions(north_sea)) <= 35
 
 
