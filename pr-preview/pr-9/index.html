@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NORA, North Sea gas network</title>
+<meta name="description" content="An open model of the North Sea gas network: an interactive chart, flow and outage analysis, and recorded data replayed as a live feed. Anyone can improve it.">
+<meta property="og:title" content="NORA: Network Operations and Realtime Analysis">
+<meta property="og:description" content="An open model of the North Sea gas network that anyone can improve.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..500;1,6..72,400..500&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f6f8f8; --sea: #d6e5eb; --ink: #1a2a33; --ink-2: #4b5e69; --rule: rgba(26,42,51,.16);
+    --magenta: #a3266f; --magenta-soft: #ecd3e0; --ok: #2d7a55; --code: #e9eef0;
+    --font: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --serif: "Newsreader", Georgia, serif;
+  }
+  :root[data-theme="night"] {
+    color-scheme: dark;
+    --page: #0f1d25; --sea: #0c1a22; --ink: #d3dee3; --ink-2: #93a6af; --rule: rgba(211,222,227,.14);
+    --magenta: #e07ab5; --magenta-soft: #4a2a3d; --ok: #63c08f; --code: #182a34;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="day"]) {
+      color-scheme: dark;
+      --page: #0f1d25; --sea: #0c1a22; --ink: #d3dee3; --ink-2: #93a6af; --rule: rgba(211,222,227,.14);
+      --magenta: #e07ab5; --magenta-soft: #4a2a3d; --ok: #63c08f; --code: #182a34;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 17px/1.55 var(--font); -webkit-font-smoothing: antialiased; }
+  a { color: var(--magenta); text-underline-offset: 2px; }
+  :focus-visible { outline: 2px solid var(--magenta); outline-offset: 2px; }
+  .top {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 24px;
+    padding: 14px 24px; border-bottom: 1px solid var(--rule);
+  }
+  .wordmark { font-weight: 700; font-stretch: 125%; font-size: 20px; letter-spacing: .05em; color: inherit; text-decoration: none; }
+  .expansion { font-family: var(--serif); font-style: italic; color: var(--ink-2); font-size: 17px; }
+  .top nav { margin-left: auto; display: flex; gap: 20px; font-size: 15px; }
+  .top nav a { color: var(--ink); text-decoration: none; }
+  .top nav a:hover { text-decoration: underline; }
+  .chart { display: block; width: 100%; height: min(78vh, 760px); min-height: 460px; border: 0; background: var(--sea); }
+  .chart-caption { padding: 8px 24px 0; font-size: 14px; color: var(--ink-2); }
+  main { padding: 0 24px 64px; }
+  section { max-width: 980px; margin: 0 auto; padding: 48px 0 0; }
+  h1 {
+    font-family: var(--serif); font-weight: 400; font-size: clamp(32px, 5vw, 48px);
+    line-height: 1.08; letter-spacing: -.01em; margin: 0 0 16px; max-width: 18em;
+  }
+  h2 { font-size: 23px; line-height: 1.25; font-weight: 600; margin: 0 0 8px; }
+  h3 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+  p { margin: 0 0 14px; max-width: 68ch; }
+  .lede { font-size: 19px; color: var(--ink); }
+  .muted { color: var(--ink-2); }
+  .num { font-variant-numeric: tabular-nums; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .bars { list-style: none; margin: 20px 0 0; padding: 0; display: grid; gap: 8px; max-width: 760px; }
+  .bars li { display: grid; grid-template-columns: 11em 1fr 5.5em; align-items: center; gap: 12px; font-size: 15px; }
+  .bars .bar { height: 14px; background: var(--magenta); border-radius: 0 2px 2px 0; min-width: 2px; }
+  .bars .value { text-align: right; font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 15px; }
+  th, td { text-align: left; padding: 9px 12px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+  th { font-weight: 600; color: var(--ink-2); font-size: 13.5px; }
+  td.lost { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th.lost { text-align: right; }
+  td.share { width: 32%; }
+  .share-bar { height: 8px; background: var(--magenta-soft); border-radius: 1px; overflow: hidden; }
+  .share-bar span { display: block; height: 100%; background: var(--magenta); }
+  .streams { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 22px; }
+  .streams li { border-left: 3px solid var(--magenta); padding-left: 16px; }
+  .streams li.real { border-left-color: var(--ok); }
+  .streams .meta { font-size: 14.5px; color: var(--ink-2); margin-bottom: 6px; }
+  .tag { display: inline-block; font-size: 12px; line-height: 1; padding: 3px 6px; margin-left: 8px; border: 1px solid currentColor; border-radius: 2px; vertical-align: 3px; color: var(--ink-2); }
+  .real .tag { color: var(--ok); }
+  ol.steps { padding-left: 1.3em; max-width: 68ch; }
+  ol.steps li { margin-bottom: 8px; }
+  code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .86em; background: var(--code); border-radius: 3px; }
+  code { padding: 1px 5px; }
+  pre { padding: 12px 14px; overflow-x: auto; max-width: 68ch; line-height: 1.5; }
+  .ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 28px; margin-top: 18px; }
+  .ways p { font-size: 15.5px; }
+  .button {
+    display: inline-block; padding: 9px 16px; border-radius: 3px; background: var(--magenta); color: #fff;
+    text-decoration: none; font-weight: 600; font-size: 15px;
+  }
+  .button.quiet { background: transparent; color: var(--magenta); box-shadow: inset 0 0 0 1px var(--magenta); }
+  footer { max-width: 980px; margin: 56px auto 0; padding: 18px 24px 40px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--ink-2); }
+  footer p { max-width: none; }
+  @media (max-width: 640px) {
+    body { font-size: 16px; }
+    .top { padding: 12px 16px; }
+    .top nav { margin-left: 0; }
+    main { padding: 0 16px 48px; }
+    .chart { height: 70vh; min-height: 420px; }
+    .chart-caption { padding: 8px 16px 0; }
+    .bars li { grid-template-columns: 7.5em 1fr 4.5em; font-size: 14px; }
+    td.share { display: none; }
+    footer { padding: 18px 16px 32px; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="wordmark" href="./">NORA</a>
+  <span class="expansion">Network Operations and Realtime Analysis</span>
+  <nav aria-label="Main">
+    <a href="network.html">Open the chart</a>
+    <a href="#data">Data</a>
+    <a href="#improve">Improve NORA</a>
+    <a href="https://github.com/Rayha33/nora-network">Source code</a>
+  </nav>
+</header>
+
+<iframe class="chart" src="network.html?embed=1&amp;autoplay=1" title="Chart of the North Sea gas network, replaying a week of flows"></iframe>
+<p class="chart-caption">Replaying a synthetic week. Click any pipeline or terminal for details, or <a href="network.html">open the full chart</a>.</p>
+
+<main>
+  <section>
+    <h1>An open model of the North Sea gas network</h1>
+    <p class="lede">NORA maps <span class="num">52</span> fields, platforms, plants, terminals and markets, joined by <span class="num">40</span> offshore pipelines with a combined length of <span class="num">11,655</span> km. It works out how much gas the network can deliver, what happens when any single part fails, and replays recorded flows as if they were arriving live.</p>
+    <p>It is built in Python with networkx and pyvis, and anyone can improve the data or the code. Every change is checked automatically and published here within minutes of being accepted.</p>
+  </section>
+
+  <section aria-labelledby="deliver">
+    <h2 id="deliver">What reaches each market</h2>
+    <p>With every field and LNG terminal at full capacity, the network can deliver <strong class="num">680 MSm³/d</strong> of the <span class="num">693</span> MSm³/d on offer. The rest is stranded behind full pipelines. Million standard cubic metres per day, from the max-flow model.</p>
+    <ul class="bars">
+      
+      <li><span>NBP (Great Britain)</span><span class="bar" style="width: 100.0%"></span><span class="value">245</span></li>
+      
+      <li><span>THE (Germany)</span><span class="bar" style="width: 63.7%"></span><span class="value">156</span></li>
+      
+      <li><span>PEG (France)</span><span class="bar" style="width: 37.1%"></span><span class="value">91</span></li>
+      
+      <li><span>TTF (Netherlands)</span><span class="bar" style="width: 33.1%"></span><span class="value">81</span></li>
+      
+      <li><span>ZTP (Belgium)</span><span class="bar" style="width: 29.4%"></span><span class="value">72</span></li>
+      
+      <li><span>Poland VTP</span><span class="bar" style="width: 11.0%"></span><span class="value">27</span></li>
+      
+      <li><span>ETF (Denmark)</span><span class="bar" style="width: 3.3%"></span><span class="value">8</span></li>
+      
+    </ul>
+  </section>
+
+  <section aria-labelledby="fragile">
+    <h2 id="fragile">Single points of failure</h2>
+    <p>Each asset taken out on its own, with the gas the markets would lose. These are the places where one trip has the biggest effect. <a href="network.html?mode=risk">See them on the chart</a>.</p>
+    <table>
+      <thead><tr><th scope="col">Asset</th><th scope="col">Type</th><th scope="col" class="lost">Lost if it trips</th><th scope="col"><span class="sr-only">Share of deliverable gas</span></th></tr></thead>
+      <tbody>
+        
+        <tr>
+          <td>Sleipner</td>
+          <td class="muted">Gas field or production hub</td>
+          <td class="lost">160 MSm³/d <span class="muted">(24%)</span></td>
+          <td class="share"><div class="share-bar"><span style="width: 100.0%"></span></div></td>
+        </tr>
+        
+        <tr>
+          <td>Kollsnes</td>
+          <td class="muted">Gas processing plant</td>
+          <td class="lost">128 MSm³/d <span class="muted">(19%)</span></td>
+          <td class="share"><div class="share-bar"><span style="width: 80.0%"></span></div></td>
+        </tr>
+        
+        <tr>
+          <td>Troll</td>
+          <td class="muted">Gas field or production hub</td>
+          <td class="lost">108 MSm³/d <span class="muted">(16%)</span></td>
+          <td class="share"><div class="share-bar"><span style="width: 67.5%"></span></div></td>
+        </tr>
+        
+        <tr>
+          <td>Troll - Kollsnes</td>
+          <td class="muted">Field to hub or plant</td>
+          <td class="lost">108 MSm³/d <span class="muted">(16%)</span></td>
+          <td class="share"><div class="share-bar"><span style="width: 67.5%"></span></div></td>
+        </tr>
+        
+        <tr>
+          <td>Draupner E</td>
+          <td class="muted">Offshore riser or junction platform</td>
+          <td class="lost">97 MSm³/d <span class="muted">(14%)</span></td>
+          <td class="share"><div class="share-bar"><span style="width: 60.6%"></span></div></td>
+        </tr>
+        
+        <tr>
+          <td>Dornum</td>
+          <td class="muted">Receiving terminal</td>
+          <td class="lost">85 MSm³/d <span class="muted">(12%)</span></td>
+          <td class="share"><div class="share-bar"><span style="width: 53.1%"></span></div></td>
+        </tr>
+        
+        <tr>
+          <td>Nyhamna</td>
+          <td class="muted">Gas processing plant</td>
+          <td class="lost">72 MSm³/d <span class="muted">(11%)</span></td>
+          <td class="share"><div class="share-bar"><span style="width: 45.0%"></span></div></td>
+        </tr>
+        
+        <tr>
+          <td>Langeled (north)</td>
+          <td class="muted">Offshore trunkline</td>
+          <td class="lost">72 MSm³/d <span class="muted">(11%)</span></td>
+          <td class="share"><div class="share-bar"><span style="width: 45.0%"></span></div></td>
+        </tr>
+        
+      </tbody>
+    </table>
+  </section>
+
+  <section aria-labelledby="data">
+    <h2 id="data">Datasets you can replay</h2>
+    <p>Recorded flows play back on the chart like a live feed: the map follows them hour by hour, pipelines fill and empty, and alarms fire when a flow drops.</p>
+    <ul class="streams">
+      
+      <li class="synthetic">
+        <h3>A synthetic week<span class="tag">Synthetic</span></h3>
+        <div class="meta num">19 Oct 2026 to 25 Oct 2026, every 60 minutes, 58 assets, 2 scripted events</div>
+        <p>One week of hourly flows generated from the network model, with an unplanned outage at Kollsnes and reduced capacity on Langeled. Synthetic: use it to see how live data looks, not as a record of real flows.</p>
+        <p><a href="network.html?stream=synthetic-week&amp;autoplay=1">Replay it on the chart</a></p>
+      </li>
+      
+    </ul>
+    <h3 style="margin-top: 32px">Add your own dataset</h3>
+    <ol class="steps">
+      <li>Get a CSV of flows over time. Any layout works: one row per reading, or one column per point.</li>
+      <li>Run <code>nora stream new my-data --from flows.csv</code>. It copies the file into <code>data/streams/my-data/</code> and drafts a <code>stream.toml</code> that maps each point to a pipeline or terminal, guessing by name.</li>
+      <li>Check the mapping, then run <code>nora stream show my-data</code> to see what was read.</li>
+      <li>Run <code>nora build</code> to replay it on the chart, or <code>nora live --stream my-data</code> to serve it as a real live feed.</li>
+    </ol>
+    <p class="muted">The full guide is in <a href="https://github.com/Rayha33/nora-network/blob/main/data/streams/README.md">data/streams/README.md</a>.</p>
+  </section>
+
+  <section aria-labelledby="improve">
+    <h2 id="improve">Improve NORA</h2>
+    <p>NORA grows through small contributions. Each one goes through a pull request, gets checked automatically and gets its own preview link before it reaches this page.</p>
+    <div class="ways">
+      <div>
+        <h3>Fix or add data</h3>
+        <p>The network lives in two spreadsheets you can edit in the browser. Only <span class="num">0</span> of <span class="num">110</span> rows cite a source so far, so sources are the most useful contribution.</p>
+        <a class="button quiet" href="https://github.com/Rayha33/nora-network/edit/main/data/nodes.csv">Edit nodes.csv</a>
+      </div>
+      <div>
+        <h3>Build a feature</h3>
+        <p>Open a ready-made cloud workspace with Python and the tools installed, and work with your AI assistant. The repository tells assistants how the project fits together.</p>
+        <a class="button" href="https://codespaces.new/Rayha33/nora-network?quickstart=1">Open in Codespaces</a>
+      </div>
+      <div>
+        <h3>Suggest an idea</h3>
+        <p>Spotted a missing pipeline, a better analysis or a dataset worth replaying? Open an issue. Issues marked good first issue are ready to pick up.</p>
+        <a class="button quiet" href="https://github.com/Rayha33/nora-network/issues">See open issues</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>Built from commit <a href="https://github.com/Rayha33/nora-network/commit/2dde020"><code>2dde020</code></a> on 2026-10-27. Asset positions, capacities and lengths are approximate figures compiled from public sources and are not suitable for operational decisions. The coastline is from Natural Earth. Code and data are MIT licensed. Download the <a href="data/network.json">graph</a>, <a href="data/analysis.json">analysis</a> or the <a href="data/nodes.csv">nodes</a> and <a href="data/pipelines.csv">pipelines</a> files.</p>
+</footer>
+</body>
+</html>
