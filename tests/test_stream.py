@@ -88,6 +88,36 @@ timestamp = "Gas day"
     assert stream.values == ((40.0, 20.0), (35.0, 25.0))
 
 
+def test_duplicate_flows_rows_are_reported_with_file_and_line(tiny, tmp_path):
+    """flows.csv keeps one reading per timestamp+asset: a duplicate is an error,
+    not a silent overwrite (import mappings sum on purpose - see below)."""
+    make_stream(
+        tmp_path / "dup",
+        "",
+        {
+            "flows.csv": "timestamp,asset,flow_msm3d\n2026-01-01T00:00Z,pipe_a,10\n"
+            "2026-01-01T00:00Z,pipe_b,20\n2026-01-01T00:00Z,pipe_a,99\n"
+        },
+    )
+    with pytest.raises(DataError, match="flows.csv line 4: duplicate reading"):
+        load_stream("dup", tiny, tmp_path)
+
+
+def test_duplicate_metric_rows_are_reported_too(tiny, tmp_path):
+    make_stream(
+        tmp_path / "dupm",
+        "",
+        {
+            "flows.csv": "timestamp,asset,metric,value\n"
+            "2026-01-01T00:00Z,a_terminal,pressure_bar,50\n"
+            "2026-01-01T00:00Z,a_terminal,pressure_bar,55\n"
+            "2026-01-01T00:00Z,a_terminal,nomination_msm3d,1\n"
+        },
+    )
+    with pytest.raises(DataError, match="duplicate reading for 'a_terminal'"):
+        load_stream("dupm", tiny, tmp_path)
+
+
 def test_unknown_asset_is_reported_with_a_suggestion(tiny, tmp_path):
     make_stream(
         tmp_path / "bad",
