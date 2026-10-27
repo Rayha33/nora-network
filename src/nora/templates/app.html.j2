@@ -24,11 +24,11 @@
     <span class="sep" id="sep-diag" hidden>›</span>
     <button type="button" id="crumb-diag" hidden title="Level 4: the raw numbers behind this asset"><span class="level">4</span>Diagnostics</button>
   </nav>
-  <div class="seg" id="views" role="tablist" aria-label="Network view" hidden>
+  <div class="seg" id="views" role="tablist" aria-label="Network view">
     <button type="button" role="tab" data-view="map" title="Every asset where it really is">Map</button>
     <button type="button" role="tab" data-view="flow" title="How gas travels: fields at the top, markets at the bottom">Flow</button>
   </div>
-  <div class="seg" id="modes" role="tablist" aria-label="What the lines show" hidden>
+  <div class="seg" id="modes" role="tablist" aria-label="What the lines show">
     <button type="button" role="tab" data-mode="live" title="Flows, pressures and nominations from the data being played">Live</button>
     <button type="button" role="tab" data-mode="load" title="Model: how full each pipeline is when the network delivers all it can">Load</button>
     <button type="button" role="tab" data-mode="risk" title="Model: how much gas is lost if an asset trips">Risk</button>
@@ -43,7 +43,6 @@
   <div class="spacer"></div>
   <div class="alarm-counts" id="alarm-counts" aria-live="polite"></div>
   <button type="button" class="plan-chip" id="plan-chip" aria-live="polite" title="Can the network deliver what shippers nominated? Opens the overview"></button>
-  <button type="button" class="plan-chip" id="whatif-chip" hidden aria-live="polite" title="What-if: click assets to take them offline; the flows and the deliverable gas update"></button>
   <label class="search" title="Find an asset by name">
     <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
     <span class="sr-only">Find an asset</span>
