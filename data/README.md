@@ -20,6 +20,10 @@ compiled from:
 - Operator/TSO sites for onshore grid-entry rows: National Grid (UK/NBP), Gasunie
   (NL/TTF), Trading Hub Europe (DE/THE), Fluxys (BE/ZTP), Energinet (DK/ETF), the
   Baltic Pipe project site, IUK and BBL.
+- Operator pages for gas storage sites: Centrica (Rough), NAM/EBN (Norg), TAQA Energy
+  (Bergermeer), Equinor Storage Deutschland (Etzel), EWE Gasspeicher (Jemgum) and
+  Gas Storage Denmark (Stenlille, Lille Torup). Withdrawal capacities are peak-day
+  rates converted to MSm3/d where the operator publishes them in other units.
 - `approximate, public data` for rows where no single authoritative public page could
   be pinned down. These are the best candidates for a better citation.
 
