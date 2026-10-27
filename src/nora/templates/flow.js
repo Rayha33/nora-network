@@ -246,7 +246,7 @@
       const e = edges.get(marker.id);
       if (!e || App.pipeStyle(marker.id).hidden) continue;
       const p = pointAlong(e, Math.max(0, Math.min(1, marker.along)), positions);
-      App.drawMarker(ctx, marker, p.x, p.y, p.angle, 6.5);
+      App.drawMarker(ctx, marker, p.x, p.y, p.angle, 6.5, network.getScale() >= 0.9);
     }
   }
 

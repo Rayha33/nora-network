@@ -224,7 +224,7 @@
     for (const marker of App.markers()) {
       if (App.pipeStyle(marker.id).hidden) continue;
       const p = project(marker.id, marker.along);
-      App.drawMarker(ctx, marker, p.x, p.y, marker.kind === "pig" ? p.angle : p.angle, 6.5);
+      App.drawMarker(ctx, marker, p.x, p.y, p.angle, 6.5, map.getZoom() >= 6);
     }
   };
 

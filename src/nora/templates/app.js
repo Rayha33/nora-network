@@ -72,43 +72,44 @@ const App = (() => {
   const formatTime = (t) => timeFormat(t, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + " UTC";
   const shortTime = (t) => timeFormat(t, { weekday: "short", hour: "2-digit", minute: "2-digit" });
 
-  /* A gas quality parcel: a calm-coloured dot. The strongest parcel of a slug also gets
-     a label (concentration, next stop and ETA) and, if it breaches a limit now or at
-     the exit, the alarm badge: colour alone never carries the alarm. */
-  function drawParcel(ctx, marker, x, y, size) {
-    const color = COLORS[QUALITY[marker.gas].color], r = size * (marker.lead ? 0.85 : 0.6);
+  /* The label beside a moving marker: its value, then the ETA in a dimmer tone, in
+     small regular type with a paper halo (no box, so nothing covers the map). The next
+     stop is added only when zoomed in (`detail`). */
+  function markerLabel(ctx, marker, x, y, size, detail) {
+    if (!marker.value) return;
+    const font = 10.5, gap = 5, lx = x + size * 1.7, ly = y - size * 1.4;
+    const parts = [[marker.value, COLORS.text], [marker.eta || "", COLORS.text_dim]];
+    if (detail && marker.to) parts.push([marker.to, COLORS.text_dim]);
+    ctx.save();
+    ctx.font = `${font}px Archivo, sans-serif`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = COLORS.paper;
+    let cx = lx;
+    for (const [text, color] of parts) {
+      if (!text) continue;
+      ctx.strokeText(text, cx, ly);
+      ctx.fillStyle = color;
+      ctx.fillText(text, cx, ly);
+      cx += ctx.measureText(text).width + gap;
+    }
+    ctx.restore();
+    if (marker.level) drawBadge(ctx, marker.level, cx + 2, ly - font * 0.6, Math.max(5, size * 0.8));
+  }
+  // A gas quality parcel: a calm-coloured dot; the strongest parcel of a slug is labelled.
+  function drawParcel(ctx, marker, x, y, size, detail) {
     ctx.save();
     ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fillStyle = color;
+    ctx.arc(x, y, size * (marker.lead ? 0.85 : 0.6), 0, Math.PI * 2);
+    ctx.fillStyle = COLORS[QUALITY[marker.gas].color];
     ctx.fill();
     ctx.lineWidth = Math.max(1, size / 6);
     ctx.strokeStyle = COLORS.casing;
     ctx.stroke();
-    if (marker.lead) {
-      const fontSize = Math.max(11, size * 1.6), pad = fontSize * 0.45, lx = x + size * 1.8, ly = y - size - fontSize * 1.4;
-      ctx.font = `600 ${fontSize}px Archivo, sans-serif`;
-      const w1 = ctx.measureText(marker.label).width;
-      ctx.font = `${fontSize * 0.92}px Archivo, sans-serif`;
-      const w2 = ctx.measureText(marker.sub).width;
-      const w = Math.max(w1, w2) + pad * 2 + size * 0.5, hgt = fontSize * 2.5;
-      ctx.globalAlpha = 0.92;
-      ctx.fillStyle = COLORS.surface;
-      ctx.fillRect(lx, ly - hgt / 2, w, hgt);
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = color;
-      ctx.fillRect(lx, ly - hgt / 2, size * 0.5, hgt);
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = COLORS.text;
-      ctx.font = `600 ${fontSize}px Archivo, sans-serif`;
-      ctx.fillText(marker.label, lx + size * 0.5 + pad, ly - fontSize * 0.55);
-      ctx.fillStyle = COLORS.text_dim;
-      ctx.font = `${fontSize * 0.92}px Archivo, sans-serif`;
-      ctx.fillText(marker.sub, lx + size * 0.5 + pad, ly + fontSize * 0.6);
-      if (marker.level) drawBadge(ctx, marker.level, lx + w + size * 0.2, ly - hgt / 2, size);
-    }
     ctx.restore();
+    if (marker.lead) markerLabel(ctx, marker, x, y, size, detail);
   }
 
   // ------------------------------------------------------------------ alarm levels
@@ -194,8 +195,8 @@ const App = (() => {
     ctx.restore();
   }
   // A pig (capsule) or peak (triangle) at x, y, turned along the line by `angle`.
-  function drawMarker(ctx, marker, x, y, angle, size = 7) {
-    if (marker.kind === "quality") { drawParcel(ctx, marker, x, y, size); return; }
+  function drawMarker(ctx, marker, x, y, angle, size = 7, detail = false) {
+    if (marker.kind === "quality") { drawParcel(ctx, marker, x, y, size, detail); return; }
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
@@ -214,16 +215,18 @@ const App = (() => {
     ctx.strokeStyle = COLORS.text;
     ctx.stroke();
     ctx.restore();
-    ctx.save();
-    ctx.fillStyle = COLORS.text;
-    ctx.font = `600 ${size * 1.25}px Archivo, sans-serif`;
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = COLORS.paper;
-    ctx.strokeText(marker.label, x + size * 1.9, y - size * 1.2);
-    ctx.fillText(marker.label, x + size * 1.9, y - size * 1.2);
-    ctx.restore();
+    if (marker.kind === "pig") {
+      ctx.save();
+      ctx.font = `600 ${Math.max(8, size * 1.1)}px Archivo, sans-serif`;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = COLORS.paper;
+      ctx.strokeText(marker.label, x + size * 1.9, y - size * 1.2);
+      ctx.fillStyle = COLORS.text;
+      ctx.fillText(marker.label, x + size * 1.9, y - size * 1.2);
+      ctx.restore();
+    } else markerLabel(ctx, marker, x, y, size, detail);
   }
 
   // ------------------------------------------------------------------ settings
@@ -443,15 +446,18 @@ const App = (() => {
     const v = C.pipelines.gas_velocity_mps;
     for (const peak of live.peaks) {
       const travelled = ((live.time - peak.t0) * v) / (assets[peak.id].km * 1000);
-      out.push({ kind: "peak", id: peak.id, along: peak.forward ? travelled : 1 - travelled,
-        label: `${peak.delta > 0 ? "+" : "−"}${fmt(Math.abs(peak.delta))}`, level: peak.level, rising: peak.delta > 0 });
+      const end = peak.t0 + (assets[peak.id].km * 1000) / v, d = assets[peak.id];
+      out.push({ kind: "peak", id: peak.id, along: peak.forward ? travelled : 1 - travelled, level: peak.level, rising: peak.delta > 0,
+        value: `${peak.delta > 0 ? "+" : "−"}${fmt(Math.abs(peak.delta), 1)}`, eta: clock(end),
+        to: nameOf(peak.forward ? d.to : d.from) });
     }
     const leads = new Map(slugs().map((s) => [s.q, s]));
     for (const q of live.quality) {
       const along = q.arrived ? 1 : Math.min(1, (live.time - q.t0) / travelSeconds(q.pid)), s = leads.get(q);
       out.push({ kind: "quality", gas: q.metric, id: q.pid, along: q.forward ? along : 1 - along, lead: Boolean(s),
-        level: s ? Math.max(s.level, s.exitLevel) : 0, label: s ? qualityText(q.metric, q.conc) : "",
-        sub: s ? (q.arrived ? `At ${nameOf(q.arrived.node)}` : `${nameOf(s.next.node)} ${etaText(s.next.t)}`) : "" });
+        level: s ? Math.max(s.level, s.exitLevel) : 0,
+        value: s ? `${QUALITY[q.metric].name} ${fmt(q.conc, QUALITY[q.metric].digits)}` : "",
+        eta: s && !q.arrived ? clock(s.next.t) : "", to: s ? nameOf(q.arrived ? q.arrived.node : s.next.node) : "" });
     }
     return out.sort((a, b) => Number(Boolean(a.lead)) - Number(Boolean(b.lead)));
   }
@@ -556,6 +562,8 @@ const App = (() => {
       return { q, ...ahead, level: level(q.conc, limits), exitLevel: ahead.exit ? level(ahead.exit.conc, limits) : 0 };
     });
   }
+  // An arrival time: the clock time, with the day when it is more than 20 hours away.
+  const clock = (t) => (t - live.time > 20 * 3600 ? shortTime(t) : timeFormat(t, { hour: "2-digit", minute: "2-digit" }));
   const qualityText = (name, value) => `${QUALITY[name].name} ${fmt(value, QUALITY[name].digits)} ${QUALITY[name].unit}`;
   function etaText(t) {
     const hours = (t - live.time) / 3600;
