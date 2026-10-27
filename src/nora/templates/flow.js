@@ -286,7 +286,60 @@
     nodes.update(App.nodeIds.map((id) => ({ id, shape: "custom", ctxRenderer: card(id), label: "" })));
     network.on("beforeDrawing", paper);
     network.on("afterDrawing", overlay);
-    network.on("click", (event) => { const id = event.nodes[0] || event.edges[0]; if (id) App.select(id); });
+    /* vis's own hit test does not see the custom circle shape, so we find the
+       asset ourselves: what vis hit (edges), else the nearest node to the click. */
+    const hitAt = (event) => {
+      const id = event.nodes[0] || event.edges[0];
+      if (id) return id;
+      const at = event.pointer && event.pointer.DOM;
+      if (!at) return null;
+      const positions = network.getPositions();
+      let best = null, bestD = 30; // px: the circle plus a little slack
+      for (const nid of App.nodeIds) {
+        const p = positions[nid];
+        if (!p) continue; // a node the layout has not placed (hidden units)
+        const dom = network.canvasToDOM(p);
+        const d = Math.hypot(dom.x - at.x, dom.y - at.y);
+        if (d < bestD) { bestD = d; best = nid; }
+      }
+      return best;
+    };
+    network.on("click", (event) => { const id = hitAt(event); if (id) App.select(id); });
+    /* Right-click a node or a line: the same menu as on the Map. A plain DOM
+       listener on the container (the reliable path for real right-clicks);
+       we hit-test the point ourselves: nearest circle, else nearest line. */
+    container.addEventListener("contextmenu", (e) => {  // capture: vis may stop the event at its canvas
+      if (!view.ready) return;
+      const rect = container.getBoundingClientRect();
+      const at = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      const positions = network.getPositions();
+      /* What is the click really on? A circle (score: distance to its edge) or
+         a pipeline (score: distance to the line). The closest one wins, so a
+         click on a pipe is a pipe even when an unrelated node is nearby. */
+      let best = null, bestScore = 0;
+      for (const nid of App.nodeIds) {
+        const p = positions[nid];
+        if (!p) continue; // a node the layout has not placed (hidden units)
+        const dom = network.canvasToDOM(p);
+        const score = Math.hypot(dom.x - at.x, dom.y - at.y) - CIRC.r; // to the circle's edge
+        if (best === null || score < bestScore) { bestScore = score; best = nid; }
+      }
+      for (const pid of App.pipeIds) {
+        const p = NORA.assets[pid];
+        const a = positions[p.from], b = positions[p.to];
+        if (!a || !b) continue;
+        const da = network.canvasToDOM(a), db = network.canvasToDOM(b);
+        const vx = db.x - da.x, vy = db.y - da.y;
+        const len = Math.hypot(vx, vy) || 1;
+        const t = Math.max(0, Math.min(1, ((at.x - da.x) * vx + (at.y - da.y) * vy) / (len * len)));
+        const score = Math.hypot(da.x + vx * t - at.x, da.y + vy * t - at.y) - 4; // the drawn line plus a little slack
+        if (score < bestScore) { bestScore = score; best = pid; }
+      }
+      if (bestScore > 8) best = null;
+      if (!best) return; // empty canvas: leave the browser's own menu
+      e.preventDefault();
+      App.menu.open(e.clientX, e.clientY, App.menu.for(best));
+    }, true); // capture phase: vis stops the event at its canvas
     view.ready = true;
     layout();
     view.restyle();
