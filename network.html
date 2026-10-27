@@ -64,6 +64,20 @@ svg .fill { fill: currentColor; stroke: none; }
 .dots-layer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
 .notice { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; color: var(--text-dim); text-align: center; }
 
+/* GIS touches on the map: loading state, cursor coordinates, scale bar legibility */
+.map-note {
+  position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 5;
+  background: var(--paper); color: var(--text-dim); border-radius: var(--r);
+  padding: 3px 10px; font-size: 11px; box-shadow: 0 1px 6px rgb(0 0 0 / 12%);
+}
+.coord-readout {
+  position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 5;
+  background: var(--paper); color: var(--text-dim); border-radius: var(--r);
+  padding: 2px 8px; font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap; box-shadow: 0 1px 6px rgb(0 0 0 / 12%); pointer-events: none;
+}
+.maplibregl-ctrl-scale { background: var(--paper) !important; color: var(--text-dim) !important; border-color: var(--text-dim) !important; }
+
 .bar {
   position: fixed; top: 0; left: 0; right: 0; height: 44px; z-index: 10;
   display: flex; align-items: center; gap: 8px; padding: 0 10px;
@@ -1540,13 +1554,14 @@ const App = (() => {
   function facts(id) {
     const d = assets[id];
     const lost = d.lost ? `${fmt(d.lost)} MSm³/d (${fmt(d.share * 100, 1)}%)` : "Nothing lost";
+    const position = d.lat != null ? `${d.lat.toFixed(4)}°N, ${d.lon.toFixed(4)}°E` : null;
     const rows = d.kind === "node"
       ? [["Operator", d.operator], ["Capacity", d.capacity == null ? null : `${fmt(d.capacity)} MSm³/d`], ["If it trips", lost],
         ["Pressure window", C.pressure[d.type] ? `${C.pressure[d.type][0]}–${C.pressure[d.type][1]} bar` : null], ["Status", d.status],
-        ["Position", `${fmt(d.lat, 2)}°N, ${fmt(d.lon, 2)}°E`]]
+        ["Position", h("a", { href: `https://www.google.com/maps?q=${d.lat},${d.lon}`, target: "_blank", rel: "noopener", title: "Open this exact location in Google Maps" }, position)]]
       : [["Capacity", d.capacity == null ? "Not modelled" : `${fmt(d.capacity)} MSm³/d`], ["Length", `${fmt(d.km)} km`],
         ["Diameter", d.diameter == null ? null : `${fmt(d.diameter)} in`], ["In service since", d.commissioned], ["If it trips", lost], ["Status", d.status]];
-    return h("dl", { class: "facts" }, rows.filter((r) => r[1] != null && r[1] !== "").map(([k, v]) => [h("dt", null, k), h("dd", null, String(v))]));
+    return h("dl", { class: "facts" }, rows.filter((r) => r[1] != null && r[1] !== "").map(([k, v]) => [h("dt", null, k), h("dd", null, v)]));
   }
   function schematic(id) {
     const d = assets[id], f = frame();
@@ -2159,7 +2174,8 @@ const App = (() => {
           if (/boundary|admin/.test(id)) { map.setPaintProperty(id, "line-color", C.text_dim); map.setPaintProperty(id, "line-opacity", 0.35); }
           else if (/water|river/.test(id)) map.setPaintProperty(id, "line-color", C.water);
           else map.setLayoutProperty(id, "visibility", "none");
-        } else if (layer.type === "symbol") {
+        } else if (layer.type === "raster") { /* fallback basemap: keep as drawn */ }
+        else if (layer.type === "symbol") {
           if (/place|country|state|city|town|water_name|marine|ocean|sea/.test(id)) {
             map.setPaintProperty(id, "text-color", C.text_dim);
             map.setPaintProperty(id, "text-halo-color", C.paper);
@@ -2251,9 +2267,31 @@ const App = (() => {
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   }
 
+  // A GIS-style raster fallback for when the vector basemap is unreachable
+  // (blocked CDN, offline tiles): OpenStreetMap raster tiles still place every
+  // asset precisely, and NORA's own layers draw on top either way.
+  const FALLBACK_STYLE = {
+    version: 8,
+    glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
+    sources: {
+      osm: {
+        type: "raster", tileSize: 256, maxzoom: 19,
+        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+        attribution: "© OpenStreetMap contributors",
+      },
+    },
+    layers: [{ id: "osm-raster", type: "raster", source: "osm" }],
+  };
+
   view.mount = (el) => {
     if (typeof maplibregl === "undefined") {
       el.append(Object.assign(document.createElement("p"), { className: "notice", textContent: "The map needs an internet connection. The Flow view works offline." }));
+      return;
+    }
+    // WebGL is what draws the map: say so plainly instead of showing a blank area.
+    const gl = (() => { const c = document.createElement("canvas"); try { return c.getContext("webgl2") || c.getContext("webgl"); } catch { return null; } })();
+    if (!gl) {
+      el.append(Object.assign(document.createElement("p"), { className: "notice", textContent: "This browser has no WebGL, so the map cannot draw. Update the browser or enable hardware acceleration; the Flow view still works." }));
       return;
     }
     map = new maplibregl.Map({
@@ -2267,7 +2305,37 @@ const App = (() => {
     canvas.className = "dots-layer";
     el.append(canvas);
     ctx = canvas.getContext("2d");
-    map.on("style.load", addLayers);
+    let styled = false;
+    const failToFallback = (why) => {
+      if (styled) return;
+      styled = true;
+      note.remove();
+      try { map.setStyle(FALLBACK_STYLE); } catch { /* already gone */ }
+    };
+    // If the online style never arrives (CDN blocked, DNS, captive portal), fall back.
+    const note = Object.assign(document.createElement("div"), { className: "map-note", textContent: "Loading the map…" });
+    el.append(note);
+    const styleTimer = setTimeout(() => failToFallback("timeout"), 9000);
+    map.on("style.load", () => { clearTimeout(styleTimer); styled = true; note.remove(); addLayers(); });
+    map.on("error", (e) => {
+      if (styled) return; // a tile hiccup after a good load is not a failure
+      const msg = String((e && e.error && e.error.message) || "");
+      failToFallback(msg);
+    });
+    // GIS controls: scale bar, zoom buttons, and a live coordinate readout.
+    try {
+      map.addControl(new maplibregl.ScaleControl({ maxWidth: 120 }), "bottom-left");
+      map.addControl(new maplibregl.NavigationControl({ visualizePitch: false, showCompass: false }), "bottom-right");
+    } catch { /* a stripped MapLibre build without controls */ }
+    const readout = Object.assign(document.createElement("div"), { className: "coord-readout", textContent: "" });
+    el.append(readout);
+    const showCoord = (lngLat) => {
+      const lng = ((lngLat.lng + 180) % 360 + 360) % 360 - 180;
+      readout.textContent = `${Math.abs(lngLat.lat).toFixed(5)}°${lngLat.lat >= 0 ? "N" : "S"}  ${Math.abs(lng).toFixed(5)}°${lng >= 0 ? "E" : "W"}  ·  zoom ${map.getZoom().toFixed(1)}`;
+    };
+    map.on("mousemove", (e) => showCoord(e.lngLat));
+    map.on("move", () => showCoord(map.getCenter()));
+    map.on("mouseout", () => { readout.textContent = ""; });
     map.on("resize", sizeCanvas);
     map.on("render", () => view.ready && view.draw());
     const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12 });
