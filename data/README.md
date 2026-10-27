@@ -35,7 +35,7 @@ One row per asset.
 | `country` | two-letter code: `NO`, `GB`, `NL`, `DE`, `DK`, `BE`, `FR` |
 | `lat`, `lon` | decimal degrees (east and north are positive) |
 | `operator` | optional |
-| `capacity_msm3d` | supply for `field`, `lng` and `storage` (required); processing capacity for plants; otherwise optional |
+| `capacity_msm3d` | supply for `field`, `lng` and `storage` (required); throughput capacity for `processing` plants — the flow analysis models it as a bottleneck the gas must pass through, so it caps how much can be routed through the plant; leave empty if unknown (the plant then passes gas without limit); otherwise optional |
 | `status` | `operating`, `planned` or `decommissioned` (only `operating` takes part in the analysis) |
 | `source` | link backing up the row |
 | `notes` | free text; wrap it in quotes if it contains a comma |

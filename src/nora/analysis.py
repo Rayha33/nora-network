@@ -25,6 +25,7 @@ from .data import SUPPLY_TYPES, Network
 from .graph import build_graph
 
 SOURCE, SINK = "__supply__", "__markets__"
+PLANT_IN = "__in"  # suffix of the entry half of a capacity-limited plant node
 
 
 @dataclass(frozen=True)
@@ -46,7 +47,13 @@ class Outage:
 
 def flow_graph(graph: nx.DiGraph, supply: dict[str, float] | None = None) -> nx.DiGraph:
     """The graph plus a super-source feeding every supplier and a super-sink behind
-    every market. `supply` overrides the suppliers' capacities (MSm3/d)."""
+    every market. `supply` overrides the suppliers' capacities (MSm3/d).
+
+    A processing plant with a `capacity_msm3d` is split into an entry node and the
+    original node, joined by one edge with that capacity, so the plant limits the
+    gas flowing through it just like a pipeline capacity does. Without the split,
+    max flow could route unlimited gas through a plant as a mere intermediate node.
+    """
     flows = graph.copy()
     flows.add_node(SOURCE)
     flows.add_node(SINK)
@@ -57,6 +64,13 @@ def flow_graph(graph: nx.DiGraph, supply: dict[str, float] | None = None) -> nx.
                 flows.add_edge(SOURCE, node, capacity=capacity)
         elif attrs["type"] == "market":
             flows.add_edge(node, SINK)
+        elif attrs["type"] == "processing" and attrs["capacity_msm3d"]:
+            entry = f"{node}{PLANT_IN}"
+            flows.add_node(entry)
+            for u, _, edge in list(flows.in_edges(node, data=True)):
+                flows.add_edge(u, entry, **edge)
+            flows.remove_edges_from(list(flows.in_edges(node)))
+            flows.add_edge(entry, node, capacity=attrs["capacity_msm3d"])
     return flows
 
 
@@ -93,11 +107,19 @@ def shortest_max_flow(flows: nx.DiGraph) -> dict[str, dict[str, float]]:
 
 
 def _summarise(graph: nx.DiGraph, value: float, flow: dict[str, dict[str, float]]) -> Flow:
+    # In a flow_graph, the incoming edges of a capacitated plant were moved to its
+    # entry twin, so look up the flow there instead of on the plant node itself.
+    split = {
+        node
+        for node, attrs in graph.nodes(data=True)
+        if attrs["type"] == "processing" and attrs["capacity_msm3d"]
+    }
     pipelines: dict[str, float] = {}
     for u, v, attrs in graph.edges(data=True):
         sign = 1 if u == attrs["from_id"] else -1
         pipe = attrs["pipeline"]
-        pipelines[pipe] = pipelines.get(pipe, 0.0) + sign * flow[u].get(v, 0.0)
+        target = f"{v}{PLANT_IN}" if v in split else v
+        pipelines[pipe] = pipelines.get(pipe, 0.0) + sign * flow[u].get(target, 0.0)
     markets = [n for n, attrs in graph.nodes(data=True) if attrs["type"] == "market"]
     return Flow(
         value=round(value, 6),

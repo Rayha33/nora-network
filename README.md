@@ -20,6 +20,8 @@ Dutch and Danish gas to Europe's markets.
   the right, on a dotted paper canvas, with flows written on the lines.
 - **Analysis.** [networkx](https://networkx.org/) computes how much gas the network can
   deliver to each market (max flow) and how much is lost if any single asset trips (N-1).
+  Pipeline capacities, field supply *and processing-plant capacity* all limit the flow:
+  a plant with a `capacity_msm3d` in nodes.csv is modelled as a bottleneck of that size.
   The *Load* and *Risk* modes show both, on the map and in the flow overview.
 - **Live replay.** Time series of flows, from a synthetic week to real daily flows from
   Energinet, play back as if they were arriving live: lines

@@ -22,6 +22,31 @@ def test_routed_flow_prefers_the_shorter_route(tiny):
     assert flow.pipelines["pipe_a"] == 30
 
 
+def test_plant_capacity_limits_the_flow_through_it(tiny_plant):
+    """Without the plant's 25 MSm3/d, pipe_a could carry 40 and the answer would
+    be 60 (test_max_flow_is_limited_by_the_export_lines); the plant caps it at 55."""
+    flow = max_flow(build_graph(tiny_plant))
+    assert flow.value == 55
+    assert flow.pipelines["to_plant"] == 25  # the plant itself, not pipe_a, binds
+    assert flow.pipelines["pipe_a"] == 25
+    assert flow.pipelines["pipe_b"] == 30
+    assert flow.pipelines["feed"] == 55
+    assert flow.delivered == {"market": 55}
+
+
+def test_plant_capacity_limits_routed_flow_too(tiny_plant):
+    flow = routed_flow(build_graph(tiny_plant))
+    assert flow.value == 55
+    assert flow.pipelines["to_plant"] == 25
+
+
+def test_plant_without_capacity_does_not_constrain(tiny_plant):
+    """A plant with no capacity_msm3d is an ordinary intermediate node."""
+    graph = build_graph(tiny_plant)
+    graph.nodes["plant"]["capacity_msm3d"] = None
+    assert max_flow(graph).value == 60  # back to pipe_a 40 + pipe_b 30
+
+
 def test_supply_override_scales_the_flow(tiny):
     assert max_flow(build_graph(tiny), {"gas": 25}).value == 25
 
