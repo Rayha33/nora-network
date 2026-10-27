@@ -593,7 +593,50 @@ def _pigs(meta: dict, net: Network, where: str, problems: list[str]) -> tuple[Pi
             problems.append(f"{where}/stream.toml pig {i}: every_hours must be 0 or more")
         else:
             pigs.append(pig)
+    pigs += _pig_programme(meta, net, {p.pipeline for p in pigs}, where, problems)
     return tuple(pigs)
+
+
+# A pigging programme puts a pig on every trunk, export line and interconnector:
+# one pig per main line, launches staggered evenly over `every_hours` from the stream
+# start, so several are always under way. An explicit [[pigs]] entry wins for its line.
+PIG_LINES = ("trunk", "export", "interconnector")
+
+
+def _pig_programme(
+    meta: dict, net: Network, explicit: set[str], where: str, problems: list[str]
+) -> list[Pig]:
+    synthetic = meta.get("synthetic")
+    if not isinstance(synthetic, dict):
+        return []
+    programme = synthetic.get("pig_programme")
+    if not isinstance(programme, dict):
+        if programme is not None:
+            problems.append(f"{where}/stream.toml pig_programme: must be a table")
+        return []
+    every = float(programme.get("every_hours", 48))
+    speed = float(programme.get("speed_mps", 4.0))
+    if every <= 0:
+        problems.append(f"{where}/stream.toml pig_programme: every_hours must be above 0")
+        return []
+    if speed <= 0:
+        problems.append(f"{where}/stream.toml pig_programme: speed_mps must be above 0")
+        return []
+    start = parse_time(synthetic.get("start", "2026-01-05T00:00:00Z"))
+    mains = sorted(p.id for p in net.pipelines if p.type in PIG_LINES and p.id not in explicit)
+    pigs = []
+    for i, pipeline in enumerate(mains):
+        launch = start + timedelta(seconds=every * 3600 * i / max(1, len(mains)))
+        pigs.append(
+            Pig(
+                label=f"Pig on {net.asset_name(pipeline)}",
+                pipeline=pipeline,
+                launch=launch,
+                speed_mps=speed,
+                every_hours=every,
+            )
+        )
+    return pigs
 
 
 def _check_rows(rows: list[Row], net: Network, where: str, problems: list[str]) -> None:

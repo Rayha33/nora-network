@@ -195,7 +195,10 @@ const App = (() => {
     ctx.fillText(String(4 - lvl), x, y + (lvl === 1 ? size * 0.28 : size * 0.08));
     ctx.restore();
   }
-  // A pig (capsule) or peak (triangle) at x, y, turned along the line by `angle`.
+  /* A pig (a dot-sized solid triangle pointing downstream) or a peak (a calm circle)
+     at x, y, turned along the line by `angle`. Each kind has its own shape AND its
+     own calm colour, so nothing reads as an alarm badge (triangle/diamond/square in
+     amber/orange/red). */
   function drawMarker(ctx, marker, x, y, angle, size = 7, detail = 1) {
     if (marker.kind === "quality") { drawParcel(ctx, marker, x, y, size, detail); return; }
     ctx.save();
@@ -203,31 +206,18 @@ const App = (() => {
     ctx.rotate(angle);
     ctx.beginPath();
     if (marker.kind === "pig") {
-      const w = size * 1.6, r = size * 0.55;
-      ctx.moveTo(-w + r, -r); ctx.lineTo(w - r, -r); ctx.arc(w - r, 0, r, -Math.PI / 2, Math.PI / 2);
-      ctx.lineTo(-w + r, r); ctx.arc(-w + r, 0, r, Math.PI / 2, -Math.PI / 2);
+      const s = Math.max(4, size * 0.8);
+      ctx.moveTo(s, 0); ctx.lineTo(-s * 0.8, -s * 0.7); ctx.lineTo(-s * 0.8, s * 0.7); ctx.closePath();
     } else {
-      const dir = marker.rising ? 1 : -1;
-      ctx.moveTo(size * dir, 0); ctx.lineTo(-size * 0.7 * dir, -size * 0.8); ctx.lineTo(-size * 0.7 * dir, size * 0.8); ctx.closePath();
+      ctx.arc(0, 0, Math.max(4, size * 0.75), 0, Math.PI * 2);
     }
-    ctx.fillStyle = marker.level ? LEVEL_COLOR[marker.level] : COLORS.active;
+    ctx.fillStyle = marker.kind === "pig" ? COLORS.pig : COLORS.peak;
     ctx.fill();
     ctx.lineWidth = Math.max(1, size / 6);
-    ctx.strokeStyle = COLORS.text;
+    ctx.strokeStyle = COLORS.casing;
     ctx.stroke();
     ctx.restore();
-    if (marker.kind === "pig") {
-      ctx.save();
-      ctx.font = `600 ${Math.max(8, size * 1.1)}px Archivo, sans-serif`;
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = COLORS.paper;
-      ctx.strokeText(marker.label, x + size * 1.9, y - size * 1.2);
-      ctx.fillStyle = COLORS.text;
-      ctx.fillText(marker.label, x + size * 1.9, y - size * 1.2);
-      ctx.restore();
-    } else markerLabel(ctx, marker, x, y, size, detail);
+    if (marker.kind !== "pig") markerLabel(ctx, marker, x, y, size, detail);
   }
 
   // ------------------------------------------------------------------ settings
@@ -239,6 +229,7 @@ const App = (() => {
     direction: C.flow.direction,
     density: C.flow.density,
     animation: C.flow.animation,
+    speed: C.screen.speed || 60,  // default playback: data seconds per real second
   };
   function readSettings() {
     let saved = {}, shared = {};
@@ -464,27 +455,124 @@ const App = (() => {
     }
   }
   function prunePeaks() {
+    live.peaks = live.peaks.filter((p) => live.time >= p.t0 && peakPlace(p));
+    // Keep the play calm: at most `peak_max` peaks on screen at once. When a big
+    // event changes many lines in the same hour, only the strongest changes travel.
+    const max = C.pipelines.peak_max || live.peaks.length;
+    if (live.peaks.length > max) {
+      const strength = (p) => {
+        const place = peakPlace(p), pid = place ? place.pid : p.id;
+        return Math.abs(place ? place.delta : p.delta) / (assets[pid].capacity || 1);
+      };
+      live.peaks.sort((a, b) => strength(b) - strength(a));
+      live.peaks.length = max;
+    }
+  }
+  // A small deterministic PRNG from a string seed: same seed, same route, always.
+  function seeded(seed) {
+    let h = 2166136261;
+    for (const c of String(seed)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
+    return () => {
+      h = (h + 0x6D2B79F5) | 0;
+      let t = Math.imul(h ^ (h >>> 15), 1 | h);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  // The lines carrying gas away from `node`, each with the flow it carries.
+  function linesOut(node, flows) {
+    const out = [];
+    for (const pid of pipeIds) {
+      const v = flows[pid], p = assets[pid];
+      if (v === undefined || p.type === "onshore") continue;
+      const o = p.from === node ? v : p.to === node ? -v : 0;
+      if (o > 0.05) out.push({ pid, forward: p.from === node, w: o });
+    }
+    return out;
+  }
+  // Pick the next line out of a node: random, weighted by the flow it carries, and
+  // deterministic for the same seed - so a pig or a peak always takes the same way.
+  function nextOut(node, flows, seed) {
+    const out = linesOut(node, flows);
+    if (!out.length) return null;
+    if (out.length === 1) return out[0];
+    const rand = seeded(seed);
+    let pick = rand() * out.reduce((s, o) => s + o.w, 0);
+    for (const o of out) { pick -= o.w; if (pick <= 0) return o; }
+    return out[out.length - 1];
+  }
+  // A pig's route: grown hop by hop as needed, then cached - one pig object, one route.
+  const pigRoutes = new Map();
+  function pigRoute(pig, distance) {
+    let route = pigRoutes.get(pig);
+    if (!route) pigRoutes.set(pig, route = [{ pid: pig.pipeline, forward: true, m: 0 }]);
+    let last = route[route.length - 1];
+    while (last.m + assets[last.pid].km * 1000 <= distance) {
+      const node = last.forward ? assets[last.pid].to : assets[last.pid].from;
+      const hop = isExit(node) ? null : nextOut(node, frame().flows, `${pig.label}|${pig.launch}|${route.length}`);
+      if (!hop) break;  // arrived at its receiver (or the network edge): off screen
+      route.push(last = { pid: hop.pid, forward: hop.forward, m: last.m + assets[last.pid].km * 1000 });
+    }
+    return route;
+  }
+  // Where a pig is now: on one line at a time, handing over at the nodes, never jumping.
+  function pigPlace(pig, time) {
+    if (time == null || time < pig.launch) return null;
+    const since = time - pig.launch, run = pig.every > 0 && since > 0 ? since % pig.every : since;
+    const distance = run * pig.speed;
+    const route = pigRoute(pig, distance);
+    const last = route[route.length - 1];
+    if (distance >= last.m + assets[last.pid].km * 1000) return null;  // at the receiver, waiting for relaunch
+    const seg = route.find((s) => distance < s.m + assets[s.pid].km * 1000) || last;
+    const along = (distance - seg.m) / (assets[seg.pid].km * 1000);
+    return { pid: seg.pid, along: seg.forward ? along : 1 - along };
+  }
+  // Where a peak is now: it keeps travelling downstream, attenuated by its share of
+  // the gas at each node, and disappears at an exit or when it fades below step_min.
+  function peakPlace(peak, time = live.time, f = frame()) {
     const v = C.pipelines.gas_velocity_mps;
-    live.peaks = live.peaks.filter((p) => live.time >= p.t0 && (live.time - p.t0) * v < assets[p.id].km * 1000);
+    let pid = peak.id, forward = peak.forward, delta = peak.delta, t = peak.t0, hops = 0;
+    while (time >= t) {
+      const length = (assets[pid].km || 1) * 1000;
+      const exitAt = t + length / v;
+      if (time < exitAt) {
+        const along = ((time - t) * v) / length;
+        return { pid, forward, delta, along: forward ? along : 1 - along, exitAt };
+      }
+      t = exitAt;
+      const node = forward ? assets[pid].to : assets[pid].from;
+      if (isExit(node)) return null;  // left the network
+      const inflow = throughput(node, f.flows), mine = Math.abs(f.flows[pid] || 0);
+      if (inflow > 0 && mine < inflow) delta *= mine / inflow;  // diluted where gas joins
+      if (Math.abs(delta) < C.pipelines.step_min * (assets[pid].capacity || 1)) return null;
+      const hop = nextOut(node, f.flows, `${peak.id}|${peak.t0}|${hops++}`);
+      if (!hop) return null;
+      pid = hop.pid; forward = hop.forward;
+    }
+    return null;
   }
   /* Markers moving along the lines, with their position (0..1 from the pipeline's
-     `from` end): pigs at their own speed, peaks with the gas. The views draw them. */
+     `from` end): pigs at their own speed, peaks with the gas. Both follow ROUTES:
+     chains of pipelines in the downstream direction (the way the gas flows, top to
+     bottom in the Flow view), chosen at random weighted by the flow each line carries,
+     from a seed, so replay and seek give the same route. Pigs hand over line to line
+     at the nodes; peaks continue attenuated by their share of the gas at each node
+     and die when that share or the exit ends them. */
   function markers() {
     const out = [];
     if (live.time == null) return out;
     const pigs = (live.stream && live.stream.pigs) || live.feedPigs || [];
     for (const pig of pigs) {
-      const since = live.time - pig.launch, run = pig.every > 0 && since > 0 ? since % pig.every : since;
-      const along = (run * pig.speed) / (assets[pig.pipeline].km * 1000);
-      if (along >= 0 && along <= 1) out.push({ kind: "pig", id: pig.pipeline, along, label: "PIG", level: 0, title: pig.label });
+      const place = pigPlace(pig, live.time);
+      if (place) out.push({ kind: "pig", id: place.pid, along: place.along, label: "", level: 0, title: pig.label });
     }
-    const v = C.pipelines.gas_velocity_mps;
     for (const peak of live.peaks) {
-      const travelled = ((live.time - peak.t0) * v) / (assets[peak.id].km * 1000);
-      const end = peak.t0 + (assets[peak.id].km * 1000) / v, d = assets[peak.id];
-      out.push({ kind: "peak", id: peak.id, along: peak.forward ? travelled : 1 - travelled, level: peak.level, rising: peak.delta > 0,
-        value: `${peak.delta > 0 ? "+" : "−"}${fmt(Math.abs(peak.delta), 1)}`, eta: clock(end),
-        to: nameOf(peak.forward ? d.to : d.from) });
+      const place = peakPlace(peak);
+      if (!place) continue;
+      const d = assets[place.pid];
+      out.push({ kind: "peak", id: place.pid, along: place.along, level: peak.level, rising: place.delta > 0,
+        value: `${place.delta > 0 ? "+" : "−"}${fmt(Math.abs(place.delta), 1)}`, eta: clock(place.exitAt),
+        to: nameOf(place.forward ? d.to : d.from) });
     }
     const leads = new Map(slugs().map((s) => [s.q, s]));
     for (const q of live.quality) {
@@ -1189,6 +1277,7 @@ const App = (() => {
       h("ol", null,
         h("li", null, "Overview answers one question: is the plan holding? Problems are listed with their likely cause and what to do."),
         h("li", null, "Press ▶ to play the data, drag the timeline, or press Next problem."),
+        h("li", null, "Peaks (circles) and pigs (small triangles) move with the gas; slow the player to watch them cross a line."),
         h("li", null, "Choose a unit, or All units, to see it on the Map or as a Flow: gas moves from the top to the bottom."),
         h("li", null, "Drag the year, top right, to show the network as it was, or will be: planned assets appear at their startup year, shut-down ones disappear from their shutdown year."),
         h("li", null, "Choose What-if, then click assets to take them offline: the pipeline loads and the deliverable gas update. Click the chip in the header to restore them all."),
@@ -1204,8 +1293,8 @@ const App = (() => {
         h("li", null, sample(COLORS.inactive, 1.5, ' stroke-dasharray="3 3"'), "No reading, or a notional grid entry")),
       h("h3", null, "Moving along the lines"),
       h("ul", null,
-        h("li", null, svg("0 0 26 14", `<rect x="4" y="3" width="18" height="8" rx="4" fill="${COLORS.active}" stroke="${COLORS.text}"/>`), "Pig, at its own speed"),
-        h("li", null, svg("0 0 26 14", `<path d="M13 2l6 10H7z" fill="${COLORS.active}" stroke="${COLORS.text}"/>`), "Peak: a change in flow, moving with the gas"),
+        h("li", null, svg("0 0 26 14", `<path d="M17 7l-8-4.5v9z" fill="${COLORS.pig}" stroke="${COLORS.casing}"/>`), "Pig: a small triangle creeping along, at its own speed"),
+        h("li", null, svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.peak}" stroke="${COLORS.casing}"/>`), "Peak: a change in flow, moving with the gas"),
         h("li", null, svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.h2s}" stroke="${COLORS.casing}"/>`), "H₂S peak: ppm, next stop and when it gets there"),
         h("li", null, svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.co2}" stroke="${COLORS.casing}"/>`), "CO₂ peak: mol %, next stop and when it gets there")),
       h("h3", null, "Indicators"),
@@ -1308,8 +1397,10 @@ const App = (() => {
     live.frames = stream.frames;
     live.typical = stream.typical;
     live.maxAbs = stream.maxAbs;
-    const speeds = [...$("speed").options].map((o) => Number(o.value)).filter((v) => v > 1);
-    live.speed = speeds.find((v) => v >= stream.step) || speeds[speeds.length - 1];
+    const speeds = [...$("speed").options].map((o) => Number(o.value));
+    live.speed = speeds.includes(Number(settings.speed))
+      ? Number(settings.speed)
+      : speeds.includes(C.screen.speed) ? C.screen.speed : speeds[0];
     $("speed").value = String(live.speed);
     scrub.max = String(Math.max(0, stream.times.length - 1));
     seek(0);
@@ -1412,7 +1503,11 @@ const App = (() => {
     seek(i);
     if (route.screen !== "overview") go({ screen: "overview" });
   });
-  $("speed").addEventListener("change", (e) => { live.speed = Number(e.target.value); });
+  $("speed").addEventListener("change", (e) => {
+    live.speed = Number(e.target.value);
+    settings.speed = live.speed;  // remembered with the other settings, and in ?s= links
+    saveSettings();
+  });
   $("stream-select").addEventListener("change", (e) => setStream(NORA.streams.find((s) => s.name === e.target.value)));
 
   let lastTick = 0, lastStep = 0;
@@ -1556,6 +1651,7 @@ const App = (() => {
       clear: () => { whatif.offline.clear(); whatif.cache = null; },
       offline: () => [...whatif.offline],
     },
+    routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T, register, restyle, go, start, theme: () => theme,
     select: (id) => {
