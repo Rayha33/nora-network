@@ -23,8 +23,10 @@
       geometry: { type: "Point", coordinates: [(f.geometry.coordinates[0][0] + f.geometry.coordinates[1][0]) / 2, (f.geometry.coordinates[0][1] + f.geometry.coordinates[1][1]) / 2] },
     })),
   };
-  const nodesData = JSON.parse(JSON.stringify(NORA.geo.nodes));
-  for (const f of nodesData.features) { f.properties.alarm = 0; f.properties.label = f.properties.name; }
+  // Badges have their own copy of the nodes, so updating them never re-places the names
+  // (that made every label fade out and in).
+  const badgeData = JSON.parse(JSON.stringify(NORA.geo.nodes));
+  for (const f of badgeData.features) f.properties.alarm = 0;
 
   const padding = () => ({ top: 30, left: 30, right: 30, bottom: 30 });
   const duration = (ms) => (App.reduceMotion ? 0 : ms);
@@ -77,11 +79,12 @@
       ...[1, 2, 3].map((l) => loadImage(`nora-alarm-${l}`, badgeUri(l), 32)),
     ]);
     map.addSource("nora-pipes", { type: "geojson", data: NORA.geo.pipes });
-    map.addSource("nora-nodes", { type: "geojson", data: nodesData });
+    map.addSource("nora-nodes", { type: "geojson", data: NORA.geo.nodes });
+    map.addSource("nora-node-badges", { type: "geojson", data: badgeData });
     map.addSource("nora-mids", { type: "geojson", data: mids });
     const state = (key, fallback) => ["coalesce", ["feature-state", key], fallback];
     const width = (k, extra = 0) => ["interpolate", ["linear"], ["zoom"],
-      3, ["+", extra, ["*", 0.6 * k, state("width", 1)]],
+      3, ["+", extra, ["*", 0.8 * k, state("width", 1)]],
       8, ["+", extra, ["*", 1.6 * k, state("width", 1)]]];
     const opacity = ["case", ["boolean", ["feature-state", "hide"], false], 0, ["boolean", ["feature-state", "dim"], false], 0.3, 1];
     // A dark casing under any line in alarm, so colour never stands alone.
@@ -98,7 +101,7 @@
       layout: {
         "icon-image": ["concat", "nora-", ["get", "type"]], "icon-size": ["interpolate", ["linear"], ["zoom"], 3, 0.55, 6, 0.8, 9, 1],
         "icon-allow-overlap": true, "icon-ignore-placement": true,
-        "text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 11.5, "text-offset": [0, 1.3],
+        "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 11.5, "text-offset": [0, 1.3],
         "text-anchor": "top", "text-optional": true, "text-max-width": 9,
       },
       paint: {
@@ -107,7 +110,7 @@
         "text-color": C.text, "text-halo-color": C.paper, "text-halo-width": 1.5,
       } });
     // Alarm badges: shape + number + colour, on nodes and at the middle of lines.
-    for (const [id, source, offset] of [["nora-node-alarms", "nora-nodes", [22, -22]], ["nora-pipe-alarms", "nora-mids", [0, 0]]]) {
+    for (const [id, source, offset] of [["nora-node-alarms", "nora-node-badges", [22, -22]], ["nora-pipe-alarms", "nora-mids", [0, 0]]]) {
       map.addLayer({ id, type: "symbol", source, filter: [">", ["get", "alarm"], 0],
         layout: { "icon-image": ["concat", "nora-alarm-", ["to-string", ["get", "alarm"]]], "icon-size": 0.85, "icon-offset": offset,
           "icon-allow-overlap": true, "icon-ignore-placement": true, "symbol-sort-key": ["-", 0, ["get", "alarm"]] } });
@@ -181,19 +184,15 @@
       map.setFeatureState(featureOf[id], { inactive: s.inactive, dim: s.dim, hide: s.hidden });
       if (s.level && !s.hidden) alarms.push(`${id}:${s.level}`);
     }
-    // Badges and labels are layout, so they follow the data, not feature state: only
-    // reload the data when one of them changes (about once per hour of data).
-    const labels = nodesData.features.map((f) => {
-      const value = App.liveValue(f.properties.asset);
-      return value ? `${f.properties.name}\n${value}` : f.properties.name;
-    });
-    const key = `${alarms.join(",")}|${labels.join("|")}`;
+    // Badges are layout, so they follow the data, not feature state: reload them only
+    // when an alarm changes. Names are never reloaded, so they stay put.
+    const key = alarms.join(",");
     if (key !== alarmKey) {
       alarmKey = key;
       const lvl = Object.fromEntries(alarms.map((a) => [a.split(":")[0], Number(a.split(":")[1])]));
-      nodesData.features.forEach((f, i) => { f.properties.alarm = lvl[f.properties.asset] || 0; f.properties.label = labels[i]; });
+      for (const f of badgeData.features) f.properties.alarm = lvl[f.properties.asset] || 0;
       for (const f of mids.features) f.properties.alarm = lvl[f.properties.asset] || 0;
-      map.getSource("nora-nodes").setData(nodesData);
+      map.getSource("nora-node-badges").setData(badgeData);
       map.getSource("nora-mids").setData(mids);
     }
   };
@@ -231,7 +230,7 @@
 
   view.applySettings = () => {
     if (!view.ready) return;
-    map.setLayoutProperty("nora-nodes", "text-field", App.settings().names ? ["get", "label"] : "");
+    map.setLayoutProperty("nora-nodes", "text-field", App.settings().names ? ["get", "name"] : "");
   };
 
   let pendingFit = false;

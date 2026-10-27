@@ -330,15 +330,6 @@ const App = (() => {
 
   // How fast gas through a node is changing, MSm³/d per hour, over the last 2 hours.
   const flowRate = (id) => rate(window4h(id).past);
-  // A node's flow now and its change, for map labels: plain signs, as map fonts lack arrows.
-  function liveValue(id) {
-    if (state.mode !== "live") return "";
-    const v = throughput(id, frame().flows);
-    if (v == null) return "";
-    const r = flowRate(id);
-    return `${fmt(v, 1)}${r == null || Math.abs(r) < 0.05 ? "" : `  ${signed(r, 1)}/h`}`;
-  }
-
   /* The 4-hour window shown in each flow-view card: the last 2 hours of actual flow,
      and the next 2 hours of what shippers have nominated (from the recorded data, or
      the `ahead` block of a live-feed frame). */
@@ -578,7 +569,7 @@ const App = (() => {
   function pipeStyle(id) {
     const d = assets[id], mode = state.mode, onshore = d.type === "onshore";
     const out = {
-      color: COLORS.normal, width: d.capacity ? 0.8 + 1.4 * Math.sqrt(d.capacity / maxCapacity) : 0.8,
+      color: COLORS.normal, width: d.capacity ? 0.6 + 0.9 * Math.sqrt(d.capacity / maxCapacity) : 0.6,
       dashed: onshore || d.status !== "operating", label: "", level: 0,
       forward: true, backward: Boolean(d.bidirectional),
       hidden: !visible(id), dim: route.unit !== "all" && unitOf[id] !== route.unit,
@@ -1389,6 +1380,6 @@ const App = (() => {
   return {
     state, live, route, views, settings: () => settings, embed, reduceMotion, nodeIds, pipeIds,
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
-    pipeStyle, nodeStyle, markers, window4h, flowRate, liveValue, thresholds: T, register, restyle, go, start, theme: () => theme, select: (id) => (id ? go({ screen: "asset", asset: id }) : null),
+    pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T, register, restyle, go, start, theme: () => theme, select: (id) => (id ? go({ screen: "asset", asset: id }) : null),
   };
 })();
