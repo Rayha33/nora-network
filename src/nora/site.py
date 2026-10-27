@@ -66,6 +66,7 @@ def build_site(out_dir: Path, data_dir: Path = DATA_DIR) -> dict:
     net = load_network(data_dir)
     streams_dir = data_dir / "streams"
     streams = [load_stream(name, net, streams_dir) for name in list_streams(streams_dir)]
+    streams.sort(key=lambda s: (s.order, s.name))
     analysis = analyse(net)
     links = repo_links()
 

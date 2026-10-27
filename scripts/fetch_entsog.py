@@ -1,12 +1,17 @@
-"""Download hourly physical gas flows from the ENTSOG Transparency Platform as a raw CSV.
+"""Download physical gas flows from the ENTSOG Transparency Platform as a raw CSV.
 
-    python scripts/fetch_entsog.py 2026-10-13 2026-10-20 data/streams/norway-exports-entsog/raw.csv
+    python scripts/fetch_entsog.py 2026-10-13 2026-10-20 raw.csv
 
-Defaults to Gassco's exit points, where Norwegian gas lands at the UK and continental
-terminals. Pass --points with other ENTSOG point directions (operator key + point key +
-direction, lowercase). The CSV keeps ENTSOG's own columns; the stream.toml beside it
-maps the points to NORA assets.
-API documentation: https://transparency.entsog.eu/api/archiveDirectories/8/api-manual/TP_REG715_Documentation_TP_API%20-%20v2.1.pdf
+Defaults to the points where Norwegian gas lands. Gassco publishes nothing for its own
+side of these points, so the readings come from the receiving operators' entry side
+(National Gas, Fluxys, NaTran, the German operators and GTS). Pass --points with other
+point directions: operator key + point key + direction, e.g. UK-TSO-0001ITP-00091entry.
+The CSV keeps ENTSOG's own columns; the stream.toml beside it maps points to NORA assets.
+
+The platform asks for one point per query, short date ranges and no parallel calls, so
+the script fetches point by point. On 2026-10-27 it returned "No result found" for recent
+dates and timed out on older ones; see issue #2.
+API manual: https://transparency.entsog.eu/api/archiveDirectories/8/api-manual/ENTSOG_TP_API_UserManual_v3.0.pdf
 """
 
 from __future__ import annotations
@@ -15,36 +20,36 @@ import argparse
 import csv
 import json
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
 
-URL = "https://transparency.entsog.eu/api/v1/operationalData"
+URL = "https://transparency.entsog.eu/api/v1/operationaldatas"
 FIELDS = [
     "periodFrom", "periodTo", "pointKey", "pointLabel", "operatorKey", "operatorLabel",
     "directionKey", "indicator", "value", "unit", "flowStatus",
 ]  # fmt: skip
 
 
-# Gassco exit points: St. Fergus, Dunkerque, Easington, Zeebrugge ZPT, Dornum, Emden (x2).
-GASSCO_EXITS = [
-    f"no-tso-0001{point}exit"
-    for point in (
-        "itp-00022",
-        "itp-00045",
-        "itp-00091",
-        "itp-00106",
-        "itp-00208",
-        "itp-00209",
-        "itp-00210",
-    )
+# Entry side of the points where Norwegian gas lands (Gassco's exit side has no data).
+NORWAY_LANDINGS = [
+    "UK-TSO-0001ITP-00022entry",  # St Fergus (Vesterled)
+    "UK-TSO-0001ITP-00091entry",  # Easington (Langeled)
+    "BE-TSO-0001ITP-00106entry",  # Zeebrugge ZPT (Zeepipe)
+    "FR-TSO-0003ITP-00045entry",  # Dunkerque (Franpipe)
+    "DE-TSO-0005ITP-00208entry",  # Dornum (Europipe I and II), two receiving operators
+    "DE-TSO-0009ITP-00208entry",
+    "DE-TSO-0002ITP-00210entry",  # Emden NPT (Norpipe), three receiving operators
+    "DE-TSO-0005ITP-00210entry",
+    "NL-TSO-0001ITP-00210entry",
 ]
 
 
-def fetch(start: str, end: str, points: list[str], period: str, attempts: int = 4) -> list[dict]:
+def fetch(start: str, end: str, point: str, period: str, attempts: int = 3) -> list[dict]:
     query = urllib.parse.urlencode(
         {
-            "pointDirection": ",".join(points),
+            "pointDirection": point,
             "indicator": "Physical Flow",
             "periodType": period,
             "timezone": "UCT",
@@ -56,12 +61,18 @@ def fetch(start: str, end: str, points: list[str], period: str, attempts: int = 
     )
     for attempt in range(1, attempts + 1):
         try:
-            with urllib.request.urlopen(f"{URL}?{query}", timeout=180) as response:
+            with urllib.request.urlopen(f"{URL}?{query}", timeout=120) as response:
                 return json.load(response)["operationalData"]
+        except urllib.error.HTTPError as error:
+            if error.code == 404:  # ENTSOG's "No result found"
+                print(f"{point}: no data for {start} to {end}")
+                return []
+            print(f"{point}: attempt {attempt} failed: {error}")
         except OSError as error:  # the platform is often slow; back off and retry
-            print(f"attempt {attempt} failed: {error}")
-            time.sleep(10 * attempt)
-    raise SystemExit("ENTSOG did not answer; try again later")
+            print(f"{point}: attempt {attempt} failed: {error}")
+        time.sleep(10 * attempt)
+    print(f"{point}: gave up")
+    return []
 
 
 def main() -> None:
@@ -69,10 +80,12 @@ def main() -> None:
     parser.add_argument("start", help="first day, YYYY-MM-DD")
     parser.add_argument("end", help="last day (exclusive), YYYY-MM-DD")
     parser.add_argument("out", type=Path, help="raw CSV to write")
-    parser.add_argument("--points", nargs="+", default=GASSCO_EXITS, help="ENTSOG point directions")
+    parser.add_argument("--points", nargs="+", default=NORWAY_LANDINGS, help="point directions")
     parser.add_argument("--period", default="hour", choices=["hour", "day"])
     args = parser.parse_args()
-    records = fetch(args.start, args.end, args.points, args.period)
+    records = [r for point in args.points for r in fetch(args.start, args.end, point, args.period)]
+    if not records:
+        raise SystemExit("no readings returned; nothing written")
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with args.out.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=FIELDS, extrasaction="ignore")

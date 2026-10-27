@@ -81,7 +81,8 @@ end = 2026-10-21T19:00:00Z
 ```
 
 Readings that map to the same asset at the same time are added together, so several
-raw points can feed one pipeline or terminal. A value on a pipeline is its flow from
+raw points can feed one pipeline or terminal. Put a `-` before the id
+(`"KWhToPoland" = "-baltic_pipe_east"`) when the source reports outflows as negative. A value on a pipeline is its flow from
 `from` to `to`; a negative value flows the other way.
 
 Instead of `[import]` you can write `flows.csv` yourself in NORA's own format:
@@ -120,23 +121,45 @@ the gas's calorific value; for Norwegian gas, about 11 kWh per standard cubic me
 | GWh/d | 1 / 11.0 = 0.0909 |
 | mcm/d (million m3/d) | 1.0 |
 
-## A real source: the ENTSOG Transparency Platform
+## Real sources
 
-ENTSOG publishes physical flows at Europe's interconnection points, including Gassco's
-exit points where Norwegian gas lands. `scripts/fetch_entsog.py` downloads them:
+### Energinet (Denmark): in the repository
+
+`denmark-gas-energinet/` holds daily measured flows from Energinet's open
+[Energi Data Service](https://www.energidataservice.dk/tso-gas/Gasflow). It is a good
+template for a wide CSV with energy units and outflows reported as negative numbers.
+Refresh it with:
 
 ```bash
-python scripts/fetch_entsog.py 2026-10-13 2026-10-20 data/streams/norway-exports/raw.csv
-nora stream new norway-exports --from data/streams/norway-exports/raw.csv
+python scripts/fetch_energinet.py 2026-08-01 2026-10-27 data/streams/denmark-gas-energinet/raw.csv
 ```
 
-The platform can be slow; the script retries. Gassco's exit points map to NORA like this:
+### ENTSOG Transparency Platform: help wanted
 
-| ENTSOG point | NORA asset |
+ENTSOG publishes physical flows at Europe's interconnection points, including the
+terminals where Norwegian gas lands. Gassco publishes nothing for its own side, so the
+readings come from the receiving operators. `scripts/fetch_entsog.py` asks for them point
+by point (the platform's own rule):
+
+```bash
+python scripts/fetch_entsog.py 2026-10-13 2026-10-20 raw.csv
+nora stream new norway-exports --from raw.csv
+```
+
+| ENTSOG point direction | NORA asset |
 | --- | --- |
-| St. Fergus | `vesterled` |
-| Easington | `langeled_south` |
-| Zeebrugge ZPT | `zeepipe_1` |
-| Dunkerque | `franpipe` |
-| Dornum (EPT1 & EPT2) | `dornum` |
-| Emden (EPT1), Emden (NPT) | `emden` |
+| UK-TSO-0001ITP-00022entry (St Fergus) | `vesterled` |
+| UK-TSO-0001ITP-00091entry (Easington) | `langeled_south` |
+| BE-TSO-0001ITP-00106entry (Zeebrugge ZPT) | `zeepipe_1` |
+| FR-TSO-0003ITP-00045entry (Dunkerque) | `franpipe` |
+| DE-TSO-0005/0009ITP-00208entry (Dornum) | `dornum` |
+| DE-TSO-0002/0005, NL-TSO-0001ITP-00210entry (Emden NPT) | `norpipe` |
+
+On 2026-10-27 the platform returned "No result found" for recent dates and timed out on
+older ones, so this dataset is not in the repository yet. If you get it working, see
+[issue #2](https://github.com/Rayha33/nora-network/issues/2).
+
+## Choosing the dataset that plays first
+
+The home page replays the stream with the lowest `order` (default 100, then by name).
+`synthetic-week` sets `order = 1` because it moves the whole network.

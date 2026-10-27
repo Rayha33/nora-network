@@ -19,7 +19,8 @@ Dutch and Danish gas to Europe's markets.
 - **Analysis.** [networkx](https://networkx.org/) computes how much gas the network can
   deliver to each market (max flow) and how much is lost if any single asset trips (N-1).
   The *Load* and *Risk* modes show both on the chart.
-- **Live replay.** Time series of flows play back as if they were arriving live: lines
+- **Live replay.** Time series of flows, from a synthetic week to real daily flows from
+  Energinet, play back as if they were arriving live: lines
   fill and empty, dots move with the gas, alarms fire when a flow drops. Add a real
   dataset with one command; `nora live` serves it as a real Server-Sent Events feed.
 - **One-file sharing.** `network.html` is fully self-contained, so you can email it or

@@ -65,6 +65,7 @@ class Stream:
     times: tuple[datetime, ...]
     assets: tuple[str, ...]
     values: tuple[tuple[float | None, ...], ...]  # values[time][asset]; None = no reading
+    order: int = 100  # lower plays first on the site; set with `order =` in stream.toml
 
     def frames(self) -> Iterator[tuple[datetime, dict[str, float]]]:
         for when, row in zip(self.times, self.values, strict=True):
@@ -158,8 +159,10 @@ def import_rows(folder: Path, spec: dict, where: str, problems: list[str]) -> li
     layout = "long": one reading per line, with `asset` and `value` columns.
     layout = "wide": one line per time, one column per point.
     [import.assets] maps raw point names (long) or column names (wide) to NORA ids;
-    points mapped to "" are skipped. Readings that map to the same asset and time
-    are summed, and every value is multiplied by `factor` to get MSm3/d.
+    points mapped to "" are skipped, and a leading "-" ("-baltic_pipe_east") flips
+    the sign for sources that report outflows as negative. Readings that map to the
+    same asset and time are summed, and every value is multiplied by `factor` to get
+    MSm3/d.
     """
     path = folder / spec.get("file", "raw.csv")
     if not path.exists():
@@ -197,14 +200,17 @@ def import_rows(folder: Path, spec: dict, where: str, problems: list[str]) -> li
                 continue
             if layout == "long":
                 point = record[spec.get("asset", "asset")]
-                pairs = [(mapping.get(point, point) if mapping else point, record[spec["value"]])]
+                value_column = spec.get("value", "value")
+                pairs = [(mapping.get(point, point) if mapping else point, record[value_column])]
             else:
                 pairs = [(asset, record.get(column, "")) for column, asset in mapping.items()]
             for asset, raw in pairs:
                 if not asset or raw in ("", None):
                     continue
+                sign = -1.0 if asset.startswith("-") else 1.0
+                asset = asset.removeprefix("-")
                 try:
-                    value = float(raw) * factor
+                    value = sign * float(raw) * factor
                 except ValueError:
                     problems.append(f"{line}: '{raw}' is not a number")
                     continue
@@ -336,6 +342,7 @@ def _pivot(name: str, meta: dict, events: tuple[Event, ...], rows: list[Row]) ->
         times=tuple(times),
         assets=tuple(assets),
         values=tuple(tuple(row) for row in values),
+        order=int(meta.get("order", 100)),
     )
 
 
