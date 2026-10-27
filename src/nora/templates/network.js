@@ -529,6 +529,10 @@
     live.stream = prepare(stream);
     live.typical = stream.typical;
     live.maxAbs = stream.maxAbs;
+    // About one data step per second: hourly data plays an hour a second, daily a day.
+    const speeds = [...$("speed").options].map((o) => Number(o.value)).filter((v) => v > 1);
+    live.speed = speeds.find((v) => v >= stream.step) || speeds[speeds.length - 1];
+    $("speed").value = String(live.speed);
     live.playhead = 0;
     live.index = -1;
     scrub.max = String(stream.times.length - 1);

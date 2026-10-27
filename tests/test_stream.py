@@ -190,3 +190,35 @@ def test_live_server_sends_meta_then_frames(tiny, tmp_path):
     assert json.loads(lines[1][len("data: ") :])["title"] == "Feed"
     assert lines[3] == "event: frame"
     assert json.loads(lines[4][len("data: ") :])["values"] == {"pipe_a": 1.0}
+
+
+def test_mapping_with_a_minus_flips_the_sign(tiny, tmp_path):
+    raw = "day,Out,In\n2026-01-01,-30,12\n"
+    toml = """
+[import]
+layout = "wide"
+timestamp = "day"
+[import.assets]
+"Out" = "-pipe_b"
+"In" = "pipe_a"
+"""
+    make_stream(tmp_path / "signs", toml, {"raw.csv": raw})
+    stream = load_stream("signs", tiny, tmp_path)
+    assert dict(zip(stream.assets, stream.values[0], strict=True)) == {
+        "pipe_a": 12.0,
+        "pipe_b": 30.0,
+    }
+
+
+def test_long_layout_defaults_to_a_value_column(tiny, tmp_path):
+    raw = "timestamp,point,value\n2026-01-01T00:00Z,A,5\n"
+    toml = '[import]\nasset = "point"\n[import.assets]\n"A" = "pipe_a"\n'
+    make_stream(tmp_path / "plain", toml, {"raw.csv": raw})
+    assert load_stream("plain", tiny, tmp_path).values == ((5.0,),)
+
+
+def test_order_sets_which_stream_comes_first(north_sea):
+    synthetic = load_stream("synthetic-week", north_sea)
+    real = load_stream("denmark-gas-energinet", north_sea)
+    assert (synthetic.order, real.order) == (1, 100)
+    assert not real.synthetic and real.source.startswith("https://")

@@ -1,0 +1,24 @@
+title = "Danish gas flows, Aug to Oct 2026"
+description = "Measured daily flows through the Danish gas system from Energinet: Tyra's output into Nybro, gas arriving from the North Sea (mostly Norwegian gas through Baltic Pipe), the onward flow to Poland and Danish consumption. Real data for four pipelines; the rest of the chart has no readings."
+source = "https://www.energidataservice.dk/tso-gas/Gasflow"
+license = "Open data from Energinet's Energi Data Service; credit Energinet as the source"
+
+# Refresh with: python scripts/fetch_energinet.py 2026-08-01 2026-10-27 data/streams/denmark-gas-energinet/raw.csv
+[import]
+file = "raw.csv"
+layout = "wide"
+timestamp = "GasDay"
+timezone = "UTC"      # gas days, labelled by date
+factor = 9.09e-8      # kWh per gas day -> MSm3/d, at about 11 kWh per standard cubic metre
+
+# Energinet reports flows leaving Denmark as negative numbers; "-" flips them so they
+# read as flow along the pipeline's from -> to direction.
+[import.assets]
+"kWhFromTyra" = "tyra_nybro"
+"KWhFromNorthSea" = "baltic_pipe_ns"
+"KWhToPoland" = "-baltic_pipe_east"
+"KWhToDenmark" = "-nybro_etf"
+"KWhFromBiogas" = ""        # not modelled yet
+"KWhToOrFromStorage" = ""   # Danish storage is not in the network yet
+"KWhToOrFromGermany" = ""   # Ellund is not in the network yet
+"KWhToSweden" = ""          # Dragør is not in the network yet
