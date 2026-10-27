@@ -25,6 +25,7 @@ from .data import SUPPLY_TYPES, Network
 from .graph import build_graph
 
 SOURCE, SINK = "__supply__", "__markets__"
+OUT = "__out__"  # suffix for the out-side of a capacitated node
 
 
 @dataclass(frozen=True)
@@ -46,7 +47,13 @@ class Outage:
 
 def flow_graph(graph: nx.DiGraph, supply: dict[str, float] | None = None) -> nx.DiGraph:
     """The graph plus a super-source feeding every supplier and a super-sink behind
-    every market. `supply` overrides the suppliers' capacities (MSm3/d)."""
+    every market. `supply` overrides the suppliers' capacities (MSm3/d).
+
+    A node with its own capacity (a processing plant) cannot be represented as a
+    networkx node, whose capacity is infinite, so it is split: incoming edges keep
+    pointing at the in-node, outgoing edges are re-hung on `node + OUT`, and an
+    edge between the two carries the plant's capacity.
+    """
     flows = graph.copy()
     flows.add_node(SOURCE)
     flows.add_node(SINK)
@@ -57,12 +64,19 @@ def flow_graph(graph: nx.DiGraph, supply: dict[str, float] | None = None) -> nx.
                 flows.add_edge(SOURCE, node, capacity=capacity)
         elif attrs["type"] == "market":
             flows.add_edge(node, SINK)
+        elif attrs["capacity_msm3d"]:
+            out = node + OUT
+            for _, target, edge in list(flows.out_edges(node, data=True)):
+                flows.add_edge(out, target, **edge)
+            flows.remove_edges_from(list(flows.out_edges(node)))
+            flows.add_edge(node, out, capacity=attrs["capacity_msm3d"])
     return flows
 
 
 def max_flow(graph: nx.DiGraph, supply: dict[str, float] | None = None) -> Flow:
-    value, flow = nx.maximum_flow(flow_graph(graph, supply), SOURCE, SINK)
-    return _summarise(graph, value, flow)
+    flows = flow_graph(graph, supply)
+    value, flow = nx.maximum_flow(flows, SOURCE, SINK)
+    return _summarise(graph, flows, value, flow)
 
 
 def routed_flow(graph: nx.DiGraph, supply: dict[str, float] | None = None) -> Flow:
@@ -73,8 +87,8 @@ def routed_flow(graph: nx.DiGraph, supply: dict[str, float] | None = None) -> Fl
     routing. Network simplex wants integers, so capacities are scaled to kSm3/d and
     lengths rounded to whole kilometres.
     """
-    flow = shortest_max_flow(flow_graph(graph, supply))
-    return _summarise(graph, sum(flow[SOURCE].values()), flow)
+    flow = shortest_max_flow(flows := flow_graph(graph, supply))
+    return _summarise(graph, flows, sum(flow[SOURCE].values()), flow)
 
 
 def shortest_max_flow(flows: nx.DiGraph) -> dict[str, dict[str, float]]:
@@ -92,12 +106,16 @@ def shortest_max_flow(flows: nx.DiGraph) -> dict[str, dict[str, float]]:
     return {u: {v: f / 1000 for v, f in targets.items()} for u, targets in flow.items()}
 
 
-def _summarise(graph: nx.DiGraph, value: float, flow: dict[str, dict[str, float]]) -> Flow:
+def _summarise(
+    graph: nx.DiGraph, flows: nx.DiGraph, value: float, flow: dict[str, dict[str, float]]
+) -> Flow:
     pipelines: dict[str, float] = {}
     for u, v, attrs in graph.edges(data=True):
+        # a split node's outgoing pipelines are re-hung on its out-node
+        tail = u + OUT if (u + OUT) in flows else u
         sign = 1 if u == attrs["from_id"] else -1
         pipe = attrs["pipeline"]
-        pipelines[pipe] = pipelines.get(pipe, 0.0) + sign * flow[u].get(v, 0.0)
+        pipelines[pipe] = pipelines.get(pipe, 0.0) + sign * flow[tail].get(v, 0.0)
     markets = [n for n, attrs in graph.nodes(data=True) if attrs["type"] == "market"]
     return Flow(
         value=round(value, 6),
