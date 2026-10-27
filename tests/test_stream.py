@@ -1,5 +1,6 @@
 import itertools
 import json
+import socket
 import threading
 import urllib.request
 from datetime import UTC, datetime
@@ -8,7 +9,7 @@ import pytest
 
 from nora.data import DataError
 from nora.live import replay, serve
-from nora.stream import list_streams, load_stream, scaffold, write_flows
+from nora.stream import Stream, list_streams, load_stream, scaffold, write_flows
 
 
 def make_stream(folder, toml, files=None):
@@ -171,7 +172,9 @@ def test_live_server_sends_meta_then_frames(tiny, tmp_path):
     stream = load_stream("s", tiny, tmp_path)
     site = tmp_path / "site"
     site.mkdir()
-    port = 18765
+    with socket.socket() as probe:  # a free port, so parallel test runs don't collide
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
     thread = threading.Thread(
         target=serve,
         args=(site, stream),
@@ -185,6 +188,8 @@ def test_live_server_sends_meta_then_frames(tiny, tmp_path):
             break
         except OSError:
             threading.Event().wait(0.1)
+    else:
+        pytest.fail("the live server never came up")
     lines = [response.readline().decode().strip() for _ in range(6)]
     assert lines[0] == "event: meta"
     assert json.loads(lines[1][len("data: ") :])["title"] == "Feed"
@@ -215,6 +220,101 @@ def test_long_layout_defaults_to_a_value_column(tiny, tmp_path):
     toml = '[import]\nasset = "point"\n[import.assets]\n"A" = "pipe_a"\n'
     make_stream(tmp_path / "plain", toml, {"raw.csv": raw})
     assert load_stream("plain", tiny, tmp_path).values == ((5.0,),)
+
+
+def test_stream_names_that_escape_the_folder_are_rejected(tiny, tmp_path):
+    with pytest.raises(DataError, match="folder name"):
+        load_stream("../evil", tiny, tmp_path)
+    with pytest.raises(DataError, match="folder name"):
+        load_stream("a/b", tiny, tmp_path)
+    (tmp_path / "raw.csv").write_text("timestamp,point,value\n2026-01-01T00:00Z,A,5\n")
+    with pytest.raises(DataError, match="folder name"):
+        scaffold("../evil", tmp_path / "raw.csv", tiny, tmp_path / "streams")
+
+
+def test_import_raw_file_must_stay_inside_the_stream_folder(tiny, tmp_path):
+    (tmp_path / "secret.csv").write_text("timestamp,point,value\n2026-01-01T00:00Z,A,5\n")
+    make_stream(
+        tmp_path / "escape",
+        '[import]\nfile = "../secret.csv"\nasset = "point"\n[import.assets]\n"A" = "pipe_a"\n',
+    )
+    with pytest.raises(DataError, match="inside the stream folder"):
+        load_stream("escape", tiny, tmp_path)
+
+
+def test_import_strips_whitespace_from_raw_values(tiny, tmp_path):
+    raw = "when,point,dir,kwh\n2026-01-01T00:00Z,A, exit , 10 \n2026-01-01T00:00Z,A,entry,99\n"
+    toml = """
+[import]
+file = "raw.csv"
+timestamp = "when"
+asset = "point"
+value = "kwh"
+[import.where]
+dir = "exit"
+[import.assets]
+"A" = "pipe_a"
+"""
+    make_stream(tmp_path / "ws", toml, {"raw.csv": raw})
+    stream = load_stream("ws", tiny, tmp_path)
+    assert stream.values == ((10.0,),)
+
+
+def test_events_with_inverted_times_are_rejected(tiny, tmp_path):
+    make_stream(
+        tmp_path / "back",
+        """
+[[events]]
+label = "Backwards"
+asset = "pipe_a"
+start = 2026-01-05T04:00:00Z
+end = 2026-01-05T02:00:00Z
+""",
+    )
+    with pytest.raises(DataError, match="end must be after start"):
+        load_stream("back", tiny, tmp_path)
+
+
+def test_events_with_out_of_range_capacity_factor_are_rejected(tiny, tmp_path):
+    make_stream(
+        tmp_path / "hot",
+        """
+[[events]]
+label = "Overdriven"
+asset = "pipe_a"
+start = 2026-01-05T02:00:00Z
+end = 2026-01-05T04:00:00Z
+capacity_factor = -1.0
+""",
+    )
+    with pytest.raises(DataError, match="capacity_factor"):
+        load_stream("hot", tiny, tmp_path)
+
+
+def test_replay_with_an_empty_stream_sleeps_instead_of_spinning(monkeypatch):
+    empty = Stream(
+        name="e",
+        title="e",
+        description="",
+        source="",
+        license="",
+        synthetic=False,
+        events=(),
+        times=(),
+        assets=(),
+        values=(),
+    )
+    sleeps = []
+
+    def fake_sleep(seconds):
+        sleeps.append(seconds)
+        if len(sleeps) >= 3:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr("nora.live.time.sleep", fake_sleep)
+    with pytest.raises(KeyboardInterrupt):
+        list(replay(empty, speed=1.0, loop=True))
+    assert sleeps == [1.0, 1.0, 1.0]  # napping once per loop, not busy-looping
 
 
 def test_order_sets_which_stream_comes_first(north_sea):

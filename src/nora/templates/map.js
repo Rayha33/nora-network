@@ -182,6 +182,7 @@
   };
 
   view.highlight = (id) => {
+    if (!map) return; // maplibre missing (offline): nothing to highlight
     if (highlighted && featureOf[highlighted].source === "nora-nodes") {
       map.setFeatureState(featureOf[highlighted], { selected: false });
     }
@@ -190,6 +191,7 @@
   };
 
   view.focus = (id, animate) => {
+    if (!map) return; // maplibre missing (offline): nothing to focus on
     const d = NORA.assets[id];
     if (d.kind === "node") {
       map.easeTo({ center: [d.lon, d.lat], zoom: Math.max(map.getZoom(), 6.5), duration: animate ? duration(600) : 0 });

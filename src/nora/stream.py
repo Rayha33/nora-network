@@ -18,6 +18,7 @@ import csv
 import json
 import math
 import random
+import re
 import shutil
 import statistics
 import tomllib
@@ -35,7 +36,14 @@ from .graph import build_graph
 
 STREAMS_DIR = DATA_DIR / "streams"
 FLOW_COLUMNS = ("timestamp", "asset", "flow_msm3d")
+STREAM_ID = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 Row = tuple[datetime, str, float]
+
+
+def _check_stream_id(name: str) -> None:
+    """Stream names become folder names: keep them inside data/streams."""
+    if not STREAM_ID.fullmatch(name):
+        raise DataError([f"stream name '{name}' must match {STREAM_ID.pattern} (a folder name)"])
 
 
 @dataclass(frozen=True)
@@ -103,6 +111,7 @@ def list_streams(streams_dir: Path = STREAMS_DIR) -> list[str]:
 
 def load_stream(name: str, net: Network, streams_dir: Path = STREAMS_DIR) -> Stream:
     """Read one stream folder and check every row against the network."""
+    _check_stream_id(name)
     folder = Path(streams_dir) / name
     where = f"streams/{name}"
     meta_path = folder / "stream.toml"
@@ -165,6 +174,11 @@ def import_rows(folder: Path, spec: dict, where: str, problems: list[str]) -> li
     MSm3/d.
     """
     path = folder / spec.get("file", "raw.csv")
+    if path.resolve().parent != Path(folder).resolve():
+        problems.append(
+            f"{where}: raw file must stay inside the stream folder, got {spec.get('file')!r}"
+        )
+        return []
     if not path.exists():
         problems.append(f"{where}: raw file {path.name} not found")
         return []
@@ -190,6 +204,8 @@ def import_rows(folder: Path, spec: dict, where: str, problems: list[str]) -> li
             problems.append(f"{where}: {path.name} has no column(s) {missing}; it has: {columns}")
             return []
         for record in reader:
+            # raw files are messier than NORA's own CSVs: strip before filtering
+            record = {k: (v or "").strip() for k, v in record.items()}
             if any(record.get(column, "") != value for column, value in where_filter.items()):
                 continue
             line = f"{where}/{path.name} line {reader.line_num}"
@@ -296,17 +312,28 @@ def _events(meta: dict, net: Network, where: str, problems: list[str]) -> tuple[
             )
             continue
         try:
-            events.append(
-                Event(
-                    label=spec.get("label", asset),
-                    asset=asset,
-                    start=parse_time(spec["start"]),
-                    end=parse_time(spec["end"]),
-                    capacity_factor=float(spec.get("capacity_factor", 0.0)),
-                )
+            event = Event(
+                label=spec.get("label", asset),
+                asset=asset,
+                start=parse_time(spec["start"]),
+                end=parse_time(spec["end"]),
+                capacity_factor=float(spec.get("capacity_factor", 0.0)),
             )
         except (KeyError, ValueError) as error:
             problems.append(f"{where}/stream.toml event {i}: needs start and end times ({error})")
+            continue
+        if event.end <= event.start:
+            problems.append(
+                f"{where}/stream.toml event {i}: end must be after start "
+                f"({event.start:%Y-%m-%d %H:%M} -> {event.end:%Y-%m-%d %H:%M})"
+            )
+        elif not 0.0 <= event.capacity_factor <= 1.0:
+            problems.append(
+                f"{where}/stream.toml event {i}: capacity_factor must be between 0 and 1, "
+                f"got {event.capacity_factor}"
+            )
+        else:
+            events.append(event)
     return tuple(events)
 
 
@@ -387,6 +414,7 @@ def scaffold(name: str, raw: Path, net: Network, streams_dir: Path = STREAMS_DIR
     Guesses the time column, whether the file is long or wide, and which NORA asset
     each point is, by name. Every guess is written out for a person to check.
     """
+    _check_stream_id(name)
     folder = Path(streams_dir) / name
     if folder.exists():
         raise DataError([f"streams/{name} already exists"])

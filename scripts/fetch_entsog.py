@@ -64,8 +64,10 @@ def fetch(start: str, end: str, point: str, period: str, attempts: int = 3) -> l
             with urllib.request.urlopen(f"{URL}?{query}", timeout=120) as response:
                 data = json.load(response)
                 # the platform's key changed: older docs say operationalData,
-                # the current API returns the lowercase plural
-                rows = data.get("operationaldatas") or data.get("operationalData")
+                # the current API returns the lowercase plural. `get`'s default
+                # (not `or`) keeps a legitimate empty result from looking like
+                # a missing key.
+                rows = data.get("operationaldatas", data.get("operationalData"))
                 if rows is None:
                     raise KeyError(f"unexpected response keys: {list(data)}")
                 return rows
@@ -76,7 +78,8 @@ def fetch(start: str, end: str, point: str, period: str, attempts: int = 3) -> l
             print(f"{point}: attempt {attempt} failed: {error}")
         except OSError as error:  # the platform is often slow; back off and retry
             print(f"{point}: attempt {attempt} failed: {error}")
-        time.sleep(10 * attempt)
+        if attempt < attempts:  # no backoff after the final try
+            time.sleep(10 * attempt)
     print(f"{point}: gave up")
     return []
 

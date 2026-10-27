@@ -72,7 +72,7 @@
       return {
         id,
         size: 16 * style.scale,
-        label: `<b>${NORA.assets[id].name}</b>\n${style.sub}`,
+        label: `<b>${App.esc(NORA.assets[id].name)}</b>\n${style.sub}`,
         opacity: style.dim ? 0.45 : 1,
         borderWidth: style.ring ? 3 : 0,
         color: {
