@@ -224,6 +224,22 @@
       const hit = map.queryRenderedFeatures(e.point, { layers: ["nora-nodes", "nora-pipes-hit"] });
       if (hit.length) App.select(hit[0].properties.asset);
     });
+    // Right-click a node or a pipeline: the same menu everywhere. A plain DOM
+    // listener on the container: it fires for real right-clicks, whichever
+    // canvas MapLibre puts on top, and we hit-test the point ourselves.
+    el.addEventListener("contextmenu", (e) => {
+      if (!view.ready) return;
+      const rect = map.getCanvas().getBoundingClientRect();
+      const hit = map.queryRenderedFeatures([e.clientX - rect.left, e.clientY - rect.top], { layers: ["nora-nodes", "nora-pipes-hit"] });
+      if (!hit.length) return;
+      e.preventDefault();
+      const id = hit[0].properties.asset, d = NORA.assets[id];
+      const items = App.menu.for(id, d.lat != null ? {
+        center: () => map.easeTo({ center: [d.lon, d.lat], zoom: Math.max(map.getZoom(), 7), duration: App.reduceMotion ? 0 : 700 }),
+        coords: `${d.lat.toFixed(4)}, ${d.lon.toFixed(4)}`,
+      } : {});
+      App.menu.open(e.clientX, e.clientY, items);
+    });
   };
 
   view.restyle = () => {

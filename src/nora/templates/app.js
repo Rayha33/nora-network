@@ -1627,6 +1627,39 @@ const App = (() => {
     refreshScreens();
     drawSpark();
   }
+  /* Right-click menu: the same actions everywhere, on the Map and in the Flow.
+     openMenu places it inside the viewport; any click, Esc or resize closes it. */
+  const menu = { el: null };
+  function closeMenu() { if (menu.el) { menu.el.remove(); menu.el = null; } }
+  function openMenu(x, y, items) {
+    closeMenu();
+    if (!items.length) return;
+    const el = h("div", { class: "ctx-menu", role: "menu" },
+      ...items.map((it) => it === "-"
+        ? h("div", { class: "rule" })
+        : h("button", { type: "button", role: "menuitem", onclick: () => { closeMenu(); it.act(); } }, it.label)));
+    el.style.left = Math.max(8, Math.min(x, innerWidth - 200)) + "px";
+    el.style.top = Math.max(8, Math.min(y, innerHeight - 10 - items.length * 32)) + "px";
+    document.body.append(el);
+    menu.el = el;
+  }
+  /* One builder for the actions on an asset, so both views offer the same menu. */
+  function menuFor(id, ctx = {}) {
+    if (!id || !assets[id]) return [];
+    const d = assets[id], items = [];
+    items.push({ label: "Open details", act: () => { if (route.screen === "unit") openSidebar(id); else go({ screen: "asset", asset: id }); } });
+    if (ctx.center) items.push({ label: "Centre here", act: ctx.center });
+    if (ctx.coords) items.push({ label: `Copy position (${ctx.coords})`, act: () => { if (navigator.clipboard) navigator.clipboard.writeText(ctx.coords); } });
+    items.push("-");
+    if (d.kind === "node") items.push({
+      label: whatif.offline.has(id) ? "Restore in the what-if" : "Take offline in the what-if",
+      act: () => { if (state.mode !== "whatif") { state.mode = "whatif"; markTabs(); restyle(); } toggleOffline(id); renderSidebar(); renderWhatif(); },
+    });
+    items.push({ label: "Open the full page", act: () => go({ screen: "asset", asset: id }) });
+    if (d.kind === "node") items.push({ label: "Diagnostics", act: () => go({ screen: "diag", asset: id }) });
+    return items;
+  }
+
   function markTabs() {
     for (const tab of document.querySelectorAll("[data-view]")) tab.setAttribute("aria-selected", String(tab.dataset.view === state.view));
     for (const tab of document.querySelectorAll("[data-mode]")) tab.setAttribute("aria-selected", String(tab.dataset.mode === state.mode));
@@ -1649,6 +1682,9 @@ const App = (() => {
     $("theme-toggle").addEventListener("click", () => setTheme(theme === "light" ? "dark" : "light"));
     $("side-close").addEventListener("click", closeSidebar);
     addEventListener("keydown", (e) => { if (e.key === "Escape" && side.id) closeSidebar(); });
+    addEventListener("click", closeMenu);
+    addEventListener("resize", closeMenu);
+    addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(); });
     for (const tab of document.querySelectorAll("[data-view]")) {
       tab.addEventListener("click", () => {
         state.view = tab.dataset.view;
@@ -1721,5 +1757,6 @@ const App = (() => {
       go({ screen: "asset", asset: id });
     },
     sidebar: { open: (id) => openSidebar(id), close: closeSidebar, id: () => side.id },
+    menu: { open: openMenu, close: closeMenu, for: menuFor },
   };
 })();
