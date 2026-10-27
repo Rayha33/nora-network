@@ -614,8 +614,14 @@ def _pig_programme(
         if programme is not None:
             problems.append(f"{where}/stream.toml pig_programme: must be a table")
         return []
-    every = float(programme.get("every_hours", 48))
-    speed = float(programme.get("speed_mps", 4.0))
+    try:
+        every = float(programme.get("every_hours", 48))
+        speed = float(programme.get("speed_mps", 4.0))
+    except (TypeError, ValueError):
+        problems.append(
+            f"{where}/stream.toml pig_programme: every_hours and speed_mps must be numbers"
+        )
+        return []
     if every <= 0:
         problems.append(f"{where}/stream.toml pig_programme: every_hours must be above 0")
         return []

@@ -73,6 +73,27 @@ test("routes: a peak moves with the gas and leaves the network in the end", () =
   assert.equal(routes.peakPlace(peak, peak.t0 + 400 * 24 * HOUR), null, "the peak is gone in the far future");
 });
 
+test("routes: a choice made in the past stays made when the hour on screen changes", () => {
+  const loaded = loadApp();
+  assertHealthy(assert, loaded);
+  const { App } = loaded;
+  const { routes } = App;
+  loadFirstHour(App, loaded.NORA);
+  const stream = App.live.stream;
+  const pid = stream.assets.find((id) => App.pipeIds.includes(id) && App.live.frames[0].flows[id] > 1);
+  const peak = { id: pid, t0: stream.times[0], delta: 50, forward: true, level: 1 };
+  const pig = stream.pigs[0];
+  const later = stream.times[0] + 30 * HOUR;
+  const peakBefore = routes.peakPlace(peak, later), pigBefore = routes.pigPlace(pig, pig.launch + 30 * HOUR);
+  // A new hour arrives with every line's flow reversed: what was already decided must not move.
+  const reversed = {};
+  for (const [id, v] of Object.entries(App.live.frames[0].flows)) reversed[id] = -v;
+  App.live.frames.push({ t: stream.times[0] + 40 * HOUR, flows: reversed, metrics: {}, plan: null });
+  App.live.index = 1;
+  assert.deepEqual(routes.peakPlace(peak, later), peakBefore, "the peak keeps its place and route");
+  assert.deepEqual(routes.pigPlace(pig, pig.launch + 30 * HOUR), pigBefore, "the pig keeps its place and route");
+});
+
 /* Put one real hour of the first stream into App.live, the way `start()` does,
    so the route helpers have flows to follow. */
 function loadFirstHour(App, nora) {
