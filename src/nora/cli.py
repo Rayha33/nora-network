@@ -65,11 +65,17 @@ def cmd_stats(args) -> int:
     return 0
 
 
-def cmd_build(args) -> int:
+def _build(args) -> dict:
+    """Build the site and print the line every build prints; return the summary."""
     summary = build_site(args.out, args.data)
     print(
         f"Built {summary['out']}/index.html and network.html ({len(summary['streams'])} stream(s))"
     )
+    return summary
+
+
+def cmd_build(args) -> int:
+    _build(args)
     return 0
 
 
@@ -89,17 +95,22 @@ def cmd_serve(args) -> int:
 def cmd_live(args) -> int:
     from .live import serve
 
-    cmd_build(args)
+    # build_site has already loaded the network and every stream; reuse them
+    # instead of loading (and re-solving synthetic streams) a second time.
+    summary = _build(args)
+    streams = summary["streams"]
     names = list_streams(_streams_dir(args))
     name = args.stream or (names[0] if names else None)
     if not name:
         raise DataError(["no streams in data/streams; add one with `nora stream new`"])
-    net = load_network(args.data)
-    stream = load_stream(name, net, _streams_dir(args))
+    stream = next((s for s in streams if s.name == name), None)
+    if stream is None:
+        # a `--stream` name that is not a stream: let load_stream report it
+        stream = load_stream(name, summary["net"], _streams_dir(args))
     serve(
         args.out,
         stream,
-        plan=plan_timeline(stream, net, load_config()),
+        plan=plan_timeline(stream, summary["net"], load_config()),
         host=args.host,
         port=args.port,
         speed=args.speed,
