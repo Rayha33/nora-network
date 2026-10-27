@@ -92,7 +92,10 @@ def build_site(out_dir: Path, data_dir: Path = DATA_DIR) -> dict:
         payload = json.dumps(stream.payload(), separators=(",", ":"))
         (out / "data" / "streams" / f"{stream.name}.json").write_text(payload, encoding="utf-8")
     (out / ".nojekyll").touch()
-    return {"out": out, "streams": [s.name for s in streams], "analysis": analysis}
+    # `streams` are the loaded Stream objects (and `net` the loaded network),
+    # so callers like `nora live` can reuse them instead of loading everything
+    # a second time.
+    return {"out": out, "net": net, "streams": streams, "analysis": analysis}
 
 
 def _stream_summary(stream: Stream) -> dict:
