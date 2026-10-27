@@ -631,12 +631,23 @@ const App = (() => {
       if (d.supply && d.capacity) add(WHATIF_SOURCE, id, d.capacity);
       if (d.type === "market") sinkArc[id] = add(id, WHATIF_SINK, Infinity);
     }
+    /* A processing plant with a capacity is a bottleneck (the Python side splits
+       it the same way, see analysis.flow_graph): incoming arcs land on an entry
+       twin, one capacity arc joins the twin to the plant, outgoing arcs leave
+       the plant itself. */
+    const plantEntry = {};
+    for (const id of nodeIds) {
+      const d = assets[id];
+      if (!whatif.offline.has(id) && d.type === "processing" && d.capacity)
+        plantEntry[id] = add(`${id}__in`, id, d.capacity);
+    }
     for (const id of pipeIds) {
       const p = assets[id];
       if (!adj[p.from] || !adj[p.to]) continue; // touches an offline asset
       const cap = p.capacity == null ? Infinity : p.capacity;
-      add(p.from, p.to, cap, id, 1);
-      if (p.bidirectional) add(p.to, p.from, cap, id, -1);
+      const to = plantEntry[p.to] !== undefined ? `${p.to}__in` : p.to;
+      add(p.from, to, cap, id, 1);
+      if (p.bidirectional) add(to, p.from, cap, id, -1);
     }
     let value = 0;
     for (;;) { // shortest augmenting paths, in sorted order, so the split is stable
@@ -1539,6 +1550,12 @@ const App = (() => {
 
   return {
     state, live, route, views, settings: () => settings, embed, reduceMotion, nodeIds, pipeIds,
+    whatif: {
+      result: whatifResult,
+      toggle: toggleOffline,
+      clear: () => { whatif.offline.clear(); whatif.cache = null; },
+      offline: () => [...whatif.offline],
+    },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T, register, restyle, go, start, theme: () => theme,
     select: (id) => {
