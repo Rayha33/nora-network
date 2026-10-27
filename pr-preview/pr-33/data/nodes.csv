@@ -1,0 +1,68 @@
+id,name,type,country,lat,lon,operator,capacity_msm3d,status,source,notes
+troll,Troll,field,NO,60.646,3.726,Equinor,120,operating,https://www.equinor.com/energy/troll,Largest gas field on the Norwegian shelf; gas is processed at Kollsnes
+kvitebjorn,Kvitebjørn,field,NO,61.08,2.49,Equinor,20,operating,https://www.equinor.com/energy/kvitebjorn,
+oseberg,Oseberg,field,NO,60.49,2.83,Equinor,30,operating,https://www.equinor.com/energy/oseberg,Gas exported through Oseberg Gas Transport
+statfjord,Statfjord,field,NO,61.25,1.85,Equinor,15,operating,https://www.equinor.com/energy/statfjord,Straddles the Norway-UK median line
+gjoa,Gjøa,field,NO,61.33,3.90,Vår Energi,15,operating,https://www.norskpetroleum.no/en/facts/field/gjoa/,
+sleipner,Sleipner,field,NO,58.37,1.91,Equinor,30,operating,https://www.equinor.com/energy/sleipner,Field and riser hub for Langeled and Zeepipe
+ekofisk,Ekofisk,field,NO,56.55,3.21,ConocoPhillips,25,operating,https://conocophillips.no/our-norway-operations/greater-ekofisk-area/ekofisk,Field complex and start of Norpipe
+ormen_lange,Ormen Lange,field,NO,63.40,5.35,Shell,50,operating,https://www.norskpetroleum.no/en/facts/field/ormen-lange/,Subsea field tied back to Nyhamna
+asgard,Åsgard area,field,NO,65.07,6.79,Equinor,70,operating,https://www.equinor.com/energy/asgard,Norwegian Sea fields exporting through Åsgard Transport
+aasta_hansteen,Aasta Hansteen,field,NO,67.07,6.98,Equinor,23,operating,https://equinor.com/energy/aasta-hansteen,Norwegian Sea field exporting through Polarled
+gullfaks,Gullfaks,field,NO,61.18,2.19,Equinor,10,operating,https://equinor.com/energy/gullfaks,Gas exported through Statfjord into Statpipe
+visund,Visund,field,NO,61.37,2.46,Equinor,12,operating,https://equinor.com/energy/visund,Gas exported through the Kvitebjørn gas pipeline
+johan_sverdrup,Johan Sverdrup,field,NO,58.87,2.63,Equinor,6,operating,https://equinor.com/en/what-we-do/johan-sverdrup,Associated gas exported through Statpipe to Kårstø
+gudrun,Gudrun,field,NO,58.85,1.72,Equinor,5,operating,https://equinor.com/energy/gudrun,Gas exported to Sleipner
+edvard_grieg,Edvard Grieg,field,NO,58.84,2.25,Aker BP,6,operating,https://akerbp.com/en/asset/edvard-grieg-2,Gas exported through the Utsira High Gas Pipeline to SAGE
+heidrun,Heidrun,field,NO,65.33,7.32,Equinor,6,operating,https://equinor.com/energy/heidrun,Norwegian Sea; gas to Tjeldbergodden and Åsgard Transport
+norne,Norne,field,NO,66.02,8.08,Equinor,4,operating,https://equinor.com/energy/norne,Norwegian Sea; gas through the Norne Gas Transport System
+heimdal,Heimdal,hub,NO,59.57,2.23,Equinor,,operating,https://equinor.com/energy/heimdal,Riser and processing hub
+draupner_s,Draupner S,hub,NO,58.22,2.42,Gassco,,operating,https://en.wikipedia.org/wiki/Draupner_platform,Riser platform bridge-linked to Draupner E
+draupner_e,Draupner E,hub,NO,58.16,2.52,Gassco,,operating,https://en.wikipedia.org/wiki/Draupner_platform,Riser platform where Europipe I and Franpipe start
+kollsnes,Kollsnes,processing,NO,60.55,4.84,Gassco,144,operating,https://gassco.eu/en/prosessanlegg/kollsnes,Gas processing plant near Bergen
+karsto,Kårstø,processing,NO,59.28,5.52,Gassco,88,operating,https://equinor.com/energy/karsto,Gas processing plant in Rogaland
+nyhamna,Nyhamna,processing,NO,62.85,6.95,Gassco,84,operating,https://equinor.com/energy/gas-terminals-and-storage,Processing plant for Ormen Lange and Polarled gas
+flags_brent,FLAGS North (Brent area),hub,GB,61.05,1.71,,,operating,https://en.wikipedia.org/wiki/FLAGS,Northern end of FLAGS; receives Tampen Link and Gjøa gas
+beryl,Beryl,field,GB,59.55,1.53,,10,operating,https://en.wikipedia.org/wiki/Beryl_oil_field,Start of SAGE
+cats_riser,CATS Riser Platform,hub,GB,57.80,1.90,,,operating,https://en.wikipedia.org/wiki/Central_Area_Transmission_System,Central North Sea entry point to CATS
+culzean,Culzean,field,GB,57.20,1.90,TotalEnergies,15,operating,https://totalenergies.com/newsroom/uk-total-starts-production-culzean-field?lang=eng,High-pressure high-temperature field exporting through CATS
+elgin_franklin,Elgin-Franklin,field,GB,57.01,1.84,TotalEnergies,15,operating,https://en.wikipedia.org/wiki/Elgin%E2%80%93Franklin_fields,Exports through SEAL
+sns_fields,Southern North Sea fields,field,GB,53.10,2.10,,15,operating,https://en.wikipedia.org/wiki/List%20of%20oil%20and%20gas%20fields%20of%20the%20North%20Sea,Aggregate of mature southern gas fields
+st_fergus,St Fergus,terminal,GB,57.57,-1.84,,,operating,https://en.wikipedia.org/wiki/St_Fergus_Gas_Plant,Gas terminal in Aberdeenshire
+teesside,Teesside (CATS),terminal,GB,54.63,-1.17,,,operating,https://nstauthority.co.uk/the-move-to-net-zero/ukcs-oil-and-gas-terminals/teesside,CATS receiving terminal at Seal Sands
+easington,Easington,terminal,GB,53.65,0.11,,,operating,https://en.wikipedia.org/wiki/Easington_Gas_Terminal,Langeled receiving terminal
+bacton,Bacton,terminal,GB,52.86,1.46,,,operating,https://en.wikipedia.org/wiki/Bacton_Gas_Terminal,Terminal for SEAL and the IUK and BBL interconnectors
+grain_lng,Grain LNG,lng,GB,51.45,0.71,National Grid,58,operating,https://nationalgrid.com/our-businesses/national-grid-ventures/grain-lng/who-we-are,LNG import terminal on the Thames estuary
+f3fb,F3-FB,hub,NL,54.85,4.72,,,operating,https://en.wikipedia.org/wiki/Tyra_West_%E2%80%93_F3_pipeline,Start of NOGAT; tie-in point for Danish gas
+l10a,L10-A,field,NL,53.40,4.20,,10,operating,https://en.wikipedia.org/wiki/L10_gas_field,Main hub of the NGT system; aggregate of tied-in fields
+k13a,K13-A,field,NL,53.22,3.22,,5,operating,https://en.wikipedia.org/wiki/K13_gas_fields,Start of WGT; aggregate of tied-in fields
+den_helder,Den Helder,terminal,NL,52.95,4.76,,,operating,https://en.wikipedia.org/wiki/NOGAT_Pipeline_System,Terminal for NOGAT and WGT
+balgzand,Balgzand,terminal,NL,52.86,4.90,,,operating,https://en.wikipedia.org/wiki/BBL_Pipeline,BBL compressor station
+uithuizen,Uithuizen,terminal,NL,53.42,6.67,,,operating,https://en.wikipedia.org/wiki/Uithuizen_Gas_Plant,NGT receiving terminal
+gate_lng,Gate terminal,lng,NL,51.96,4.03,Gasunie / Vopak,44,operating,https://gateterminal.com/en,LNG import terminal at Rotterdam
+eemshaven_lng,Eemshaven LNG,lng,NL,53.45,6.83,Gasunie,22,operating,https://gasunie.nl/en/projects/eemsenergyterminal,Floating LNG import terminal
+emden,Emden,terminal,DE,53.35,7.21,,,operating,https://en.wikipedia.org/wiki/Norpipe,Norpipe receiving terminal
+dornum,Dornum,terminal,DE,53.65,7.43,,,operating,https://en.wikipedia.org/wiki/Europipe_II,Landfall of Europipe I and II
+wilhelmshaven_lng,Wilhelmshaven LNG,lng,DE,53.58,8.15,,27,operating,https://wilhelmshaven-lng.de/en,Floating LNG import terminal
+zeebrugge,Zeebrugge,terminal,BE,51.33,3.20,Fluxys,,operating,https://fluxys.com/en/about-us/fluxys-belgium/infrastructure,Terminal for Zeepipe and IUK
+zeebrugge_lng,Zeebrugge LNG,lng,BE,51.35,3.17,Fluxys,30,operating,https://fluxys.com/en/about-us/zeebrugge-lng,LNG import terminal
+dunkirk,Dunkirk (Franpipe),terminal,FR,51.02,2.27,,,operating,https://en.wikipedia.org/wiki/Franpipe,Franpipe receiving terminal
+dunkirk_lng,Dunkirk LNG,lng,FR,51.04,2.25,,36,operating,https://edf.fr/en/dunkerquelng,LNG import terminal
+tyra,Tyra,field,DK,55.72,4.80,TotalEnergies,8,operating,https://totalenergies.com/company/projects/gas/tyra-offshore-gas-hub-north-sea-denmark,Redeveloped Danish hub; restarted in 2024
+nybro,Nybro,processing,DK,55.67,8.42,Energinet,,operating,https://en.energinet.dk/about-our-news/news/2022/11/01/nybro-commissioning,Gas treatment plant and Baltic Pipe compression
+baltic_tie,Baltic Pipe tie-in,hub,DK,55.90,6.66,,,operating,https://en.wikipedia.org/wiki/Baltic_Pipe,Subsea tie-in on Europipe II
+nbp,NBP (Great Britain),market,GB,52.60,-1.20,,,operating,https://en.wikipedia.org/wiki/National_Balancing_Point_(UK),Virtual trading point; map placement is schematic
+ttf,TTF (Netherlands),market,NL,52.25,5.60,,,operating,https://gasunie.nl/en/gas-infrastructure/ttf---dutch-gas-trading-platform,Virtual trading point; map placement is schematic
+the,THE (Germany),market,DE,52.70,8.70,,,operating,https://tradinghub.eu/en-gb,Virtual trading point; map placement is schematic
+ztp,ZTP (Belgium),market,BE,50.90,4.40,,,operating,https://balansys.eu/commercial-information,Virtual trading point; map placement is schematic
+peg,PEG (France),market,FR,50.40,2.60,,,operating,https://ice.com/products/82426582/French-PEG-Natural-Gas-Futures,Virtual trading point; map placement is schematic
+etf,ETF (Denmark),market,DK,55.60,9.60,,,operating,https://hedgeweek.com/news/pegas-launches-danish-etf-contracts,Virtual trading point; map placement is schematic
+pl_vtp,Poland VTP,market,PL,54.60,11.00,,,operating,https://gaz-system.pl/en/for-customers/market-information/data-exchange.html,Reached through Baltic Pipe; map placement is schematic
+tjeldbergodden,Tjeldbergodden,market,NO,63.41,8.70,Equinor,,operating,https://equinor.com/energy/tjeldbergodden,Methanol plant: the gas consumer at the end of Haltenpipe
+rough,Rough Gas Storage,storage,GB,53.85,0.37,Centrica Energy Storage+,45,operating,https://en.wikipedia.org/wiki/Rough_(facility),"Depleted field 29 km east of Easington; 44.8 MSm3/d design withdrawal"
+norg,Norg Gas Storage,storage,NL,53.07,6.46,NAM (Shell / ExxonMobil),70,operating,https://ebn.nl/en/projects/norg-gas-storage,"Largest Dutch seasonal storage in a depleted field; around 31 GW delivery capacity"
+bergermeer,Bergermeer Gas Storage,storage,NL,52.62,4.75,TAQA Energy,57,operating,https://en.wikipedia.org/wiki/Bergermeer_gas_storage,"Depleted-field storage near Alkmaar; 4.1 bcm working volume"
+etzel,Etzel Gas-Lager,storage,DE,53.43,7.95,Equinor Storage Deutschland,7.5,operating,https://equinorstorage.de/en.html,"Salt-cavern storage near Wilhelmshaven; firm withdrawal 312840 Sm3/h"
+jemgum,Jemgum Gas Storage,storage,DE,53.24,7.03,EWE Gasspeicher,6.6,operating,https://ewe-gasspeicher.de/en/transparency/storage-capacities/jemgum,"Salt-cavern storage on the Ems; maximum withdrawal 2875 MWh/h"
+stenlille,Stenlille Gas Storage,storage,DK,55.55,11.60,Gas Storage Denmark / Energinet,7.9,operating,https://cdn.orsted.com/-/media/www/docs/corp/com/sustainability/reports---en/dong_energy_annual_report_2007_en.pdf,"Depleted-field storage on Zealand; withdrawal capacity 7.9 MSm3/d"
+lille_torup,Lille Torup Gas Storage,storage,DK,57.06,9.10,Gas Storage Denmark / Energinet,7.2,operating,https://ogj.com/home/article/17238459/danish-projects-reveal-characteristics-and-limits-of-gas-cavern-storage,"Salt-cavern storage in northern Jutland; design delivery 7.2 MSm3/d"
