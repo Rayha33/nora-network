@@ -1085,9 +1085,9 @@ const App = (() => {
   }
 
   // Level 3: what flows in (top), the asset, what flows out (bottom), and its values.
-  function renderAsset() {
-    const id = route.asset, d = assets[id];
-    if (!d) return;
+  function assetDetail(id, inSidebar = false) {
+    const d = assets[id];
+    if (!d) return null;
     const f = frame(), indicators = [];
     if (d.kind === "node") {
       if (exitPoints.includes(id) && (metric("nomination_msm3d", id) != null || throughput(id, f.flows) != null)) indicators.push(exitIndicator(id));
@@ -1095,7 +1095,7 @@ const App = (() => {
       for (const name of Object.keys(QUALITY)) if (metric(name, id) != null) indicators.push(qualityIndicator(id, name));
     } else if (d.capacity && f.flows[id] != null) indicators.push(loadIndicator(id));
     const conds = live.conditions.filter((c) => c.id === id);
-    screens.asset.replaceChildren(h("div", { class: "screen-body" },
+    return h("div", { class: inSidebar ? "side-detail" : "screen-body" },
       h("h1", null, d.name),
       h("p", { class: "sub" }, d.kind === "node"
         ? `${NORA.nodeTypes[d.type]}, ${d.country}. Unit: ${(unitById[unitOf[id]] || {}).name || "none"}.`
@@ -1106,15 +1106,43 @@ const App = (() => {
           h("h2", { style: "margin-top:14px" }, "State"), conds.length ? alarmList(conds) : badge(0, "Normal"),
           conds.length ? (() => { const cause = upstreamCause(id); return h("p", { class: "cause" }, h("strong", null, "Likely cause: "), cause.text, h("span", { class: "dim" }, ` (confidence ${cause.confidence}; traced through the network model)`)); })() : null),
         h("div", { class: "box" }, h("h2", null, "Facts"), facts(id))),
-      h("div", { class: "actions", style: "display:flex;gap:8px;margin-top:14px" },
+      h("div", { class: "actions" },
         d.kind === "node" ? h("button", { type: "button", class: "text", onclick: () => {
           state.mode = "whatif";
           markTabs();
           toggleOffline(id);
-          renderAsset();
+          if (side.id === id) renderSidebar(); else renderAsset();
         } }, `${whatif.offline.has(id) ? "Restore" : "Take offline"} in the what-if`) : null,
-        h("button", { type: "button", class: "text", onclick: () => go({ screen: "unit", unit: unitOf[id] || "all", focus: id }) }, "Show in its unit"),
-        h("button", { type: "button", class: "text", onclick: () => go({ screen: "diag", asset: id }) }, "Diagnostics"))));
+        inSidebar ? h("button", { type: "button", class: "text", onclick: () => go({ screen: "asset", asset: id }) }, "Open the full page") : null,
+        !inSidebar ? h("button", { type: "button", class: "text", onclick: () => go({ screen: "unit", unit: unitOf[id] || "all", focus: id }) }, "Show in its unit") : null,
+        h("button", { type: "button", class: "text", onclick: () => go({ screen: "diag", asset: id }) }, "Diagnostics")));
+  }
+  function renderAsset() {
+    const detail = assetDetail(route.asset);
+    if (detail) screens.asset.replaceChildren(detail);
+  }
+
+  /* The asset sidebar: a calm column that slides in from the right when a field,
+     plant or icon is clicked on the unit screen, and follows the data as it plays. */
+  const side = { id: null };
+  function openSidebar(id) {
+    if (!assets[id]) return;
+    side.id = id;
+    renderSidebar();
+    $("asset-side").classList.add("open");
+    $("asset-side").setAttribute("aria-hidden", "false");
+  }
+  function closeSidebar() {
+    side.id = null;
+    $("asset-side").classList.remove("open");
+    $("asset-side").setAttribute("aria-hidden", "true");
+  }
+  function renderSidebar() {
+    if (!side.id || !assets[side.id]) return;
+    const d = assets[side.id], body = $("side-body"), top = body.scrollTop;
+    $("side-title").textContent = d.name;
+    body.replaceChildren(assetDetail(side.id, true));
+    body.scrollTop = top;
   }
   function facts(id) {
     const d = assets[id];
@@ -1206,6 +1234,7 @@ const App = (() => {
   function go(next, push = true) {
     Object.assign(route, { focus: null }, next);
     if (route.screen === "unit" && !unitById[route.unit]) route.unit = "all";
+    if (route.screen !== "unit") closeSidebar();
     const hash = hashFor(route);
     if (push && location.hash !== hash) history.pushState(null, "", `${location.pathname}${location.search}${hash}`);
     render();
@@ -1439,6 +1468,7 @@ const App = (() => {
     if (live.time != null) $("clock").textContent = formatTime(live.time);
     restyle();
     refreshScreens();
+    if (side.id && route.screen === "unit") renderSidebar();
     drawSpark();
   }
   // The track shows the plan status over time: plain where it holds, marked where not.
@@ -1604,6 +1634,8 @@ const App = (() => {
     $("crumb-asset").addEventListener("click", () => go({ screen: "asset", asset: route.asset }));
     $("plan-chip").addEventListener("click", () => go({ screen: "overview" }));
     $("theme-toggle").addEventListener("click", () => setTheme(theme === "light" ? "dark" : "light"));
+    $("side-close").addEventListener("click", closeSidebar);
+    addEventListener("keydown", (e) => { if (e.key === "Escape" && side.id) closeSidebar(); });
     for (const tab of document.querySelectorAll("[data-view]")) {
       tab.addEventListener("click", () => { state.view = tab.dataset.view; markTabs(); render(); });
     }
@@ -1655,10 +1687,13 @@ const App = (() => {
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T, register, restyle, go, start, theme: () => theme,
     select: (id) => {
-      if (!id || !assets[id]) return;
+      if (!id || !assets[id]) { if (route.screen === "unit" && state.mode !== "whatif") closeSidebar(); return; }
       // In What-if mode a click takes a node offline or brings it back instead.
-      if (state.mode === "whatif" && assets[id].kind === "node") { toggleOffline(id); return; }
+      if (state.mode === "whatif" && assets[id].kind === "node") { toggleOffline(id); renderSidebar(); return; }
+      // On the unit screen the details slide in from the right instead of taking over the page.
+      if (route.screen === "unit") { openSidebar(id); return; }
       go({ screen: "asset", asset: id });
     },
+    sidebar: { open: (id) => openSidebar(id), close: closeSidebar, id: () => side.id },
   };
 })();
