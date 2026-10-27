@@ -1094,15 +1094,18 @@ const App = (() => {
       for (const name of Object.keys(QUALITY)) if (metric(name, id) != null) indicators.push(qualityIndicator(id, name));
     } else if (d.capacity && f.flows[id] != null) indicators.push(loadIndicator(id));
     const conds = live.conditions.filter((c) => c.id === id);
+    // In the sidebar the name is already the panel header: no repeated h1.
     return h("div", { class: inSidebar ? "side-detail" : "screen-body" },
-      h("h1", null, d.name),
-      h("p", { class: "sub" }, d.kind === "node"
+      inSidebar ? null : h("h1", null, d.name),
+      inSidebar ? null : h("p", { class: "sub" }, d.kind === "node"
         ? `${NORA.nodeTypes[d.type]}, ${d.country}. Unit: ${(unitById[unitOf[id]] || {}).name || "none"}.`
         : `${NORA.pipelineTypes[d.type]}, ${nameOf(d.from)} to ${nameOf(d.to)}.`),
       h("div", { class: "cols" },
-        h("div", { class: "box" }, h("h2", null, "In context: flowing in above, out below"), schematic(id)),
-        h("div", { class: "box" }, h("h2", null, "Values"), bank(indicators, "No live readings for this asset in the dataset."),
-          h("h2", { style: "margin-top:14px" }, "State"), conds.length ? alarmList(conds) : badge(0, "Normal"),
+        h("div", { class: "box" }, h("h2", { title: "Flowing in above the asset, out below it" }, "In context"), schematic(id)),
+        h("div", { class: "box" }, h("h2", { title: "Live readings in their ranges, from the data being played" }, "Values"), bank(indicators, "No live readings for this asset in the dataset."),
+          inSidebar ? null : h("h2", { style: "margin-top:14px" }, "State"),
+          conds.length ? alarmList(conds)
+            : h("p", { class: "state-quiet" }, "Normal · no alarms right now"),
           conds.length ? (() => { const cause = upstreamCause(id); return h("p", { class: "cause" }, h("strong", null, "Likely cause: "), cause.text, h("span", { class: "dim" }, ` (confidence ${cause.confidence}; traced through the network model)`)); })() : null),
         h("div", { class: "box" }, h("h2", null, "Facts"), facts(id))),
       h("div", { class: "actions" },
@@ -1140,6 +1143,9 @@ const App = (() => {
     if (!side.id || !assets[side.id]) return;
     const d = assets[side.id], body = $("side-body"), top = body.scrollTop;
     $("side-title").textContent = d.name;
+    $("side-sub").textContent = d.kind === "node"
+      ? `${NORA.nodeTypes[d.type]} · ${d.operator || d.country}`
+      : `${NORA.pipelineTypes[d.type]} · ${nameOf(d.from)} to ${nameOf(d.to)}`;
     body.replaceChildren(assetDetail(side.id, true));
     body.scrollTop = top;
   }
