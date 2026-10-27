@@ -82,6 +82,15 @@ def test_poll_yields_frames_and_survives_a_dead_api(api_url, monkeypatch, capsys
     assert capsys.readouterr().err  # the failure was logged too
 
 
+def test_a_source_down_from_the_start_is_retried_slowly(api_url, monkeypatch, capsys):
+    """A first poll that fails must not turn into a tight retry loop."""
+    monkeypatch.setenv("NORA_GASSCO_URL", api_url + "/down")
+    feed = poll(gassco, poll_seconds=300)
+    waits = [next(feed)[0] for _ in range(3)]
+    assert waits == [0.0, 300, 300]
+    capsys.readouterr()
+
+
 def test_serve_accepts_a_poller_instead_of_a_stream(api_url, monkeypatch, tmp_path):
     monkeypatch.setenv("NORA_GASSCO_URL", api_url)
     site = tmp_path / "site"

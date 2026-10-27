@@ -253,6 +253,17 @@ pig_programme = { every_hours = 0 }
     assert any("pig_programme" in p for p in caught.value.problems)
 
 
+def test_pig_programme_with_bad_numbers_is_reported(tiny, tmp_path):
+    toml = """
+[synthetic]
+steps = 2
+pig_programme = { every_hours = "daily" }
+"""
+    make_stream(tmp_path / "prog", toml)
+    with pytest.raises(DataError, match="pig_programme: every_hours and speed_mps must be numbers"):
+        load_stream("prog", tiny, tmp_path)
+
+
 def test_scaffold_guesses_the_mapping(tiny, tmp_path):
     raw = tmp_path / "export.csv"
     raw.write_text(

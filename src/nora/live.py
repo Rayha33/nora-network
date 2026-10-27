@@ -89,9 +89,11 @@ def poll(
     a frame, and keeps polling, so the browser keeps its last good frame and a down
     API reads as a stale feed, not a dead server. The first frame is sent at once.
     """
-    index = 0
+    index, first = 0, True
     while True:
-        wait = 0.0 if index == 0 else poll_seconds
+        # Every attempt after the first waits, failed or not: a source that is down
+        # is retried every poll_seconds, never in a tight loop.
+        wait, first = (0.0 if first else poll_seconds), False
         now = datetime.now(tz=UTC)
         try:
             readings = list(source.fetch(now - timedelta(seconds=poll_seconds), now))

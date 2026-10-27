@@ -289,6 +289,7 @@ const App = (() => {
   }
   function setYear(year) {
     state.year = year;
+    whatif.cache = null;  // the what-if network is the one standing in that year
     yearInput.value = String(year);
     const appearing = nodeIds.filter((id) => assets[id].startup === year);
     const shutting = nodeIds.filter((id) => assets[id].shutdown === year);
@@ -455,16 +456,21 @@ const App = (() => {
     }
   }
   function prunePeaks() {
-    live.peaks = live.peaks.filter((p) => live.time >= p.t0 && peakPlace(p));
+    const places = new Map();
+    live.peaks = live.peaks.filter((p) => {
+      const place = live.time >= p.t0 ? peakPlace(p) : null;
+      if (place) places.set(p, place);
+      return place;
+    });
     // Keep the play calm: at most `peak_max` peaks on screen at once. When a big
     // event changes many lines in the same hour, only the strongest changes travel.
     const max = C.pipelines.peak_max || live.peaks.length;
     if (live.peaks.length > max) {
-      const strength = (p) => {
-        const place = peakPlace(p), pid = place ? place.pid : p.id;
-        return Math.abs(place ? place.delta : p.delta) / (assets[pid].capacity || 1);
-      };
-      live.peaks.sort((a, b) => strength(b) - strength(a));
+      const strength = new Map(live.peaks.map((p) => {
+        const place = places.get(p);
+        return [p, Math.abs(place.delta) / (assets[place.pid].capacity || 1)];
+      }));
+      live.peaks.sort((a, b) => strength.get(b) - strength.get(a));
       live.peaks.length = max;
     }
   }
@@ -478,6 +484,21 @@ const App = (() => {
       t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
+  }
+  /* The frame in force at data time `t`: the last one at or before it (the first one
+     before the data starts). Routes are chosen with the flows of the moment a marker
+     reaches each node, never the flows on screen, so a choice made in the past stays
+     made: no marker re-routes or jumps when the hour changes or the user seeks. */
+  function frameAt(t) {
+    const frames = live.frames;
+    if (!frames.length) return frame();
+    let lo = 0, hi = frames.length - 1;
+    if (t < frames[0].t) return frames[0];
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (frames[mid].t <= t) lo = mid; else hi = mid - 1;
+    }
+    return frames[lo];
   }
   // The lines carrying gas away from `node`, each with the flow it carries.
   function linesOut(node, flows) {
@@ -501,53 +522,63 @@ const App = (() => {
     for (const o of out) { pick -= o.w; if (pick <= 0) return o; }
     return out[out.length - 1];
   }
-  // A pig's route: grown hop by hop as needed, then cached - one pig object, one route.
+  const lineMetres = (pid) => Math.max(1, assets[pid].km || 1) * 1000;
+  /* A pig's route for one run (a relaunch is a new run): it starts down its line the
+     way the gas flows at launch, and each further hop is chosen with the flows of the
+     moment it reaches that node. Hops are added as the pig gets there, then kept. */
   const pigRoutes = new Map();
-  function pigRoute(pig, distance) {
-    let route = pigRoutes.get(pig);
-    if (!route) pigRoutes.set(pig, route = [{ pid: pig.pipeline, forward: true, m: 0 }]);
+  function pigRoute(pig, run, distance) {
+    const key = `${pig.label}|${pig.launch}|${run}`, start = pig.launch + run * (pig.every || 0);
+    let route = pigRoutes.get(key);
+    if (!route) {
+      const v = frameAt(start).flows[pig.pipeline];
+      pigRoutes.set(key, route = [{ pid: pig.pipeline, forward: !(v < 0), m: 0 }]);
+    }
     let last = route[route.length - 1];
-    while (last.m + assets[last.pid].km * 1000 <= distance) {
+    while (last.m + lineMetres(last.pid) <= distance && route.length < 40) {
       const node = last.forward ? assets[last.pid].to : assets[last.pid].from;
-      const hop = isExit(node) ? null : nextOut(node, frame().flows, `${pig.label}|${pig.launch}|${route.length}`);
+      const at = start + (last.m + lineMetres(last.pid)) / pig.speed;
+      const hop = isExit(node) ? null : nextOut(node, frameAt(at).flows, `${key}|${route.length}`);
       if (!hop) break;  // arrived at its receiver (or the network edge): off screen
-      route.push(last = { pid: hop.pid, forward: hop.forward, m: last.m + assets[last.pid].km * 1000 });
+      route.push(last = { pid: hop.pid, forward: hop.forward, m: last.m + lineMetres(last.pid) });
     }
     return route;
   }
   // Where a pig is now: on one line at a time, handing over at the nodes, never jumping.
   function pigPlace(pig, time) {
     if (time == null || time < pig.launch) return null;
-    const since = time - pig.launch, run = pig.every > 0 && since > 0 ? since % pig.every : since;
-    const distance = run * pig.speed;
-    const route = pigRoute(pig, distance);
+    const since = time - pig.launch, every = pig.every > 0 ? pig.every : 0;
+    const run = every ? Math.floor(since / every) : 0, distance = (since - run * every) * pig.speed;
+    const route = pigRoute(pig, run, distance);
     const last = route[route.length - 1];
-    if (distance >= last.m + assets[last.pid].km * 1000) return null;  // at the receiver, waiting for relaunch
-    const seg = route.find((s) => distance < s.m + assets[s.pid].km * 1000) || last;
-    const along = (distance - seg.m) / (assets[seg.pid].km * 1000);
+    if (distance >= last.m + lineMetres(last.pid)) return null;  // at the receiver, waiting for relaunch
+    const seg = route.find((s) => distance < s.m + lineMetres(s.pid)) || last;
+    const along = (distance - seg.m) / lineMetres(seg.pid);
     return { pid: seg.pid, along: seg.forward ? along : 1 - along };
   }
-  // Where a peak is now: it keeps travelling downstream, attenuated by its share of
-  // the gas at each node, and disappears at an exit or when it fades below step_min.
-  function peakPlace(peak, time = live.time, f = frame()) {
+  /* Where a peak is now: it keeps travelling downstream, attenuated by its share of
+     the gas at each node, and disappears at an exit or when it fades below step_min.
+     Each hop is worked out once, with the flows when the peak reaches that node, and
+     kept on the peak, so the place costs a few steps per frame. */
+  function peakPlace(peak, time = live.time) {
     const v = C.pipelines.gas_velocity_mps;
-    let pid = peak.id, forward = peak.forward, delta = peak.delta, t = peak.t0, hops = 0;
-    while (time >= t) {
-      const length = (assets[pid].km || 1) * 1000;
-      const exitAt = t + length / v;
+    if (!peak.hops) peak.hops = [{ pid: peak.id, forward: peak.forward, delta: peak.delta, t: peak.t0 }];
+    for (let k = 0; time >= peak.hops[k].t; k++) {
+      const hop = peak.hops[k], exitAt = hop.t + lineMetres(hop.pid) / v;
       if (time < exitAt) {
-        const along = ((time - t) * v) / length;
-        return { pid, forward, delta, along: forward ? along : 1 - along, exitAt };
+        const along = ((time - hop.t) * v) / lineMetres(hop.pid);
+        return { pid: hop.pid, forward: hop.forward, delta: hop.delta, along: hop.forward ? along : 1 - along, exitAt };
       }
-      t = exitAt;
-      const node = forward ? assets[pid].to : assets[pid].from;
-      if (isExit(node)) return null;  // left the network
-      const inflow = throughput(node, f.flows), mine = Math.abs(f.flows[pid] || 0);
+      if (k + 1 < peak.hops.length) continue;
+      if (hop.end || k >= 40) return null;
+      const node = hop.forward ? assets[hop.pid].to : assets[hop.pid].from, f = frameAt(exitAt);
+      let delta = hop.delta;
+      const inflow = throughput(node, f.flows), mine = Math.abs(f.flows[hop.pid] || 0);
       if (inflow > 0 && mine < inflow) delta *= mine / inflow;  // diluted where gas joins
-      if (Math.abs(delta) < C.pipelines.step_min * (assets[pid].capacity || 1)) return null;
-      const hop = nextOut(node, f.flows, `${peak.id}|${peak.t0}|${hops++}`);
-      if (!hop) return null;
-      pid = hop.pid; forward = hop.forward;
+      const next = isExit(node) || Math.abs(delta) < C.pipelines.step_min * (assets[hop.pid].capacity || 1)
+        ? null : nextOut(node, f.flows, `${peak.id}|${peak.t0}|${k}`);
+      if (!next) { hop.end = true; return null; }  // left the network, or faded out
+      peak.hops.push({ pid: next.pid, forward: next.forward, delta, t: exitAt });
     }
     return null;
   }
@@ -713,7 +744,8 @@ const App = (() => {
       return i;
     };
     for (const id of nodeIds) {
-      if (whatif.offline.has(id)) continue; // offline nodes: no capacity, no delivery
+      // offline nodes, and nodes not built (or shut down) in the year shown: no capacity
+      if (whatif.offline.has(id) || !yearActive(id)) continue;
       const d = assets[id];
       adj[id] = adj[id] || [];
       if (d.supply && d.capacity) add(WHATIF_SOURCE, id, d.capacity);
@@ -830,7 +862,7 @@ const App = (() => {
       } else {
         const m = Math.abs(whatifResult().pipelines[id] || 0);
         out.color = m < 0.05 ? COLORS.inactive : COLORS.active;
-        if (m >= 0.05) out.width = 1 + 4 * Math.sqrt(m / whatifResult().max);
+        if (m >= 0.05) out.width = 0.6 + 0.9 * Math.sqrt(m / whatifResult().max);  // same scale as live
         out.label = fmt(m, 1);
       }
     }
@@ -1450,6 +1482,7 @@ const App = (() => {
     live.index = Math.floor(live.playhead);
     live.down = {};
     live.peaks = [];
+    pigRoutes.clear();
     replayQuality(live.index);
     trackTrips(frame());
     step();
