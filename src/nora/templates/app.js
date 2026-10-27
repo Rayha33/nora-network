@@ -1360,7 +1360,7 @@ const App = (() => {
       h("h3", null, "Flow view"),
       choose("Direction", "direction", [["vertical", "Top to bottom"], ["horizontal", "Left to right"], ["auto", "Follow the screen"]]),
       choose("Spacing", "density", [["compact", "Compact"], ["comfortable", "Comfortable"], ["spacious", "Spacious"]]),
-      check("Faint dots along flowing lines", "animation"),
+      check("Flow bands in and out of the nodes", "animation"),
       h("div", { class: "actions" },
         h("button", { type: "button", class: "text", onclick: copyLink }, "Copy link"),
         h("button", { type: "button", class: "text", onclick: () => update({ ...DEFAULT_SETTINGS }) }, "Reset")),

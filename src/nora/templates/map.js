@@ -210,15 +210,41 @@
       return { x: pa.x + (pb.x - pa.x) * along, y: pa.y + (pb.y - pa.y) * along, angle: Math.atan2(pb.y - pa.y, pb.x - pa.x) };
     };
     if (App.settings().animation && App.live.playing && !App.reduceMotion) {
-      ctx.fillStyle = C.active;
-      for (const id of App.pipeIds) {
-        const v = App.live.values[id];
-        if (!v || Math.abs(v) < 0.05) continue;
-        const shift = (App.live.clock * 0.08) % 1;
-        for (let k = 0; k < 3; k++) {
-          const along = (k / 3 + shift) % 1, p = project(id, v >= 0 ? along : 1 - along);
-          ctx.globalAlpha = 0.6;
-          ctx.beginPath(); ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2); ctx.fill();
+      /* Simulated flow at the nodes, not on the lines: short solid bands sliding
+         INTO the icon where gas arrives and OUT of it where gas leaves, scaled by
+         how much the line carries. The long lines stay still. */
+      ctx.lineCap = "round";
+      for (const nid of App.nodeIds) {
+        const node = NORA.assets[nid];
+        if (!node) continue;
+        const pn = map.project([node.lon, node.lat]);
+        if (pn.x < -40 || pn.y < -40 || pn.x > canvas.clientWidth + 40 || pn.y > canvas.clientHeight + 40) continue;
+        for (const pid of App.pipeIds) {
+          const v = App.live.values[pid], p = NORA.assets[pid];
+          if (!v || Math.abs(v) < 0.05 || !p || (p.from !== nid && p.to !== nid)) continue;
+          if (App.pipeStyle(pid).hidden) continue;
+          const other = map.project(p.from === nid ? ends[pid][1] : ends[pid][0]);
+          const dx = other.x - pn.x, dy = other.y - pn.y, len = Math.hypot(dx, dy);
+          if (len < 8) continue;
+          const ux = dx / len, uy = dy / len;
+          // The stub shrinks with short lines (overview zoom): a hint, not a hair.
+          const stub = Math.min(26, len * 0.4), band = Math.max(3, Math.min(8, stub * 0.5));
+          // Gas moves toward this node when the flow sign points here.
+          const inflow = (p.to === nid) === (v > 0);
+          const share = Math.min(1, Math.abs(v) / (p.capacity || 30));
+          ctx.strokeStyle = C.active;
+          ctx.lineWidth = 1.6 + share * 2.2;
+          for (let k = 0; k < 2; k++) {
+            const t = (App.live.clock * 0.45 + k / 2) % 1;
+            const d = inflow ? (stub - band) * (1 - t) + band : (stub - band) * t + band;
+            // Brighter as a band reaches the node, fading as one leaves it.
+            ctx.globalAlpha = 0.25 + (inflow ? t : 1 - t) * 0.55;
+            const cx = pn.x + ux * d, cy = pn.y + uy * d;
+            ctx.beginPath();
+            ctx.moveTo(cx - ux * band / 2, cy - uy * band / 2);
+            ctx.lineTo(cx + ux * band / 2, cy + uy * band / 2);
+            ctx.stroke();
+          }
         }
       }
       ctx.globalAlpha = 1;

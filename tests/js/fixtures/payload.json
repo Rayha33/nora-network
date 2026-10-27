@@ -6231,7 +6231,7 @@
   "flow": {
    "direction": "vertical",
    "density": "comfortable",
-   "animation": false
+   "animation": true
   },
   "thresholds": {
    "load": [
