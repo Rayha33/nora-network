@@ -1,0 +1,32 @@
+name: Data correction
+description: A value, position or asset that is wrong or missing
+title: "Data: "
+labels: [data]
+body:
+  - type: input
+    id: asset
+    attributes:
+      label: Asset id
+      description: The id from data/nodes.csv or data/pipelines.csv (shown when you click the asset on the chart). Leave empty for a missing asset.
+      placeholder: langeled_south
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing
+      placeholder: Capacity should be 72 MSm3/d, not 70.
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: A public link that backs up the correct value.
+      placeholder: https://www.gassco.no/...
+    validations:
+      required: true
+  - type: checkboxes
+    id: fix
+    attributes:
+      label: Fixing it
+      options:
+        - label: I'd like to make this change myself

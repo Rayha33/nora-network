@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nora"
+version = "0.1.0"
+description = "NORA (Network Operations and Realtime Analysis): an open, co-edited model of North Sea gas infrastructure"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = [
+    "networkx>=3.4",
+    # NORA renders through pyvis with its own template and inlines the vis-network
+    # files bundled with pyvis, so the version is pinned. Bump it deliberately.
+    "pyvis==0.3.2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+nora = "nora.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nora"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

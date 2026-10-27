@@ -1,0 +1,22 @@
+name: Idea or feature
+description: Something NORA could show, analyse or replay
+labels: [idea]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What should NORA do, and who would it help?
+    validations:
+      required: true
+  - type: textarea
+    id: data
+    attributes:
+      label: Data it needs
+      description: Any datasets, APIs or sources it would use.
+  - type: checkboxes
+    id: build
+    attributes:
+      label: Building it
+      options:
+        - label: I'd like to build this myself

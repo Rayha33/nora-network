@@ -1,0 +1,20 @@
+name: Bug
+description: Something on the site or in the code does not work
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you saw instead.
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: Page link, command, or file.
+  - type: input
+    id: browser
+    attributes:
+      label: Browser or Python version

@@ -1,0 +1,18 @@
+{
+  "name": "NORA",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "postCreateCommand": "pip install -e '.[dev]' && nora build",
+  "forwardPorts": [8000, 8765],
+  "portsAttributes": {
+    "8000": { "label": "NORA site", "onAutoForward": "openPreview" },
+    "8765": { "label": "NORA live feed", "onAutoForward": "openPreview" }
+  },
+  "customizations": {
+    "codespaces": {
+      "openFiles": ["README.md", "AGENTS.md"]
+    },
+    "vscode": {
+      "extensions": ["ms-python.python", "charliermarsh.ruff", "anthropic.claude-code"]
+    }
+  }
+}
