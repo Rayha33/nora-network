@@ -52,6 +52,20 @@ svg .fill { fill: currentColor; stroke: none; }
 .dots-layer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
 .notice { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; color: var(--text-dim); text-align: center; }
 
+/* GIS touches on the map: loading state, cursor coordinates, scale bar legibility */
+.map-note {
+  position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 5;
+  background: var(--paper); color: var(--text-dim); border-radius: var(--r);
+  padding: 3px 10px; font-size: 11px; box-shadow: 0 1px 6px rgb(0 0 0 / 12%);
+}
+.coord-readout {
+  position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 5;
+  background: var(--paper); color: var(--text-dim); border-radius: var(--r);
+  padding: 2px 8px; font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap; box-shadow: 0 1px 6px rgb(0 0 0 / 12%); pointer-events: none;
+}
+.maplibregl-ctrl-scale { background: var(--paper) !important; color: var(--text-dim) !important; border-color: var(--text-dim) !important; }
+
 .bar {
   position: fixed; top: 0; left: 0; right: 0; height: 44px; z-index: 10;
   display: flex; align-items: center; gap: 8px; padding: 0 10px;
