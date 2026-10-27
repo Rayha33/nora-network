@@ -1,0 +1,32 @@
+# Builds every pull request into its own preview site and comments the link on the PR:
+#   https://<owner>.github.io/<repo>/pr-preview/pr-<number>/
+# Removed again when the PR closes. Runs for branches in this repository; pull requests
+# from forks get the built site as a downloadable artifact from the CI workflow instead.
+name: PR preview
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency: preview-${{ github.ref }}
+
+jobs:
+  preview:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        if: github.event.action != 'closed'
+        with:
+          python-version: "3.12"
+          cache: pip
+      - if: github.event.action != 'closed'
+        run: pip install -e . && nora build --out site
+      - uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: site
