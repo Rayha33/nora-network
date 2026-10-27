@@ -134,7 +134,7 @@
  },
  "utilization": {
   "troll_kollsnes": 1.0,
-  "kvitebjorn_kollsnes": 0.32,
+  "kvitebjorn_kollsnes": 0.2424,
   "ogt": 0.75,
   "statpipe_rich": 0.28,
   "statpipe_dry": 0.6,
@@ -215,15 +215,15 @@
    "kind": "node",
    "id": "troll",
    "name": "Troll",
-   "lost": 90.0,
-   "share": 0.1286
+   "lost": 83.0,
+   "share": 0.1186
   },
   {
    "kind": "pipeline",
    "id": "troll_kollsnes",
    "name": "Troll - Kollsnes",
-   "lost": 90.0,
-   "share": 0.1286
+   "lost": 83.0,
+   "share": 0.1186
   },
   {
    "kind": "node",

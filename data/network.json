@@ -1048,7 +1048,7 @@
    "type": "feeder",
    "from_id": "kvitebjorn",
    "length_km": 147.0,
-   "capacity": 25.0,
+   "capacity": 33.0,
    "source": "kvitebjorn",
    "target": "kollsnes"
   },
