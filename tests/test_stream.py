@@ -371,6 +371,73 @@ def test_write_flows_round_trips(tiny, tmp_path):
     assert load_stream("copy", tiny, tmp_path).values == stream.values
 
 
+def test_write_flows_round_trips_long_metrics(tiny, tmp_path):
+    make_stream(
+        tmp_path / "measured",
+        "",
+        {
+            "flows.csv": "timestamp,asset,metric,value\n"
+            "2026-01-01T00:00Z,pipe_a,flow_msm3d,10.5\n"
+            "2026-01-01T00:00Z,a_terminal,pressure_bar,57\n"
+            "2026-01-01T00:00Z,a_terminal,nomination_msm3d,30\n"
+            "2026-01-01T00:00Z,a_terminal,booked_msm3d,40\n"
+            "2026-01-01T01:00Z,pipe_a,flow_msm3d,11.5\n"
+            "2026-01-01T01:00Z,a_terminal,pressure_bar,56\n"
+            "2026-01-01T02:00Z,pipe_a,flow_msm3d,12.5\n"
+            "2026-01-01T02:00Z,a_terminal,nomination_msm3d,35\n"
+        },
+    )
+    stream = load_stream("measured", tiny, tmp_path)
+    make_stream(tmp_path / "copy", "")
+
+    write_flows(stream, tmp_path / "copy" / "flows.csv")
+    restored = load_stream("copy", tiny, tmp_path)
+
+    assert restored.values == stream.values
+    assert restored.metrics == stream.metrics
+
+
+def test_held_nomination_and_booking_metrics_forward_fill(tiny, tmp_path):
+    make_stream(
+        tmp_path / "held",
+        "",
+        {
+            "flows.csv": "timestamp,asset,metric,value\n"
+            "2026-01-01T00:00Z,a_terminal,nomination_msm3d,30\n"
+            "2026-01-01T00:00Z,a_terminal,booked_msm3d,40\n"
+            "2026-01-01T01:00Z,pipe_a,flow_msm3d,10\n"
+            "2026-01-01T02:00Z,a_terminal,nomination_msm3d,35\n",
+        },
+    )
+
+    stream = load_stream("held", tiny, tmp_path)
+
+    assert stream.metrics["nomination_msm3d"][1] == ((30.0,), (30.0,), (35.0,))
+    assert stream.metrics["booked_msm3d"][1] == ((40.0,), (40.0,), (40.0,))
+
+
+def test_planned_events_are_in_stream_payload(tiny, tmp_path):
+    make_stream(
+        tmp_path / "planned",
+        """
+[[events]]
+label = "Planned inspection"
+asset = "pipe_a"
+start = 2026-01-01T01:00:00Z
+end = 2026-01-01T02:00:00Z
+planned = true
+""",
+        {"flows.csv": "timestamp,asset,flow_msm3d\n2026-01-01T00:00Z,pipe_a,10\n"},
+    )
+
+    event = load_stream("planned", tiny, tmp_path).payload()["events"][0]
+
+    assert event["label"] == "Planned inspection"
+    assert event["asset"] == "pipe_a"
+    assert event["planned"] is True
+    assert event["start"] == int(datetime(2026, 1, 1, 1, tzinfo=UTC).timestamp())
+
+
 def test_replay_loops_through_frames(tiny, tmp_path):
     make_stream(
         tmp_path / "s",
@@ -436,6 +503,50 @@ def test_live_server_sends_meta_then_frames(tiny, tmp_path):
     assert json.loads(lines[1][len("data: ") :])["title"] == "Feed"
     assert lines[3] == "event: frame"
     assert json.loads(lines[4][len("data: ") :])["values"] == {"pipe_a": 1.0}
+
+
+def test_live_server_sends_plan_and_nomination_lookahead(tiny, tmp_path):
+    make_stream(
+        tmp_path / "planned",
+        'title = "Feed"\n',
+        {
+            "flows.csv": "timestamp,asset,metric,value\n"
+            "2026-01-01T00:00Z,pipe_a,flow_msm3d,1\n"
+            "2026-01-01T00:00Z,a_terminal,nomination_msm3d,30\n"
+            "2026-01-01T01:00Z,pipe_a,flow_msm3d,2\n"
+            "2026-01-01T01:00Z,a_terminal,nomination_msm3d,31\n"
+            "2026-01-01T02:00Z,pipe_a,flow_msm3d,3\n"
+            "2026-01-01T02:00Z,a_terminal,nomination_msm3d,32\n"
+        },
+    )
+    stream = load_stream("planned", tiny, tmp_path)
+    site = tmp_path / "site"
+    site.mkdir()
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    plan = [{"now": [0, "holds", None]} for _ in stream.times]
+    thread = threading.Thread(
+        target=serve,
+        args=(site, stream),
+        daemon=True,
+        kwargs={"port": port, "speed": 1e9, "open_browser": False, "plan": plan},
+    )
+    thread.start()
+    for _ in range(50):
+        try:
+            response = urllib.request.urlopen(f"http://127.0.0.1:{port}/stream", timeout=5)
+            break
+        except OSError:
+            threading.Event().wait(0.1)
+    else:
+        pytest.fail("the live server never came up")
+    while response.readline().decode().strip() != "event: frame":
+        pass
+    frame = json.loads(response.readline().decode()[len("data: ") :])
+
+    assert frame["plan"] == plan[0]
+    assert frame["ahead"] == {"nomination_msm3d": {"a_terminal": [31.0, 32.0]}}
 
 
 def test_live_server_sends_keepalive_comments_during_long_gaps(tiny, tmp_path):
