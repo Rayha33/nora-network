@@ -373,6 +373,16 @@ def test_replay_with_an_empty_stream_sleeps_instead_of_spinning(monkeypatch):
     assert sleeps == [1.0, 1.0, 1.0]  # napping once per loop, not busy-looping
 
 
+def test_sodir_stream_covers_real_fields(north_sea):
+    stream = load_stream("sodir-field-production", north_sea)
+    node_ids = {n.id for n in north_sea.nodes}
+    assert set(stream.assets) <= node_ids  # every reading maps to an existing node
+    assert list(stream.times) == sorted(stream.times)
+    assert all(t.day == 1 and t.hour == 0 for t in stream.times)  # month starts
+    troll = stream.values[0][stream.assets.index("troll")]
+    assert troll and 50 < troll < 200  # MSm3/d, from SODIR's billion Sm3 per month
+
+
 def test_order_sets_which_stream_comes_first(north_sea):
     synthetic = load_stream("synthetic-week", north_sea)
     real = load_stream("denmark-gas-energinet", north_sea)
