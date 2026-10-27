@@ -20,21 +20,25 @@ browsers and proxies don't reap an idle connection.
 from __future__ import annotations
 
 import json
+import sys
 import time
 import webbrowser
 from collections.abc import Callable, Iterator
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from .integrations import Connector
 from .stream import Stream
 
 Frame = tuple[datetime, dict[str, float], dict[str, dict[str, float]], int]
 PacedFrame = tuple[float, Frame]  # wall-seconds to wait, then the frame itself
+PolledItem = Frame | dict  # a dict is an error event: {"error": message}
 
 KEEPALIVE_SECONDS = 15.0  # max silence before an SSE comment keeps the line warm
+POLL_SECONDS = 300.0  # Gassco publishes its real-time figures every 5 minutes
 
 
 def replay(stream: Stream, speed: float = 3600.0, loop: bool = True) -> Iterator[PacedFrame]:
@@ -76,6 +80,32 @@ def nominations_ahead(stream: Stream, index: int, hours: float = 2.0) -> dict:
     }
 
 
+def poll(
+    source: Connector, poll_seconds: float = POLL_SECONDS
+) -> Iterator[tuple[float, PolledItem]]:
+    """Yield (wait, frame) pairs by polling a live connector every poll_seconds.
+
+    A failed poll never ends the feed: it logs, yields an SSE error event instead of
+    a frame, and keeps polling, so the browser keeps its last good frame and a down
+    API reads as a stale feed, not a dead server. The first frame is sent at once.
+    """
+    index = 0
+    while True:
+        wait = 0.0 if index == 0 else poll_seconds
+        now = datetime.now(tz=UTC)
+        try:
+            readings = list(source.fetch(now - timedelta(seconds=poll_seconds), now))
+            if not readings:
+                raise ValueError(f"{source.name}: empty response")
+            when = max(r.when for r in readings)
+            flows = {r.asset: r.value for r in readings}
+            yield wait, (when, flows, {source.metric: dict(flows)}, index)
+            index += 1
+        except Exception as error:  # noqa: BLE001 - the feed must outlive any one poll
+            print(f"{source.name}: poll failed: {error}", file=sys.stderr)
+            yield wait, {"error": str(error), "source": source.name}
+
+
 class _Handler(SimpleHTTPRequestHandler):
     meta: dict = {}
     plan: list | None = None
@@ -96,8 +126,12 @@ class _Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         try:
             self._send("meta", self.meta)
-            for wait, (when, values, metrics, index) in self.frames():
+            for wait, item in self.frames():
                 self._pause(wait)
+                if isinstance(item, dict):  # a poller failure: tell the browser, keep serving
+                    self._send("error", item)
+                    continue
+                when, values, metrics, index = item
                 frame = {"t": int(when.timestamp()), "values": values, "metrics": metrics}
                 if self.plan:
                     frame["plan"] = self.plan[index]
@@ -128,8 +162,10 @@ class _Handler(SimpleHTTPRequestHandler):
 
 def serve(
     site_dir: Path,
-    stream: Stream,
+    stream: Stream | None = None,
     *,
+    meta: dict | None = None,
+    frames: Callable[[], Iterator[tuple[float, PolledItem]]] | None = None,
     host: str = "127.0.0.1",
     port: int = 8765,
     speed: float = 3600.0,
@@ -137,23 +173,35 @@ def serve(
     open_browser: bool = True,
     plan: list | None = None,
 ) -> None:
+    """Serve the site and a feed on /stream: replay a `stream`, or poll a live source.
+
+    A poller (see `poll`) passes `meta` and `frames` instead of a `stream`, so
+    `nora live --source gassco` serves real data without touching the browser side.
+    """
     hidden = ("times", "values", "metrics", "plan")
-    meta = {k: v for k, v in stream.payload().items() if k not in hidden}
+    if meta is None:
+        assert stream is not None, "serve needs a stream, or meta and frames"
+        meta = {k: v for k, v in stream.payload().items() if k not in hidden}
+    if frames is None:
+        frames = partial(replay, stream, speed)
     handler = type(
         "StreamHandler",
         (_Handler,),
         {
             "meta": meta,
             "plan": plan,
-            "ahead": staticmethod(partial(nominations_ahead, stream)),
-            "frames": staticmethod(partial(replay, stream, speed)),
+            "ahead": staticmethod(partial(nominations_ahead, stream)) if stream else None,
+            "frames": staticmethod(frames),
             "keepalive": keepalive,
         },
     )
     server = ThreadingHTTPServer((host, port), partial(handler, directory=str(site_dir)))
     server.daemon_threads = True
     url = f"http://{host}:{port}/network.html?live=/stream"
-    print(f"Replaying '{stream.title}' at {speed:g}x as a live feed")
+    if stream:
+        print(f"Replaying '{stream.title}' at {speed:g}x as a live feed")
+    else:
+        print(f"Serving '{meta.get('title', 'live feed')}' as a live feed")
     print(f"  map:  {url}")
     print(f"  feed: http://{host}:{port}/stream  (Ctrl-C to stop)")
     if open_browser:
