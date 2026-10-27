@@ -83,13 +83,15 @@
     map.addSource("nora-node-badges", { type: "geojson", data: badgeData });
     map.addSource("nora-mids", { type: "geojson", data: mids });
     const state = (key, fallback) => ["coalesce", ["feature-state", key], fallback];
+    // Hairlines at overview zoom, a little more weight only when zoomed in.
     const width = (k, extra = 0) => ["interpolate", ["linear"], ["zoom"],
-      3, ["+", extra, ["*", 0.8 * k, state("width", 1)]],
-      8, ["+", extra, ["*", 1.6 * k, state("width", 1)]]];
+      3, ["+", extra, ["*", 0.45 * k, state("width", 1)]],
+      6, ["+", extra, ["*", 0.7 * k, state("width", 1)]],
+      9, ["+", extra, ["*", 1.1 * k, state("width", 1)]]];
     const opacity = ["case", ["boolean", ["feature-state", "hide"], false], 0, ["boolean", ["feature-state", "dim"], false], 0.3, 1];
     // A dark casing under any line in alarm, so colour never stands alone.
     map.addLayer({ id: "nora-casing", type: "line", source: "nora-pipes", layout: { "line-cap": "round" },
-      paint: { "line-color": C.casing, "line-width": width(1, 2), "line-opacity": ["case", ["boolean", ["feature-state", "casing"], false], opacity, 0] } });
+      paint: { "line-color": C.casing, "line-width": width(1, 1.6), "line-opacity": ["case", ["boolean", ["feature-state", "casing"], false], opacity, 0] } });
     map.addLayer({ id: "nora-pipes-onshore", type: "line", source: "nora-pipes", filter: ["==", ["get", "onshore"], true],
       paint: { "line-color": ["to-color", state("color", C.inactive)], "line-width": width(0.8), "line-dasharray": [2, 2], "line-opacity": opacity } });
     map.addLayer({ id: "nora-pipes", type: "line", source: "nora-pipes", filter: ["!=", ["get", "onshore"], true], layout: { "line-cap": "round" },
@@ -224,7 +226,8 @@
     for (const marker of App.markers()) {
       if (App.pipeStyle(marker.id).hidden) continue;
       const p = project(marker.id, marker.along);
-      App.drawMarker(ctx, marker, p.x, p.y, p.angle, 6.5, map.getZoom() >= 6);
+      const zoom = map.getZoom();
+      App.drawMarker(ctx, marker, p.x, p.y, p.angle, 6.5, zoom >= 6.5 ? 2 : zoom >= 5 ? 1 : 0);
     }
   };
 

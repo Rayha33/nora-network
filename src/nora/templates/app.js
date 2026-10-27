@@ -73,13 +73,14 @@ const App = (() => {
   const shortTime = (t) => timeFormat(t, { weekday: "short", hour: "2-digit", minute: "2-digit" });
 
   /* The label beside a moving marker: its value, then the ETA in a dimmer tone, in
-     small regular type with a paper halo (no box, so nothing covers the map). The next
-     stop is added only when zoomed in (`detail`). */
+     small regular type with a paper halo (no box, so nothing covers the map). `detail`
+     follows the zoom: 0 labels only gas quality and alarms, 1 every marker, 2 adds the
+     next stop. */
   function markerLabel(ctx, marker, x, y, size, detail) {
-    if (!marker.value) return;
+    if (!marker.value || (!detail && !marker.level && marker.kind !== "quality")) return;
     const font = 10.5, gap = 5, lx = x + size * 1.7, ly = y - size * 1.4;
     const parts = [[marker.value, COLORS.text], [marker.eta || "", COLORS.text_dim]];
-    if (detail && marker.to) parts.push([marker.to, COLORS.text_dim]);
+    if (detail >= 2 && marker.to) parts.push([marker.to, COLORS.text_dim]);
     ctx.save();
     ctx.font = `${font}px Archivo, sans-serif`;
     ctx.textAlign = "left";
@@ -195,7 +196,7 @@ const App = (() => {
     ctx.restore();
   }
   // A pig (capsule) or peak (triangle) at x, y, turned along the line by `angle`.
-  function drawMarker(ctx, marker, x, y, angle, size = 7, detail = false) {
+  function drawMarker(ctx, marker, x, y, angle, size = 7, detail = 1) {
     if (marker.kind === "quality") { drawParcel(ctx, marker, x, y, size, detail); return; }
     ctx.save();
     ctx.translate(x, y);
