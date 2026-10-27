@@ -43,7 +43,7 @@
   .top nav { margin-left: auto; display: flex; gap: 20px; font-size: 15px; }
   .top nav a { color: var(--ink); text-decoration: none; }
   .top nav a:hover { text-decoration: underline; }
-  .chart { display: block; width: 100%; height: min(78vh, 760px); min-height: 460px; border: 0; background: var(--sea); }
+  .chart { display: block; width: 100%; height: calc(100vh - 53px); min-height: 480px; border: 0; background: var(--sea); }
   .chart-caption { padding: 8px 24px 0; font-size: 14px; color: var(--ink-2); }
   main { padding: 0 24px 64px; }
   section { max-width: 980px; margin: 0 auto; padding: 48px 0 0; }
@@ -95,7 +95,7 @@
     .top { padding: 12px 16px; }
     .top nav { margin-left: 0; }
     main { padding: 0 16px 48px; }
-    .chart { height: 70vh; min-height: 420px; }
+    .chart { height: calc(100vh - 92px); min-height: 420px; }
     .chart-caption { padding: 8px 16px 0; }
     .bars li { grid-template-columns: 7.5em 1fr 4.5em; font-size: 14px; }
     td.share { display: none; }
@@ -108,21 +108,21 @@
   <a class="wordmark" href="./">NORA</a>
   <span class="expansion">Network Operations and Realtime Analysis</span>
   <nav aria-label="Main">
-    <a href="network.html">Open the chart</a>
+    <a href="network.html">Open the app</a>
     <a href="#data">Data</a>
     <a href="#improve">Improve NORA</a>
     <a href="{{ links.repo }}">Source code</a>
   </nav>
 </header>
 
-<iframe class="chart" src="network.html?embed=1&amp;autoplay=1" title="Chart of the North Sea gas network, replaying a week of flows"></iframe>
-<p class="chart-caption">Replaying {{ streams[0].title|lower if streams else "the network" }}. Click any pipeline or terminal for details, or <a href="network.html">open the full chart</a>.</p>
+<iframe class="chart" src="network.html?embed=1&amp;autoplay=1" title="The North Sea gas network on a map, replaying a week of flows"></iframe>
+<p class="chart-caption">Replaying {{ streams[0].title|lower if streams else "the network" }} on the map. Switch to Flow for the gas flow overview, click anything for details, or <a href="network.html">open the full app</a>.</p>
 
 <main>
   <section>
     <h1>An open model of the North Sea gas network</h1>
     <p class="lede">NORA maps <span class="num">{{ a.assets }}</span> fields, platforms, plants, terminals and markets, joined by <span class="num">{{ a.pipelines }}</span> offshore pipelines with a combined length of <span class="num">{{ "{:,}".format(a.pipeline_km) }}</span> km. It works out how much gas the network can deliver, what happens when any single part fails, and replays recorded flows as if they were arriving live.</p>
-    <p>It is built in Python with networkx and pyvis, and anyone can improve the data or the code. Every change is checked automatically and published here within minutes of being accepted.</p>
+    <p>It shows the network two ways: on a real map, and as a gas flow overview of the whole Gassco system drawn with pyvis. It is built in Python with networkx, and anyone can improve the data or the code. Every change is checked automatically and published here within minutes of being accepted.</p>
   </section>
 
   <section aria-labelledby="deliver">
@@ -200,7 +200,7 @@
 </main>
 
 <footer>
-  <p>Built from commit <a href="{{ links.repo }}/commit/{{ build.commit }}"><code>{{ build.commit or "local" }}</code></a>{% if build.date %} on {{ build.date }}{% endif %}. Asset positions, capacities and lengths are approximate figures compiled from public sources and are not suitable for operational decisions. The coastline is from Natural Earth. Code and data are MIT licensed. Download the <a href="data/network.json">graph</a>, <a href="data/analysis.json">analysis</a> or the <a href="data/nodes.csv">nodes</a> and <a href="data/pipelines.csv">pipelines</a> files.</p>
+  <p>Built from commit <a href="{{ links.repo }}/commit/{{ build.commit }}"><code>{{ build.commit or "local" }}</code></a>{% if build.date %} on {{ build.date }}{% endif %}. Asset positions, capacities and lengths are approximate figures compiled from public sources and are not suitable for operational decisions. Map data from OpenStreetMap contributors, tiles by OpenFreeMap. Code and data are MIT licensed. Download the <a href="data/network.json">graph</a>, <a href="data/analysis.json">analysis</a> or the <a href="data/nodes.csv">nodes</a> and <a href="data/pipelines.csv">pipelines</a> files.</p>
 </footer>
 </body>
 </html>
