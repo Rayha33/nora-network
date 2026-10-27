@@ -79,7 +79,8 @@ def routed_flow(graph: nx.DiGraph, supply: dict[str, float] | None = None) -> Fl
     for u, v, attrs in flows.edges(data=True):
         edge = {"weight": round(attrs.get("length_km", 0))}
         if "capacity" in attrs:
-            edge["capacity"] = round(attrs["capacity"] * 1000)
+            # at least 1 kSm3/d, so a tiny line is nearly-blocked, not fully blocked
+            edge["capacity"] = max(1, round(attrs["capacity"] * 1000))
         scaled.add_edge(u, v, **edge)
     flow = nx.max_flow_min_cost(scaled, SOURCE, SINK)
     flow = {u: {v: f / 1000 for v, f in targets.items()} for u, targets in flow.items()}

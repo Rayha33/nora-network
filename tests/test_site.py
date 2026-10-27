@@ -76,3 +76,19 @@ def test_cli_validate_and_stats(capsys):
     assert main(["validate"]) == 0
     assert main(["stats", "--top", "3"]) == 0
     assert "Deliverable" in capsys.readouterr().out
+
+
+def test_hostile_names_do_not_reach_the_page_as_html(tmp_path):
+    """The CSVs are crowd-edited: a name like `Tyra<img src=x onerror=...>` must
+    reach vis-network escaped, never as live markup."""
+    from tests.conftest import NODES, write_network
+
+    hostile = [row.replace("Gas field", "Tyra<img src=x onerror=alert(1)>") for row in NODES]
+    data = write_network(tmp_path / "data", nodes=hostile)
+    out = tmp_path / "site"
+    build_site(out, data)
+    html = (out / "network.html").read_text()
+    assert "<img src=x" not in html  # no unescaped tag anywhere
+    # the label rides to the browser inside JSON, where `&` is \u0026; the
+    # browser decodes it back to &lt; before vis-network sees the label
+    assert "u0026lt;img" in html

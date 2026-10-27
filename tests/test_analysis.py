@@ -48,6 +48,13 @@ def test_missing_length_falls_back_to_distance(tiny):
     assert abs(graph.edges["a_terminal", "market"]["length_km"] - expected) < 1e-6
 
 
+def test_tiny_pipelines_stay_nearly_blocked_not_fully_blocked(tiny):
+    """Integer scaling rounds capacities to kSm3/d: a fraction of a kSm3/d
+    must keep a sliver of capacity, not become a closed valve."""
+    flow = routed_flow(build_graph(tiny), {"gas": 0.0004})
+    assert flow.value > 0
+
+
 def test_north_sea_analysis_is_consistent(north_sea):
     result = analyse(north_sea)
     assert 0 < result["deliverable"] <= result["supply_capacity"]

@@ -16,6 +16,7 @@ the web, and the flow view works offline.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from html import escape
 from pathlib import Path
 
 import pyvis
@@ -178,20 +179,22 @@ def _flow_view(net: Network) -> PyvisNetwork:
         x, y = positions[node.id]
         view.add_node(
             node.id,
-            label=f"<b>{node.name}</b>\n{SHORT[node.type]}",
+            # vis-network renders labels (multi: "html") and titles as HTML, so
+            # names from the crowd-edited CSVs must be escaped here.
+            label=f"<b>{escape(node.name)}</b>\n{SHORT[node.type]}",
             shape="circularImage",
             image=icon_uri(node.type),
             x=x,
             y=y,
             physics=False,
-            title=f"{node.name}\n{NODE_TYPES[node.type]}, {node.country}",
+            title=f"{escape(node.name)}\n{NODE_TYPES[node.type]}, {node.country}",
         )
     for pipe in sorted(net.pipelines, key=lambda p: p.id):
         view.add_edge(
             pipe.from_id,
             pipe.to_id,
             id=pipe.id,
-            title=f"{pipe.name}\n{PIPELINE_TYPES[pipe.type]}",
+            title=f"{escape(pipe.name)}\n{PIPELINE_TYPES[pipe.type]}",
             arrows="to, from" if pipe.bidirectional else "to",
         )
     view.options = FLOW_OPTIONS

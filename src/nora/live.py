@@ -35,13 +35,19 @@ def replay(stream: Stream, speed: float = 3600.0, loop: bool = True) -> Iterator
     """
     while True:
         previous = None
+        steps = 0
         for when, values in stream.frames():
             if previous is not None:
                 time.sleep(max(0.0, (when - previous).total_seconds() / speed))
             previous = when
+            steps += 1
             yield when, values
         if not loop:
             return
+        if not steps:
+            # An empty stream would otherwise spin at 100% CPU until the
+            # client disconnects; nap instead and try again.
+            time.sleep(1.0)
 
 
 class _Handler(SimpleHTTPRequestHandler):

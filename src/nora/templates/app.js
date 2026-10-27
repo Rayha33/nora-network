@@ -44,6 +44,11 @@ const App = (() => {
   }
   const assets = NORA.assets;
   const nameOf = (id) => (assets[id] || {}).name || id;
+  // vis-network renders some labels as HTML; escape anything data-derived that
+  // reaches such a label (the CSVs are crowd-edited via PRs).
+  const esc = (text) => String(text).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  })[c]);
   const timeFormat = (epoch, opts) => new Date(epoch * 1000).toLocaleString("en-GB", { timeZone: "UTC", ...opts });
   const formatTime = (t) => timeFormat(t, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + " UTC";
   const shortTime = (t) => timeFormat(t, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -228,7 +233,7 @@ const App = (() => {
     if (!view.mounted) { view.mounted = true; view.mount(containers[name]); }
     else view.resize();
     restyle();
-    if (state.selected) view.focus(state.selected, false);
+    if (state.selected && view.ready) view.focus(state.selected, false);
   }
 
   // ------------------------------------------------------------------ modes
@@ -587,6 +592,10 @@ const App = (() => {
 
   // ------------------------------------------------------------------ live feed
   function connectFeed(url) {
+    // Drop any recorded stream first: until the feed's `meta` arrives, `evaluate`
+    // would otherwise fire the old stream's events against the feed's timestamps.
+    live.stream = null;
+    live.feedEvents = [];
     live.feed = new EventSource(url);
     document.body.classList.add("feed-mode");
     const select = $("stream-select"), tag = $("stream-tag");
@@ -671,7 +680,7 @@ const App = (() => {
 
   return {
     state, live, views, embed, reduceMotion, nodeIds, pipeIds,
-    palette, theme: () => themeName, fmt, nameOf,
+    palette, theme: () => themeName, fmt, nameOf, esc,
     pipeStyle, nodeStyle, drawDots, register, select, restyle,
     setView, start,
   };
