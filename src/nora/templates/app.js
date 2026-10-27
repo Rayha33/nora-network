@@ -606,6 +606,96 @@ const App = (() => {
     return `${hours > 12 ? shortTime(t) : timeFormat(t, { hour: "2-digit", minute: "2-digit" })} (in ${fmt(hours, 1)} h)`;
   }
 
+  // ------------------------------------------------------------------ what-if
+  /* What the network can still deliver with some assets offline: the same max
+     flow the Python analysis runs (analysis.py, `offline=`), recomputed here
+     from the payload because the published site has no server to ask. The
+     network is small, so Edmonds-Karp over arcs added in sorted id order is
+     fast and always gives the same answer. */
+  const WHATIF_SOURCE = "__supply__", WHATIF_SINK = "__markets__", EPS = 1e-9;
+  const whatif = { offline: new Set(), cache: null };
+  function whatifFlow() {
+    const arcs = [], adj = {}, sinkArc = {};
+    const add = (u, v, cap, pipeline = null, sign = 0) => {
+      const i = arcs.length;
+      arcs.push({ u, v, cap, f: 0, pipeline, sign, rev: i + 1 });
+      arcs.push({ u: v, v: u, cap: 0, f: 0, pipeline: null, sign: 0, rev: i });
+      (adj[u] = adj[u] || []).push(i);
+      (adj[v] = adj[v] || []).push(i + 1);
+      return i;
+    };
+    for (const id of nodeIds) {
+      if (whatif.offline.has(id)) continue; // offline nodes: no capacity, no delivery
+      const d = assets[id];
+      adj[id] = adj[id] || [];
+      if (d.supply && d.capacity) add(WHATIF_SOURCE, id, d.capacity);
+      if (d.type === "market") sinkArc[id] = add(id, WHATIF_SINK, Infinity);
+    }
+    for (const id of pipeIds) {
+      const p = assets[id];
+      if (!adj[p.from] || !adj[p.to]) continue; // touches an offline asset
+      const cap = p.capacity == null ? Infinity : p.capacity;
+      add(p.from, p.to, cap, id, 1);
+      if (p.bidirectional) add(p.to, p.from, cap, id, -1);
+    }
+    let value = 0;
+    for (;;) { // shortest augmenting paths, in sorted order, so the split is stable
+      const prev = { [WHATIF_SOURCE]: WHATIF_SOURCE }, prevArc = {}, queue = [WHATIF_SOURCE];
+      while (queue.length && !prev[WHATIF_SINK]) {
+        const u = queue.shift();
+        for (const i of adj[u]) {
+          const a = arcs[i];
+          if (!prev[a.v] && a.cap - a.f > EPS) { prev[a.v] = u; prevArc[a.v] = i; queue.push(a.v); }
+          if (prev[WHATIF_SINK]) break;
+        }
+      }
+      if (!prev[WHATIF_SINK]) break;
+      let push = Infinity;
+      for (let v = WHATIF_SINK; v !== WHATIF_SOURCE; v = prev[v]) push = Math.min(push, arcs[prevArc[v]].cap - arcs[prevArc[v]].f);
+      for (let v = WHATIF_SINK; v !== WHATIF_SOURCE; v = prev[v]) { arcs[prevArc[v]].f += push; arcs[arcs[prevArc[v]].rev].f -= push; }
+      value += push;
+    }
+    const pipelines = {};
+    for (const a of arcs) if (a.pipeline && Math.abs(a.f) > EPS) pipelines[a.pipeline] = (pipelines[a.pipeline] || 0) + a.f * a.sign;
+    const delivered = {};
+    for (const [id, i] of Object.entries(sinkArc)) delivered[id] = arcs[i].f;
+    return { value, delivered, pipelines, max: Math.max(1, ...Object.values(pipelines).map(Math.abs)) };
+  }
+  function whatifResult() {
+    if (!whatif.cache) whatif.cache = whatifFlow();
+    return whatif.cache;
+  }
+  function toggleOffline(id) {
+    if (whatif.offline.has(id)) whatif.offline.delete(id);
+    else whatif.offline.add(id);
+    whatif.cache = null;
+    restyle();
+    renderWhatif();
+  }
+  /* The header chip while the What-if mode is on: what the network can still
+     deliver, which the user clears when done. Says so plainly when that is
+     nothing, rather than showing an empty number. */
+  function renderWhatif() {
+    const chip = $("whatif-chip");
+    if (!chip) return;
+    chip.hidden = state.mode !== "whatif";
+    if (chip.hidden) return;
+    const base = NORA.deliverable || 0, n = whatif.offline.size;
+    if (!n) {
+      chip.replaceChildren(h("span", { class: "dim" }, "What-if: click assets to take them offline"));
+      chip.title = "Click assets to take them offline; the flows and the deliverable gas update";
+      chip.onclick = null;
+      return;
+    }
+    const value = whatifResult().value;
+    chip.replaceChildren(
+      h("span", null, value < 0.05 ? "What-if: no gas can be delivered"
+        : `What-if: ${fmt(value, 1)} of ${fmt(base, 1)} MSm³/d deliverable`),
+      h("span", { class: "dim" }, ` · ${n} offline · restore all`));
+    chip.title = "Restore every asset: the what-if becomes the intact network again";
+    chip.onclick = () => { whatif.offline.clear(); whatif.cache = null; restyle(); renderWhatif(); };
+  }
+
   // ------------------------------------------------------------------ styling rules (both views)
   /* A pipeline: grey by state (dark grey without flow, lightest grey flowing); colour
      only for an abnormal condition. */
@@ -636,6 +726,15 @@ const App = (() => {
     } else if (mode === "risk") {
       out.level = onshore ? 0 : level(d.share, T.risk);
       out.label = d.lost ? `−${fmt(d.lost)}` : "";
+    } else if (mode === "whatif") {
+      if (whatif.offline.has(d.from) || whatif.offline.has(d.to)) {
+        Object.assign(out, { color: COLORS.inactive, dashed: true, label: "" });
+      } else {
+        const m = Math.abs(whatifResult().pipelines[id] || 0);
+        out.color = m < 0.05 ? COLORS.inactive : COLORS.active;
+        if (m >= 0.05) out.width = 1 + 4 * Math.sqrt(m / whatifResult().max);
+        out.label = fmt(m, 1);
+      }
     }
     if (out.level) out.color = LEVEL_COLOR[out.level];
     if (settings.lineValues === "off" || (settings.lineValues === "auto" && mode === "plain")) out.label = "";
@@ -663,6 +762,9 @@ const App = (() => {
       out.level = level(d.share, T.risk);
       out.scale = 0.75 + 0.9 * Math.sqrt(d.lost / worst);
       out.sub = d.lost ? `−${fmt(d.lost)} if it trips` : "No loss if it trips";
+    } else if (mode === "whatif") {
+      if (whatif.offline.has(id)) { out.inactive = true; out.sub = "offline"; }
+      else if (d.type === "market") out.sub = `${fmt(whatifResult().delivered[id] || 0, 1)} MSm³/d`;
     }
     if (!settings.names) out.sub = "";
     return out;
@@ -906,6 +1008,12 @@ const App = (() => {
           conds.length ? (() => { const cause = upstreamCause(id); return h("p", { class: "cause" }, h("strong", null, "Likely cause: "), cause.text, h("span", { class: "dim" }, ` (confidence ${cause.confidence}; traced through the network model)`)); })() : null),
         h("div", { class: "box" }, h("h2", null, "Facts"), facts(id))),
       h("div", { class: "actions", style: "display:flex;gap:8px;margin-top:14px" },
+        d.kind === "node" ? h("button", { type: "button", class: "text", onclick: () => {
+          state.mode = "whatif";
+          markTabs();
+          toggleOffline(id);
+          renderAsset();
+        } }, `${whatif.offline.has(id) ? "Restore" : "Take offline"} in the what-if`) : null,
         h("button", { type: "button", class: "text", onclick: () => go({ screen: "unit", unit: unitOf[id] || "all", focus: id }) }, "Show in its unit"),
         h("button", { type: "button", class: "text", onclick: () => go({ screen: "diag", asset: id }) }, "Diagnostics"))));
   }
@@ -1072,6 +1180,7 @@ const App = (() => {
         h("li", null, "Press ▶ to play the data, drag the timeline, or press Next problem."),
         h("li", null, "Choose a unit, or All units, to see it on the Map or as a Flow: gas moves from the top to the bottom."),
         h("li", null, "Drag the year, top right, to show the network as it was, or will be: planned assets appear at their startup year, shut-down ones disappear from their shutdown year."),
+        h("li", null, "Choose What-if, then click assets to take them offline: the pipeline loads and the deliverable gas update. Click the chip in the header to restore them all."),
         h("li", null, "Click any asset or line for its detail. Diagnostics shows the numbers behind it.")),
       h("h3", null, "Grey means all is well"),
       h("p", { class: "dim" }, "Colour appears only when something needs attention, always with a shape and a number as well:"),
@@ -1393,12 +1502,12 @@ const App = (() => {
       tab.addEventListener("click", () => { state.view = tab.dataset.view; markTabs(); render(); });
     }
     for (const tab of document.querySelectorAll("[data-mode]")) {
-      tab.addEventListener("click", () => { state.mode = tab.dataset.mode; markTabs(); restyle(); });
+      tab.addEventListener("click", () => { state.mode = tab.dataset.mode; markTabs(); restyle(); renderWhatif(); });
     }
     addEventListener("resize", () => { const view = current(); if (view && view.mounted) view.resize(); drawSpark(); });
     if (embed) document.body.classList.add("embed");
     if (views[params.get("view")]) state.view = params.get("view");
-    if (["live", "load", "risk", "plain"].includes(params.get("mode"))) state.mode = params.get("mode");
+    if (["live", "load", "risk", "whatif", "plain"].includes(params.get("mode"))) state.mode = params.get("mode");
     if (YEARS.length) {
       const today = new Date().getFullYear(); // the default view is today, in the browser
       yearInput.min = String(Math.min(...YEARS));
@@ -1406,6 +1515,7 @@ const App = (() => {
       setYear(Math.min(Math.max(today, Number(yearInput.min)), Number(yearInput.max)));
     } else $("year-wrap").hidden = true;
     markTabs();
+    renderWhatif();
     buildKey();
     buildSettings();
     if (!embed && !storedFlag("nora-guide-seen")) openGuide();
@@ -1430,6 +1540,12 @@ const App = (() => {
   return {
     state, live, route, views, settings: () => settings, embed, reduceMotion, nodeIds, pipeIds,
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
-    pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T, register, restyle, go, start, theme: () => theme, select: (id) => (id ? go({ screen: "asset", asset: id }) : null),
+    pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T, register, restyle, go, start, theme: () => theme,
+    select: (id) => {
+      if (!id || !assets[id]) return;
+      // In What-if mode a click takes a node offline or brings it back instead.
+      if (state.mode === "whatif" && assets[id].kind === "node") { toggleOffline(id); return; }
+      go({ screen: "asset", asset: id });
+    },
   };
 })();

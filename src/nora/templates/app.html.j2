@@ -32,6 +32,7 @@
     <button type="button" role="tab" data-mode="live" title="Flows, pressures and nominations from the data being played">Live</button>
     <button type="button" role="tab" data-mode="load" title="Model: how full each pipeline is when the network delivers all it can">Load</button>
     <button type="button" role="tab" data-mode="risk" title="Model: how much gas is lost if an asset trips">Risk</button>
+    <button type="button" role="tab" data-mode="whatif" title="What-if: click assets to take them offline and see what the network can still deliver">What-if</button>
     <button type="button" role="tab" data-mode="plain" title="Just the network, no values">Plain</button>
   </div>
   <label class="year" id="year-wrap" title="Timeline: drag the year to show the network as it was, or will be, in that year. Planned assets appear at their startup year; decommissioned ones disappear from their shutdown year">
@@ -42,6 +43,7 @@
   <div class="spacer"></div>
   <div class="alarm-counts" id="alarm-counts" aria-live="polite"></div>
   <button type="button" class="plan-chip" id="plan-chip" aria-live="polite" title="Can the network deliver what shippers nominated? Opens the overview"></button>
+  <button type="button" class="plan-chip" id="whatif-chip" hidden aria-live="polite" title="What-if: click assets to take them offline; the flows and the deliverable gas update"></button>
   <label class="search" title="Find an asset by name">
     <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
     <span class="sr-only">Find an asset</span>

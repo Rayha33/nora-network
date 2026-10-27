@@ -159,10 +159,23 @@ def _outage(kind: str, asset: str, name: str, base: float, remaining: float) -> 
     return Outage(kind, asset, name, lost, round(lost / base, 4) if base else 0.0)
 
 
-def analyse(net: Network) -> dict:
-    """Everything the site shows, as plain JSON-ready data."""
+def _without(graph: nx.DiGraph, offline: frozenset[str]) -> nx.DiGraph:
+    """The graph minus the offline nodes and every pipeline that touches them."""
+    reduced = graph.copy()
+    reduced.remove_nodes_from(offline)
+    return reduced
+
+
+def analyse(net: Network, offline: frozenset[str] = frozenset()) -> dict:
+    """Everything the site shows, as plain JSON-ready data.
+
+    `offline` is a what-if set of node ids taken out of service: the flow
+    numbers then describe the network without them (deliverable gas may be 0),
+    while the counts and the N-1 outages still describe the whole network.
+    """
     graph = build_graph(net)
-    best = routed_flow(graph)  # same total as max_flow, with a reproducible split
+    reduced = _without(graph, offline) if offline else graph
+    best = routed_flow(reduced)  # same total as max_flow, with a reproducible split
     lengths = {attrs["pipeline"]: attrs["length_km"] for _, _, attrs in graph.edges(data=True)}
     offshore = [p for p in net.pipelines if p.status == "operating" and p.type != "onshore"]
     supply = [n for n in net.nodes if n.status == "operating" and n.type in SUPPLY_TYPES]
@@ -173,6 +186,7 @@ def analyse(net: Network) -> dict:
         if p.capacity_msm3d and p.id in best.pipelines
     }
     return {
+        "offline": sorted(offline),
         "assets": len(net.nodes),
         "pipelines": len(offshore),
         "countries": sorted({n.country for n in net.nodes}),

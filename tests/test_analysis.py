@@ -93,3 +93,42 @@ def test_results_do_not_depend_on_hash_seed():
         outputs.add(done.stdout)
     assert len(outputs) == 1
     assert json.loads(outputs.pop())["deliverable"] > 0
+
+
+def test_whatif_without_offline_is_the_intact_analysis(tiny):
+    assert analyse(tiny, frozenset()) == analyse(tiny)
+    assert analyse(tiny)["deliverable"] == 60
+
+
+def test_whatif_loses_one_branch(tiny):
+    """Taking Terminal A out leaves only Pipe B, so only 30 of 60 is deliverable."""
+    cut = analyse(tiny, frozenset({"a_terminal"}))
+    assert cut["deliverable"] == 30
+    assert cut["delivered"] == {"market": 30.0}
+    assert cut["supplied"] == {"gas": 30.0}
+    assert "pipe_a" not in cut["pipeline_flow"]  # the offline branch carries nothing
+
+
+def test_whatif_isolating_the_market(tiny):
+    """Everything upstream of the market is intact, but it is unreachable: 0."""
+    cut = analyse(tiny, frozenset({"hub"}))
+    assert cut["deliverable"] == 0
+    assert cut["delivered"] == {"market": 0.0}
+    assert cut["supplied"] == {"gas": 0.0}
+    assert cut["pipeline_flow"] == {"a_entry": 0.0, "b_entry": 0.0}
+
+
+def test_whatif_taking_the_market_itself_offline(tiny):
+    """The only market offline: nothing left to deliver, and it is not reported."""
+    cut = analyse(tiny, frozenset({"market"}))
+    assert cut["deliverable"] == 0
+    assert cut["delivered"] == {}
+    assert cut["offline"] == ["market"]
+
+
+def test_whatif_everything_offline_degrades_gracefully(tiny):
+    cut = analyse(tiny, frozenset(n.id for n in tiny.nodes))
+    assert cut["deliverable"] == 0
+    assert cut["delivered"] == {}
+    assert cut["supplied"] == {}
+    assert cut["pipeline_flow"] == {}
