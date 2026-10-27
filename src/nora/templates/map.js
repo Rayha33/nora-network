@@ -46,7 +46,8 @@
           if (/boundary|admin/.test(id)) { map.setPaintProperty(id, "line-color", C.text_dim); map.setPaintProperty(id, "line-opacity", 0.35); }
           else if (/water|river/.test(id)) map.setPaintProperty(id, "line-color", C.water);
           else map.setLayoutProperty(id, "visibility", "none");
-        } else if (layer.type === "symbol") {
+        } else if (layer.type === "raster") { /* fallback basemap: keep as drawn */ }
+        else if (layer.type === "symbol") {
           if (/place|country|state|city|town|water_name|marine|ocean|sea/.test(id)) {
             map.setPaintProperty(id, "text-color", C.text_dim);
             map.setPaintProperty(id, "text-halo-color", C.paper);
@@ -138,9 +139,31 @@
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   }
 
+  // A GIS-style raster fallback for when the vector basemap is unreachable
+  // (blocked CDN, offline tiles): OpenStreetMap raster tiles still place every
+  // asset precisely, and NORA's own layers draw on top either way.
+  const FALLBACK_STYLE = {
+    version: 8,
+    glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
+    sources: {
+      osm: {
+        type: "raster", tileSize: 256, maxzoom: 19,
+        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+        attribution: "© OpenStreetMap contributors",
+      },
+    },
+    layers: [{ id: "osm-raster", type: "raster", source: "osm" }],
+  };
+
   view.mount = (el) => {
     if (typeof maplibregl === "undefined") {
       el.append(Object.assign(document.createElement("p"), { className: "notice", textContent: "The map needs an internet connection. The Flow view works offline." }));
+      return;
+    }
+    // WebGL is what draws the map: say so plainly instead of showing a blank area.
+    const gl = (() => { const c = document.createElement("canvas"); try { return c.getContext("webgl2") || c.getContext("webgl"); } catch { return null; } })();
+    if (!gl) {
+      el.append(Object.assign(document.createElement("p"), { className: "notice", textContent: "This browser has no WebGL, so the map cannot draw. Update the browser or enable hardware acceleration; the Flow view still works." }));
       return;
     }
     map = new maplibregl.Map({
@@ -154,7 +177,37 @@
     canvas.className = "dots-layer";
     el.append(canvas);
     ctx = canvas.getContext("2d");
-    map.on("style.load", addLayers);
+    let styled = false;
+    const failToFallback = (why) => {
+      if (styled) return;
+      styled = true;
+      note.remove();
+      try { map.setStyle(FALLBACK_STYLE); } catch { /* already gone */ }
+    };
+    // If the online style never arrives (CDN blocked, DNS, captive portal), fall back.
+    const note = Object.assign(document.createElement("div"), { className: "map-note", textContent: "Loading the map…" });
+    el.append(note);
+    const styleTimer = setTimeout(() => failToFallback("timeout"), 9000);
+    map.on("style.load", () => { clearTimeout(styleTimer); styled = true; note.remove(); addLayers(); });
+    map.on("error", (e) => {
+      if (styled) return; // a tile hiccup after a good load is not a failure
+      const msg = String((e && e.error && e.error.message) || "");
+      failToFallback(msg);
+    });
+    // GIS controls: scale bar, zoom buttons, and a live coordinate readout.
+    try {
+      map.addControl(new maplibregl.ScaleControl({ maxWidth: 120 }), "bottom-left");
+      map.addControl(new maplibregl.NavigationControl({ visualizePitch: false, showCompass: false }), "bottom-right");
+    } catch { /* a stripped MapLibre build without controls */ }
+    const readout = Object.assign(document.createElement("div"), { className: "coord-readout", textContent: "" });
+    el.append(readout);
+    const showCoord = (lngLat) => {
+      const lng = ((lngLat.lng + 180) % 360 + 360) % 360 - 180;
+      readout.textContent = `${Math.abs(lngLat.lat).toFixed(5)}°${lngLat.lat >= 0 ? "N" : "S"}  ${Math.abs(lng).toFixed(5)}°${lng >= 0 ? "E" : "W"}  ·  zoom ${map.getZoom().toFixed(1)}`;
+    };
+    map.on("mousemove", (e) => showCoord(e.lngLat));
+    map.on("move", () => showCoord(map.getCenter()));
+    map.on("mouseout", () => { readout.textContent = ""; });
     map.on("resize", sizeCanvas);
     map.on("render", () => view.ready && view.draw());
     const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12 });
