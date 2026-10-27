@@ -242,12 +242,20 @@
       }
       ctx.globalAlpha = 1;
     }
+    // Pigs, peaks and gas-quality slugs in screen pixels, so they stay visible (and the
+    // same size as on the map) however far the drawing is zoomed out.
+    const ratio = (network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
+    const scale = network.getScale(), detail = scale >= 0.9 ? 2 : scale >= 0.5 ? 1 : 0;
+    ctx.save();
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     for (const marker of App.markers()) {
       const e = edges.get(marker.id);
       if (!e || App.pipeStyle(marker.id).hidden) continue;
       const p = pointAlong(e, Math.max(0, Math.min(1, marker.along)), positions);
-      App.drawMarker(ctx, marker, p.x, p.y, p.angle, 6.5, network.getScale() >= 0.9);
+      const dom = network.canvasToDOM(p);
+      App.drawMarker(ctx, marker, dom.x, dom.y, p.angle, 6.5, detail);
     }
+    ctx.restore();
   }
 
   view.mount = (container) => {
