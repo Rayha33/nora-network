@@ -3,13 +3,17 @@
 Each stream is a folder in data/streams/ holding a stream.toml. Its rows come from
 one of three places, picked by what stream.toml contains:
 
-  [import]     a raw file plus a column and asset mapping (real datasets)
+  [import]     a raw file plus a column and asset mapping (real datasets); use
+               [[import]] once per file to combine several, e.g. flows from SCADA,
+               nominations from Origo and bookings from Gassco Booking
   [synthetic]  generated from the network model, with scripted events (demos)
-  neither      flows.csv already in NORA's format: timestamp,asset,flow_msm3d
+  neither      flows.csv in NORA's format: timestamp,asset,flow_msm3d or
+               timestamp,asset,metric,value
 
-`asset` is a pipeline id (flow along it in MSm3/d; negative means against its
-from -> to direction) or a node id (throughput at that node). `nora stream new`
-writes a stream.toml for a raw file; see data/streams/README.md.
+Metrics (METRICS below): flow_msm3d on a pipeline (negative = against its from -> to
+direction) or a node (throughput); pressure_bar at a node; nomination_msm3d and
+booked_msm3d at an exit point, held until the next value. `nora stream new` writes a
+stream.toml for a raw file; see data/streams/README.md.
 """
 
 from __future__ import annotations
@@ -23,7 +27,7 @@ import shutil
 import statistics
 import tomllib
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -36,8 +40,16 @@ from .graph import build_graph
 
 STREAMS_DIR = DATA_DIR / "streams"
 FLOW_COLUMNS = ("timestamp", "asset", "flow_msm3d")
+METRIC_COLUMNS = ("timestamp", "asset", "metric", "value")
 STREAM_ID = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
-Row = tuple[datetime, str, float]
+METRICS = {
+    "flow_msm3d": "Flow (MSm3/d)",
+    "pressure_bar": "Pressure (bar)",
+    "nomination_msm3d": "Hourly nomination (MSm3/d)",
+    "booked_msm3d": "Booked capacity (MSm3/d)",
+}
+HELD = ("nomination_msm3d", "booked_msm3d")  # valid until the next value arrives
+Row = tuple[datetime, str, str, float]  # time, asset, metric, value
 
 
 def _check_stream_id(name: str) -> None:
@@ -56,9 +68,20 @@ class Event:
     start: datetime
     end: datetime
     capacity_factor: float = 0.0
+    planned: bool = False  # planned work is known in advance; a trip is not
 
     def active(self, when: datetime) -> bool:
         return self.start <= when < self.end
+
+
+@dataclass(frozen=True)
+class Pig:
+    """A pig run: launched into a pipeline, travelling with the gas at about `speed_mps`."""
+
+    label: str
+    pipeline: str
+    launch: datetime
+    speed_mps: float
 
 
 @dataclass(frozen=True)
@@ -72,12 +95,32 @@ class Stream:
     events: tuple[Event, ...]
     times: tuple[datetime, ...]
     assets: tuple[str, ...]
-    values: tuple[tuple[float | None, ...], ...]  # values[time][asset]; None = no reading
+    values: tuple[tuple[float | None, ...], ...]  # flows: values[time][asset]; None = no reading
     order: int = 100  # lower plays first on the site; set with `order =` in stream.toml
+    # Other metrics, aligned to `times`: {metric: (assets, values[time][asset])}
+    metrics: dict = field(default_factory=dict)
+    pigs: tuple[Pig, ...] = ()
 
     def frames(self) -> Iterator[tuple[datetime, dict[str, float]]]:
         for when, row in zip(self.times, self.values, strict=True):
             yield when, {a: v for a, v in zip(self.assets, row, strict=True) if v is not None}
+
+    def frames_full(self) -> Iterator[tuple[int, datetime, dict, dict]]:
+        """(index, time, flows, {metric: {asset: value}}) for every time step."""
+        for i, (when, flows) in enumerate(self.frames()):
+            extra = (
+                {
+                    metric: {
+                        a: row[i]
+                        for a, row in zip(assets, zip(*values, strict=True), strict=True)
+                        if row[i] is not None
+                    }
+                    for metric, (assets, values) in self.metrics.items()
+                }
+                if self.metrics
+                else {}
+            )
+            yield i, when, flows, extra
 
     def payload(self) -> dict:
         """Compact JSON for the browser: epoch-second times and a value matrix."""
@@ -94,12 +137,29 @@ class Stream:
                     "asset": e.asset,
                     "start": int(e.start.timestamp()),
                     "end": int(e.end.timestamp()),
+                    "planned": e.planned,
                 }
                 for e in self.events
+            ],
+            "pigs": [
+                {
+                    "label": pig.label,
+                    "pipeline": pig.pipeline,
+                    "launch": int(pig.launch.timestamp()),
+                    "speed": pig.speed_mps,
+                }
+                for pig in self.pigs
             ],
             "times": [int(t.timestamp()) for t in self.times],
             "assets": list(self.assets),
             "values": [[None if v is None else round(v, 2) for v in row] for row in self.values],
+            "metrics": {
+                metric: {
+                    "assets": list(assets),
+                    "values": [[None if v is None else round(v, 2) for v in row] for row in values],
+                }
+                for metric, (assets, values) in self.metrics.items()
+            },
         }
 
 
@@ -123,8 +183,10 @@ def load_stream(name: str, net: Network, streams_dir: Path = STREAMS_DIR) -> Str
         raise DataError([f"{where}/stream.toml: {error}"]) from None
     problems: list[str] = []
     events = _events(meta, net, where, problems)
+    pigs = _pigs(meta, net, where, problems)
     if "import" in meta:
-        rows = import_rows(folder, meta["import"], where, problems)
+        specs = meta["import"] if isinstance(meta["import"], list) else [meta["import"]]
+        rows = [row for spec in specs for row in import_rows(folder, spec, where, problems)]
     elif "synthetic" in meta:
         rows = synthesize(net, meta["synthetic"], events)
     else:
@@ -132,7 +194,7 @@ def load_stream(name: str, net: Network, streams_dir: Path = STREAMS_DIR) -> Str
     _check_rows(rows, net, where, problems)
     if problems:
         raise DataError(problems)
-    return _pivot(name, meta, events, rows)
+    return replace(_pivot(name, meta, events, rows), pigs=pigs)
 
 
 def parse_time(value: str | datetime, tz: ZoneInfo | None = None, fmt: str | None = None):
@@ -149,16 +211,23 @@ def parse_time(value: str | datetime, tz: ZoneInfo | None = None, fmt: str | Non
 
 
 def read_flows(path: Path, problems: list[str]) -> list[Row]:
+    """NORA's own format: timestamp,asset,flow_msm3d or timestamp,asset,metric,value."""
+    header = ""
+    if path.exists():
+        with path.open(encoding="utf-8-sig") as handle:
+            header = handle.readline()
+    long = "metric" in [c.strip() for c in header.split(",")]
     rows = []
-    for row in read_rows(path, FLOW_COLUMNS, problems):
+    for row in read_rows(path, METRIC_COLUMNS if long else FLOW_COLUMNS, problems):
         try:
             when = parse_time(row.text("timestamp", required=True))
         except ValueError:
             row.problem(f"'timestamp' must be ISO 8601, got '{row.text('timestamp')}'")
             continue
-        flow = row.number("flow_msm3d", required=True)
-        if flow is not None:
-            rows.append((when, row.text("asset", required=True), flow))
+        metric = row.choice("metric", METRICS) if long else "flow_msm3d"
+        value = row.number("value" if long else "flow_msm3d", required=True)
+        if value is not None and metric in METRICS:
+            rows.append((when, row.text("asset", required=True), metric, value))
     return rows
 
 
@@ -181,6 +250,13 @@ def import_rows(folder: Path, spec: dict, where: str, problems: list[str]) -> li
         return []
     if not path.exists():
         problems.append(f"{where}: raw file {path.name} not found")
+        return []
+    metric = spec.get("metric", "flow_msm3d")
+    if metric not in METRICS:
+        problems.append(
+            f"{where}: [import] metric must be one of {', '.join(METRICS)}"
+            + suggest(metric, METRICS)
+        )
         return []
     layout = spec.get("layout", "long")
     if layout not in ("long", "wide"):
@@ -231,36 +307,115 @@ def import_rows(folder: Path, spec: dict, where: str, problems: list[str]) -> li
                     problems.append(f"{line}: '{raw}' is not a number")
                     continue
                 totals[(when, asset)] = totals.get((when, asset), 0.0) + value
-    return [(when, asset, value) for (when, asset), value in sorted(totals.items())]
+    return [(when, asset, metric, value) for (when, asset), value in sorted(totals.items())]
 
 
-def synthesize(net: Network, spec: dict, events: tuple[Event, ...] = ()) -> list[Row]:
-    """Generate plausible flows from the network model.
+def synthesize(
+    net: Network,
+    spec: dict,
+    events: tuple[Event, ...] = (),
+    pressure_windows: dict | None = None,
+) -> list[Row]:
+    """Generate plausible operating data from the network model.
 
     Field output follows a daily demand shape plus slow random drift per field, LNG
     send-out stays flatter, and each event scales an asset's capacity while it is
-    active. Every step is routed with routed_flow, so the flows always balance. The
-    same spec and seed always give the same rows.
+    active. Every step is routed with routed_flow, so the flows always balance.
+
+    With `operations = true` the stream also gets:
+      nomination_msm3d  hourly nominations at each terminal: the flow the shippers
+                        planned without events; dispatch keeps the flows on
+                        it until an event intervenes
+      booked_msm3d      booked capacity at each terminal, one exit booked tight
+      pressure_bar      pressure at each node, following the gas actually moving
+                        through it with a lag, inside its operating window
+    The same spec and seed always give the same rows.
     """
     start = parse_time(spec.get("start", "2026-01-05T00:00:00Z"))
     step = timedelta(minutes=int(spec.get("step_minutes", 60)))
+    steps = int(spec.get("steps", 168))
     rng = random.Random(spec.get("seed", 1))
     base = build_graph(net)
     pipes = sorted({attrs["pipeline"] for _, _, attrs in base.edges(data=True)})
     suppliers = sorted(n for n, attrs in base.nodes(data=True) if attrs["type"] in SUPPLY_TYPES)
+    operations = bool(spec.get("operations", False))
     drift = dict.fromkeys(suppliers, 0.0)
     rows: list[Row] = []
-    for k in range(int(spec.get("steps", 168))):
-        when = start + k * step
-        graph = _apply_events(base, events, when)
+    actual: list[dict[str, float]] = []
+    planned: list[dict[str, float]] = []
+    times = [start + k * step for k in range(steps)]
+    for when in times:
+        graph = apply_events(base, events, when)
         supply = {}
         for node in suppliers:
             drift[node] = 0.9 * drift[node] + rng.gauss(0, 0.012)
-            if node in graph:
-                capacity = graph.nodes[node]["capacity_msm3d"] or 0.0
-                supply[node] = capacity * _load(when, graph.nodes[node]["type"], drift[node])
+            capacity = base.nodes[node]["capacity_msm3d"] or 0.0
+            supply[node] = capacity * _load(when, base.nodes[node]["type"], drift[node])
+        # Dispatch keeps exit points on their nominations: the plan is what the supply
+        # would deliver without events, and only an event pushes the flows off it.
         flow = routed_flow(graph, supply)
-        rows += [(when, pipe, round(flow.pipelines.get(pipe, 0.0), 3)) for pipe in pipes]
+        rows += [
+            (when, pipe, "flow_msm3d", round(flow.pipelines.get(pipe, 0.0), 3)) for pipe in pipes
+        ]
+        if operations:
+            actual.append(_throughput(net, flow))
+            planned.append(_throughput(net, flow if graph is base else routed_flow(base, supply)))
+    if operations:
+        rows += _operations_rows(net, times, actual, planned, pressure_windows, rng)
+    return rows
+
+
+def _throughput(net: Network, flow) -> dict[str, float]:
+    """Gas through each node: what it supplies, or what arrives at it."""
+    through: dict[str, float] = dict(flow.supplied)
+    for pipe in net.pipelines:
+        value = flow.pipelines.get(pipe.id, 0.0)
+        target = pipe.to_id if value > 0 else pipe.from_id
+        if pipe.type != "onshore" or net.node_by_id[target].type == "market":
+            through[target] = through.get(target, 0.0) + abs(value)
+    return through
+
+
+def _operations_rows(net, times, actual, planned, windows, rng) -> list[Row]:
+    if windows is None:
+        from .config import load_config
+
+        windows = load_config()["pressure"]
+    rows: list[Row] = []
+    exits = sorted(n.id for n in net.nodes if n.type == "terminal")
+    # Hourly nominations: the planned flow at each exit point.
+    nominated: dict[str, list[float]] = {}
+    for node in exits:
+        nominated[node] = [round(p.get(node, 0.0), 1) for p in planned]
+        for when, value in zip(times, nominated[node], strict=True):
+            rows.append((when, node, "nomination_msm3d", value))
+    # Bookings: comfortable headroom, except the busiest exit, booked tight.
+    busiest = max(exits, key=lambda n: max(nominated[n]), default=None)
+    for node in exits:
+        peak = max(nominated[node])
+        if peak <= 0:
+            continue
+        booked = math.ceil(peak * (1.05 if node == busiest else 1.15) * 2) / 2
+        rows += [(when, node, "booked_msm3d", booked) for when in times]
+    # Pressures: arrival points follow the gas arriving; departure points the load.
+    typical = {
+        node: statistics.median(p.get(node, 0.0) for p in planned) for node in net.node_by_id
+    }
+    for node in sorted(net.node_by_id):
+        kind = net.node_by_id[node].type
+        if kind not in windows or typical[node] <= 0:
+            continue
+        low, high = windows[kind]
+        span = high - low
+        arrival = kind in ("terminal", "market", "lng")
+        pressure, noise = None, 0.0
+        for when, through in zip(times, actual, strict=True):
+            ratio = min(1.4, through.get(node, 0.0) / typical[node])
+            share = -0.05 + 0.55 * ratio if arrival else 0.35 + 0.35 * ratio
+            noise = 0.8 * noise + rng.gauss(0, 0.006)
+            target = low + span * (share + noise)
+            pressure = target if pressure is None else pressure + 0.45 * (target - pressure)
+            rows.append((when, node, "pressure_bar", round(pressure, 1)))
     return rows
 
 
@@ -274,7 +429,7 @@ def _load(when: datetime, kind: str, drift: float) -> float:
     return min(1.0, max(0.05, level + weekend + drift))
 
 
-def _apply_events(base: nx.DiGraph, events: tuple[Event, ...], when: datetime) -> nx.DiGraph:
+def apply_events(base: nx.DiGraph, events: tuple[Event, ...], when: datetime) -> nx.DiGraph:
     active = [e for e in events if e.active(when)]
     if not active:
         return base
@@ -318,6 +473,7 @@ def _events(meta: dict, net: Network, where: str, problems: list[str]) -> tuple[
                 start=parse_time(spec["start"]),
                 end=parse_time(spec["end"]),
                 capacity_factor=float(spec.get("capacity_factor", 0.0)),
+                planned=bool(spec.get("planned", False)),
             )
         except (KeyError, ValueError) as error:
             problems.append(f"{where}/stream.toml event {i}: needs start and end times ({error})")
@@ -337,27 +493,68 @@ def _events(meta: dict, net: Network, where: str, problems: list[str]) -> tuple[
     return tuple(events)
 
 
+def _pigs(meta: dict, net: Network, where: str, problems: list[str]) -> tuple[Pig, ...]:
+    pigs = []
+    for i, spec in enumerate(meta.get("pigs", []), start=1):
+        pipeline = spec.get("pipeline", "")
+        if pipeline not in net.pipeline_by_id:
+            problems.append(
+                f"{where}/stream.toml pig {i}: unknown pipeline '{pipeline}'"
+                + suggest(pipeline, list(net.pipeline_by_id))
+            )
+            continue
+        try:
+            pig = Pig(
+                label=spec.get("label", f"Pig on {net.asset_name(pipeline)}"),
+                pipeline=pipeline,
+                launch=parse_time(spec["launch"]),
+                speed_mps=float(spec.get("speed_mps", 4.0)),
+            )
+        except (KeyError, ValueError) as error:
+            problems.append(f"{where}/stream.toml pig {i}: needs a launch time ({error})")
+            continue
+        if pig.speed_mps <= 0:
+            problems.append(f"{where}/stream.toml pig {i}: speed_mps must be above 0")
+        else:
+            pigs.append(pig)
+    return tuple(pigs)
+
+
 def _check_rows(rows: list[Row], net: Network, where: str, problems: list[str]) -> None:
     if not rows and not problems:
         problems.append(f"{where}: no rows; check the [import] mapping with `nora stream show`")
     known = set(net.asset_ids)
-    unknown = sorted({asset for _, asset, _ in rows if asset not in known})
+    unknown = sorted({asset for _, asset, _, _ in rows if asset not in known})
     for asset in unknown[:20]:
         problems.append(
             f"{where}: '{asset}' is not a node or pipeline id" + suggest(asset, net.asset_ids)
         )
-    if any(not math.isfinite(value) for _, _, value in rows):
+    if any(not math.isfinite(value) for _, _, _, value in rows):
         problems.append(f"{where}: contains values that are not finite numbers")
 
 
-def _pivot(name: str, meta: dict, events: tuple[Event, ...], rows: list[Row]) -> Stream:
-    times = sorted({when for when, _, _ in rows})
-    assets = sorted({asset for _, asset, _ in rows})
+def _matrix(times: list[datetime], rows: list[Row], hold: bool):
+    assets = sorted({asset for _, asset, _, _ in rows})
     t_index = {when: i for i, when in enumerate(times)}
     a_index = {asset: i for i, asset in enumerate(assets)}
     values: list[list[float | None]] = [[None] * len(assets) for _ in times]
-    for when, asset, value in rows:
+    for when, asset, _, value in rows:
         values[t_index[when]][a_index[asset]] = value
+    if hold:  # a nomination or booking stays valid until the next one
+        for j in range(len(assets)):
+            last = None
+            for row in values:
+                row[j] = last = row[j] if row[j] is not None else last
+    return tuple(assets), tuple(tuple(row) for row in values)
+
+
+def _pivot(name: str, meta: dict, events: tuple[Event, ...], rows: list[Row]) -> Stream:
+    times = sorted({when for when, _, _, _ in rows})
+    by_metric: dict[str, list[Row]] = {}
+    for row in rows:
+        by_metric.setdefault(row[2], []).append(row)
+    assets, values = _matrix(times, by_metric.pop("flow_msm3d", []), hold=False)
+    metrics = {m: _matrix(times, r, hold=m in HELD) for m, r in sorted(by_metric.items())}
     return Stream(
         name=name,
         title=meta.get("title", name),
@@ -367,20 +564,27 @@ def _pivot(name: str, meta: dict, events: tuple[Event, ...], rows: list[Row]) ->
         synthetic="synthetic" in meta,
         events=events,
         times=tuple(times),
-        assets=tuple(assets),
-        values=tuple(tuple(row) for row in values),
+        assets=assets,
+        values=values,
         order=int(meta.get("order", 100)),
+        metrics=metrics,
     )
 
 
 def write_flows(stream: Stream, path: Path) -> None:
-    """Write a stream in NORA's own flows.csv format."""
+    """Write a stream in NORA's own flows.csv format (with a metric column when the
+    stream has more than flows)."""
     with Path(path).open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
-        writer.writerow(FLOW_COLUMNS)
-        for when, values in stream.frames():
+        writer.writerow(METRIC_COLUMNS if stream.metrics else FLOW_COLUMNS)
+        for _, when, flows, extra in stream.frames_full():
             stamp = when.strftime("%Y-%m-%dT%H:%M:%SZ")
-            writer.writerows((stamp, asset, value) for asset, value in values.items())
+            if not stream.metrics:
+                writer.writerows((stamp, asset, value) for asset, value in flows.items())
+                continue
+            writer.writerows((stamp, asset, "flow_msm3d", value) for asset, value in flows.items())
+            for metric, values in extra.items():
+                writer.writerows((stamp, asset, metric, value) for asset, value in values.items())
 
 
 def describe(stream: Stream, net: Network) -> str:
@@ -400,6 +604,16 @@ def describe(stream: Stream, net: Network) -> str:
         lines.append(
             f"  {asset:<24} {net.asset_name(asset):<34} mean {mean:8.2f} MSm3/d  "
             f"({len(series)} readings)"
+        )
+    for metric, (assets, _) in stream.metrics.items():
+        lines.append(
+            f"{METRICS[metric]}: {len(assets)} assets ({', '.join(assets[:6])}"
+            + (", ..." if len(assets) > 6 else "")
+            + ")"
+        )
+    for pig in stream.pigs:
+        lines.append(
+            f"pig: {pig.label} ({pig.pipeline}) launched {pig.launch:%a %H:%M}, {pig.speed_mps} m/s"
         )
     for event in stream.events:
         lines.append(

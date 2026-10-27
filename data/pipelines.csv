@@ -1,6 +1,6 @@
 id,name,from,to,type,length_km,diameter_in,capacity_msm3d,bidirectional,commissioned,status,operator,source,notes
 troll_kollsnes,Troll - Kollsnes,troll,kollsnes,feeder,65,36,120,false,1996,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,Several parallel lines modelled as one
-kvitebjorn_kollsnes,Kvitebjørn gas pipeline,kvitebjorn,kollsnes,feeder,147,30,25,false,2004,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,
+kvitebjorn_kollsnes,Kvitebjørn gas pipeline,kvitebjorn,kollsnes,feeder,147,30,33,false,2004,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,
 ogt,Oseberg Gas Transport,oseberg,heimdal,feeder,109,36,40,false,2000,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,
 statpipe_rich,Statpipe (rich gas),statfjord,karsto,trunk,308,30,25,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,
 statpipe_dry,Statpipe (dry gas),karsto,draupner_s,trunk,228,28,20,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,

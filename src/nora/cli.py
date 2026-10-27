@@ -11,9 +11,13 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from .analysis import analyse
+from .config import load_config
 from .data import DATA_DIR, DataError, load_network
+from .integrations import CONNECTORS
+from .ops import plan_timeline
 from .site import build_site
 from .stream import describe, list_streams, load_stream, scaffold, write_flows
+from .units import load_units
 
 
 def _streams_dir(args) -> Path:
@@ -22,10 +26,21 @@ def _streams_dir(args) -> Path:
 
 def cmd_validate(args) -> int:
     net = load_network(args.data)
+    load_config()
+    units = load_units(net, args.data / "units.toml")
     names = list_streams(_streams_dir(args))
     for name in names:
         load_stream(name, net, _streams_dir(args))
-    print(f"OK: {len(net.nodes)} nodes, {len(net.pipelines)} pipelines, {len(names)} stream(s)")
+    print(
+        f"OK: {len(net.nodes)} nodes, {len(net.pipelines)} pipelines, {len(units)} units, "
+        f"{len(names)} stream(s), nora.toml"
+    )
+    return 0
+
+
+def cmd_integrations(args) -> int:
+    for connector in CONNECTORS:
+        print(f"{connector.name:<24} {connector.metric:<18} {connector.status()}")
     return 0
 
 
@@ -79,10 +94,12 @@ def cmd_live(args) -> int:
     name = args.stream or (names[0] if names else None)
     if not name:
         raise DataError(["no streams in data/streams; add one with `nora stream new`"])
-    stream = load_stream(name, load_network(args.data), _streams_dir(args))
+    net = load_network(args.data)
+    stream = load_stream(name, net, _streams_dir(args))
     serve(
         args.out,
         stream,
+        plan=plan_timeline(stream, net, load_config()),
         host=args.host,
         port=args.port,
         speed=args.speed,
@@ -162,6 +179,10 @@ def main(argv: list[str] | None = None) -> int:
         help="data seconds per real second (default 3600: an hour a second)",
     )
     live.set_defaults(run=cmd_live)
+
+    commands.add_parser(
+        "integrations", help="show the Origo and Gassco Booking connections"
+    ).set_defaults(run=cmd_integrations)
 
     stream = commands.add_parser("stream", help="list, inspect and add stream datasets")
     stream_commands = stream.add_subparsers(dest="stream_command", required=True)

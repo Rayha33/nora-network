@@ -17,10 +17,12 @@ import networkx as nx
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from .analysis import analyse
+from .config import load_config
 from .data import DATA_DIR, NODE_TYPES, PIPELINE_TYPES, REPO_ROOT, STATUSES, Network, load_network
 from .graph import build_graph
 from .render import TEMPLATES, network_html
 from .stream import Stream, list_streams, load_stream
+from .units import load_units
 
 DEFAULT_REPO = "Rayha33/nora-network"
 
@@ -72,7 +74,13 @@ def build_site(out_dir: Path, data_dir: Path = DATA_DIR) -> dict:
 
     out = Path(out_dir)
     (out / "data" / "streams").mkdir(parents=True, exist_ok=True)
-    (out / "network.html").write_text(network_html(net, analysis, streams, links), encoding="utf-8")
+    config = load_config()
+    (out / "network.html").write_text(
+        network_html(
+            net, analysis, streams, links, config, load_units(net, data_dir / "units.toml")
+        ),
+        encoding="utf-8",
+    )
     page = index_html(net, analysis, streams, links, build_info())
     (out / "index.html").write_text(page, encoding="utf-8")
     for name in ("nodes.csv", "pipelines.csv"):
