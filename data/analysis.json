@@ -1,5 +1,5 @@
 {
- "assets": 67,
+ "assets": 70,
  "pipelines": 49,
  "countries": [
   "BE",
@@ -12,7 +12,7 @@
   "PL"
  ],
  "node_types": {
-  "field": 24,
+  "field": 27,
   "hub": 7,
   "lng": 6,
   "market": 8,
@@ -956,7 +956,7 @@
   }
  ],
  "sourced": {
-  "rows": 140,
-  "total": 140
+  "rows": 144,
+  "total": 144
  }
 }

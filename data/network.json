@@ -254,6 +254,16 @@
    "id": "flags_brent"
   },
   {
+   "name": "Frigg",
+   "type": "field",
+   "country": "NO",
+   "lat": 59.9,
+   "lon": 1.67,
+   "capacity_msm3d": null,
+   "status": "decommissioned",
+   "id": "frigg"
+  },
+  {
    "name": "Gate terminal",
    "type": "lng",
    "country": "NL",
@@ -322,6 +332,16 @@
    "capacity_msm3d": null,
    "status": "operating",
    "id": "heimdal"
+  },
+  {
+   "name": "Irpa",
+   "type": "field",
+   "country": "NO",
+   "lat": 67.0,
+   "lon": 5.2,
+   "capacity_msm3d": null,
+   "status": "planned",
+   "id": "irpa"
   },
   {
    "name": "Jemgum Gas Storage",
@@ -452,6 +472,16 @@
    "capacity_msm3d": 84.0,
    "status": "operating",
    "id": "nyhamna"
+  },
+  {
+   "name": "Odin",
+   "type": "field",
+   "country": "NO",
+   "lat": 59.96,
+   "lon": 1.8,
+   "capacity_msm3d": null,
+   "status": "decommissioned",
+   "id": "odin"
   },
   {
    "name": "Ormen Lange",
@@ -1096,6 +1126,15 @@
    "capacity": 39.0,
    "source": "heimdal",
    "target": "st_fergus"
+  },
+  {
+   "pipeline": "irpa_tieback",
+   "name": "Irpa tie-back",
+   "type": "feeder",
+   "from_id": "irpa",
+   "length_km": 80.0,
+   "source": "irpa",
+   "target": "aasta_hansteen"
   },
   {
    "pipeline": "jemgum_the",
