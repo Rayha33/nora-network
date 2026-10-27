@@ -7,6 +7,22 @@ problem with its file and line number.
 Values are approximate figures compiled from public sources. **The most valuable
 contribution is a `source` link** for a row that has none.
 
+## Sources
+
+Every row carries a `source` entry pointing at (or describing) the public data it was
+compiled from:
+
+- Operator pages for fields, plants and terminals (e.g. `https://www.equinor.com/...`).
+- Gassco (`https://gassco.no/en/our-activities/pipelines-and-platforms`) for the
+  Norwegian offshore pipeline network.
+- Wikipedia articles for individual, well-documented pipelines (Statpipe, Zeepipe,
+  Langeled, Europipe, Norpipe, Franpipe, Vesterled, CATS, FLAGS, etc.).
+- Operator/TSO sites for onshore grid-entry rows: National Grid (UK/NBP), Gasunie
+  (NL/TTF), Trading Hub Europe (DE/THE), Fluxys (BE/ZTP), Energinet (DK/ETF), the
+  Baltic Pipe project site, IUK and BBL.
+- `approximate, public data` for rows where no single authoritative public page could
+  be pinned down. These are the best candidates for a better citation.
+
 ## nodes.csv
 
 One row per asset.

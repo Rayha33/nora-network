@@ -1,0 +1,18 @@
+title = "Norwegian gas landings (FR & BE), Oct 2026"
+description = "Hourly physical flows where Norwegian gas lands on the continent: Dunkerque (Franpipe) and Zeebrugge ZPT (Zeepipe I). Real data from the ENTSOG Transparency Platform. The UK (St Fergus, Easington) and German (Dornum, Emden) points publish nothing here, so those pipelines have no readings in this dataset."
+source = "https://transparency.entsog.eu/"
+license = "ENTSOG Transparency Platform terms of use; credit ENTSOG as the source"
+
+# Refresh with: python scripts/fetch_entsog.py 2026-10-13 2026-10-20 data/streams/norway-exports/raw.csv
+[import]
+file = "raw.csv"
+layout = "long"
+timestamp = "periodFrom"
+asset = "pointLabel"
+value = "value"
+factor = 2.18e-6     # kWh/h -> MSm3/d at about 11 kWh per standard cubic metre
+timezone = "UTC"
+
+[import.assets]
+"Dunkerque" = "franpipe"
+"Zeebrugge ZPT" = "zeepipe_1"
