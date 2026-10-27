@@ -177,7 +177,9 @@ def import_rows(folder: Path, spec: dict, where: str, problems: list[str]) -> li
     """
     path = folder / spec.get("file", "raw.csv")
     if path.resolve().parent != Path(folder).resolve():
-        problems.append(f"{where}: raw file must stay inside the stream folder, got {spec.get('file')!r}")
+        problems.append(
+            f"{where}: raw file must stay inside the stream folder, got {spec.get('file')!r}"
+        )
         return []
     if not path.exists():
         problems.append(f"{where}: raw file {path.name} not found")
