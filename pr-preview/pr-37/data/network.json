@@ -54,6 +54,16 @@
    "id": "baltic_tie"
   },
   {
+   "name": "Bergermeer Gas Storage",
+   "type": "storage",
+   "country": "NL",
+   "lat": 52.62,
+   "lon": 4.75,
+   "capacity_msm3d": 57.0,
+   "status": "operating",
+   "id": "bergermeer"
+  },
+  {
    "name": "Beryl",
    "type": "field",
    "country": "GB",
@@ -214,6 +224,16 @@
    "id": "etf"
   },
   {
+   "name": "Etzel Gas-Lager",
+   "type": "storage",
+   "country": "DE",
+   "lat": 53.43,
+   "lon": 7.95,
+   "capacity_msm3d": 7.5,
+   "status": "operating",
+   "id": "etzel"
+  },
+  {
    "name": "F3-FB",
    "type": "hub",
    "country": "NL",
@@ -324,6 +344,16 @@
    "id": "irpa"
   },
   {
+   "name": "Jemgum Gas Storage",
+   "type": "storage",
+   "country": "DE",
+   "lat": 53.24,
+   "lon": 7.03,
+   "capacity_msm3d": 6.6,
+   "status": "operating",
+   "id": "jemgum"
+  },
+  {
    "name": "Johan Sverdrup",
    "type": "field",
    "country": "NO",
@@ -384,6 +414,16 @@
    "id": "l10a"
   },
   {
+   "name": "Lille Torup Gas Storage",
+   "type": "storage",
+   "country": "DK",
+   "lat": 57.06,
+   "lon": 9.1,
+   "capacity_msm3d": 7.2,
+   "status": "operating",
+   "id": "lille_torup"
+  },
+  {
    "name": "NBP (Great Britain)",
    "type": "market",
    "country": "GB",
@@ -392,6 +432,16 @@
    "capacity_msm3d": null,
    "status": "operating",
    "id": "nbp"
+  },
+  {
+   "name": "Norg Gas Storage",
+   "type": "storage",
+   "country": "NL",
+   "lat": 53.07,
+   "lon": 6.46,
+   "capacity_msm3d": 70.0,
+   "status": "operating",
+   "id": "norg"
   },
   {
    "name": "Norne",
@@ -474,6 +524,16 @@
    "id": "pl_vtp"
   },
   {
+   "name": "Rough Gas Storage",
+   "type": "storage",
+   "country": "GB",
+   "lat": 53.85,
+   "lon": 0.37,
+   "capacity_msm3d": 45.0,
+   "status": "operating",
+   "id": "rough"
+  },
+  {
    "name": "Sleipner",
    "type": "field",
    "country": "NO",
@@ -512,6 +572,16 @@
    "capacity_msm3d": 15.0,
    "status": "operating",
    "id": "statfjord"
+  },
+  {
+   "name": "Stenlille Gas Storage",
+   "type": "storage",
+   "country": "DK",
+   "lat": 55.55,
+   "lon": 11.6,
+   "capacity_msm3d": 7.9,
+   "status": "operating",
+   "id": "stenlille"
   },
   {
    "name": "Teesside (CATS)",
@@ -724,6 +794,15 @@
    "target": "dornum"
   },
   {
+   "pipeline": "bergermeer_ttf",
+   "name": "Bergermeer grid entry",
+   "type": "onshore",
+   "from_id": "bergermeer",
+   "length_km": 70.80199504425124,
+   "source": "bergermeer",
+   "target": "ttf"
+  },
+  {
    "pipeline": "sage",
    "name": "SAGE",
    "type": "export",
@@ -857,6 +936,15 @@
    "target": "nbp"
   },
   {
+   "pipeline": "rough_easington",
+   "name": "Rough - Easington",
+   "type": "link",
+   "from_id": "rough",
+   "length_km": 29.0,
+   "source": "easington",
+   "target": "rough"
+  },
+  {
    "pipeline": "uhgp",
    "name": "Utsira High Gas Pipeline",
    "type": "feeder",
@@ -902,6 +990,33 @@
    "from_id": "emden",
    "length_km": 123.09858957366532,
    "source": "emden",
+   "target": "the"
+  },
+  {
+   "pipeline": "lille_torup_etf",
+   "name": "Lille Torup grid entry",
+   "type": "onshore",
+   "from_id": "lille_torup",
+   "length_km": 165.24365460423428,
+   "source": "etf",
+   "target": "lille_torup"
+  },
+  {
+   "pipeline": "stenlille_etf",
+   "name": "Stenlille grid entry",
+   "type": "onshore",
+   "from_id": "stenlille",
+   "length_km": 125.84148642357492,
+   "source": "etf",
+   "target": "stenlille"
+  },
+  {
+   "pipeline": "etzel_the",
+   "name": "Etzel grid entry",
+   "type": "onshore",
+   "from_id": "etzel",
+   "length_km": 95.39426900467903,
+   "source": "etzel",
    "target": "the"
   },
   {
@@ -1022,6 +1137,15 @@
    "target": "aasta_hansteen"
   },
   {
+   "pipeline": "jemgum_the",
+   "name": "Jemgum grid entry",
+   "type": "onshore",
+   "from_id": "jemgum",
+   "length_km": 126.92786667154465,
+   "source": "jemgum",
+   "target": "the"
+  },
+  {
    "pipeline": "sverdrup_karsto",
    "name": "Johan Sverdrup gas export",
    "type": "feeder",
@@ -1102,6 +1226,15 @@
    "target": "uithuizen"
   },
   {
+   "pipeline": "lille_torup_etf",
+   "name": "Lille Torup grid entry",
+   "type": "onshore",
+   "from_id": "lille_torup",
+   "length_km": 165.24365460423428,
+   "source": "lille_torup",
+   "target": "etf"
+  },
+  {
    "pipeline": "bacton_nbp",
    "name": "Bacton grid entry",
    "type": "onshore",
@@ -1109,6 +1242,15 @@
    "length_km": 181.42234027469667,
    "source": "nbp",
    "target": "bacton"
+  },
+  {
+   "pipeline": "norg_ttf",
+   "name": "Norg grid entry",
+   "type": "onshore",
+   "from_id": "norg",
+   "length_km": 108.0631308358113,
+   "source": "norg",
+   "target": "ttf"
   },
   {
    "pipeline": "ngts",
@@ -1169,6 +1311,15 @@
    "capacity": 40.0,
    "source": "oseberg",
    "target": "heimdal"
+  },
+  {
+   "pipeline": "rough_easington",
+   "name": "Rough - Easington",
+   "type": "link",
+   "from_id": "rough",
+   "length_km": 29.0,
+   "source": "rough",
+   "target": "easington"
   },
   {
    "pipeline": "langeled_south",
@@ -1240,6 +1391,15 @@
    "target": "flags_brent"
   },
   {
+   "pipeline": "stenlille_etf",
+   "name": "Stenlille grid entry",
+   "type": "onshore",
+   "from_id": "stenlille",
+   "length_km": 125.84148642357492,
+   "source": "stenlille",
+   "target": "etf"
+  },
+  {
    "pipeline": "teesside_nbp",
    "name": "Teesside grid entry",
    "type": "onshore",
@@ -1247,6 +1407,24 @@
    "length_km": 225.73436892554145,
    "source": "teesside",
    "target": "nbp"
+  },
+  {
+   "pipeline": "etzel_the",
+   "name": "Etzel grid entry",
+   "type": "onshore",
+   "from_id": "etzel",
+   "length_km": 95.39426900467903,
+   "source": "the",
+   "target": "etzel"
+  },
+  {
+   "pipeline": "jemgum_the",
+   "name": "Jemgum grid entry",
+   "type": "onshore",
+   "from_id": "jemgum",
+   "length_km": 126.92786667154465,
+   "source": "the",
+   "target": "jemgum"
   },
   {
    "pipeline": "troll_kollsnes",
@@ -1266,6 +1444,24 @@
    "length_km": 82.70564941859021,
    "source": "ttf",
    "target": "balgzand"
+  },
+  {
+   "pipeline": "bergermeer_ttf",
+   "name": "Bergermeer grid entry",
+   "type": "onshore",
+   "from_id": "bergermeer",
+   "length_km": 70.80199504425124,
+   "source": "ttf",
+   "target": "bergermeer"
+  },
+  {
+   "pipeline": "norg_ttf",
+   "name": "Norg grid entry",
+   "type": "onshore",
+   "from_id": "norg",
+   "length_km": 108.0631308358113,
+   "source": "ttf",
+   "target": "norg"
   },
   {
    "pipeline": "tyra_f3",
