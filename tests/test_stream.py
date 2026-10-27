@@ -243,7 +243,8 @@ def test_replay_loops_through_frames(tiny, tmp_path):
     )
     stream = load_stream("s", tiny, tmp_path)
     frames = list(itertools.islice(replay(stream, speed=1e9), 3))
-    assert [f[1]["pipe_a"] for f in frames] == [1, 2, 1]
+    assert [f[1][1]["pipe_a"] for f in frames] == [1, 2, 1]
+    assert [round(f[0], 9) for f in frames] == [0.0, 3600e-9, 0.0]  # paced: hour gaps at wrap
 
 
 def test_live_server_sends_meta_then_frames(tiny, tmp_path):
@@ -281,6 +282,46 @@ def test_live_server_sends_meta_then_frames(tiny, tmp_path):
     assert json.loads(lines[1][len("data: ") :])["title"] == "Feed"
     assert lines[3] == "event: frame"
     assert json.loads(lines[4][len("data: ") :])["values"] == {"pipe_a": 1.0}
+
+
+def test_live_server_sends_keepalive_comments_during_long_gaps(tiny, tmp_path):
+    make_stream(
+        tmp_path / "s",
+        'title = "Feed"\n',
+        {
+            "flows.csv": "timestamp,asset,flow_msm3d\n"
+            "2026-01-01T00:00Z,pipe_a,1\n2026-01-01T01:00Z,pipe_a,2\n"
+        },
+    )
+    stream = load_stream("s", tiny, tmp_path)
+    site = tmp_path / "site"
+    site.mkdir()
+    with socket.socket() as probe:  # a free port, so parallel test runs don't collide
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    # 3600 s of data at speed 18000 is a 0.2 s gap, cut into 0.05 s keepalive chunks.
+    thread = threading.Thread(
+        target=serve,
+        args=(site, stream),
+        daemon=True,
+        kwargs={"port": port, "speed": 18000, "keepalive": 0.05, "open_browser": False},
+    )
+    thread.start()
+    for _ in range(50):
+        try:
+            response = urllib.request.urlopen(f"http://127.0.0.1:{port}/stream", timeout=5)
+            break
+        except OSError:
+            threading.Event().wait(0.1)
+    else:
+        pytest.fail("the live server never came up")
+    # meta and the first frame, then `: keepalive` comments between frames.
+    lines = [response.readline().decode().strip() for _ in range(9)]
+    assert lines[0] == "event: meta"
+    assert lines[3] == "event: frame"
+    assert json.loads(lines[4][len("data: ") :])["values"] == {"pipe_a": 1.0}
+    assert lines[6] == ": keepalive"  # a comment every chunk while the gap is still open
+    assert lines[8] == ": keepalive"
 
 
 def test_mapping_with_a_minus_flips_the_sign(tiny, tmp_path):

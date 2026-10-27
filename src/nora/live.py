@@ -12,7 +12,9 @@ then a `frame` event per time step:
 
 Anything that yields (timestamp, flows, metrics, index) frames can be served the same
 way, so a real feed (a SCADA historian, Origo, or a TSO's transparency API; see
-integrations.py) can replace `replay` without touching the browser side.
+integrations.py) can replace `replay` without touching the browser side. Long gaps
+between frames are filled with SSE `: keepalive` comments (about one every 15 s), so
+browsers and proxies don't reap an idle connection.
 """
 
 from __future__ import annotations
@@ -30,22 +32,27 @@ from urllib.parse import urlsplit
 from .stream import Stream
 
 Frame = tuple[datetime, dict[str, float], dict[str, dict[str, float]], int]
+PacedFrame = tuple[float, Frame]  # wall-seconds to wait, then the frame itself
+
+KEEPALIVE_SECONDS = 15.0  # max silence before an SSE comment keeps the line warm
 
 
-def replay(stream: Stream, speed: float = 3600.0, loop: bool = True) -> Iterator[Frame]:
-    """Yield the stream's frames, pausing between them like a live feed.
+def replay(stream: Stream, speed: float = 3600.0, loop: bool = True) -> Iterator[PacedFrame]:
+    """Yield (wait, frame) pairs: `wait` is the wall-seconds to pause before the frame.
 
     speed is data-seconds per wall-second: 3600 plays one hour of data per second.
+    The generator never sleeps (except for an empty stream, below), so the live
+    server can cut each wait into keepalive-sized chunks and write an SSE comment
+    between them; see _Handler._pause.
     """
     while True:
         previous = None
         steps = 0
         for index, when, flows, metrics in stream.frames_full():
-            if previous is not None:
-                time.sleep(max(0.0, (when - previous).total_seconds() / speed))
+            wait = 0.0 if previous is None else max(0.0, (when - previous).total_seconds() / speed)
             previous = when
             steps += 1
-            yield when, flows, metrics, index
+            yield wait, (when, flows, metrics, index)
         if not loop:
             return
         if not steps:
@@ -73,7 +80,8 @@ class _Handler(SimpleHTTPRequestHandler):
     meta: dict = {}
     plan: list | None = None
     ahead: Callable[[int], dict] | None = None  # nominations already sent for later hours
-    frames: Callable[[], Iterator[Frame]]
+    frames: Callable[[], Iterator[PacedFrame]]
+    keepalive: float = KEEPALIVE_SECONDS  # max silence between bytes on /stream
 
     def log_message(self, format, *args):  # noqa: A002 - keep the console quiet
         pass
@@ -88,7 +96,8 @@ class _Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         try:
             self._send("meta", self.meta)
-            for when, values, metrics, index in self.frames():
+            for wait, (when, values, metrics, index) in self.frames():
+                self._pause(wait)
                 frame = {"t": int(when.timestamp()), "values": values, "metrics": metrics}
                 if self.plan:
                     frame["plan"] = self.plan[index]
@@ -97,6 +106,20 @@ class _Handler(SimpleHTTPRequestHandler):
                 self._send("frame", frame)
         except (BrokenPipeError, ConnectionResetError):
             pass  # the browser went away
+
+    def _pause(self, wait: float) -> None:
+        """Sleep `wait` seconds in keepalive-sized chunks, writing an SSE comment
+
+        after each chunk while more wait remains, so an idle hour at speed 1 still
+        puts a `: keepalive` line on the wire every ~15 s and proxies keep the line.
+        """
+        while wait > 0:
+            chunk = min(wait, self.keepalive)
+            time.sleep(chunk)
+            wait -= chunk
+            if wait > 0:
+                self.wfile.write(b": keepalive\n\n")
+                self.wfile.flush()
 
     def _send(self, event: str, data: dict) -> None:
         self.wfile.write(f"event: {event}\ndata: {json.dumps(data)}\n\n".encode())
@@ -110,6 +133,7 @@ def serve(
     host: str = "127.0.0.1",
     port: int = 8765,
     speed: float = 3600.0,
+    keepalive: float = KEEPALIVE_SECONDS,
     open_browser: bool = True,
     plan: list | None = None,
 ) -> None:
@@ -123,6 +147,7 @@ def serve(
             "plan": plan,
             "ahead": staticmethod(partial(nominations_ahead, stream)),
             "frames": staticmethod(partial(replay, stream, speed)),
+            "keepalive": keepalive,
         },
     )
     server = ThreadingHTTPServer((host, port), partial(handler, directory=str(site_dir)))

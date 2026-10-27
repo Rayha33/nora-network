@@ -13,7 +13,8 @@ its stream.toml, with `metric = "nomination_msm3d"` or `metric = "booked_msm3d"`
 the exit points mapped with EXIT_POINTS below (see data/streams/README.md). The site,
 the plan check and the overview then use them like any other reading.
 
-Live: subclass Connector, implement `fetch`, and serve it with nora.live like `replay`.
+Live: subclass Connector, implement `fetch`, and serve it with nora.live like `replay`
+(yield (wait, frame) pairs; the server writes keepalive comments while it waits).
 """
 
 from __future__ import annotations
