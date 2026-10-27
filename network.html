@@ -113,6 +113,19 @@ svg .fill { fill: currentColor; stroke: none; }
 .search:focus-within { background: var(--paper); }
 .search:focus-within input, .search input:not(:placeholder-shown) { width: 140px; margin-left: 6px; }
 
+/* Right-click menu on nodes and pipelines: quiet, quick, the same everywhere */
+.ctx-menu {
+  position: fixed; z-index: 40; min-width: 190px; padding: 4px;
+  background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 18%);
+}
+.ctx-menu button {
+  display: block; width: 100%; text-align: left; padding: 6px 10px; font-size: 12px;
+  border: 0; background: none; color: var(--text); border-radius: var(--r); cursor: pointer;
+}
+.ctx-menu button:hover { background: var(--surface); }
+.ctx-menu .rule { border-top: 1px solid var(--rule); margin: 4px 0; }
+
 /* Plan status: grey when the plan holds; an alarm badge and text when it does not */
 .plan-chip {
   display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 0;
@@ -2056,6 +2069,39 @@ const App = (() => {
     refreshScreens();
     drawSpark();
   }
+  /* Right-click menu: the same actions everywhere, on the Map and in the Flow.
+     openMenu places it inside the viewport; any click, Esc or resize closes it. */
+  const menu = { el: null };
+  function closeMenu() { if (menu.el) { menu.el.remove(); menu.el = null; } }
+  function openMenu(x, y, items) {
+    closeMenu();
+    if (!items.length) return;
+    const el = h("div", { class: "ctx-menu", role: "menu" },
+      ...items.map((it) => it === "-"
+        ? h("div", { class: "rule" })
+        : h("button", { type: "button", role: "menuitem", onclick: () => { closeMenu(); it.act(); } }, it.label)));
+    el.style.left = Math.max(8, Math.min(x, innerWidth - 200)) + "px";
+    el.style.top = Math.max(8, Math.min(y, innerHeight - 10 - items.length * 32)) + "px";
+    document.body.append(el);
+    menu.el = el;
+  }
+  /* One builder for the actions on an asset, so both views offer the same menu. */
+  function menuFor(id, ctx = {}) {
+    if (!id || !assets[id]) return [];
+    const d = assets[id], items = [];
+    items.push({ label: "Open details", act: () => { if (route.screen === "unit") openSidebar(id); else go({ screen: "asset", asset: id }); } });
+    if (ctx.center) items.push({ label: "Centre here", act: ctx.center });
+    if (ctx.coords) items.push({ label: `Copy position (${ctx.coords})`, act: () => { if (navigator.clipboard) navigator.clipboard.writeText(ctx.coords); } });
+    items.push("-");
+    if (d.kind === "node") items.push({
+      label: whatif.offline.has(id) ? "Restore in the what-if" : "Take offline in the what-if",
+      act: () => { if (state.mode !== "whatif") { state.mode = "whatif"; markTabs(); restyle(); } toggleOffline(id); renderSidebar(); renderWhatif(); },
+    });
+    items.push({ label: "Open the full page", act: () => go({ screen: "asset", asset: id }) });
+    if (d.kind === "node") items.push({ label: "Diagnostics", act: () => go({ screen: "diag", asset: id }) });
+    return items;
+  }
+
   function markTabs() {
     for (const tab of document.querySelectorAll("[data-view]")) tab.setAttribute("aria-selected", String(tab.dataset.view === state.view));
     for (const tab of document.querySelectorAll("[data-mode]")) tab.setAttribute("aria-selected", String(tab.dataset.mode === state.mode));
@@ -2078,6 +2124,9 @@ const App = (() => {
     $("theme-toggle").addEventListener("click", () => setTheme(theme === "light" ? "dark" : "light"));
     $("side-close").addEventListener("click", closeSidebar);
     addEventListener("keydown", (e) => { if (e.key === "Escape" && side.id) closeSidebar(); });
+    addEventListener("click", closeMenu);
+    addEventListener("resize", closeMenu);
+    addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(); });
     for (const tab of document.querySelectorAll("[data-view]")) {
       tab.addEventListener("click", () => {
         state.view = tab.dataset.view;
@@ -2150,6 +2199,7 @@ const App = (() => {
       go({ screen: "asset", asset: id });
     },
     sidebar: { open: (id) => openSidebar(id), close: closeSidebar, id: () => side.id },
+    menu: { open: openMenu, close: closeMenu, for: menuFor },
   };
 })();
 
@@ -2378,6 +2428,22 @@ const App = (() => {
       if (!view.ready) return;
       const hit = map.queryRenderedFeatures(e.point, { layers: ["nora-nodes", "nora-pipes-hit"] });
       if (hit.length) App.select(hit[0].properties.asset);
+    });
+    // Right-click a node or a pipeline: the same menu everywhere. A plain DOM
+    // listener on the container: it fires for real right-clicks, whichever
+    // canvas MapLibre puts on top, and we hit-test the point ourselves.
+    el.addEventListener("contextmenu", (e) => {
+      if (!view.ready) return;
+      const rect = map.getCanvas().getBoundingClientRect();
+      const hit = map.queryRenderedFeatures([e.clientX - rect.left, e.clientY - rect.top], { layers: ["nora-nodes", "nora-pipes-hit"] });
+      if (!hit.length) return;
+      e.preventDefault();
+      const id = hit[0].properties.asset, d = NORA.assets[id];
+      const items = App.menu.for(id, d.lat != null ? {
+        center: () => map.easeTo({ center: [d.lon, d.lat], zoom: Math.max(map.getZoom(), 7), duration: App.reduceMotion ? 0 : 700 }),
+        coords: `${d.lat.toFixed(4)}, ${d.lon.toFixed(4)}`,
+      } : {});
+      App.menu.open(e.clientX, e.clientY, items);
     });
   };
 
@@ -2805,7 +2871,60 @@ const App = (() => {
     nodes.update(App.nodeIds.map((id) => ({ id, shape: "custom", ctxRenderer: card(id), label: "" })));
     network.on("beforeDrawing", paper);
     network.on("afterDrawing", overlay);
-    network.on("click", (event) => { const id = event.nodes[0] || event.edges[0]; if (id) App.select(id); });
+    /* vis's own hit test does not see the custom circle shape, so we find the
+       asset ourselves: what vis hit (edges), else the nearest node to the click. */
+    const hitAt = (event) => {
+      const id = event.nodes[0] || event.edges[0];
+      if (id) return id;
+      const at = event.pointer && event.pointer.DOM;
+      if (!at) return null;
+      const positions = network.getPositions();
+      let best = null, bestD = 30; // px: the circle plus a little slack
+      for (const nid of App.nodeIds) {
+        const p = positions[nid];
+        if (!p) continue; // a node the layout has not placed (hidden units)
+        const dom = network.canvasToDOM(p);
+        const d = Math.hypot(dom.x - at.x, dom.y - at.y);
+        if (d < bestD) { bestD = d; best = nid; }
+      }
+      return best;
+    };
+    network.on("click", (event) => { const id = hitAt(event); if (id) App.select(id); });
+    /* Right-click a node or a line: the same menu as on the Map. A plain DOM
+       listener on the container (the reliable path for real right-clicks);
+       we hit-test the point ourselves: nearest circle, else nearest line. */
+    container.addEventListener("contextmenu", (e) => {  // capture: vis may stop the event at its canvas
+      if (!view.ready) return;
+      const rect = container.getBoundingClientRect();
+      const at = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      const positions = network.getPositions();
+      /* What is the click really on? A circle (score: distance to its edge) or
+         a pipeline (score: distance to the line). The closest one wins, so a
+         click on a pipe is a pipe even when an unrelated node is nearby. */
+      let best = null, bestScore = 0;
+      for (const nid of App.nodeIds) {
+        const p = positions[nid];
+        if (!p) continue; // a node the layout has not placed (hidden units)
+        const dom = network.canvasToDOM(p);
+        const score = Math.hypot(dom.x - at.x, dom.y - at.y) - CIRC.r; // to the circle's edge
+        if (best === null || score < bestScore) { bestScore = score; best = nid; }
+      }
+      for (const pid of App.pipeIds) {
+        const p = NORA.assets[pid];
+        const a = positions[p.from], b = positions[p.to];
+        if (!a || !b) continue;
+        const da = network.canvasToDOM(a), db = network.canvasToDOM(b);
+        const vx = db.x - da.x, vy = db.y - da.y;
+        const len = Math.hypot(vx, vy) || 1;
+        const t = Math.max(0, Math.min(1, ((at.x - da.x) * vx + (at.y - da.y) * vy) / (len * len)));
+        const score = Math.hypot(da.x + vx * t - at.x, da.y + vy * t - at.y) - 4; // the drawn line plus a little slack
+        if (score < bestScore) { bestScore = score; best = pid; }
+      }
+      if (bestScore > 8) best = null;
+      if (!best) return; // empty canvas: leave the browser's own menu
+      e.preventDefault();
+      App.menu.open(e.clientX, e.clientY, App.menu.for(best));
+    }, true); // capture phase: vis stops the event at its canvas
     view.ready = true;
     layout();
     view.restyle();
