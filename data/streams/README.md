@@ -92,6 +92,14 @@ timestamp,asset,flow_msm3d
 2026-10-19T00:00:00Z,langeled_south,68.4
 ```
 
+Each row is one reading: keep **one row per timestamp and asset** (and metric). A
+repeated key is a data error - `nora validate` reports it with its file and line
+rather than silently keeping one of the values. This is deliberate: `flows.csv` is
+hand-editable, so a duplicate usually means a copy-paste mistake, and the audit
+trail should show it. It differs from `[import]` mappings, which sum readings that
+map to the same asset and time on purpose (see above); combine raw points in the
+mapping rather than by adding rows to `flows.csv`.
+
 `nora stream export my-data --out flows.csv` writes any stream in that format.
 
 ## Synthetic streams

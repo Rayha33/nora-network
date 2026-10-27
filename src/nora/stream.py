@@ -218,13 +218,18 @@ def parse_time(value: str | datetime, tz: ZoneInfo | None = None, fmt: str | Non
 
 
 def read_flows(path: Path, problems: list[str]) -> list[Row]:
-    """NORA's own format: timestamp,asset,flow_msm3d or timestamp,asset,metric,value."""
+    """NORA's own format: timestamp,asset,flow_msm3d or timestamp,asset,metric,value.
+
+    One row per timestamp+asset+metric: duplicate rows are reported as a problem
+    (unlike [import] mappings, which sum repeated readings on purpose).
+    """
     header = ""
     if path.exists():
         with path.open(encoding="utf-8-sig") as handle:
             header = handle.readline()
     long = "metric" in [c.strip() for c in header.split(",")]
     rows = []
+    seen: dict[tuple[datetime, str, str], str] = {}  # (time, asset, metric) -> first line
     for row in read_rows(path, METRIC_COLUMNS if long else FLOW_COLUMNS, problems):
         try:
             when = parse_time(row.text("timestamp", required=True))
@@ -233,8 +238,19 @@ def read_flows(path: Path, problems: list[str]) -> list[Row]:
             continue
         metric = row.choice("metric", METRICS) if long else "flow_msm3d"
         value = row.number("value" if long else "flow_msm3d", required=True)
-        if value is not None and metric in METRICS:
-            rows.append((when, row.text("asset", required=True), metric, value))
+        asset = row.text("asset", required=True)
+        if value is None or not asset or metric not in METRICS:
+            continue
+        key = (when, asset, metric)
+        if key in seen:  # one reading per timestamp+asset: duplicates are an error, not summed
+            row.problem(
+                f"duplicate reading for '{asset}' at {when:%Y-%m-%d %H:%M} UTC"
+                f" (first on {seen[key]}); flows.csv keeps one row per timestamp and"
+                " asset - sum repeated readings in an [import] mapping instead"
+            )
+            continue
+        seen[key] = row.where
+        rows.append((when, asset, metric, value))
     return rows
 
 
