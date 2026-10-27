@@ -28,9 +28,10 @@ def test_rows_are_spaced_without_overlap(north_sea):
 
 
 def test_pipelines_cross_as_little_as_possible(north_sea):
-    # the layered layout trades row-geography for clarity: 15 straight-line
-    # crossings on the real network, against 112 for the geographic order
-    assert crossings(north_sea, flow_positions(north_sea)) <= 20
+    # the layered layout trades row-geography for clarity: 23 straight-line
+    # crossings on the real network (15 before the storage sites joined),
+    # against 113 for the geographic order
+    assert crossings(north_sea, flow_positions(north_sea)) <= 26
 
 
 def test_layout_is_deterministic(north_sea):

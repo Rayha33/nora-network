@@ -21,7 +21,7 @@ nodes = ["karsto", "johan_sverdrup", "gudrun", "sleipner", "draupner_s", "draupn
 name = "UK landings"
 nodes = [
     "st_fergus", "cats_riser", "culzean", "elgin_franklin", "teesside", "easington",
-    "sns_fields", "bacton", "grain_lng", "nbp",
+    "sns_fields", "bacton", "grain_lng", "nbp", "rough",
 ]
 
 [units.continent]
@@ -30,8 +30,9 @@ nodes = [
     "f3fb", "l10a", "k13a", "den_helder", "balgzand", "uithuizen", "eemshaven_lng",
     "dornum", "emden", "wilhelmshaven_lng", "gate_lng", "zeebrugge", "zeebrugge_lng",
     "dunkirk", "dunkirk_lng", "ttf", "the", "ztp", "peg",
+    "norg", "bergermeer", "etzel", "jemgum",
 ]
 
 [units.denmark_poland]
 name = "Denmark and Poland"
-nodes = ["tyra", "baltic_tie", "nybro", "etf", "pl_vtp"]
+nodes = ["tyra", "baltic_tie", "nybro", "etf", "pl_vtp", "stenlille", "lille_torup"]

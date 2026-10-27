@@ -65,3 +65,10 @@ zeebrugge_lng_ztp,Zeebrugge LNG grid entry,zeebrugge_lng,ztp,onshore,,,,false,,o
 dunkirk_peg,Dunkirk grid entry,dunkirk,peg,onshore,,,,false,,operating,,"approximate, public data",Notional entry into the national grid
 dunkirk_lng_peg,Dunkirk LNG grid entry,dunkirk_lng,peg,onshore,,,,false,,operating,,"approximate, public data",Notional entry into the national grid
 nybro_etf,Nybro grid entry,nybro,etf,onshore,,,10,false,,operating,,https://www.energinet.dk/,Notional grid entry capped near Danish demand so Baltic Pipe gas continues to Poland
+rough_nbp,Rough grid entry,rough,nbp,onshore,,,,true,,operating,Centrica Storage,https://centrica.com/media/i5xf34bd/20061026_csloverview_presentation.pdf,Notional entry into the national grid via Easington
+norg_ttf,Norg grid entry,norg,ttf,onshore,,,,true,,operating,Gasunie,https://www.gasunie.nl/,Notional entry into the national grid
+bergermeer_ttf,Bergermeer grid entry,bergermeer,ttf,onshore,,,,true,,operating,TAQA Energy,https://www.gasunie.nl/,Notional entry into the national grid
+etzel_the,Etzel grid entry,etzel,the,onshore,,,,true,,operating,Equinor Storage Deutschland,https://www.tradinghub.eu/,Notional entry into the national grid
+jemgum_the,Jemgum grid entry,jemgum,the,onshore,,,,true,,operating,EWE Gasspeicher,https://www.tradinghub.eu/,Notional entry into the national grid
+stenlille_etf,Stenlille grid entry,stenlille,etf,onshore,,,,true,,operating,Gas Storage Denmark,https://gasstorage.dk/,Notional entry into the national grid
+lille_torup_etf,Lille Torup grid entry,lille_torup,etf,onshore,,,,true,,operating,Gas Storage Denmark,https://gasstorage.dk/,Notional entry into the national grid

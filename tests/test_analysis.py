@@ -93,3 +93,23 @@ def test_results_do_not_depend_on_hash_seed():
         outputs.add(done.stdout)
     assert len(outputs) == 1
     assert json.loads(outputs.pop())["deliverable"] > 0
+
+
+def test_storage_counts_as_supply(tiny_dir):
+    from nora.data import load_network
+
+    (tiny_dir / "nodes.csv").open("a").write("\nstore,Store,storage,GB,57,-1,,25,operating,,")
+    (tiny_dir / "pipelines.csv").open("a").write(
+        "\nstore_entry,Store entry,store,market,onshore,,,,true,,operating,,,"
+    )
+    flow = max_flow(build_graph(load_network(tiny_dir)))
+    assert flow.value == 85  # 60 from the field + 25 from the storage
+    assert flow.delivered == {"market": 85}
+    assert flow.supplied["store"] == 25
+
+
+def test_north_sea_storage_sends_gas_to_the_markets(north_sea):
+    flow = max_flow(build_graph(north_sea))
+    storages = {n.id: n.capacity_msm3d for n in north_sea.nodes if n.type == "storage"}
+    assert storages  # the model now carries gas storage sites
+    assert flow.supplied["rough"] > 0  # Rough feeds NBP through its grid entry
