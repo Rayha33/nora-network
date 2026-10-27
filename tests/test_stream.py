@@ -293,8 +293,16 @@ capacity_factor = -1.0
 
 def test_replay_with_an_empty_stream_sleeps_instead_of_spinning(monkeypatch):
     empty = Stream(
-        name="e", title="e", description="", source="", license="",
-        synthetic=False, events=(), times=(), assets=(), values=(),
+        name="e",
+        title="e",
+        description="",
+        source="",
+        license="",
+        synthetic=False,
+        events=(),
+        times=(),
+        assets=(),
+        values=(),
     )
     sleeps = []
 

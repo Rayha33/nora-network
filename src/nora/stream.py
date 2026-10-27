@@ -43,9 +43,7 @@ Row = tuple[datetime, str, float]
 def _check_stream_id(name: str) -> None:
     """Stream names become folder names: keep them inside data/streams."""
     if not STREAM_ID.fullmatch(name):
-        raise DataError(
-            [f"stream name '{name}' must match {STREAM_ID.pattern} (a folder name)"]
-        )
+        raise DataError([f"stream name '{name}' must match {STREAM_ID.pattern} (a folder name)"])
 
 
 @dataclass(frozen=True)
