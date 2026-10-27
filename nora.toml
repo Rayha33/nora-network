@@ -9,6 +9,7 @@ network_view = "map"        # map or flow
 network_mode = "live"       # live, load, risk or plain
 theme = "light"             # light, dark or auto (follows the device); the button switches
 autoplay = true             # start playing the data when the page opens (?autoplay=0 to stop)
+speed = 60                  # default playback: data seconds per real second (1 min/s)
 
 [labels]
 names = true
@@ -37,7 +38,8 @@ plan_lookahead_hours = 6              # how far ahead the plan check looks
 # pigs at their own speed.
 [pipelines]
 gas_velocity_mps = 8.0     # how fast a change in flow travels down a pipeline
-step_min = 0.05            # smallest flow change (share of capacity) shown as a peak
+step_min = 0.25            # smallest flow change (share of capacity) shown as a peak
+peak_max = 2               # peaks visible at once; the strongest are kept
 
 # Gas quality: H2S and CO2 peaks are followed with the gas from the field to the exit
 # point, diluted where other gas joins. Limits are [warning, medium, critical]; the
@@ -76,6 +78,8 @@ medium = "#ff7a1a"       # orange: medium-priority alarm (priority 2)
 critical = "#e5322d"     # red: critical alarm (priority 1)
 h2s = "#857c3a"          # muted sulphur olive: an H2S peak moving with the gas
 co2 = "#4d7391"          # muted steel blue: a CO2 peak moving with the gas
+pig = "#9c8465"          # muted tan: a pig creeping along the line
+peak = "#5f6d7a"          # neutral grey-blue: a change in flow moving with the gas
 
 # The same roles on dark grey paper, for the dark theme.
 [colors_dark]
@@ -93,6 +97,8 @@ medium = "#ff7a1a"
 critical = "#ff4d47"
 h2s = "#bcb26e"
 co2 = "#86a8c4"
+pig = "#c4ae91"
+peak = "#9fb1c1"
 
 [map]
 style = "https://tiles.openfreemap.org/styles/positron"   # recoloured to the paper greys

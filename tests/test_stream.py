@@ -3,7 +3,7 @@ import json
 import socket
 import threading
 import urllib.request
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -203,6 +203,54 @@ every_hours = 12
     make_stream(tmp_path / "pig", toml)
     pig = load_stream("pig", tiny, tmp_path).payload()["pigs"][0]
     assert pig["every"] == 12 * 3600
+
+
+def test_pig_programme_covers_every_main_line_staggered(tiny, tmp_path):
+    toml = """
+[synthetic]
+start = 2026-01-05T00:00:00Z
+steps = 2
+pig_programme = { every_hours = 48, speed_mps = 4.0 }
+"""
+    make_stream(tmp_path / "programme", toml)
+    pigs = load_stream("programme", tiny, tmp_path).pigs
+    lines = sorted(p.pipeline for p in pigs)
+    assert lines == ["pipe_a", "pipe_b"]  # every trunk/export/interconnector, nothing else
+    start = datetime(2026, 1, 5, tzinfo=UTC)
+    for i, pig in enumerate(sorted(pigs, key=lambda p: p.pipeline)):
+        assert pig.launch == start + timedelta(seconds=48 * 3600 * i / 2)
+        assert pig.every_hours == 48 and pig.speed_mps == 4.0
+
+
+def test_explicit_pigs_win_over_the_programme(tiny, tmp_path):
+    toml = """
+[synthetic]
+start = 2026-01-05T00:00:00Z
+steps = 2
+pig_programme = { every_hours = 48 }
+[[pigs]]
+pipeline = "pipe_a"
+launch = 2026-01-06T00:00:00Z
+every_hours = 12
+"""
+    make_stream(tmp_path / "mixed", toml)
+    pigs = load_stream("mixed", tiny, tmp_path).pigs
+    assert sorted(p.pipeline for p in pigs) == ["pipe_a", "pipe_b"]  # pipe_a appears once
+    explicit = next(p for p in pigs if p.pipeline == "pipe_a")
+    assert explicit.every_hours == 12  # the named entry kept its own programme
+    assert explicit.launch == datetime(2026, 1, 6, tzinfo=UTC)
+
+
+def test_bad_pig_programme_is_reported(tiny, tmp_path):
+    toml = """
+[synthetic]
+steps = 2
+pig_programme = { every_hours = 0 }
+"""
+    make_stream(tmp_path / "bad", toml)
+    with pytest.raises(DataError) as caught:
+        load_stream("bad", tiny, tmp_path)
+    assert any("pig_programme" in p for p in caught.value.problems)
 
 
 def test_scaffold_guesses_the_mapping(tiny, tmp_path):
