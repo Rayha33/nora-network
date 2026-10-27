@@ -32,9 +32,13 @@ Dutch and Danish gas to Europe's markets.
 
 ```bash
 git clone https://github.com/Rayha33/nora-network.git && cd nora-network
-make setup        # Python 3.11+; creates .venv
+make setup        # finds Python 3.11+ (macOS's own python3 is too old) and creates .venv
+make check        # lint, validate, Python and JS tests, build: what CI runs
 make serve        # builds the site and opens http://127.0.0.1:8000
 ```
+
+You need Python 3.11 or newer and git. Node 20+ is optional: with it, `make check` also
+runs the JavaScript tests. `make help` lists every command.
 
 Or press the Codespaces badge above for a ready-made workspace in the browser.
 
