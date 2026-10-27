@@ -774,16 +774,16 @@ const App = (() => {
   /* The header chip while the What-if mode is on: what the network can still
      deliver, which the user clears when done. Says so plainly when that is
      nothing, rather than showing an empty number. */
+  /* The what-if status lives in the SAME chip as the plan status (one constant
+     top bar: no element appears or disappears when the mode changes). */
   function renderWhatif() {
-    const chip = $("whatif-chip");
-    if (!chip) return;
-    chip.hidden = state.mode !== "whatif";
-    if (chip.hidden) return;
+    if (state.mode !== "whatif") { renderTop(); return; }
+    const chip = $("plan-chip");
+    chip.hidden = false; // the chip is always there; only its words change
     const base = NORA.deliverable || 0, n = whatif.offline.size;
     if (!n) {
       chip.replaceChildren(h("span", { class: "dim" }, "What-if: click assets to take them offline"));
       chip.title = "Click assets to take them offline; the flows and the deliverable gas update";
-      chip.onclick = null;
       return;
     }
     const value = whatifResult().value;
@@ -792,7 +792,6 @@ const App = (() => {
         : `What-if: ${fmt(value, 1)} of ${fmt(base, 1)} MSm³/d deliverable`),
       h("span", { class: "dim" }, ` · ${n} offline · restore all`));
     chip.title = "Restore every asset: the what-if becomes the intact network again";
-    chip.onclick = () => { whatif.offline.clear(); whatif.cache = null; restyle(); renderWhatif(); };
   }
 
   // ------------------------------------------------------------------ styling rules (both views)
@@ -1252,7 +1251,7 @@ const App = (() => {
     const s = route.screen;
     for (const [key, el] of Object.entries(screens)) el.hidden = key !== s;
     for (const [key, el] of Object.entries(containers)) el.hidden = !(s === "unit" && key === state.view);
-    $("views").hidden = $("modes").hidden = s !== "unit";
+    // The Map/Flow and mode tabs stay in the bar on every screen: one constant top bar.
     $("crumb-overview").setAttribute("aria-current", s === "overview" ? "page" : "false");
     const unitSelect = $("crumb-unit");
     unitSelect.value = s === "asset" || s === "diag" ? unitOf[route.asset] || "all" : route.unit;
@@ -1282,6 +1281,7 @@ const App = (() => {
     renderTop();
   }
   function renderTop() {
+    if (state.mode === "whatif") { renderWhatif(); return; } // one chip, no layout change
     const counts = [3, 2, 1].map((l) => [l, live.conditions.filter((c) => c.level === l).length]).filter(([, n]) => n);
     $("alarm-counts").replaceChildren(...counts.map(([l, n]) => h("span", { title: `${n} ${LEVEL[l].toLowerCase()}` }, badge(l, String(n)))));
     const plan = frame().plan, chip = $("plan-chip");
@@ -1632,15 +1632,34 @@ const App = (() => {
     unitSelect.addEventListener("change", () => go({ screen: "unit", unit: unitSelect.value }));
     unitSelect.addEventListener("mousedown", () => { if (route.screen !== "unit") go({ screen: "unit", unit: unitSelect.value }); });
     $("crumb-asset").addEventListener("click", () => go({ screen: "asset", asset: route.asset }));
-    $("plan-chip").addEventListener("click", () => go({ screen: "overview" }));
+    $("plan-chip").addEventListener("click", () => {
+      // In What-if the chip is the restore-all control; otherwise it opens the overview.
+      if (state.mode === "whatif" && whatif.offline.size) {
+        whatif.offline.clear(); whatif.cache = null; restyle(); renderWhatif(); renderSidebar(); return;
+      }
+      go({ screen: "overview" });
+    });
     $("theme-toggle").addEventListener("click", () => setTheme(theme === "light" ? "dark" : "light"));
     $("side-close").addEventListener("click", closeSidebar);
     addEventListener("keydown", (e) => { if (e.key === "Escape" && side.id) closeSidebar(); });
     for (const tab of document.querySelectorAll("[data-view]")) {
-      tab.addEventListener("click", () => { state.view = tab.dataset.view; markTabs(); render(); });
+      tab.addEventListener("click", () => {
+        state.view = tab.dataset.view;
+        markTabs();
+        // The bar is identical on every page: a view tab from another screen opens it.
+        if (route.screen !== "unit") go({ screen: "unit", unit: route.unit || "all" });
+        else render();
+      });
     }
     for (const tab of document.querySelectorAll("[data-mode]")) {
-      tab.addEventListener("click", () => { state.mode = tab.dataset.mode; markTabs(); restyle(); renderWhatif(); });
+      tab.addEventListener("click", () => {
+        state.mode = tab.dataset.mode;
+        markTabs();
+        restyle();
+        renderWhatif();
+        renderSidebar();
+        if (route.screen !== "unit") go({ screen: "unit", unit: route.unit || "all" });
+      });
     }
     addEventListener("resize", () => { const view = current(); if (view && view.mounted) view.resize(); drawSpark(); });
     if (embed) document.body.classList.add("embed");
