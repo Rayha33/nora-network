@@ -62,7 +62,13 @@ def fetch(start: str, end: str, point: str, period: str, attempts: int = 3) -> l
     for attempt in range(1, attempts + 1):
         try:
             with urllib.request.urlopen(f"{URL}?{query}", timeout=120) as response:
-                return json.load(response)["operationalData"]
+                data = json.load(response)
+                # the platform's key changed: older docs say operationalData,
+                # the current API returns the lowercase plural
+                rows = data.get("operationaldatas") or data.get("operationalData")
+                if rows is None:
+                    raise KeyError(f"unexpected response keys: {list(data)}")
+                return rows
         except urllib.error.HTTPError as error:
             if error.code == 404:  # ENTSOG's "No result found"
                 print(f"{point}: no data for {start} to {end}")
