@@ -9,7 +9,10 @@
   "use strict";
   const view = { ready: false, mounted: false };
   const C = App.colors; // updated in place when the theme switches
-  const CARD = { w: 150, h: 50 };
+  /* Circles, not squares: a Flow node is a circle filled by its state grey, the
+     asset icon inside, its name (and live rate) below, and a sparkline under
+     that when there is data. Ray, 27 Oct: "circles to show the nodes not squares". */
+  const CIRC = { r: 23, name: 14, sub: 12, trend: 12, pad: 8 };
   const SPACING = { // [stage, rank] in canvas units
     vertical: { compact: [96, 160], comfortable: [124, 178], spacious: [160, 210] },
     horizontal: { compact: [210, 62], comfortable: [250, 72], spacious: [300, 90] },
@@ -61,15 +64,6 @@
     ctx.restore();
   }
 
-  function roundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-  }
   function fitText(ctx, text, width) {
     if (ctx.measureText(text).width <= width) return text;
     let t = text;
@@ -113,20 +107,20 @@
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(nowX, y - 1); ctx.lineTo(nowX, y + h + 1); ctx.stroke();
   }
-  // vis-network custom shape: the card for one node.
+  // vis-network custom shape: the circle for one node, name and live numbers below it.
   function card(id) {
     return ({ ctx, x, y, state: { selected, hover } }) => ({
       drawNode() {
         const s = App.nodeStyle(id), d = NORA.assets[id];
         const live = App.state.mode === "live";
         const look = C.card[s.inactive ? "inactive" : live ? "active" : "normal"];
-        const left = x - CARD.w / 2, top = y - CARD.h / 2;
         ctx.save();
         ctx.globalAlpha = s.dim ? 0.35 : 1;
-        roundRect(ctx, left, top, CARD.w, CARD.h, 6);
+        ctx.beginPath();
+        ctx.arc(x, y, CIRC.r, 0, Math.PI * 2);
         ctx.fillStyle = look.fill;
         ctx.fill();
-        if (s.level) { // alarm: dark outline, colour inside it, never colour alone
+        if (s.level) { // alarm: dark casing ring, colour inside it, never colour alone
           ctx.lineWidth = 5; ctx.strokeStyle = C.casing; ctx.stroke();
           ctx.lineWidth = 3; ctx.strokeStyle = App.levelColor[s.level]; ctx.stroke();
         } else {
@@ -135,33 +129,31 @@
           ctx.stroke();
         }
         const icon = images[d.type];
-        if (icon && icon.complete) ctx.drawImage(icon, left + 6, top + 6, 22, 22);
-        // Rate of change, top right: arrow and MSm³/d per hour; bold when it is fast.
-        let room = CARD.w - 40;
-        const r = live ? App.flowRate(id) : null;
+        if (icon && icon.complete) ctx.drawImage(icon, x - CIRC.r / 2, y - CIRC.r / 2, CIRC.r, CIRC.r);
+        // Name below the circle, then the rate of change (bold when it is fast).
         ctx.textBaseline = "alphabetic";
+        ctx.textAlign = "center";
+        let nameY = y + CIRC.r + CIRC.name;
+        ctx.fillStyle = look.ink;
+        ctx.font = "600 11.5px Archivo, system-ui, sans-serif";
+        ctx.fillText(fitText(ctx, d.name, CIRC.r * 3), x, nameY);
+        const r = live ? App.flowRate(id) : null;
         if (r != null && Math.abs(r) >= 0.05) {
           const through = App.window4h(id).past.slice(-1)[0] || 0;
           const fast = through > 0 && Math.abs(r) / through >= App.thresholds.step[0];
-          const text = `${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`;
           ctx.font = `${fast ? 700 : 400} 10px Archivo, system-ui, sans-serif`;
           ctx.fillStyle = fast ? look.ink : look.dim;
-          ctx.textAlign = "right";
-          ctx.fillText(text, left + CARD.w - 7, top + 15);
-          room -= ctx.measureText(text).width + 6;
+          ctx.fillText(`${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`, x, nameY + CIRC.sub);
+        } else if (s.sub) {
+          ctx.fillStyle = look.dim;
+          ctx.font = "10px Archivo, system-ui, sans-serif";
+          ctx.fillText(fitText(ctx, s.sub, CIRC.r * 3), x, nameY + CIRC.sub);
         }
-        ctx.fillStyle = look.ink;
-        ctx.font = "600 11.5px Archivo, system-ui, sans-serif";
-        ctx.textAlign = "left";
-        ctx.fillText(fitText(ctx, d.name, room), left + 34, top + 15);
-        ctx.fillStyle = look.dim;
-        ctx.font = "10px Archivo, system-ui, sans-serif";
-        ctx.fillText(fitText(ctx, s.sub || "", CARD.w - 40), left + 34, top + 27);
-        if (live) drawTrend(ctx, id, left + 34, top + 32, CARD.w - 42, 12, look);
+        if (live) drawTrend(ctx, id, x - CIRC.r, nameY + CIRC.sub + 2, CIRC.r * 2, CIRC.trend, look);
         ctx.restore();
-        if (s.level) App.drawBadge(ctx, s.level, left + CARD.w - 2, top + 2, 8);
+        if (s.level) App.drawBadge(ctx, s.level, x + CIRC.r - 3, y - CIRC.r + 3, 8);
       },
-      nodeDimensions: { width: CARD.w, height: CARD.h },
+      nodeDimensions: { width: CIRC.r * 2, height: CIRC.r * 2 + CIRC.name + CIRC.sub + CIRC.trend + 4 },
     });
   }
 
@@ -199,7 +191,7 @@
       const dom = network.canvasToDOM(p);
       const width = ctx.measureText(row.name).width;
       const [x, y] = direction === "vertical"
-        ? [10, dom.y - (CARD.h / 2) * scale - 10]
+        ? [10, dom.y - CIRC.r * scale - 12]
         : [dom.x - width / 2, 12];
       if (y < 0 || y > el.clientHeight || x > el.clientWidth) continue;
       ctx.globalAlpha = 0.85;
