@@ -10,7 +10,7 @@ and easy to review.
 
 ```bash
 make setup     # once: .venv with NORA and dev tools
-make check     # what CI runs: lint, validate, tests, build. Run before every commit.
+make check     # what CI runs: lint, validate, Python and JS tests, build. Run before every commit.
 make fix       # auto-format and fix lint
 make serve     # build and open the site at http://127.0.0.1:8000
 make live      # replay the first stream as a live feed at http://127.0.0.1:8765
@@ -22,23 +22,29 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 
 | file | job |
 | --- | --- |
+| `nora.toml` | display settings, alarm thresholds, `[quality]` limits, pressure windows, light and dark palettes; validated by `src/nora/config.py` |
 | `data/nodes.csv`, `data/pipelines.csv` | the network; documented in `data/README.md` |
+| `data/units.toml` | the operating units; every node in exactly one (`src/nora/units.py`) |
 | `data/streams/*/stream.toml` | time-series datasets; documented in `data/streams/README.md` |
 | `src/nora/data.py` | load and validate the CSVs; every problem gets file, line and a suggestion |
 | `src/nora/graph.py` | build the `networkx.DiGraph` |
-| `src/nora/analysis.py` | max flow, min-cost routing, N-1 outages, `analyse()` for the site |
-| `src/nora/stream.py` | load, import, synthesise and scaffold streams |
-| `src/nora/live.py` | serve a stream as Server-Sent Events (`/stream`) |
-| `src/nora/layout.py` | Flow view positions: stage columns, rows north to south |
+| `src/nora/analysis.py` | max flow, min-cost routing, N-1 outages, plant capacity, `analyse()` for the site |
+| `src/nora/ops.py` | plan check (are the nominations deliverable?), look-ahead, decision support |
+| `src/nora/stream.py` | load, import, synthesise (flows, operations, gas quality, pigs) and scaffold streams |
+| `src/nora/live.py` | serve a stream, or poll a live source, as Server-Sent Events (`/stream`) |
+| `src/nora/integrations.py` | live connectors: Gassco real-time, Origo and Gassco Booking (skeletons) |
+| `src/nora/layout.py` | Flow view positions: layered stages, ordered and spaced to minimise crossings |
 | `src/nora/icons.py` | one icon per asset type, shared by both views |
 | `src/nora/render.py` | the app page: one payload for both views, map GeoJSON, the pyvis flow network |
-| `src/nora/templates/app.*` | the app shell: page, styles, shared state, styling rules, player, details |
+| `src/nora/templates/app.*` | the app shell: page, styles, shared state, styling rules, alarms, routes of pigs and peaks, gas quality, what-if, player |
 | `src/nora/templates/map.js` | Map view: MapLibre on OpenFreeMap tiles, assets at true coordinates |
-| `src/nora/templates/flow.js` | Flow view: the pyvis network on dotted paper |
+| `src/nora/templates/flow.js` | Flow view: the pyvis network on dotted paper, top to bottom |
 | `src/nora/templates/index.html.j2` | the home page |
 | `src/nora/site.py` | writes the site folder that GitHub Pages serves |
 | `src/nora/cli.py` | the `nora` command |
+| `scripts/fetch_*.py` | download real data (ENTSOG, Energinet, SODIR) into a stream's raw file |
 | `tests/` | pytest; `tests/conftest.py` has a five-node network to test against |
+| `tests/js/` | Node tests that load the real templates (`make test-js`); see its README |
 
 ## Rules that keep it working
 
