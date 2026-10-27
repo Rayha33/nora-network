@@ -1,0 +1,762 @@
+{
+ "assets": 52,
+ "pipelines": 40,
+ "countries": [
+  "BE",
+  "DE",
+  "DK",
+  "FR",
+  "GB",
+  "NL",
+  "NO",
+  "PL"
+ ],
+ "node_types": {
+  "field": 17,
+  "hub": 7,
+  "lng": 6,
+  "market": 7,
+  "processing": 4,
+  "terminal": 11
+ },
+ "pipeline_km": 11655,
+ "supply_capacity": 693.0,
+ "deliverable": 680.0,
+ "delivered": {
+  "etf": 8.0,
+  "nbp": 245.0,
+  "peg": 91.0,
+  "pl_vtp": 27.0,
+  "the": 156.0,
+  "ttf": 81.0,
+  "ztp": 72.0
+ },
+ "supplied": {
+  "aasta_hansteen": 22.0,
+  "asgard": 70.0,
+  "beryl": 10.0,
+  "culzean": 15.0,
+  "dunkirk_lng": 36.0,
+  "eemshaven_lng": 22.0,
+  "ekofisk": 25.0,
+  "elgin_franklin": 15.0,
+  "gate_lng": 44.0,
+  "gjoa": 15.0,
+  "grain_lng": 58.0,
+  "k13a": 5.0,
+  "kvitebjorn": 8.0,
+  "l10a": 10.0,
+  "ormen_lange": 50.0,
+  "oseberg": 30.0,
+  "sleipner": 30.0,
+  "sns_fields": 15.0,
+  "statfjord": 15.0,
+  "troll": 120.0,
+  "tyra": 8.0,
+  "wilhelmshaven_lng": 27.0,
+  "zeebrugge_lng": 30.0
+ },
+ "pipeline_flow": {
+  "polarled": 22.0,
+  "asgard_transport": 70.0,
+  "bacton_nbp": 30.0,
+  "bbl": 0.0,
+  "iuk": 0.0,
+  "balgzand_ttf": 0.0,
+  "baltic_pipe_ns": 27.0,
+  "europipe_2_south": 43.0,
+  "sage": 10.0,
+  "cats": 15.0,
+  "culzean_cats": 15.0,
+  "den_helder_ttf": 5.0,
+  "dornum_the": 89.0,
+  "draupner_bridge": 31.0,
+  "europipe_1": 46.0,
+  "franpipe": 55.0,
+  "sleipner_draupner": 46.0,
+  "statpipe_ekofisk": 15.0,
+  "dunkirk_peg": 55.0,
+  "dunkirk_lng_peg": 36.0,
+  "easington_nbp": 72.0,
+  "eemshaven_ttf": 22.0,
+  "norpipe": 40.0,
+  "seal": 15.0,
+  "emden_the": 40.0,
+  "nogat": 0.0,
+  "flags": 30.0,
+  "gate_ttf": 44.0,
+  "gjoa_flags": 15.0,
+  "grain_nbp": 58.0,
+  "statpipe_heimdal": 0.0,
+  "vesterled": 30.0,
+  "wgt": 5.0,
+  "europipe_2_north": 70.0,
+  "statpipe_dry": 0.0,
+  "zeepipe_2a": 58.0,
+  "zeepipe_2b": 70.0,
+  "kvitebjorn_kollsnes": 8.0,
+  "ngt": 10.0,
+  "baltic_pipe_east": 27.0,
+  "nybro_etf": 8.0,
+  "langeled_north": 72.0,
+  "ormen_lange_nyhamna": 50.0,
+  "ogt": 30.0,
+  "langeled_south": 72.0,
+  "zeepipe_1": 42.0,
+  "sns_bacton": 15.0,
+  "st_fergus_nbp": 70.0,
+  "statpipe_rich": 0.0,
+  "tampen_link": 15.0,
+  "teesside_nbp": 15.0,
+  "troll_kollsnes": 120.0,
+  "tyra_f3": 0.0,
+  "tyra_nybro": 8.0,
+  "uithuizen_ttf": 10.0,
+  "wilhelmshaven_the": 27.0,
+  "zeebrugge_ztp": 42.0,
+  "zeebrugge_lng_ztp": 30.0
+ },
+ "utilization": {
+  "troll_kollsnes": 1.0,
+  "kvitebjorn_kollsnes": 0.32,
+  "ogt": 0.75,
+  "statpipe_rich": 0.0,
+  "statpipe_dry": 0.0,
+  "statpipe_heimdal": 0.0,
+  "statpipe_ekofisk": 0.5,
+  "sleipner_draupner": 0.7667,
+  "zeepipe_2a": 1.0,
+  "zeepipe_2b": 1.0,
+  "langeled_north": 1.0,
+  "asgard_transport": 1.0,
+  "polarled": 0.3143,
+  "ormen_lange_nyhamna": 0.7143,
+  "norpipe": 0.9091,
+  "europipe_1": 1.0,
+  "europipe_2_north": 0.9859,
+  "europipe_2_south": 0.6056,
+  "franpipe": 1.0,
+  "zeepipe_1": 1.0,
+  "langeled_south": 1.0,
+  "vesterled": 0.7692,
+  "baltic_pipe_ns": 1.0,
+  "baltic_pipe_east": 1.0,
+  "tyra_nybro": 0.2667,
+  "tyra_f3": 0.0,
+  "tampen_link": 0.6,
+  "gjoa_flags": 0.8824,
+  "flags": 0.9091,
+  "sage": 0.3333,
+  "culzean_cats": 1.0,
+  "cats": 0.3125,
+  "seal": 0.4286,
+  "sns_bacton": 1.0,
+  "iuk": 0.0,
+  "bbl": 0.0,
+  "nogat": 0.0,
+  "ngt": 0.2381,
+  "wgt": 0.1667,
+  "nybro_etf": 0.8
+ },
+ "outages": [
+  {
+   "kind": "node",
+   "id": "sleipner",
+   "name": "Sleipner",
+   "lost": 160.0,
+   "share": 0.2353
+  },
+  {
+   "kind": "node",
+   "id": "kollsnes",
+   "name": "Kollsnes",
+   "lost": 128.0,
+   "share": 0.1882
+  },
+  {
+   "kind": "node",
+   "id": "troll",
+   "name": "Troll",
+   "lost": 108.0,
+   "share": 0.1588
+  },
+  {
+   "kind": "pipeline",
+   "id": "troll_kollsnes",
+   "name": "Troll - Kollsnes",
+   "lost": 108.0,
+   "share": 0.1588
+  },
+  {
+   "kind": "node",
+   "id": "draupner_e",
+   "name": "Draupner E",
+   "lost": 97.0,
+   "share": 0.1426
+  },
+  {
+   "kind": "node",
+   "id": "dornum",
+   "name": "Dornum",
+   "lost": 85.0,
+   "share": 0.125
+  },
+  {
+   "kind": "node",
+   "id": "nyhamna",
+   "name": "Nyhamna",
+   "lost": 72.0,
+   "share": 0.1059
+  },
+  {
+   "kind": "pipeline",
+   "id": "langeled_north",
+   "name": "Langeled (north)",
+   "lost": 72.0,
+   "share": 0.1059
+  },
+  {
+   "kind": "node",
+   "id": "asgard",
+   "name": "\u00c5sgard area",
+   "lost": 70.0,
+   "share": 0.1029
+  },
+  {
+   "kind": "node",
+   "id": "karsto",
+   "name": "K\u00e5rst\u00f8",
+   "lost": 70.0,
+   "share": 0.1029
+  },
+  {
+   "kind": "pipeline",
+   "id": "asgard_transport",
+   "name": "\u00c5sgard Transport",
+   "lost": 70.0,
+   "share": 0.1029
+  },
+  {
+   "kind": "pipeline",
+   "id": "zeepipe_2b",
+   "name": "Zeepipe IIB",
+   "lost": 70.0,
+   "share": 0.1029
+  },
+  {
+   "kind": "node",
+   "id": "easington",
+   "name": "Easington",
+   "lost": 68.0,
+   "share": 0.1
+  },
+  {
+   "kind": "pipeline",
+   "id": "langeled_south",
+   "name": "Langeled (south)",
+   "lost": 68.0,
+   "share": 0.1
+  },
+  {
+   "kind": "node",
+   "id": "baltic_tie",
+   "name": "Baltic Pipe tie-in",
+   "lost": 66.0,
+   "share": 0.0971
+  },
+  {
+   "kind": "pipeline",
+   "id": "europipe_2_north",
+   "name": "Europipe II (K\u00e5rst\u00f8 - Baltic tie-in)",
+   "lost": 66.0,
+   "share": 0.0971
+  },
+  {
+   "kind": "node",
+   "id": "st_fergus",
+   "name": "St Fergus",
+   "lost": 65.0,
+   "share": 0.0956
+  },
+  {
+   "kind": "node",
+   "id": "grain_lng",
+   "name": "Grain LNG",
+   "lost": 58.0,
+   "share": 0.0853
+  },
+  {
+   "kind": "pipeline",
+   "id": "zeepipe_2a",
+   "name": "Zeepipe IIA",
+   "lost": 58.0,
+   "share": 0.0853
+  },
+  {
+   "kind": "node",
+   "id": "dunkirk",
+   "name": "Dunkirk (Franpipe)",
+   "lost": 51.0,
+   "share": 0.075
+  },
+  {
+   "kind": "pipeline",
+   "id": "franpipe",
+   "name": "Franpipe",
+   "lost": 51.0,
+   "share": 0.075
+  },
+  {
+   "kind": "node",
+   "id": "ormen_lange",
+   "name": "Ormen Lange",
+   "lost": 49.0,
+   "share": 0.0721
+  },
+  {
+   "kind": "pipeline",
+   "id": "ormen_lange_nyhamna",
+   "name": "Ormen Lange - Nyhamna",
+   "lost": 49.0,
+   "share": 0.0721
+  },
+  {
+   "kind": "node",
+   "id": "draupner_s",
+   "name": "Draupner S",
+   "lost": 46.0,
+   "share": 0.0676
+  },
+  {
+   "kind": "pipeline",
+   "id": "sleipner_draupner",
+   "name": "Sleipner - Draupner",
+   "lost": 46.0,
+   "share": 0.0676
+  },
+  {
+   "kind": "node",
+   "id": "gate_lng",
+   "name": "Gate terminal",
+   "lost": 44.0,
+   "share": 0.0647
+  },
+  {
+   "kind": "pipeline",
+   "id": "europipe_1",
+   "name": "Europipe I",
+   "lost": 42.0,
+   "share": 0.0618
+  },
+  {
+   "kind": "node",
+   "id": "ekofisk",
+   "name": "Ekofisk",
+   "lost": 40.0,
+   "share": 0.0588
+  },
+  {
+   "kind": "node",
+   "id": "emden",
+   "name": "Emden",
+   "lost": 40.0,
+   "share": 0.0588
+  },
+  {
+   "kind": "pipeline",
+   "id": "norpipe",
+   "name": "Norpipe Gas",
+   "lost": 40.0,
+   "share": 0.0588
+  },
+  {
+   "kind": "pipeline",
+   "id": "europipe_2_south",
+   "name": "Europipe II (Baltic tie-in - Dornum)",
+   "lost": 39.0,
+   "share": 0.0574
+  },
+  {
+   "kind": "node",
+   "id": "zeebrugge",
+   "name": "Zeebrugge",
+   "lost": 38.0,
+   "share": 0.0559
+  },
+  {
+   "kind": "pipeline",
+   "id": "zeepipe_1",
+   "name": "Zeepipe I",
+   "lost": 38.0,
+   "share": 0.0559
+  },
+  {
+   "kind": "node",
+   "id": "dunkirk_lng",
+   "name": "Dunkirk LNG",
+   "lost": 36.0,
+   "share": 0.0529
+  },
+  {
+   "kind": "node",
+   "id": "bacton",
+   "name": "Bacton",
+   "lost": 30.0,
+   "share": 0.0441
+  },
+  {
+   "kind": "node",
+   "id": "heimdal",
+   "name": "Heimdal",
+   "lost": 30.0,
+   "share": 0.0441
+  },
+  {
+   "kind": "node",
+   "id": "oseberg",
+   "name": "Oseberg",
+   "lost": 30.0,
+   "share": 0.0441
+  },
+  {
+   "kind": "node",
+   "id": "zeebrugge_lng",
+   "name": "Zeebrugge LNG",
+   "lost": 30.0,
+   "share": 0.0441
+  },
+  {
+   "kind": "pipeline",
+   "id": "ogt",
+   "name": "Oseberg Gas Transport",
+   "lost": 30.0,
+   "share": 0.0441
+  },
+  {
+   "kind": "node",
+   "id": "wilhelmshaven_lng",
+   "name": "Wilhelmshaven LNG",
+   "lost": 27.0,
+   "share": 0.0397
+  },
+  {
+   "kind": "pipeline",
+   "id": "draupner_bridge",
+   "name": "Draupner S - E bridge",
+   "lost": 27.0,
+   "share": 0.0397
+  },
+  {
+   "kind": "pipeline",
+   "id": "vesterled",
+   "name": "Vesterled",
+   "lost": 26.0,
+   "share": 0.0382
+  },
+  {
+   "kind": "node",
+   "id": "flags_brent",
+   "name": "FLAGS North (Brent area)",
+   "lost": 25.0,
+   "share": 0.0368
+  },
+  {
+   "kind": "pipeline",
+   "id": "flags",
+   "name": "FLAGS",
+   "lost": 25.0,
+   "share": 0.0368
+  },
+  {
+   "kind": "node",
+   "id": "aasta_hansteen",
+   "name": "Aasta Hansteen",
+   "lost": 22.0,
+   "share": 0.0324
+  },
+  {
+   "kind": "node",
+   "id": "eemshaven_lng",
+   "name": "Eemshaven LNG",
+   "lost": 22.0,
+   "share": 0.0324
+  },
+  {
+   "kind": "pipeline",
+   "id": "polarled",
+   "name": "Polarled",
+   "lost": 22.0,
+   "share": 0.0324
+  },
+  {
+   "kind": "node",
+   "id": "cats_riser",
+   "name": "CATS Riser Platform",
+   "lost": 15.0,
+   "share": 0.0221
+  },
+  {
+   "kind": "node",
+   "id": "culzean",
+   "name": "Culzean",
+   "lost": 15.0,
+   "share": 0.0221
+  },
+  {
+   "kind": "node",
+   "id": "elgin_franklin",
+   "name": "Elgin-Franklin",
+   "lost": 15.0,
+   "share": 0.0221
+  },
+  {
+   "kind": "node",
+   "id": "gjoa",
+   "name": "Gj\u00f8a",
+   "lost": 15.0,
+   "share": 0.0221
+  },
+  {
+   "kind": "node",
+   "id": "sns_fields",
+   "name": "Southern North Sea fields",
+   "lost": 15.0,
+   "share": 0.0221
+  },
+  {
+   "kind": "node",
+   "id": "statfjord",
+   "name": "Statfjord",
+   "lost": 15.0,
+   "share": 0.0221
+  },
+  {
+   "kind": "node",
+   "id": "teesside",
+   "name": "Teesside (CATS)",
+   "lost": 15.0,
+   "share": 0.0221
+  },
+  {
+   "kind": "pipeline",
+   "id": "cats",
+   "name": "CATS",
+   "lost": 15.0,
+   "share": 0.0221
+  },
+  {
+   "kind": "pipeline",
+   "id": "culzean_cats",
+   "name": "Culzean - CATS",
+   "lost": 15.0,
+   "share": 0.0221
+  },
+  {
+   "kind": "pipeline",
+   "id": "gjoa_flags",
+   "name": "Gj\u00f8a gas export",
+   "lost": 15.0,
+   "share": 0.0221
+  },
+  {
+   "kind": "pipeline",
+   "id": "seal",
+   "name": "SEAL",
+   "lost": 15.0,
+   "share": 0.0221
+  },
+  {
+   "kind": "pipeline",
+   "id": "sns_bacton",
+   "name": "Southern North Sea gathering",
+   "lost": 15.0,
+   "share": 0.0221
+  },
+  {
+   "kind": "pipeline",
+   "id": "statpipe_ekofisk",
+   "name": "Statpipe (Draupner - Ekofisk)",
+   "lost": 15.0,
+   "share": 0.0221
+  },
+  {
+   "kind": "node",
+   "id": "beryl",
+   "name": "Beryl",
+   "lost": 10.0,
+   "share": 0.0147
+  },
+  {
+   "kind": "node",
+   "id": "l10a",
+   "name": "L10-A",
+   "lost": 10.0,
+   "share": 0.0147
+  },
+  {
+   "kind": "node",
+   "id": "uithuizen",
+   "name": "Uithuizen",
+   "lost": 10.0,
+   "share": 0.0147
+  },
+  {
+   "kind": "pipeline",
+   "id": "ngt",
+   "name": "NGT",
+   "lost": 10.0,
+   "share": 0.0147
+  },
+  {
+   "kind": "pipeline",
+   "id": "sage",
+   "name": "SAGE",
+   "lost": 10.0,
+   "share": 0.0147
+  },
+  {
+   "kind": "pipeline",
+   "id": "tampen_link",
+   "name": "Tampen Link",
+   "lost": 10.0,
+   "share": 0.0147
+  },
+  {
+   "kind": "node",
+   "id": "kvitebjorn",
+   "name": "Kvitebj\u00f8rn",
+   "lost": 8.0,
+   "share": 0.0118
+  },
+  {
+   "kind": "node",
+   "id": "tyra",
+   "name": "Tyra",
+   "lost": 8.0,
+   "share": 0.0118
+  },
+  {
+   "kind": "pipeline",
+   "id": "kvitebjorn_kollsnes",
+   "name": "Kvitebj\u00f8rn gas pipeline",
+   "lost": 8.0,
+   "share": 0.0118
+  },
+  {
+   "kind": "node",
+   "id": "den_helder",
+   "name": "Den Helder",
+   "lost": 5.0,
+   "share": 0.0074
+  },
+  {
+   "kind": "node",
+   "id": "k13a",
+   "name": "K13-A",
+   "lost": 5.0,
+   "share": 0.0074
+  },
+  {
+   "kind": "pipeline",
+   "id": "wgt",
+   "name": "WGT",
+   "lost": 5.0,
+   "share": 0.0074
+  },
+  {
+   "kind": "node",
+   "id": "balgzand",
+   "name": "Balgzand",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "f3fb",
+   "name": "F3-FB",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "nybro",
+   "name": "Nybro",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "baltic_pipe_east",
+   "name": "Baltic Pipe (Denmark - Poland)",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "baltic_pipe_ns",
+   "name": "Baltic Pipe (North Sea leg)",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "bbl",
+   "name": "BBL",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "iuk",
+   "name": "Interconnector (IUK)",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "nogat",
+   "name": "NOGAT",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "statpipe_dry",
+   "name": "Statpipe (dry gas)",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "statpipe_heimdal",
+   "name": "Statpipe (Heimdal leg)",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "statpipe_rich",
+   "name": "Statpipe (rich gas)",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "tyra_f3",
+   "name": "Tyra West - F3",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "tyra_nybro",
+   "name": "Tyra - Nybro",
+   "lost": 0.0,
+   "share": 0.0
+  }
+ ],
+ "sourced": {
+  "rows": 0,
+  "total": 110
+ }
+}
