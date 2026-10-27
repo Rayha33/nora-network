@@ -449,7 +449,7 @@
       else if (ends && markets.has(ends[0])) { delivered += Math.max(-v, 0); entries += 1; }
       else if (markets.has(id)) { delivered += v; entries += 1; }
     }
-    return entries ? { value: delivered, label: "MSm³/d delivered to markets" } : { value: sum, label: "MSm³/d across these points" };
+    return entries ? { value: delivered, label: "delivered to markets" } : { value: sum, label: "across these points" };
   }
 
   function prepare(stream) {
@@ -727,6 +727,7 @@
   $("zoom-out").addEventListener("click", () => zoomBy(1 / 1.4));
   $("zoom-fit").addEventListener("click", fitNorthSea);
 
+  if (matchMedia("(max-width: 760px)").matches) $("legend").open = false;
   if (params.get("embed") === "1") {
     document.body.classList.add("embed");
     network.setOptions({ interaction: { zoomView: false } });

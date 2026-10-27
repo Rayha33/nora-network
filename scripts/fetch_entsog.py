@@ -51,7 +51,8 @@ def fetch(start: str, end: str, points: list[str], period: str, attempts: int = 
             "from": start,
             "to": end,
             "limit": -1,
-        }
+        },
+        quote_via=urllib.parse.quote,  # ENTSOG wants %20, not +, in "Physical Flow"
     )
     for attempt in range(1, attempts + 1):
         try:
