@@ -1,0 +1,37 @@
+# Units for level 2 (unit control): each groups the assets one operator desk looks after.
+# Every node belongs to exactly one unit; a pipeline belongs to the unit it leaves from.
+# Order here is the order on screen. `nora validate` checks every id.
+
+[units.norwegian_sea]
+name = "Norwegian Sea"
+nodes = ["aasta_hansteen", "norne", "heidrun", "asgard", "ormen_lange", "nyhamna", "tjeldbergodden"]
+
+[units.northern_north_sea]
+name = "Northern North Sea"
+nodes = [
+    "gjoa", "visund", "statfjord", "gullfaks", "flags_brent", "kvitebjorn", "troll",
+    "oseberg", "kollsnes", "heimdal", "beryl", "edvard_grieg",
+]
+
+[units.hubs]
+name = "Kårstø, Sleipner and Draupner"
+nodes = ["karsto", "johan_sverdrup", "gudrun", "sleipner", "draupner_s", "draupner_e", "ekofisk"]
+
+[units.uk]
+name = "UK landings"
+nodes = [
+    "st_fergus", "cats_riser", "culzean", "elgin_franklin", "teesside", "easington",
+    "sns_fields", "bacton", "grain_lng", "nbp",
+]
+
+[units.continent]
+name = "Continental landings"
+nodes = [
+    "f3fb", "l10a", "k13a", "den_helder", "balgzand", "uithuizen", "eemshaven_lng",
+    "dornum", "emden", "wilhelmshaven_lng", "gate_lng", "zeebrugge", "zeebrugge_lng",
+    "dunkirk", "dunkirk_lng", "ttf", "the", "ztp", "peg",
+]
+
+[units.denmark_poland]
+name = "Denmark and Poland"
+nodes = ["tyra", "baltic_tie", "nybro", "etf", "pl_vtp"]

@@ -22,21 +22,20 @@ from pathlib import Path
 import pyvis
 from pyvis.network import Network as PyvisNetwork
 
+from .config import load_config
 from .data import NODE_TYPES, PIPELINE_TYPES, SUPPLY_TYPES, Network
-from .icons import COLORS, icon_uri
-from .layout import flow_positions
+from .graph import great_circle_km
+from .icons import TYPES, icon_uri
+from .layout import flow_grid
+from .ops import plan_timeline
 from .stream import Stream
+from .units import load_units
 
 PACKAGE_DIR = Path(__file__).parent
 TEMPLATES = PACKAGE_DIR / "templates"
 PYVIS_DIR = Path(pyvis.__file__).parent
 
 MAPLIBRE = "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl"
-MAP_STYLES = {
-    "day": "https://tiles.openfreemap.org/styles/positron",
-    "night": "https://tiles.openfreemap.org/styles/dark",
-}
-MAP_BOUNDS = [[-3.5, 50.2], [12.0, 63.9]]  # west, south / east, north: the North Sea
 
 SHORT = {
     "field": "Field",
@@ -46,6 +45,17 @@ SHORT = {
     "lng": "LNG terminal",
     "storage": "Storage",
     "market": "Market",
+}
+
+# Row names in the Flow view, by the asset types in a stage.
+PLURAL = {
+    "field": "Fields",
+    "hub": "Riser hubs",
+    "processing": "Gas plants",
+    "terminal": "Terminals",
+    "lng": "LNG terminals",
+    "storage": "Storage",
+    "market": "Markets",
 }
 
 FONT = "Archivo, system-ui, -apple-system, sans-serif"
@@ -68,7 +78,7 @@ FLOW_OPTIONS = {
                  "bold": {"face": FONT, "size": 13.5, "mod": "bold"}},
     },
     "edges": {
-        "smooth": {"type": "cubicBezier", "forceDirection": "horizontal", "roundness": 0.5},
+        "smooth": False,  # straight lines
         "arrows": {"to": {"enabled": True, "scaleFactor": 0.4}},
         "arrowStrikethrough": False,
         "hoverWidth": 0.6,
@@ -136,6 +146,17 @@ def assets_payload(net: Network, analysis: dict) -> dict[str, dict]:
             "share": outage.get("share", 0.0),
             "modelFlow": analysis["pipeline_flow"].get(pipe.id),
             "utilization": analysis["utilization"].get(pipe.id),
+            # length for moving markers: the recorded one, else the straight-line distance
+            "km": pipe.length_km
+            or round(
+                great_circle_km(
+                    net.node_by_id[pipe.from_id].lat,
+                    net.node_by_id[pipe.from_id].lon,
+                    net.node_by_id[pipe.to_id].lat,
+                    net.node_by_id[pipe.to_id].lon,
+                ),
+                1,
+            ),
         }
     return assets
 
@@ -173,10 +194,11 @@ def map_geojson(net: Network) -> dict[str, dict]:
 
 def _flow_view(net: Network) -> PyvisNetwork:
     """The gas flow overview as a pyvis network: icons at stage positions, curved lines."""
-    positions = flow_positions(net)
+    grid = flow_grid(net)
     view = PyvisNetwork(height="100%", width="100%", directed=True, cdn_resources="in_line")
     for node in sorted(net.nodes, key=lambda n: n.id):
-        x, y = positions[node.id]
+        stage, rank = grid[node.id]
+        x, y = rank * 120.0, stage * 140.0  # top to bottom; flow.js re-spaces from the grid
         view.add_node(
             node.id,
             # vis-network renders labels (multi: "html") and titles as HTML, so
@@ -202,9 +224,16 @@ def _flow_view(net: Network) -> PyvisNetwork:
 
 
 def network_html(
-    net: Network, analysis: dict, streams: Sequence[Stream] = (), links: dict | None = None
+    net: Network,
+    analysis: dict,
+    streams: Sequence[Stream] = (),
+    links: dict | None = None,
+    config: dict | None = None,
+    units: list[dict] | None = None,
 ) -> str:
     """The app as a single HTML document."""
+    config = config or load_config()
+    units = units if units is not None else load_units(net)
     view = _flow_view(net)
     view.set_template_dir(str(TEMPLATES), "app.html.j2")
     vis = PYVIS_DIR / "templates" / "lib" / "vis-9.1.2"
@@ -222,16 +251,30 @@ def network_html(
     view.templateEnv.globals["nora"] = {
         "assets": assets_payload(net, analysis),
         "geo": map_geojson(net),
-        "icons": {kind: icon_uri(kind) for kind in COLORS},
-        "colors": COLORS,
+        "grid": flow_grid(net),
+        "units": units,
+        "iconSets": {
+            theme: {
+                kind: icon_uri(
+                    kind,
+                    disc=config[key]["normal"],
+                    glyph=config[key]["paper"] if theme == "dark" else config[key]["text"],
+                    edge=config[key]["text_dim"],
+                )
+                for kind in TYPES
+            }
+            for theme, key in (("light", "colors"), ("dark", "colors_dark"))
+        },
+        "config": config,
         "nodeTypes": NODE_TYPES,
         "pipelineTypes": PIPELINE_TYPES,
         "short": SHORT,
-        "mapStyles": MAP_STYLES,
-        "bounds": MAP_BOUNDS,
+        "plural": PLURAL,
         "deliverable": analysis["deliverable"],
         "worstOutage": worst,
-        "streams": [stream.payload() for stream in streams],
+        "streams": [
+            stream.payload() | {"plan": plan_timeline(stream, net, config)} for stream in streams
+        ],
         "links": links or {},
     }
     return view.generate_html()

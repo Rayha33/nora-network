@@ -73,7 +73,13 @@ def routed_flow(graph: nx.DiGraph, supply: dict[str, float] | None = None) -> Fl
     routing. Network simplex wants integers, so capacities are scaled to kSm3/d and
     lengths rounded to whole kilometres.
     """
-    flows = flow_graph(graph, supply)
+    flow = shortest_max_flow(flow_graph(graph, supply))
+    return _summarise(graph, sum(flow[SOURCE].values()), flow)
+
+
+def shortest_max_flow(flows: nx.DiGraph) -> dict[str, dict[str, float]]:
+    """Maximum flow from SOURCE to SINK at the lowest total pipeline-kilometres, on a
+    graph prepared like flow_graph's. Returns flow[u][v] in MSm3/d."""
     scaled = nx.DiGraph()
     scaled.add_nodes_from(flows)
     for u, v, attrs in flows.edges(data=True):
@@ -83,8 +89,7 @@ def routed_flow(graph: nx.DiGraph, supply: dict[str, float] | None = None) -> Fl
             edge["capacity"] = max(1, round(attrs["capacity"] * 1000))
         scaled.add_edge(u, v, **edge)
     flow = nx.max_flow_min_cost(scaled, SOURCE, SINK)
-    flow = {u: {v: f / 1000 for v, f in targets.items()} for u, targets in flow.items()}
-    return _summarise(graph, sum(flow[SOURCE].values()), flow)
+    return {u: {v: f / 1000 for v, f in targets.items()} for u, targets in flow.items()}
 
 
 def _summarise(graph: nx.DiGraph, value: float, flow: dict[str, dict[str, float]]) -> Flow:

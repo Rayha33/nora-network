@@ -1,14 +1,20 @@
-/* NORA app shell. One page, two views of the same network:
-     Map   real geolocation (map.js: MapLibre with OpenFreeMap tiles)
-     Flow  the gas flow overview on dotted paper (flow.js: pyvis / vis-network)
-   This file holds what both share: state, the styling rules, the controls, the details
-   panel, the key, the stream player, alarms and the live feed. A view registers with
-   App.register(name, view) and implements mount(el), restyle(), draw(), focus(id),
-   highlight(id), resize() and fit(); `ready` is true once it can be styled. In the
-   browser console, App.views.map.map and App.views.flow.network are the live objects.
+/* NORA operations view: the shell both network views share.
 
-   URL parameters: view=map|flow  mode=network|load|risk|live  stream=<name>
-                   autoplay=1  live=<event-stream url>  theme=day|night  embed=1 */
+   Screens follow the control-room hierarchy:
+     1 Overview      is the plan holding, which values drift, active alarms
+     2 Unit control  one operating unit on the Map (map.js) or the Flow view (flow.js)
+     3 Asset detail  one asset as a small schematic, its values with context
+     4 Diagnostics   the readings behind the values, and where they come from
+
+   Colour is reserved for abnormal conditions and alarms (nora.toml [colors]): amber
+   warning, orange medium, red critical, always with a shape, a number and text. Normal
+   is grey: dark grey closed or inactive, light grey normal, lightest grey active.
+
+   A view registers with App.register(name, view) and implements mount(el), restyle(),
+   draw(), focus(id, animate), highlight(id), setUnit(id), fit() and resize().
+   In the browser console, App.views.map.map and App.views.flow.network are the live
+   objects. URL: #/overview, #/unit/<id>, #/asset/<id>, #/diag/<id>; ?view=map|flow,
+   ?mode=live|load|risk|plain, ?stream=<name>, ?autoplay=1, ?live=<event-stream url>. */
 const App = (() => {
   "use strict";
 
@@ -16,12 +22,29 @@ const App = (() => {
   const $ = (id) => document.getElementById(id);
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const embed = params.get("embed") === "1";
+  const C = NORA.config;
+  const T = C.thresholds;
+  // Two palettes with the same roles (nora.toml [colors] and [colors_dark]). COLORS is
+  // updated in place when the theme switches, so everything reading it follows.
+  const PALETTES = { light: C.colors, dark: C.colors_dark };
+  const COLORS = { ...C.colors };
+  function storedTheme() {
+    try { return localStorage.getItem("nora-theme"); } catch (error) { return null; }
+  }
+  let theme = params.get("theme") || storedTheme()
+    || (C.screen.theme === "auto" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : C.screen.theme);
+  if (!PALETTES[theme]) theme = "light";
 
   // ------------------------------------------------------------------ helpers
   function fmt(value, digits = 0) {
     if (value == null || Number.isNaN(value)) return "–";
     return Number(value).toLocaleString("en-GB", { minimumFractionDigits: digits, maximumFractionDigits: digits });
   }
+  function signed(value, digits = 1) {
+    if (value == null || Number.isNaN(value)) return "–";
+    return `${value > 0 ? "+" : value < 0 ? "−" : "±"}${fmt(Math.abs(value), digits)}`;
+  }
+  const esc = (text) => String(text).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
   function h(tag, attrs, ...children) {
     const node = document.createElement(tag);
     for (const [key, value] of Object.entries(attrs || {})) {
@@ -30,521 +53,980 @@ const App = (() => {
       else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
       else node.setAttribute(key, value);
     }
-    for (const child of children.flat()) {
+    for (const child of children.flat(Infinity)) {
       if (child != null && child !== false) node.append(child instanceof Node ? child : String(child));
     }
     return node;
   }
-  function svg(markup) {
+  function svg(viewBox, markup, cls) {
     const node = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    node.setAttribute("viewBox", "0 0 22 12");
+    node.setAttribute("viewBox", viewBox);
     node.setAttribute("aria-hidden", "true");
-    node.innerHTML = markup; // static markup built here, never from data
+    if (cls) node.setAttribute("class", cls);
+    node.innerHTML = markup; // built from numbers, palette colours and esc()'d names only
     return node;
   }
   const assets = NORA.assets;
   const nameOf = (id) => (assets[id] || {}).name || id;
-  // vis-network renders some labels as HTML; escape anything data-derived that
-  // reaches such a label (the CSVs are crowd-edited via PRs).
-  const esc = (text) => String(text).replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  })[c]);
   const timeFormat = (epoch, opts) => new Date(epoch * 1000).toLocaleString("en-GB", { timeZone: "UTC", ...opts });
   const formatTime = (t) => timeFormat(t, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + " UTC";
-  const shortTime = (t) => timeFormat(t, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const shortTime = (t) => timeFormat(t, { weekday: "short", hour: "2-digit", minute: "2-digit" });
 
-  function hexToRgb(hex) {
-    const n = parseInt(hex.slice(1), 16);
-    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  // ------------------------------------------------------------------ alarm levels
+  // 0 normal, 1 warning (amber, priority 3), 2 medium (orange, 2), 3 critical (red, 1).
+  const LEVEL = ["Normal", "Warning", "Medium", "Critical"];
+  const LEVEL_COLOR = [null, null, null, null];
+  function mix(a, b, t) {
+    const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const [x, y] = [rgb(a), rgb(b)];
+    return `#${x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, "0")).join("")}`;
   }
-  function ramp(stops, t) {
-    const x = Math.max(0, Math.min(1, t)) * (stops.length - 1);
-    const i = Math.min(stops.length - 2, Math.floor(x));
-    const a = hexToRgb(stops[i]), b = hexToRgb(stops[i + 1]), f = x - i;
-    return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * f)).join(",")})`;
+  /* Surfaces for panels, controls and cards. In light mode the state greys are the
+     surfaces. In dark mode they would glare, so surfaces stay dark and the state shows
+     as a lighter tint and edge: lighter still means open and active. */
+  function applyPalette() {
+    Object.assign(COLORS, PALETTES[theme]);
+    const c = COLORS;
+    const card = (fill, ink, dim, edge) => ({ fill, ink, dim, edge });
+    Object.assign(COLORS, theme === "dark" ? {
+      surface: c.panel, raised: mix(c.panel, c.active, 0.14), band: mix(c.panel, c.active, 0.22),
+      casing: mix(c.paper, "#000000", 0.55),
+      rule: "rgba(225, 228, 230, 0.14)",
+      card: {
+        active: card(mix(c.panel, c.active, 0.2), c.text, c.text_dim, c.active),
+        normal: card(c.panel, c.text, c.text_dim, c.normal),
+        inactive: card(mix(c.paper, "#000000", 0.3), c.text_dim, c.inactive, c.inactive),
+      },
+    } : {
+      surface: c.normal, raised: c.active, band: c.active, rule: "rgba(34, 39, 43, 0.16)", casing: c.text,
+      card: {
+        active: card(c.active, c.text, c.text_dim, c.text_dim),
+        normal: card(c.normal, c.text, c.text_dim, c.text_dim),
+        inactive: card(c.inactive, c.active, c.normal, c.text),
+      },
+    });
+    LEVEL_COLOR[1] = COLORS.warning;
+    LEVEL_COLOR[2] = COLORS.medium;
+    LEVEL_COLOR[3] = COLORS.critical;
+    for (const [key, value] of Object.entries(COLORS)) {
+      if (typeof value === "string") document.documentElement.style.setProperty(`--${key.replace("_", "-")}`, value);
+    }
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+    NORA.icons = NORA.iconSets[theme];
+  }
+  applyPalette();
+  function level(value, thresholds, rising = true) {
+    if (value == null || Number.isNaN(value)) return 0;
+    return rising ? thresholds.filter((t) => value >= t).length : thresholds.filter((t) => value <= t).length;
+  }
+  // Each priority has its own shape and number as well as its colour.
+  function shapeMarkup(lvl, x = 8, y = 8, s = 7) {
+    const fill = LEVEL_COLOR[lvl], ink = COLORS.text;
+    const outline = `fill="${fill}" stroke="${ink}" stroke-width="1.3" stroke-linejoin="round"`;
+    const shape = lvl === 3 ? `<rect x="${x - s}" y="${y - s}" width="${2 * s}" height="${2 * s}" rx="1" ${outline}/>`
+      : lvl === 2 ? `<path d="M${x} ${y - s - 1}L${x + s + 1} ${y}L${x} ${y + s + 1}L${x - s - 1} ${y}Z" ${outline}/>`
+      : `<path d="M${x} ${y - s}L${x + s} ${y + s - 1}L${x - s} ${y + s - 1}Z" ${outline}/>`;
+    const number = `<text x="${x}" y="${y + (lvl === 1 ? 4.2 : 3.6)}" text-anchor="middle" font-size="${s * 1.35}" font-weight="700" font-family="Archivo, sans-serif" fill="${ink}">${4 - lvl}</text>`;
+    return shape + number;
+  }
+  function badge(lvl, text) {
+    if (!lvl) return h("span", { class: "badge text-only dim" }, text ?? LEVEL[0]);
+    return h("span", { class: "badge", title: LEVEL[lvl] }, svg("0 0 16 16", shapeMarkup(lvl)), text ?? LEVEL[lvl]);
+  }
+  // The same badge on a canvas (the views): shape, colour, dark outline and number.
+  function drawBadge(ctx, lvl, x, y, size = 8) {
+    if (!lvl) return;
+    ctx.save();
+    ctx.beginPath();
+    if (lvl === 3) ctx.rect(x - size, y - size, 2 * size, 2 * size);
+    else if (lvl === 2) { ctx.moveTo(x, y - size - 1); ctx.lineTo(x + size + 1, y); ctx.lineTo(x, y + size + 1); ctx.lineTo(x - size - 1, y); ctx.closePath(); }
+    else { ctx.moveTo(x, y - size); ctx.lineTo(x + size, y + size - 1); ctx.lineTo(x - size, y + size - 1); ctx.closePath(); }
+    ctx.fillStyle = LEVEL_COLOR[lvl];
+    ctx.fill();
+    ctx.lineWidth = Math.max(1, size / 6);
+    ctx.strokeStyle = COLORS.text;
+    ctx.stroke();
+    ctx.fillStyle = COLORS.text;
+    ctx.font = `700 ${size * 1.3}px Archivo, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(String(4 - lvl), x, y + (lvl === 1 ? size * 0.28 : size * 0.08));
+    ctx.restore();
+  }
+  // A pig (capsule) or peak (triangle) at x, y, turned along the line by `angle`.
+  function drawMarker(ctx, marker, x, y, angle, size = 7) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    if (marker.kind === "pig") {
+      const w = size * 1.6, r = size * 0.55;
+      ctx.moveTo(-w + r, -r); ctx.lineTo(w - r, -r); ctx.arc(w - r, 0, r, -Math.PI / 2, Math.PI / 2);
+      ctx.lineTo(-w + r, r); ctx.arc(-w + r, 0, r, Math.PI / 2, -Math.PI / 2);
+    } else {
+      const dir = marker.rising ? 1 : -1;
+      ctx.moveTo(size * dir, 0); ctx.lineTo(-size * 0.7 * dir, -size * 0.8); ctx.lineTo(-size * 0.7 * dir, size * 0.8); ctx.closePath();
+    }
+    ctx.fillStyle = marker.level ? LEVEL_COLOR[marker.level] : COLORS.active;
+    ctx.fill();
+    ctx.lineWidth = Math.max(1, size / 6);
+    ctx.strokeStyle = COLORS.text;
+    ctx.stroke();
+    ctx.restore();
+    ctx.save();
+    ctx.fillStyle = COLORS.text;
+    ctx.font = `600 ${size * 1.25}px Archivo, sans-serif`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = COLORS.paper;
+    ctx.strokeText(marker.label, x + size * 1.9, y - size * 1.2);
+    ctx.fillText(marker.label, x + size * 1.9, y - size * 1.2);
+    ctx.restore();
   }
 
-  // ------------------------------------------------------------------ palettes
-  const PALETTES = {
-    day: {
-      paper: "#f6f5f0", dot: "#d2cec2", ink: "#1d2731", ink2: "#5b6670",
-      pipe: "#a3266f", onshore: "rgba(29,39,49,0.38)", muted: "rgba(29,39,49,0.16)",
-      alarm: "#c8401b", particle: "#ffffff", particleEdge: "rgba(29,39,49,0.55)",
-      load: ["#ecd3e0", "#d48ab3", "#b14686", "#7c1349"],
-      risk: ["#cfdce6", "#8eabc1", "#3e6b90", "#14385a"],
-    },
-    night: {
-      paper: "#121619", dot: "#2b3338", ink: "#dfe6ea", ink2: "#93a1aa",
-      pipe: "#e07ab5", onshore: "rgba(223,230,234,0.34)", muted: "rgba(223,230,234,0.14)",
-      alarm: "#ff7a4d", particle: "#fff2f9", particleEdge: null,
-      load: ["#3b2533", "#7e3866", "#c2549a", "#ff9fd2"],
-      risk: ["#1d2e3a", "#2f5675", "#4f8bb8", "#9fd0f5"],
-    },
+  // ------------------------------------------------------------------ settings
+  const DEFAULT_SETTINGS = {
+    names: C.labels.names,
+    lineValues: C.labels.line_values,
+    hide: C.assets.hide,
+    gridEntries: C.assets.grid_entries,
+    direction: C.flow.direction,
+    density: C.flow.density,
+    animation: C.flow.animation,
   };
-  function storedTheme() {
-    try { return localStorage.getItem("nora-theme"); } catch (error) { return null; }
+  function readSettings() {
+    let saved = {}, shared = {};
+    try { saved = JSON.parse(localStorage.getItem("nora-settings") || "{}"); } catch (error) { saved = {}; }
+    try { if (params.get("s")) shared = JSON.parse(atob(params.get("s"))); } catch (error) { shared = {}; }
+    const merged = { ...DEFAULT_SETTINGS, ...saved, ...shared };
+    if (!Array.isArray(merged.hide)) merged.hide = [];
+    return merged;
   }
-  let themeName = params.get("theme") || storedTheme() ||
-    (matchMedia("(prefers-color-scheme: dark)").matches ? "night" : "day");
-  const palette = () => PALETTES[themeName];
+  let settings = readSettings();
+  function saveSettings() {
+    try { localStorage.setItem("nora-settings", JSON.stringify(settings)); } catch (error) { /* private mode */ }
+  }
 
   // ------------------------------------------------------------------ indexes
   const nodeIds = Object.keys(assets).filter((id) => assets[id].kind === "node").sort();
   const pipeIds = Object.keys(assets).filter((id) => assets[id].kind === "pipeline").sort();
   const markets = new Set(nodeIds.filter((id) => assets[id].type === "market"));
+  const exitPoints = nodeIds.filter((id) => assets[id].type === "terminal");
   const maxCapacity = Math.max(1, ...pipeIds.map((id) => assets[id].capacity || 0));
   const worst = NORA.worstOutage || 1;
+  const unitOf = {};
+  for (const unit of NORA.units) {
+    for (const id of unit.nodes) unitOf[id] = unit.id;
+    for (const id of unit.pipelines) unitOf[id] = unit.id;
+  }
+  const unitById = Object.fromEntries(NORA.units.map((u) => [u.id, u]));
+  function visible(id) {
+    const d = assets[id];
+    if (d.kind === "node") return !settings.hide.includes(d.type);
+    if (d.type === "onshore" && !settings.gridEntries) return false;
+    return !settings.hide.includes(assets[d.from].type) && !settings.hide.includes(assets[d.to].type);
+  }
 
   // ------------------------------------------------------------------ state
-  const state = { view: "map", mode: "network", selected: null };
+  const route = { screen: "overview", unit: "all", asset: null, focus: null };
+  const state = { view: C.screen.network_view, mode: C.screen.network_mode };
   const live = {
     stream: null, // recorded stream being replayed
     feed: null, // EventSource when connected to a live feed
-    feedEvents: null,
-    playhead: 0, // fractional index into stream.times
+    frames: [], // [{t, flows, metrics, plan}], recorded or received from the feed
+    playhead: 0,
     index: -1,
     playing: false,
-    speed: 3600, // data-seconds per wall-second
-    clock: 0, // drives the moving dots
+    speed: 3600,
+    clock: 0,
     time: null,
-    values: {},
+    values: {}, // flows at the playhead, interpolated between frames
     maxAbs: 1,
     typical: {},
-    state: {},
-    activeEvents: new Set(),
-    history: [],
+    down: {}, // pipelines whose flow has collapsed
+    peaks: [], // flow changes travelling down pipelines
+    conditions: [], // active abnormal conditions, worst first
+    levelOf: {}, // asset -> worst active level
   };
+  const frame = () => live.frames[Math.max(0, live.index)] || { flows: {}, metrics: {}, plan: null };
+  const metric = (name, id, f = frame()) => ((f.metrics || {})[name] || {})[id];
 
-  // ------------------------------------------------------------------ styling rules (both views)
-  /* How a pipeline looks in the current mode: colour, width (1 to ~5), dashes, the label
-     the flow overview writes on it, and which way its arrow points. */
-  function pipeStyle(id) {
-    const t = palette(), d = assets[id];
-    const onshore = d.type === "onshore";
-    const style = {
-      color: onshore ? t.onshore : t.pipe,
-      width: d.capacity ? 1 + 3 * Math.sqrt(d.capacity / maxCapacity) : 1,
-      dashed: onshore || d.status !== "operating",
-      label: d.capacity ? fmt(d.capacity) : "",
-      forward: true,
-      backward: Boolean(d.bidirectional),
-    };
-    if (state.mode === "load") {
-      style.color = d.utilization == null ? (onshore ? t.onshore : t.muted) : ramp(t.load, d.utilization);
-      style.label = d.utilization == null ? "" : `${fmt(d.utilization * 100)}%`;
-    } else if (state.mode === "risk") {
-      style.color = onshore ? t.muted : ramp(t.risk, d.lost / worst);
-      style.label = d.lost ? `−${fmt(d.lost)}` : "";
-    } else if (state.mode === "live") {
-      const v = live.values[id];
-      if (v === undefined) {
-        Object.assign(style, { color: t.muted, width: 1, label: "" });
-      } else {
-        const magnitude = Math.abs(v);
-        style.width = 1 + 4.5 * Math.sqrt(magnitude / live.maxAbs);
-        style.color = live.state[id] === "down" || live.activeEvents.has(id) ? t.alarm
-          : d.capacity ? ramp(t.load, magnitude / d.capacity) : t.onshore;
-        style.label = fmt(magnitude, 1);
-        if (d.bidirectional) Object.assign(style, { forward: v >= 0, backward: v < 0 });
-      }
-    }
-    return style;
-  }
-
-  /* How a node looks in the current mode: icon scale, an alarm ring, the second line of
-     its label in the flow overview, and whether it is dimmed (not operating). */
-  function nodeStyle(id) {
-    const t = palette(), d = assets[id];
-    const style = { scale: 1, ring: null, sub: NORA.short[d.type], dim: d.status !== "operating" };
-    if (state.mode === "load" && d.modelFlow != null) {
-      style.sub = `${fmt(d.modelFlow)} MSm³/d`;
-    } else if (state.mode === "risk" && d.type !== "market") {
-      style.scale = 0.7 + 1.1 * Math.sqrt(d.lost / worst);
-      style.sub = d.lost ? `−${fmt(d.lost)} if it trips` : "No loss if it trips";
-    } else if (state.mode === "live") {
-      const through = liveThroughput(id);
-      style.sub = through == null ? "No reading" : `${fmt(through, 1)} MSm³/d`;
-      if (live.activeEvents.has(id)) style.ring = t.alarm;
-    }
-    return style;
-  }
-  function liveThroughput(id) {
-    if (live.values[id] !== undefined) return Math.abs(live.values[id]);
-    let total = 0, seen = false;
+  /* Gas through a node (or the node's own reading), from a frame's flows: what arrives,
+     or for fields and storage what they send out (storage may also take gas in). */
+  function throughput(id, flows) {
+    if (flows[id] !== undefined) return Math.abs(flows[id]);
+    let into = 0, out = 0, seen = false;
     for (const pid of pipeIds) {
-      const v = live.values[pid];
+      const v = flows[pid];
       if (v === undefined) continue;
       const p = assets[pid];
-      if (p.to === id && v > 0) { total += v; seen = true; }
-      else if (p.from === id && v < 0) { total -= v; seen = true; }
-      else if ((p.to === id || p.from === id) && v === 0) seen = true;
+      if (p.type === "onshore" && !markets.has(id)) continue;
+      if (p.to === id) { seen = true; if (v > 0) into += v; else out -= v; }
+      else if (p.from === id) { seen = true; if (v > 0) out += v; else into -= v; }
     }
-    return seen ? total : null;
+    if (!seen) return null;
+    return assets[id] && assets[id].supply ? Math.max(out, into) : into;
+  }
+  function series(fn, n = 12) {
+    const out = [];
+    for (let i = Math.max(0, live.index - n + 1); i <= live.index; i++) out.push(live.frames[i] ? fn(live.frames[i]) : null);
+    return out;
+  }
+  function stepHours() {
+    if (live.stream) return live.stream.step / 3600;
+    const n = live.frames.length;
+    return n > 1 ? (live.frames[n - 1].t - live.frames[n - 2].t) / 3600 || 1 : 1;
+  }
+  // Change per hour over the last three readings.
+  function rate(values) {
+    const known = values.filter((v) => v != null);
+    if (known.length < 2) return null;
+    const recent = known.slice(-3);
+    return (recent[recent.length - 1] - recent[0]) / ((recent.length - 1) * stepHours());
   }
 
-  /* Moving dots along a path ([[x, y], ...] in the view's drawing units): faster when a
-     pipeline is fuller, bigger when it carries more gas, against the arrow when negative. */
-  function drawDots(ctx, id, path, unit = 1) {
-    const v = live.values[id];
-    if (!v || Math.abs(v) < 0.05 || path.length < 2) return;
-    const t = palette(), d = assets[id], magnitude = Math.abs(v);
-    const rate = d.capacity ? Math.min(1, magnitude / d.capacity) : Math.min(1, magnitude / live.maxAbs);
-    const spacing = 22 * unit, speed = (8 + 36 * rate) * unit;
-    const radius = (1.2 + 1.7 * Math.sqrt(magnitude / live.maxAbs)) * unit;
-    const lengths = [0];
-    for (let i = 1; i < path.length; i++) {
-      lengths.push(lengths[i - 1] + Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]));
-    }
-    const total = lengths[lengths.length - 1];
-    if (total < spacing / 2) return;
-    ctx.fillStyle = t.particle;
-    if (t.particleEdge) { ctx.strokeStyle = t.particleEdge; ctx.lineWidth = 0.7 * unit; }
-    let segment = 1;
-    for (let s = (live.clock * speed) % spacing; s < total; s += spacing) {
-      const along = v >= 0 ? s : total - s;
-      segment = 1;
-      while (segment < lengths.length - 1 && lengths[segment] < along) segment++;
-      const a = path[segment - 1], b = path[segment];
-      const f = (along - lengths[segment - 1]) / (lengths[segment] - lengths[segment - 1] || 1);
-      ctx.beginPath();
-      ctx.arc(a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, radius, 0, Math.PI * 2);
-      ctx.fill();
-      if (t.particleEdge) ctx.stroke();
-    }
+  // How fast gas through a node is changing, MSm³/d per hour, over the last 2 hours.
+  const flowRate = (id) => rate(window4h(id).past);
+  // A node's flow now and its change, for map labels: plain signs, as map fonts lack arrows.
+  function liveValue(id) {
+    if (state.mode !== "live") return "";
+    const v = throughput(id, frame().flows);
+    if (v == null) return "";
+    const r = flowRate(id);
+    return `${fmt(v, 1)}${r == null || Math.abs(r) < 0.05 ? "" : `  ${signed(r, 1)}/h`}`;
   }
 
-  // ------------------------------------------------------------------ views
-  const views = {};
+  /* The 4-hour window shown in each flow-view card: the last 2 hours of actual flow,
+     and the next 2 hours of what shippers have nominated (from the recorded data, or
+     the `ahead` block of a live-feed frame). */
+  function window4h(id) {
+    const n = Math.max(1, Math.round(2 / stepHours()));
+    const past = [];
+    for (let i = live.index - n; i <= live.index; i++) past.push(live.frames[i] ? throughput(id, live.frames[i].flows) : null);
+    let future = null;
+    const nomNow = metric("nomination_msm3d", id);
+    if (nomNow != null) {
+      future = [nomNow];
+      for (let k = 1; k <= n; k++) {
+        const ahead = live.feed ? (((frame().ahead || {}).nomination_msm3d || {})[id] || [])[k - 1] : metric("nomination_msm3d", id, live.frames[live.index + k] || {});
+        future.push(ahead ?? null);
+      }
+    }
+    return { past, future, tol: T.nomination[0] };
+  }
+
+  // ------------------------------------------------------------------ conditions
+  /* Everything abnormal right now, as {level, id, kind, text}. The views, the alarm
+     counts, the overview and the asset screens all read this one list. */
+  function evaluate() {
+    const f = frame(), out = [];
+    const add = (lvl, id, kind, text) => { if (lvl > 0) out.push({ level: lvl, id, kind, text }); };
+    for (const id of pipeIds) {
+      const v = f.flows[id], d = assets[id];
+      if (v === undefined) continue;
+      if (d.capacity) add(level(Math.abs(v) / d.capacity, T.load), id, "load", `${nameOf(id)} at ${fmt((Math.abs(v) / d.capacity) * 100)}% of capacity`);
+      if (live.down[id]) add(2, id, "trip", `${nameOf(id)}: flow collapsed to ${fmt(Math.abs(v), 1)} MSm³/d`);
+    }
+    for (const id of exitPoints) {
+      const nom = metric("nomination_msm3d", id, f), booked = metric("booked_msm3d", id, f);
+      const actual = throughput(id, f.flows);
+      if (nom > 1 && actual != null) {
+        const dev = (actual - nom) / nom;
+        add(level(Math.abs(dev), T.nomination), id, "nomination", `${nameOf(id)} ${signed(dev * 100, 0)}% against nomination`);
+      }
+      if (nom > 0 && booked > 0) add(level(nom / booked, T.booking), id, "booking", `${nameOf(id)} nominated ${fmt((nom / booked) * 100)}% of booked capacity`);
+    }
+    for (const id of nodeIds) {
+      const p = metric("pressure_bar", id, f), window = C.pressure[assets[id].type];
+      if (p == null || !window) continue;
+      const [low, high] = window, span = high - low;
+      const margin = Math.min(p - low, high - p) / span;
+      add(level(margin, T.pressure_margin, false), id, "pressure",
+        `${nameOf(id)} ${fmt(p, 1)} bar, near the ${p - low < high - p ? "minimum" : "maximum"} (${fmt(low)}–${fmt(high)} bar)`);
+    }
+    for (const peak of live.peaks) {
+      add(peak.level, peak.id, "peak", `${nameOf(peak.id)}: flow ${peak.delta > 0 ? "rose" : "fell"} ${fmt(Math.abs(peak.delta), 1)} MSm³/d in one step`);
+    }
+    const events = (live.stream && live.stream.events) || live.feedEvents || [];
+    for (const event of events) {
+      if (live.time >= event.start && live.time < event.end && !event.planned) add(2, event.asset, "event", event.label);
+    }
+    if (f.plan && f.plan.now[0]) add(f.plan.now[0], f.plan.now[2] || "plan", "plan", `Plan: ${f.plan.now[1]}`);
+    out.sort((a, b) => b.level - a.level || a.text.localeCompare(b.text));
+    live.conditions = out;
+    live.levelOf = {};
+    for (const c of out) live.levelOf[c.id] = Math.max(live.levelOf[c.id] || 0, c.level);
+  }
+  const levelOf = (id) => live.levelOf[id] || 0;
+  const levelFor = (id, kinds) => Math.max(0, ...live.conditions.filter((c) => c.id === id && kinds.includes(c.kind)).map((c) => c.level));
+
+  // A pipeline's flow collapsing to a tenth of its usual level is a trip.
+  function trackTrips(f) {
+    const floor = Math.max(1, 0.05 * live.maxAbs);
+    for (const [id, raw] of Object.entries(f.flows)) {
+      // Trips are a transport matter: trunks, export lines and interconnectors. A field
+      // feeder going quiet (curtailment, shut-in) and balancing links swinging are not.
+      if (!assets[id] || !["trunk", "export", "interconnector"].includes(assets[id].type)) continue;
+      const v = Math.abs(raw), typical = live.typical[id] || 0;
+      if (typical > floor && v < 0.1 * typical) live.down[id] = true;
+      else if (live.down[id] && v > 0.3 * typical) delete live.down[id];
+    }
+  }
+  // A large change in flow travels down the pipeline with the gas: a "peak".
+  function spawnPeaks(previous, current) {
+    if (!previous) return;
+    for (const id of pipeIds) {
+      const a = previous.flows[id], b = current.flows[id], d = assets[id];
+      if (a === undefined || b === undefined || !d.capacity) continue;
+      const share = Math.abs(b - a) / d.capacity;
+      if (share >= C.pipelines.step_min) {
+        live.peaks.push({ id, t0: current.t, delta: b - a, level: level(share, T.step), forward: b >= 0 });
+      }
+    }
+  }
+  function prunePeaks() {
+    const v = C.pipelines.gas_velocity_mps;
+    live.peaks = live.peaks.filter((p) => live.time >= p.t0 && (live.time - p.t0) * v < assets[p.id].km * 1000);
+  }
+  /* Markers moving along the lines, with their position (0..1 from the pipeline's
+     `from` end): pigs at their own speed, peaks with the gas. The views draw them. */
+  function markers() {
+    const out = [];
+    if (live.time == null) return out;
+    const pigs = (live.stream && live.stream.pigs) || live.feedPigs || [];
+    for (const pig of pigs) {
+      const along = ((live.time - pig.launch) * pig.speed) / (assets[pig.pipeline].km * 1000);
+      if (along >= 0 && along <= 1) out.push({ kind: "pig", id: pig.pipeline, along, label: "PIG", level: 0, title: pig.label });
+    }
+    const v = C.pipelines.gas_velocity_mps;
+    for (const peak of live.peaks) {
+      const travelled = ((live.time - peak.t0) * v) / (assets[peak.id].km * 1000);
+      out.push({ kind: "peak", id: peak.id, along: peak.forward ? travelled : 1 - travelled,
+        label: `${peak.delta > 0 ? "+" : "−"}${fmt(Math.abs(peak.delta))}`, level: peak.level, rising: peak.delta > 0 });
+    }
+    return out;
+  }
+
+  // ------------------------------------------------------------------ styling rules (both views)
+  /* A pipeline: grey by state (dark grey without flow, lightest grey flowing); colour
+     only for an abnormal condition. */
+  function pipeStyle(id) {
+    const d = assets[id], mode = state.mode, onshore = d.type === "onshore";
+    const out = {
+      color: COLORS.normal, width: d.capacity ? 0.8 + 1.4 * Math.sqrt(d.capacity / maxCapacity) : 0.8,
+      dashed: onshore || d.status !== "operating", label: "", level: 0,
+      forward: true, backward: Boolean(d.bidirectional),
+      hidden: !visible(id), dim: route.unit !== "all" && unitOf[id] !== route.unit,
+    };
+    if (d.status !== "operating") out.color = COLORS.inactive;
+    if (mode === "live") {
+      const v = live.values[id];
+      if (v === undefined) Object.assign(out, { color: COLORS.inactive, width: 1, dashed: true });
+      else {
+        const m = Math.abs(v);
+        out.width = 1 + 4 * Math.sqrt(m / live.maxAbs);
+        out.color = m < 0.05 ? COLORS.inactive : COLORS.active;
+        out.label = fmt(m, 1);
+        out.level = levelOf(id);
+        if (d.bidirectional) Object.assign(out, { forward: v >= 0, backward: v < 0 });
+      }
+    } else if (mode === "load") {
+      out.color = d.utilization == null ? COLORS.inactive : COLORS.active;
+      out.level = level(d.utilization, T.load);
+      out.label = d.utilization == null ? "" : `${fmt(d.utilization * 100)}%`;
+    } else if (mode === "risk") {
+      out.level = onshore ? 0 : level(d.share, T.risk);
+      out.label = d.lost ? `−${fmt(d.lost)}` : "";
+    }
+    if (out.level) out.color = LEVEL_COLOR[out.level];
+    if (settings.lineValues === "off" || (settings.lineValues === "auto" && mode === "plain")) out.label = "";
+    if (settings.lineValues === "on" && !out.label && d.capacity) out.label = fmt(d.capacity);
+    return out;
+  }
+  /* A node: neutral icon, dark grey when inactive, an alarm badge when abnormal. */
+  function nodeStyle(id) {
+    const d = assets[id], mode = state.mode;
+    const out = { level: 0, inactive: d.status !== "operating", sub: NORA.short[d.type], scale: 1,
+      hidden: !visible(id), dim: route.unit !== "all" && unitOf[id] !== route.unit };
+    if (mode === "live") {
+      const f = frame(), through = throughput(id, f.flows), p = metric("pressure_bar", id, f);
+      const nom = metric("nomination_msm3d", id, f);
+      out.level = levelOf(id);
+      if (through != null && through < 0.05) out.inactive = true;
+      const parts = [];
+      if (nom > 0) parts.push(`${fmt(through, 1)} / ${fmt(nom, 1)} nom`);
+      else if (through != null) parts.push(`${fmt(through, 1)} MSm³/d`);
+      if (p != null) parts.push(`${fmt(p)} bar`);
+      out.sub = parts.join("  ") || out.sub;
+    } else if (mode === "load" && d.modelFlow != null) {
+      out.sub = `${fmt(d.modelFlow)} MSm³/d`;
+    } else if (mode === "risk" && d.type !== "market") {
+      out.level = level(d.share, T.risk);
+      out.scale = 0.75 + 0.9 * Math.sqrt(d.lost / worst);
+      out.sub = d.lost ? `−${fmt(d.lost)} if it trips` : "No loss if it trips";
+    }
+    if (!settings.names) out.sub = "";
+    return out;
+  }
+
+  // ------------------------------------------------------------------ indicators
+  /* A range bar: the normal band, alarm-limit ticks, an optional target, and a moving
+     pointer. All grey until the value is abnormal; then the pointer takes the alarm
+     colour, with its dark outline. */
+  function rangeBar({ min, max, value, band, ticks = [], target, lvl = 0 }) {
+    const W = 200, x = (v) => Math.max(0, Math.min(W, ((v - min) / (max - min || 1)) * W));
+    let m = `<rect x="0" y="11" width="${W}" height="7" rx="1" fill="${COLORS.dots}"/>`;
+    if (band) m += `<rect x="${x(band[0])}" y="11" width="${Math.max(1, x(band[1]) - x(band[0]))}" height="7" fill="${COLORS.band}"/>`;
+    for (const tick of ticks) {
+      const tx = x(tick.at), tall = 3 + 2 * tick.level;
+      m += `<line x1="${tx}" x2="${tx}" y1="${14.5 - tall}" y2="${14.5 + tall}" stroke="${COLORS.text}" stroke-width="${tick.level === 3 ? 1.6 : 1}"/>`;
+    }
+    if (target != null) {
+      const tx = x(target);
+      m += `<path d="M${tx} 9.5l3.5 5-3.5 5-3.5-5z" fill="none" stroke="${COLORS.text}" stroke-width="1.2"/>`;
+    }
+    if (value != null) {
+      const px = x(value), fill = lvl ? LEVEL_COLOR[lvl] : COLORS.text;
+      m += `<path d="M${px} 10l-4.5-7h9z" fill="${fill}" stroke="${COLORS.text}" stroke-width="1"/>`;
+      m += `<line x1="${px}" x2="${px}" y1="10" y2="19" stroke="${COLORS.text}" stroke-width="1.4"/>`;
+    }
+    const node = svg(`0 0 ${W} 26`, m, "range");
+    node.setAttribute("preserveAspectRatio", "none");
+    return node;
+  }
+  /* A small trend: where the value has been, where it is heading (dashed), and the
+     normal band behind it. */
+  function trend(values, { band, lvl = 0 } = {}) {
+    const W = 92, H = 26, known = values.filter((v) => v != null);
+    if (known.length < 2) return svg(`0 0 ${W} ${H}`, "", "trend");
+    const r = rate(values) || 0, ahead = Math.min(4, values.length);
+    const lastValue = known[known.length - 1], projected = lastValue + r * stepHours() * ahead;
+    const lo = Math.min(...known, projected, ...(band || [])), hi = Math.max(...known, projected, ...(band || []));
+    const y = (v) => H - 3 - ((v - lo) / (hi - lo || 1)) * (H - 6);
+    const n = values.length + ahead - 1, x = (i) => (i / n) * W;
+    let m = band ? `<rect x="0" y="${y(band[1])}" width="${W}" height="${Math.max(1, y(band[0]) - y(band[1]))}" fill="${COLORS.band}"/>` : "";
+    const pts = values.map((v, i) => (v == null ? null : `${x(i)},${y(v)}`)).filter(Boolean).join(" ");
+    m += `<polyline points="${pts}" fill="none" stroke="${COLORS.text}" stroke-width="1.4"/>`;
+    const last = values.length - 1;
+    m += `<line x1="${x(last)}" y1="${y(lastValue)}" x2="${x(last + ahead)}" y2="${y(projected)}" stroke="${COLORS.text}" stroke-width="1.2" stroke-dasharray="2 2"/>`;
+    m += `<circle cx="${x(last)}" cy="${y(lastValue)}" r="2.6" fill="${lvl ? LEVEL_COLOR[lvl] : COLORS.text}" stroke="${COLORS.text}"/>`;
+    return svg(`0 0 ${W} ${H}`, m, "trend");
+  }
+  function rateText(r, unit) {
+    if (r == null) return h("span", { class: "dim" }, "–");
+    if (Math.abs(r) < 0.05) return h("span", { class: "dim" }, "◆ steady");
+    return h("span", null, `${r > 0 ? "▲" : "▼"} ${signed(r, 1)} ${unit}/h`);
+  }
+
+  // What each kind of value's bar, band and ticks mean.
+  function exitIndicator(id) {
+    const nom = metric("nomination_msm3d", id), booked = metric("booked_msm3d", id);
+    const actual = throughput(id, frame().flows), tol = T.nomination;
+    const top = Math.max(nom || 0, booked || 0, actual || 0, 1) * 1.15;
+    const band = nom ? [nom * (1 - tol[0]), nom * (1 + tol[0])] : null;
+    const lvl = levelFor(id, ["nomination", "booking"]);
+    return {
+      id, unit: "MSm³/d", lvl, band,
+      bar: rangeBar({ min: 0, max: top, value: actual, target: nom, lvl, band,
+        ticks: [...(nom ? [nom * (1 - tol[2]), nom * (1 + tol[2])].map((at) => ({ at, level: 3 })) : []), ...(booked ? [{ at: booked, level: 2 }] : [])] }),
+      series: series((f) => throughput(id, f.flows)),
+      value: nom ? `${fmt(actual, 1)} of ${fmt(nom, 1)} nominated${booked ? `, ${fmt(booked)} booked` : ""}` : `${fmt(actual, 1)} MSm³/d`,
+    };
+  }
+  function pressureIndicator(id) {
+    const p = metric("pressure_bar", id), [low, high] = C.pressure[assets[id].type], span = high - low;
+    const pm = T.pressure_margin, band = [low + pm[0] * span, high - pm[0] * span];
+    const lvl = levelFor(id, ["pressure"]);
+    return {
+      id, unit: "bar", lvl, band,
+      bar: rangeBar({ min: low - 0.1 * span, max: high + 0.1 * span, value: p, lvl, band,
+        ticks: [{ at: low, level: 3 }, { at: high, level: 3 }, { at: low + pm[1] * span, level: 2 }, { at: high - pm[1] * span, level: 2 }] }),
+      series: series((f) => metric("pressure_bar", id, f)),
+      value: `${fmt(p, 1)} bar, window ${fmt(low)}–${fmt(high)}`,
+    };
+  }
+  function loadIndicator(id) {
+    const d = assets[id], v = Math.abs(frame().flows[id] || 0), u = v / d.capacity;
+    return {
+      id, unit: "pts", lvl: level(u, T.load), band: [0, T.load[0] * 100],
+      bar: rangeBar({ min: 0, max: 1.1, value: u, lvl: level(u, T.load), band: [0, T.load[0]], ticks: T.load.map((at, i) => ({ at, level: i + 1 })) }),
+      series: series((f) => (f.flows[id] == null ? null : (Math.abs(f.flows[id]) / d.capacity) * 100)),
+      value: `${fmt(u * 100)}%: ${fmt(v, 1)} of ${fmt(d.capacity)} MSm³/d`,
+    };
+  }
+  function bank(indicators, empty) {
+    if (!indicators.length) return h("p", { class: "empty" }, empty);
+    return h("div", { class: "bank" },
+      h("div", { class: "head" }, "Asset"), h("div", { class: "head" }, "Value in its range"),
+      h("div", { class: "head" }, "Trend"), h("div", { class: "head optional" }, "Change"), h("div", { class: "head optional" }, "State"),
+      ...indicators.flatMap((ind) => [
+        h("div", { class: "name", onclick: () => go({ screen: "asset", asset: ind.id }), title: "Open the asset" }, nameOf(ind.id)),
+        h("div", null, ind.bar, h("div", { class: "value" }, ind.value, h("span", { class: "rate-inline" }, rateText(rate(ind.series), ind.unit)))),
+        trend(ind.series, { band: ind.band, lvl: ind.lvl }),
+        h("div", { class: "rate" }, rateText(rate(ind.series), ind.unit)),
+        h("div", { class: "state optional" }, badge(ind.lvl)),
+      ]));
+  }
+  function alarmList(conditions) {
+    if (!conditions.length) return h("p", { class: "empty" }, "No active alarms. Everything is in its normal range.");
+    return h("ul", { class: "alarm-list" }, conditions.map((c) =>
+      h("li", { onclick: () => (assets[c.id] ? go({ screen: "asset", asset: c.id }) : null) },
+        badge(c.level, ""), h("span", null, c.text), h("time", null, live.time ? shortTime(live.time) : ""))));
+  }
+
+  // ------------------------------------------------------------------ decision support
+  /* Analysis and suggestions from the model, never presented as instructions: each
+     shows what it is based on and how uncertain it is. */
+  function decisionBox(advice) {
+    return h("div", { class: "box wide decision" },
+      h("h2", null, "Decision support"),
+      h("p", { class: "situation" }, advice.situation || ""),
+      h("p", null, h("strong", null, "Likely cause: "), advice.cause),
+      advice.suggestions.length
+        ? h("ol", { class: "suggestions" }, advice.suggestions.map((t) => h("li", null, t)))
+        : h("p", { class: "dim" }, "No rerouting found within today's bookings."),
+      h("dl", { class: "facts provenance" },
+        h("dt", null, "Based on"), h("dd", null, advice.basis),
+        h("dt", null, "Confidence"), h("dd", null, `${advice.confidence}: ${advice.uncertainty.join(" ")}`)),
+      h("p", { class: "dim", style: "margin:6px 0 0" }, "A suggestion to support your decision, not an instruction. Check it against the live system."));
+  }
+  // Why might this asset be abnormal? Look upstream for an active event or a trip.
+  function upstreamCause(id) {
+    const events = ((live.stream && live.stream.events) || live.feedEvents || []).filter((e) => live.time >= e.start && live.time < e.end);
+    const seen = new Set([id]), queue = [[id, 0]];
+    while (queue.length) {
+      const [node, depth] = queue.shift();
+      for (const event of events) if (event.asset === node && node !== id) return { text: `${event.label}, ${depth} step${depth === 1 ? "" : "s"} upstream`, confidence: event.planned ? "high (planned work)" : "medium" };
+      for (const pid of pipeIds) {
+        const p = assets[pid];
+        const into = p.to === node ? p.from : p.bidirectional && p.from === node ? p.to : null;
+        if (!into) continue;
+        if (live.down[pid] || events.some((e) => e.asset === pid)) return { text: `${nameOf(pid)} has lost its flow, ${depth + 1} step${depth ? "s" : ""} upstream`, confidence: "medium" };
+        if (!seen.has(into) && depth < 6) { seen.add(into); queue.push([into, depth + 1]); }
+      }
+    }
+    return { text: "No active event or trip found upstream; check the readings (level 4).", confidence: "low" };
+  }
+
+  // ------------------------------------------------------------------ screens
+  const screens = { overview: $("screen-overview"), asset: $("screen-asset"), diag: $("screen-diag") };
   const containers = { map: $("view-map"), flow: $("view-flow") };
+  const views = {};
   function register(name, view) { views[name] = view; }
   const current = () => views[state.view];
   function restyle() {
     const view = current();
-    if (view && view.ready) view.restyle();
-  }
-  function setView(name) {
-    if (!views[name]) return;
-    state.view = name;
-    for (const [key, el] of Object.entries(containers)) el.hidden = key !== name;
-    for (const tab of document.querySelectorAll("[data-view]")) {
-      tab.setAttribute("aria-selected", String(tab.dataset.view === name));
-    }
-    const view = views[name];
-    if (!view.mounted) { view.mounted = true; view.mount(containers[name]); }
-    else view.resize();
-    restyle();
-    if (state.selected && view.ready) view.focus(state.selected, false);
+    if (route.screen === "unit" && view && view.ready) view.restyle();
   }
 
-  // ------------------------------------------------------------------ modes
-  const modeTabs = [...document.querySelectorAll("[data-mode]")];
-  function setMode(next) {
-    state.mode = next;
-    for (const tab of modeTabs) tab.setAttribute("aria-selected", String(tab.dataset.mode === next));
-    const showPlayer = next === "live";
-    document.body.classList.toggle("has-player", showPlayer);
-    $("player").hidden = !showPlayer;
-    $("alarms").hidden = !showPlayer;
-    if (!showPlayer) pause();
-    restyle();
-    buildKey();
-    drawSpark();
-    if (state.selected) showDetails(state.selected);
+  // Level 1: plan, exit points, alarms, pressures, busiest lines, units.
+  function renderOverview() {
+    const f = frame(), plan = f.plan;
+    const exits = exitPoints.filter((id) => metric("nomination_msm3d", id) != null || throughput(id, f.flows) > 0.05);
+    const pressures = nodeIds.filter((id) => metric("pressure_bar", id) != null && ["terminal", "processing", "hub"].includes(assets[id].type))
+      .sort((a, b) => levelOf(b) - levelOf(a) || nameOf(a).localeCompare(nameOf(b)));
+    const loaded = pipeIds.filter((id) => f.flows[id] != null && assets[id].capacity && assets[id].type !== "onshore")
+      .sort((a, b) => Math.abs(f.flows[b]) / assets[b].capacity - Math.abs(f.flows[a]) / assets[a].capacity).slice(0, 8);
+    const nowLevel = plan ? plan.now[0] : 0, aheadLevel = plan ? Math.min(plan.ahead[0], 2) : 0;
+    const bannerLevel = nowLevel || aheadLevel;
+    const headline = !plan ? "No nominations in this dataset, so there is no plan to check"
+      : nowLevel ? `${plan.now[1]} now`
+      : plan.ahead[0] ? `In ${fmt(plan.ahead[3])} h: ${plan.ahead[1]}`
+      : "Plan holds at every exit point";
+    const context = plan ? `Nominated ${fmt(plan.nominated)} MSm³/d, deliverable ${fmt(plan.deliverable)} MSm³/d. Busiest line: ${nameOf(plan.bottleneck)} at ${fmt(plan.maxLoad * 100)}%.` : "";
+    const units = NORA.units.map((u) => {
+      const conds = live.conditions.filter((c) => unitOf[c.id] === u.id);
+      return h("button", { type: "button", onclick: () => go({ screen: "unit", unit: u.id }) },
+        h("span", null, u.name), badge(Math.max(0, ...conds.map((c) => c.level)), conds.length ? `${conds.length} active` : "Normal"));
+    });
+    screens.overview.replaceChildren(h("div", { class: "screen-body" },
+      h("div", { class: `box banner${bannerLevel ? " alarm" : ""}`, style: bannerLevel ? `border-color:${LEVEL_COLOR[bannerLevel]}` : null },
+        bannerLevel ? badge(bannerLevel, "") : null,
+        h("div", null, h("div", { class: `big${plan ? "" : " dim"}` }, headline), h("div", { class: "context" }, context))),
+      plan && plan.advice ? decisionBox(plan.advice) : null,
+      h("div", { class: "cols" },
+        h("div", { class: "box" }, h("h2", null, "Exit points: actual flow against the hourly nomination"),
+          bank(exits.map(exitIndicator), "No exit-point readings in this dataset.")),
+        h("div", { class: "box" }, h("h2", null, "Active alarms"), alarmList(live.conditions.slice(0, 12))),
+        h("div", { class: "box" }, h("h2", null, "Pressures at plants, hubs and terminals"),
+          bank(pressures.slice(0, 10).map(pressureIndicator), "No pressure readings in this dataset.")),
+        h("div", { class: "box" }, h("h2", null, "Busiest pipelines"), bank(loaded.map(loadIndicator), "No flow readings yet.")),
+        h("div", { class: "box" }, h("h2", null, "Units"), h("div", { class: "units" }, units)))));
   }
 
-  // ------------------------------------------------------------------ key
-  function line(color, opts = {}) {
-    const dash = opts.dashed ? ' stroke-dasharray="3 3"' : "";
-    const heads = opts.both ? `<path d="M5 3 1 6l4 3M17 3l4 3-4 3" fill="none" stroke="${color}" stroke-width="1.4"/>` : "";
-    return svg(`<path d="M1 6h20" stroke="${color}" stroke-width="${opts.width || 2.2}" stroke-linecap="round"${dash}/>${heads}`);
-  }
-  function rampBar(stops, low, high) {
-    return [
-      h("div", { class: "ramp", style: `background: linear-gradient(90deg, ${stops.join(", ")})` }),
-      h("div", { class: "scale" }, h("span", null, low), h("span", null, high)),
-    ];
-  }
-  const NOTES = {
-    network: "Line width shows capacity. Click anything for details.",
-    load: "How full each pipeline is when the network delivers as much gas as it can (max-flow model).",
-    risk: "Gas the markets lose if an asset trips. Bigger icons are bigger single points of failure.",
-    live: "Flow from the selected dataset. Dots move with the gas: faster when a line is fuller.",
-  };
-  function buildKey() {
-    const t = palette();
-    const present = new Set(nodeIds.map((id) => assets[id].type));
-    const types = Object.keys(NORA.icons).filter((k) => present.has(k));
-    let lines;
-    if (state.mode === "load") lines = rampBar(t.load, "0%", "100% of capacity");
-    else if (state.mode === "risk") lines = rampBar(t.risk, "0", `${fmt(worst)} MSm³/d lost`);
-    else if (state.mode === "live") {
-      lines = [...rampBar(t.load, "0%", "100% of capacity"), h("ul", { style: "margin-top:8px" },
-        h("li", null, line(t.alarm), "Tripped or affected by an event"),
-        h("li", null, line(t.muted, { width: 1.4 }), "No reading in this dataset"))];
-    } else {
-      lines = [h("ul", null,
-        h("li", null, line(t.pipe), "Pipeline"),
-        h("li", null, line(t.pipe, { both: true }), "Can flow both ways"),
-        h("li", null, line(t.onshore, { dashed: true, width: 1.6 }), "Notional grid entry"))];
-    }
-    $("key-body").replaceChildren(
-      h("h3", null, "Assets"),
-      h("ul", null, types.map((k) => h("li", null, h("img", { src: NORA.icons[k], alt: "" }), NORA.nodeTypes[k]))),
-      h("h3", null, { network: "Lines", load: "Model load", risk: "Outage impact", live: "Live flow" }[state.mode]),
-      ...lines,
-      h("p", { class: "note" }, NOTES[state.mode]),
-    );
-  }
-  $("key-toggle").addEventListener("click", (event) => {
-    const open = $("key").hidden;
-    $("key").hidden = !open;
-    event.currentTarget.setAttribute("aria-expanded", String(open));
-  });
-
-  // ------------------------------------------------------------------ details
-  function row(label, value, cls) {
-    return value == null || value === "" ? [] : [h("dt", null, label), h("dd", { class: cls }, value)];
-  }
-  function sourceLine(source) {
-    if (!source) return h("p", { class: "muted" }, "No source recorded yet. If you know one, suggest it below.");
-    return /^https?:\/\//.test(source)
-      ? h("p", null, "Source: ", h("a", { href: source, target: "_blank", rel: "noopener" }, new URL(source).hostname))
-      : h("p", null, `Source: ${source}`);
-  }
-  function showDetails(id) {
-    const d = assets[id], links = NORA.links || {};
-    const liveValue = state.mode === "live" ? live.values[id] : undefined;
-    const tripped = d.lost ? `${fmt(d.lost)} MSm³/d (${fmt(d.share * 100, 1)}%)` : "Nothing lost";
-    let icon, kind, facts;
+  // Level 3: what flows in (top), the asset, what flows out (bottom), and its values.
+  function renderAsset() {
+    const id = route.asset, d = assets[id];
+    if (!d) return;
+    const f = frame(), indicators = [];
     if (d.kind === "node") {
-      icon = NORA.icons[d.type];
-      kind = `${NORA.nodeTypes[d.type]}, ${d.country}`;
-      const through = state.mode === "live" ? liveThroughput(id) : null;
-      facts = [
-        ...row("Live now", through == null ? null : `${fmt(through, 1)} MSm³/d`, "live"),
-        ...row("Operator", d.operator),
-        ...row("Capacity", d.capacity == null ? null : `${fmt(d.capacity)} MSm³/d`),
-        ...row(d.type === "market" ? "Model delivers" : "Model flow", d.modelFlow == null ? null : `${fmt(d.modelFlow, 1)} MSm³/d`),
-        ...row("If it trips", d.type === "market" ? null : tripped),
-        ...row("Status", d.status),
-        ...row("Position", `${fmt(Math.abs(d.lat), 2)}°${d.lat >= 0 ? "N" : "S"}, ${fmt(Math.abs(d.lon), 2)}°${d.lon >= 0 ? "E" : "W"}`),
-      ];
-    } else {
-      icon = null;
-      kind = `${NORA.pipelineTypes[d.type]}, ${nameOf(d.from)} to ${nameOf(d.to)}`;
-      const util = liveValue !== undefined && d.capacity ? ` (${fmt((Math.abs(liveValue) / d.capacity) * 100)}%)` : "";
-      facts = [
-        ...row("Live now", liveValue === undefined ? null : `${fmt(liveValue, 1)} MSm³/d${util}`, "live"),
-        ...row("Capacity", d.capacity == null ? "Not modelled" : `${fmt(d.capacity)} MSm³/d`),
-        ...row("Length", d.length == null ? null : `${fmt(d.length)} km`),
-        ...row("Diameter", d.diameter == null ? null : `${fmt(d.diameter)} in`),
-        ...row("In service since", d.commissioned),
-        ...row("Operator", d.operator),
-        ...row("Model flow", d.modelFlow == null ? null : `${fmt(Math.abs(d.modelFlow), 1)} MSm³/d${d.utilization == null ? "" : ` (${fmt(d.utilization * 100)}%)`}`),
-        ...row("If it trips", d.type === "onshore" ? null : tripped),
-        ...row("Status", d.status),
-      ];
+      if (exitPoints.includes(id) && (metric("nomination_msm3d", id) != null || throughput(id, f.flows) != null)) indicators.push(exitIndicator(id));
+      if (metric("pressure_bar", id) != null && C.pressure[d.type]) indicators.push(pressureIndicator(id));
+    } else if (d.capacity && f.flows[id] != null) indicators.push(loadIndicator(id));
+    const conds = live.conditions.filter((c) => c.id === id);
+    screens.asset.replaceChildren(h("div", { class: "screen-body" },
+      h("h1", null, d.name),
+      h("p", { class: "sub" }, d.kind === "node"
+        ? `${NORA.nodeTypes[d.type]}, ${d.country}. Unit: ${(unitById[unitOf[id]] || {}).name || "none"}.`
+        : `${NORA.pipelineTypes[d.type]}, ${nameOf(d.from)} to ${nameOf(d.to)}.`),
+      h("div", { class: "cols" },
+        h("div", { class: "box" }, h("h2", null, "In context: flowing in above, out below"), schematic(id)),
+        h("div", { class: "box" }, h("h2", null, "Values"), bank(indicators, "No live readings for this asset in the dataset."),
+          h("h2", { style: "margin-top:14px" }, "State"), conds.length ? alarmList(conds) : badge(0, "Normal"),
+          conds.length ? (() => { const cause = upstreamCause(id); return h("p", { class: "cause" }, h("strong", null, "Likely cause: "), cause.text, h("span", { class: "dim" }, ` (confidence ${cause.confidence}; traced through the network model)`)); })() : null),
+        h("div", { class: "box" }, h("h2", null, "Facts"), facts(id))),
+      h("div", { class: "actions", style: "display:flex;gap:8px;margin-top:14px" },
+        h("button", { type: "button", class: "text", onclick: () => go({ screen: "unit", unit: unitOf[id] || "all", focus: id }) }, "Show in its unit"),
+        h("button", { type: "button", class: "text", onclick: () => go({ screen: "diag", asset: id }) }, "Diagnostics"))));
+  }
+  function facts(id) {
+    const d = assets[id];
+    const lost = d.lost ? `${fmt(d.lost)} MSm³/d (${fmt(d.share * 100, 1)}%)` : "Nothing lost";
+    const rows = d.kind === "node"
+      ? [["Operator", d.operator], ["Capacity", d.capacity == null ? null : `${fmt(d.capacity)} MSm³/d`], ["If it trips", lost],
+        ["Pressure window", C.pressure[d.type] ? `${C.pressure[d.type][0]}–${C.pressure[d.type][1]} bar` : null], ["Status", d.status],
+        ["Position", `${fmt(d.lat, 2)}°N, ${fmt(d.lon, 2)}°E`]]
+      : [["Capacity", d.capacity == null ? "Not modelled" : `${fmt(d.capacity)} MSm³/d`], ["Length", `${fmt(d.km)} km`],
+        ["Diameter", d.diameter == null ? null : `${fmt(d.diameter)} in`], ["In service since", d.commissioned], ["If it trips", lost], ["Status", d.status]];
+    return h("dl", { class: "facts" }, rows.filter((r) => r[1] != null && r[1] !== "").map(([k, v]) => [h("dt", null, k), h("dd", null, String(v))]));
+  }
+  function schematic(id) {
+    const d = assets[id], f = frame();
+    const inbound = [], outbound = [];
+    if (d.kind === "node") {
+      for (const pid of pipeIds) {
+        const p = assets[pid];
+        if (p.to !== id && p.from !== id) continue;
+        const v = f.flows[pid];
+        const toward = v === undefined || Math.abs(v) < 0.05 ? p.to === id : (p.to === id) === (v > 0);
+        (toward ? inbound : outbound).push(pid);
+      }
     }
-    const file = d.kind === "node" ? "nodes.csv" : "pipelines.csv";
-    const issue = links.issues
-      ? `${links.issues}/new?template=data_correction.yml&title=${encodeURIComponent(`Data: ${d.name}`)}&asset=${encodeURIComponent(id)}`
-      : null;
-    $("details-body").replaceChildren(
-      h("div", { class: "head" }, icon ? h("img", { src: icon, alt: "" }) : null,
-        h("div", null, h("h2", null, d.name), h("p", { class: "kind" }, kind))),
-      h("dl", null, facts),
-      d.notes ? h("p", null, d.notes) : null,
-      sourceLine(d.source),
+    const W = 360, H = 230, mid = 112;
+    const place = (list, y) => list.map((pid, i) => ({ pid, x: ((i + 1) / (list.length + 1)) * W, y }));
+    let m = "";
+    for (const { pid, x, y } of [...place(inbound, 26), ...place(outbound, 200)]) {
+      const s = pipeStyle(pid), v = f.flows[pid], above = y < mid;
+      const color = s.level ? LEVEL_COLOR[s.level] : v == null || Math.abs(v) < 0.05 ? COLORS.inactive : COLORS.active;
+      const y1 = y + (above ? 8 : -8), y2 = mid + (above ? -20 : 20);
+      if (s.level) m += `<line x1="${x}" y1="${y1}" x2="${W / 2}" y2="${y2}" stroke="${COLORS.casing}" stroke-width="${s.width + 2.4}"/>`;
+      m += `<line x1="${x}" y1="${y1}" x2="${W / 2}" y2="${y2}" stroke="${color}" stroke-width="${Math.max(1.2, s.width)}"/>`;
+      if (s.level) m += `<g transform="translate(${(x + W / 2) / 2 - 8} ${(y1 + y2) / 2 - 8})">${shapeMarkup(s.level)}</g>`;
+      const label = `${nameOf(pid)}${v == null ? "" : `: ${fmt(Math.abs(v), 1)}`}`;
+      m += `<text x="${x}" y="${above ? y : y + 14}" text-anchor="middle">${esc(label.length > 34 ? `${label.slice(0, 33)}…` : label)}</text>`;
+    }
+    if (d.kind === "node") m += `<image href="${NORA.icons[d.type]}" x="${W / 2 - 18}" y="${mid - 18}" width="36" height="36"/>`;
+    else {
+      const s = pipeStyle(id);
+      m += `<text x="${W / 2}" y="40" text-anchor="middle">${esc(nameOf(d.from))}</text><text x="${W / 2}" y="${H - 14}" text-anchor="middle">${esc(nameOf(d.to))}</text>`;
+      m += `<line x1="${W / 2}" y1="52" x2="${W / 2}" y2="${H - 34}" stroke="${s.level ? COLORS.casing : "none"}" stroke-width="${s.width + 2.4}"/><line x1="${W / 2}" y1="52" x2="${W / 2}" y2="${H - 34}" stroke="${s.level ? LEVEL_COLOR[s.level] : s.color}" stroke-width="${Math.max(1.2, s.width)}"/>`;
+    }
+    const lvl = levelOf(id);
+    if (lvl) m += `<g transform="translate(${W / 2 + 12} ${mid - 30})">${shapeMarkup(lvl)}</g>`;
+    if (d.kind === "node") m += `<text x="${W / 2 + 24}" y="${mid + 4}" font-weight="600">${esc(d.name)}</text>`;
+    if (d.kind === "node" && !inbound.length && !outbound.length) m += `<text x="${W / 2}" y="200" text-anchor="middle" class="dimtext">No connected pipelines</text>`;
+    return svg(`0 0 ${W} ${H}`, m, "schematic");
+  }
+
+  // Level 4: the readings behind the values, newest first, and where they come from.
+  function renderDiag() {
+    const id = route.asset, d = assets[id];
+    if (!d) return;
+    const read = (f) => (d.kind === "pipeline" ? f.flows[id] : throughput(id, f.flows));
+    const names = { pressure_bar: "Pressure (bar)", nomination_msm3d: "Nomination", booked_msm3d: "Booked" };
+    const here = Object.keys(names).filter((m) => live.frames.some((f) => metric(m, id, f) != null));
+    const rows = [];
+    for (let i = live.index; i >= Math.max(0, live.index - 23); i--) {
+      const f = live.frames[i];
+      if (f) rows.push(h("tr", null, h("td", null, formatTime(f.t)), h("td", null, fmt(read(f), 2)), ...here.map((m) => h("td", null, fmt(metric(m, id, f), 2)))));
+    }
+    const upto = live.frames.slice(0, live.index + 1);
+    const gaps = upto.filter((f) => read(f) == null).length;
+    const lastSeen = [...upto].reverse().find((f) => read(f) != null);
+    const stream = live.stream || {}, links = NORA.links || {};
+    const file = `${d.kind === "node" ? "nodes" : "pipelines"}.csv`;
+    screens.diag.replaceChildren(h("div", { class: "screen-body" },
+      h("h1", null, `${d.name}: diagnostics`),
+      h("p", { class: "sub" }, `Dataset: ${stream.title || "live feed"}${stream.synthetic ? " (synthetic)" : ""}.`),
+      h("div", { class: "cols" },
+        h("div", { class: "box" }, h("h2", null, "Data quality and sources"), h("dl", { class: "facts" },
+          h("dt", null, "Last reading"), h("dd", null, lastSeen ? formatTime(lastSeen.t) : "None"),
+          h("dt", null, "Readings missing"), h("dd", null, `${gaps} of ${upto.length}`),
+          h("dt", null, "Model flow"), h("dd", null, d.modelFlow == null ? "–" : `${fmt(Math.abs(d.modelFlow), 1)} MSm³/d (max-flow model)`),
+          h("dt", null, "Source of the asset"), h("dd", null, d.source && /^https?:\/\//.test(d.source) ? h("a", { href: d.source, target: "_blank", rel: "noopener" }, new URL(d.source).hostname) : d.source || "None recorded"),
+          h("dt", null, "Data row"), h("dd", null, links.blob ? h("a", { href: `${links.blob}/data/${file}#L${d.line}`, target: "_blank", rel: "noopener" }, `${file} line ${d.line}`) : `${file} line ${d.line}`),
+          h("dt", null, "Dataset source"), h("dd", null, stream.source || "–"))),
+        h("div", { class: "box wide" }, h("h2", null, "Readings, newest first (MSm³/d unless noted)"),
+          h("table", { class: "data" },
+            h("thead", null, h("tr", null, h("th", null, "Time"), h("th", null, d.kind === "pipeline" ? "Flow" : "Throughput"), ...here.map((m) => h("th", null, names[m])))),
+            h("tbody", null, rows))))));
+  }
+
+  // ------------------------------------------------------------------ navigation
+  function hashFor(r) {
+    return r.screen === "overview" ? "#/overview" : r.screen === "unit" ? `#/unit/${r.unit}` : `#/${r.screen}/${r.asset}`;
+  }
+  function go(next, push = true) {
+    Object.assign(route, { focus: null }, next);
+    if (route.screen === "unit" && !unitById[route.unit]) route.unit = "all";
+    const hash = hashFor(route);
+    if (push && location.hash !== hash) history.pushState(null, "", `${location.pathname}${location.search}${hash}`);
+    render();
+  }
+  function fromHash() {
+    const [, screen, arg] = (location.hash || "").split("/");
+    if (screen === "unit") return { screen: "unit", unit: unitById[arg] ? arg : "all" };
+    if ((screen === "asset" || screen === "diag") && assets[arg]) return { screen, asset: arg };
+    if (screen === "overview") return { screen: "overview" };
+    return null;
+  }
+  addEventListener("popstate", () => go(fromHash() || { screen: "overview" }, false));
+
+  function render() {
+    const s = route.screen;
+    for (const [key, el] of Object.entries(screens)) el.hidden = key !== s;
+    for (const [key, el] of Object.entries(containers)) el.hidden = !(s === "unit" && key === state.view);
+    $("views").hidden = $("modes").hidden = s !== "unit";
+    $("crumb-overview").setAttribute("aria-current", s === "overview" ? "page" : "false");
+    const unitSelect = $("crumb-unit");
+    unitSelect.value = s === "asset" || s === "diag" ? unitOf[route.asset] || "all" : route.unit;
+    unitSelect.setAttribute("aria-current", s === "unit" ? "page" : "false");
+    const deep = s === "asset" || s === "diag";
+    $("sep-asset").hidden = $("crumb-asset").hidden = !deep;
+    $("sep-diag").hidden = $("crumb-diag").hidden = s !== "diag";
+    if (deep) $("crumb-asset").replaceChildren(h("span", { class: "level" }, "3"), nameOf(route.asset));
+    $("crumb-asset").setAttribute("aria-current", s === "asset" ? "page" : "false");
+    $("crumb-diag").setAttribute("aria-current", s === "diag" ? "page" : "false");
+    if (s === "unit") {
+      const view = views[state.view];
+      if (!view.mounted) { view.mounted = true; view.mount(containers[state.view]); }
+      else view.resize();
+      if (view.ready) {
+        view.setUnit(route.unit);
+        view.restyle();
+        if (route.focus) { view.highlight(route.focus); view.focus(route.focus, true); }
+      }
+    }
+    refreshScreens();
+  }
+  function refreshScreens() {
+    if (route.screen === "overview") renderOverview();
+    else if (route.screen === "asset") renderAsset();
+    else if (route.screen === "diag") renderDiag();
+    renderTop();
+  }
+  function renderTop() {
+    const counts = [3, 2, 1].map((l) => [l, live.conditions.filter((c) => c.level === l).length]).filter(([, n]) => n);
+    $("alarm-counts").replaceChildren(...counts.map(([l, n]) => h("span", { title: `${n} ${LEVEL[l].toLowerCase()}` }, badge(l, String(n)))));
+    const plan = frame().plan, chip = $("plan-chip");
+    chip.hidden = !plan;
+    if (!plan) return;
+    const [lvl, text] = plan.now, [aheadLvl, aheadText, , hours] = plan.ahead;
+    chip.replaceChildren(...(lvl ? [badge(lvl, ""), h("span", null, text)]
+      : aheadLvl ? [badge(Math.min(aheadLvl, 2), ""), h("span", null, `In ${fmt(hours)} h: ${aheadText}`)]
+      : [h("span", { class: "dim" }, "✓ Plan holds")]));
+    chip.title = "Open the overview";
+  }
+
+  // ------------------------------------------------------------------ key and settings
+  function buildKey() {
+    const sample = (color, w, dash = "") => svg("0 0 26 14", `<line x1="1" y1="7" x2="25" y2="7" stroke="${COLORS.text}" stroke-width="${w + 2}"${dash}/><line x1="1" y1="7" x2="25" y2="7" stroke="${color}" stroke-width="${w}"${dash}/>`);
+    $("key").replaceChildren(
+      h("button", { type: "button", class: "text close", onclick: closeGuide }, "Close"),
+      h("h3", null, "What this shows"),
+      h("p", null, "The gas network under the North Sea: fields that produce gas, the pipelines that carry it, and the exit points where it is delivered to the UK and the Continent. ",
+        "The data is played back like a recording; the dataset's name at the bottom says whether it is synthetic."),
+      h("h3", null, "How to use it"),
+      h("ol", null,
+        h("li", null, "Overview answers one question: is the plan holding? Problems are listed with their likely cause and what to do."),
+        h("li", null, "Press ▶ to play the data, drag the timeline, or press Next problem."),
+        h("li", null, "Choose a unit, or All units, to see it on the Map or as a Flow: gas moves from the top to the bottom."),
+        h("li", null, "Click any asset or line for its detail. Diagnostics shows the numbers behind it.")),
+      h("h3", null, "Grey means all is well"),
+      h("p", { class: "dim" }, "Colour appears only when something needs attention, always with a shape and a number as well:"),
+      h("ul", null, [3, 2, 1].map((l) => h("li", null, badge(l), h("span", { class: "dim" }, ["", "pre-warning", "medium priority", "act now"][l])))),
+      h("h3", null, "Shades of grey"),
+      h("ul", null,
+        h("li", null, sample(COLORS.active, 3), "Open, flowing, active"),
+        h("li", null, sample(COLORS.normal, 3), "Normal state"),
+        h("li", null, sample(COLORS.inactive, 3), "Closed, no flow, inactive"),
+        h("li", null, sample(COLORS.inactive, 1.5, ' stroke-dasharray="3 3"'), "No reading, or a notional grid entry")),
+      h("h3", null, "Moving along the lines"),
+      h("ul", null,
+        h("li", null, svg("0 0 26 14", `<rect x="4" y="3" width="18" height="8" rx="4" fill="${COLORS.active}" stroke="${COLORS.text}"/>`), "Pig, at its own speed"),
+        h("li", null, svg("0 0 26 14", `<path d="M13 2l6 10H7z" fill="${COLORS.active}" stroke="${COLORS.text}"/>`), "Peak: a change in flow, moving with the gas")),
+      h("h3", null, "Indicators"),
+      rangeBar({ min: 0, max: 10, value: 6, band: [3, 7], ticks: [{ at: 1.5, level: 3 }, { at: 8.5, level: 3 }], target: 5 }),
+      h("p", { class: "dim", style: "margin:4px 0 0" }, "Light band: normal range. Ticks: alarm limits. Hollow diamond: the target (nomination). Pointer: the value now. Trends show the last hours, dashed where they are heading."),
+      h("p", { class: "dim", style: "margin:6px 0 0" }, "Each box in the Flow view shows the flow and pressure now, and a 4-hour line: the last 2 hours solid, the next 2 hours of nominations dashed."),
+      h("h3", null, "Asset types"),
+      h("ul", null, Object.keys(NORA.icons).map((k) => h("li", null, h("img", { src: NORA.icons[k], alt: "" }), NORA.nodeTypes[k]))));
+  }
+  function storedFlag(key) { try { return localStorage.getItem(key); } catch (error) { return "1"; } }
+  function openGuide() {
+    $("key").hidden = false;
+    $("key-toggle").setAttribute("aria-expanded", "true");
+    try { localStorage.setItem("nora-guide-seen", "1"); } catch (error) { /* private window */ }
+  }
+  function closeGuide() {
+    $("key").hidden = true;
+    $("key-toggle").setAttribute("aria-expanded", "false");
+  }
+  function buildSettings() {
+    const check = (label, key) => h("label", null, h("input", { type: "checkbox", checked: settings[key] ? "" : null, onchange: (e) => update({ [key]: e.target.checked }) }), label);
+    const choose = (label, key, options) => h("div", { class: "row" }, h("span", null, label),
+      h("select", { onchange: (e) => update({ [key]: e.target.value }) }, options.map(([v, t]) => h("option", { value: v, selected: settings[key] === v ? "" : null }, t))));
+    $("settings").replaceChildren(
+      h("h3", null, "Labels"),
+      check("Asset names and values", "names"),
+      choose("Values on lines", "lineValues", [["auto", "Auto"], ["on", "Always"], ["off", "Never"]]),
+      h("h3", null, "Show"),
+      ...Object.keys(NORA.nodeTypes).map((type) => h("label", null,
+        h("input", { type: "checkbox", checked: settings.hide.includes(type) ? null : "",
+          onchange: (e) => update({ hide: e.target.checked ? settings.hide.filter((t) => t !== type) : [...settings.hide, type] }) }),
+        NORA.nodeTypes[type])),
+      check("Notional grid entries", "gridEntries"),
+      h("h3", null, "Flow view"),
+      choose("Direction", "direction", [["vertical", "Top to bottom"], ["horizontal", "Left to right"], ["auto", "Follow the screen"]]),
+      choose("Spacing", "density", [["compact", "Compact"], ["comfortable", "Comfortable"], ["spacious", "Spacious"]]),
+      check("Faint dots along flowing lines", "animation"),
       h("div", { class: "actions" },
-        links.blob ? h("a", { href: `${links.blob}/data/${file}#L${d.line}`, target: "_blank", rel: "noopener" }, "View the data row") : null,
-        issue ? h("a", { href: issue, target: "_blank", rel: "noopener" }, "Suggest a correction") : null),
-    );
-    $("details").hidden = false;
+        h("button", { type: "button", class: "text", onclick: copyLink }, "Copy link"),
+        h("button", { type: "button", class: "text", onclick: () => update({ ...DEFAULT_SETTINGS }) }, "Reset")),
+      h("p", { class: "dim", style: "margin:8px 0 0" }, "Defaults come from nora.toml in the repository."));
   }
-  function select(id, focus = false) {
-    state.selected = id;
-    if (!id) {
-      $("details").hidden = true;
-    } else {
-      $("key").hidden = true; // the key and the details share the right-hand side
+  function update(changes) {
+    settings = { ...settings, ...changes };
+    saveSettings();
+    buildSettings();
+    for (const view of Object.values(views)) if (view.ready && view.applySettings) view.applySettings();
+    restyle();
+  }
+  function copyLink() {
+    const url = new URL(location.href);
+    url.searchParams.set("s", btoa(JSON.stringify(settings)));
+    if (navigator.clipboard) navigator.clipboard.writeText(url.toString());
+  }
+  for (const [button, panel] of [["key-toggle", "key"], ["settings-toggle", "settings"]]) {
+    $(button).addEventListener("click", (event) => {
+      const open = $(panel).hidden;
+      $("key").hidden = $("settings").hidden = true;
       $("key-toggle").setAttribute("aria-expanded", "false");
-      showDetails(id);
-    }
-    const view = current();
-    if (view && view.ready) {
-      view.highlight(id);
-      if (id && focus) view.focus(id, true);
-    }
+      $("settings-toggle").setAttribute("aria-expanded", "false");
+      $(panel).hidden = !open;
+      event.currentTarget.setAttribute("aria-expanded", String(open));
+    });
   }
-  $("details-close").addEventListener("click", () => select(null));
-  document.addEventListener("keydown", (event) => { if (event.key === "Escape") select(null); });
 
-  // ------------------------------------------------------------------ search
-  const byName = {};
-  for (const id of [...nodeIds, ...pipeIds]) byName[nameOf(id).toLowerCase()] = id;
-  $("asset-names").replaceChildren(...Object.keys(byName).sort().map((n) => h("option", { value: nameOf(byName[n]) })));
-  $("search").addEventListener("change", (event) => {
-    const id = byName[event.target.value.trim().toLowerCase()];
-    if (id) select(id, true);
-  });
-
-  // ------------------------------------------------------------------ live data
-  function totalOf(values) {
-    let delivered = 0, sum = 0, entries = 0;
-    for (const [id, v] of Object.entries(values)) {
-      sum += Math.abs(v);
-      const d = assets[id];
-      if (!d) continue;
-      if (d.kind === "pipeline" && markets.has(d.to)) { delivered += Math.max(v, 0); entries += 1; }
-      else if (d.kind === "pipeline" && markets.has(d.from)) { delivered += Math.max(-v, 0); entries += 1; }
-      else if (markets.has(id)) { delivered += v; entries += 1; }
-    }
-    return entries ? { value: delivered, label: "delivered to markets" } : { value: sum, label: "across these points" };
-  }
+  // ------------------------------------------------------------------ player
   function prepare(stream) {
     const columns = stream.assets.map(() => []);
     let maxAbs = 0;
-    for (const values of stream.values) {
-      values.forEach((v, j) => {
+    const metricNames = Object.keys(stream.metrics || {});
+    stream.frames = stream.times.map((t, i) => {
+      const flows = {};
+      stream.assets.forEach((id, j) => {
+        const v = stream.values[i][j];
         if (v == null) return;
+        flows[id] = v;
         columns[j].push(Math.abs(v));
         maxAbs = Math.max(maxAbs, Math.abs(v));
       });
-    }
+      const metrics = {};
+      for (const name of metricNames) {
+        const block = stream.metrics[name], values = {};
+        block.assets.forEach((id, j) => { const v = block.values[i][j]; if (v != null) values[id] = v; });
+        metrics[name] = values;
+      }
+      return { t, flows, metrics, plan: stream.plan ? stream.plan[i] : null };
+    });
     stream.typical = {};
     stream.assets.forEach((id, j) => {
       const sorted = columns[j].sort((a, b) => a - b);
       stream.typical[id] = sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0;
     });
     stream.maxAbs = maxAbs || 1;
-    stream.frameValues = stream.values.map((values) => {
-      const out = {};
-      stream.assets.forEach((id, j) => { if (values[j] != null) out[id] = values[j]; });
-      return out;
-    });
-    stream.totals = stream.frameValues.map((v) => totalOf(v).value);
     stream.step = stream.times.length > 1 ? stream.times[1] - stream.times[0] : 3600;
     return stream;
   }
-
-  // Alarms: a flow that drops below a tenth of its usual level, its recovery, and the
-  // start and end of events listed in the dataset. Only assets that usually carry at
-  // least 5% of the largest flow are watched, so small balancing links stay quiet.
-  function evaluate(values, time, silent) {
-    const fired = [], floor = Math.max(1, 0.05 * live.maxAbs);
-    for (const [id, raw] of Object.entries(values)) {
-      const v = Math.abs(raw), typical = live.typical[id] || 0, before = live.state[id] || "ok";
-      let now = before;
-      if (typical > floor && v < 0.1 * typical) now = "down";
-      else if (before === "down" && v > 0.3 * typical) now = "ok";
-      if (now !== before) {
-        live.state[id] = now;
-        if (!silent) fired.push(now === "down"
-          ? { cls: "", id, text: `${nameOf(id)} dropped to ${fmt(v, 1)} MSm³/d` }
-          : { cls: "ok", id, text: `${nameOf(id)} back to ${fmt(v, 1)} MSm³/d` });
-      }
-    }
-    const active = new Set();
-    for (const event of live.feedEvents || (live.stream && live.stream.events) || []) {
-      const on = time >= event.start && time < event.end;
-      if (on) active.add(event.asset);
-      if (!silent && on !== live.activeEvents.has(event.asset)) {
-        fired.push({ cls: "event", id: event.asset, text: `${event.label} ${on ? "started" : "ended"}` });
-      }
-    }
-    live.activeEvents = active;
-    for (const alarm of fired) raise(time, alarm);
-  }
-  function raise(time, alarm) {
-    const list = $("alarms");
-    list.prepend(h("li", { class: alarm.cls, onclick: () => select(alarm.id, true) },
-      h("time", null, shortTime(time)), h("span", null, alarm.text)));
-    while (list.children.length > 4) list.lastChild.remove();
-  }
-  function resetAlarms(values, time) {
-    live.state = {};
-    live.activeEvents = new Set();
-    $("alarms").replaceChildren();
-    evaluate(values, time, true);
-  }
-
-  // ------------------------------------------------------------------ player
   const scrub = $("scrub"), spark = $("spark");
   function setStream(stream) {
     live.stream = prepare(stream);
+    live.frames = stream.frames;
     live.typical = stream.typical;
     live.maxAbs = stream.maxAbs;
-    // About one data step per second: hourly data plays an hour a second, daily a day.
     const speeds = [...$("speed").options].map((o) => Number(o.value)).filter((v) => v > 1);
     live.speed = speeds.find((v) => v >= stream.step) || speeds[speeds.length - 1];
     $("speed").value = String(live.speed);
-    scrub.max = String(stream.times.length - 1);
-    const tag = $("stream-tag");
-    tag.textContent = stream.synthetic ? "Synthetic" : "Real data";
-    tag.className = `tag ${stream.synthetic ? "" : "real"}`;
-    tag.title = stream.source || "";
+    scrub.max = String(Math.max(0, stream.times.length - 1));
     seek(0);
+    const none = !stream.frames.some((f) => f.plan && (f.plan.now[0] || f.plan.ahead[0]));
+    $("next-problem").disabled = none;
+    $("next-problem").title = none ? "The plan holds throughout this dataset" : "Jump to the next hour where the plan is at risk";
   }
   function seek(position) {
     const s = live.stream;
     live.playhead = Math.max(0, Math.min(s.times.length - 1, position));
     live.index = Math.floor(live.playhead);
-    resetAlarms(s.frameValues[live.index], s.times[live.index]);
-    showFrame();
+    live.down = {};
+    live.peaks = [];
+    trackTrips(frame());
+    step();
   }
   function valuesAt(position) {
     const s = live.stream, i = Math.floor(position), f = position - i;
-    const a = s.frameValues[i], b = s.frameValues[Math.min(i + 1, s.times.length - 1)];
+    const a = s.frames[i].flows, b = s.frames[Math.min(i + 1, s.frames.length - 1)].flows;
     if (!f) return a;
     const out = {};
     for (const [id, v] of Object.entries(a)) out[id] = b[id] === undefined ? v : v + (b[id] - v) * f;
     return out;
   }
-  function showFrame() {
+  // Whenever the playhead moves: values, conditions, then every screen.
+  function step() {
     if (live.stream && !live.feed) {
       live.values = valuesAt(live.playhead);
-      const i = Math.floor(live.playhead);
-      live.time = live.stream.times[i] + (live.playhead - i) * live.stream.step;
-      scrub.value = String(i);
+      live.time = live.stream.times[live.index] + (live.playhead - live.index) * live.stream.step;
+      scrub.value = String(live.index);
     }
+    prunePeaks();
+    evaluate();
     if (live.time != null) $("clock").textContent = formatTime(live.time);
-    const total = totalOf(live.values);
-    $("total").textContent = fmt(total.value);
-    $("total-label").textContent = total.label;
-    if (state.mode === "live") restyle();
+    restyle();
+    refreshScreens();
     drawSpark();
-    if (state.selected && state.mode === "live") showDetails(state.selected);
   }
+  // The track shows the plan status over time: plain where it holds, marked where not.
   function drawSpark() {
     if ($("player").hidden) return;
     const ratio = window.devicePixelRatio || 1, width = spark.clientWidth, height = spark.clientHeight;
     if (!width) return;
     spark.width = width * ratio;
     spark.height = height * ratio;
-    const ctx = spark.getContext("2d"), t = palette();
+    const ctx = spark.getContext("2d");
     ctx.scale(ratio, ratio);
-    const series = live.feed ? live.history.map((p) => p.total) : live.stream ? live.stream.totals : [];
-    if (series.length < 2) return;
-    const max = Math.max(...series) * 1.08 || 1, min = Math.min(...series) * 0.9;
-    const x = (i) => (i / (series.length - 1)) * width;
-    const y = (v) => height - 3 - ((v - min) / (max - min || 1)) * (height - 8);
-    if (live.stream && !live.feed) {
-      const s = live.stream, span = s.times[s.times.length - 1] - s.times[0] || 1;
-      ctx.fillStyle = t.alarm;
-      ctx.globalAlpha = 0.14;
-      for (const event of s.events) {
-        const a = ((event.start - s.times[0]) / span) * width, b = ((event.end - s.times[0]) / span) * width;
-        ctx.fillRect(a, 0, Math.max(2, b - a), height);
-      }
-      ctx.globalAlpha = 1;
+    const frames = live.frames, n = frames.length;
+    if (n < 2) return;
+    const x = (i) => (i / (n - 1)) * width;
+    ctx.fillStyle = COLORS.dots;
+    ctx.fillRect(0, height / 2 - 3, width, 6);
+    frames.forEach((f, i) => {
+      const lvl = f.plan ? f.plan.now[0] : 0;
+      if (!lvl) return;
+      ctx.fillStyle = LEVEL_COLOR[lvl];
+      ctx.fillRect(x(i), height / 2 - 6, Math.max(1.5, width / n), 12);
+    });
+    for (const event of (live.stream && live.stream.events) || []) {
+      const a = frames.findIndex((f) => f.t >= event.start), b = frames.findIndex((f) => f.t >= event.end);
+      if (a < 0) continue;
+      ctx.strokeStyle = COLORS.text;
+      ctx.setLineDash(event.planned ? [3, 2] : []);
+      ctx.strokeRect(x(a), height / 2 - 8, Math.max(2, x(b < 0 ? n - 1 : b) - x(a)), 16);
     }
-    ctx.beginPath();
-    series.forEach((v, i) => (i ? ctx.lineTo(x(i), y(v)) : ctx.moveTo(x(i), y(v))));
-    ctx.strokeStyle = t.pipe;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.fillStyle = t.ink;
-    ctx.fillRect(x(live.feed ? series.length - 1 : live.playhead) - 1, 0, 2, height);
+    ctx.setLineDash([]);
+    ctx.fillStyle = COLORS.text;
+    ctx.fillRect(x(live.feed ? n - 1 : live.playhead) - 1, 0, 2, height);
   }
   function play() {
     if (!live.stream && !live.feed) return;
@@ -559,129 +1041,154 @@ const App = (() => {
   }
   $("play").addEventListener("click", () => (live.playing ? pause() : play()));
   scrub.addEventListener("input", () => seek(Number(scrub.value)));
-  $("speed").addEventListener("change", (event) => { live.speed = Number(event.target.value); });
-  $("stream-select").addEventListener("change", (event) => {
-    setStream(NORA.streams.find((s) => s.name === event.target.value));
+  /* The next hour where the plan is at risk, now or within the look-ahead, after the
+     problem being shown (if any). Wraps round to the start of the data. */
+  function nextProblem(from = live.index) {
+    const frames = live.frames, n = frames.length;
+    const risky = (i) => { const p = frames[i] && frames[i].plan; return Boolean(p && (p.now[0] || p.ahead[0])); };
+    for (let k = 1; k < n; k++) {
+      const i = (from + k) % n;
+      if (risky(i) && !(risky((i - 1 + n) % n) && i !== 0)) return i;
+    }
+    return null;
+  }
+  $("next-problem").addEventListener("click", () => {
+    const i = nextProblem();
+    if (i == null) return;
+    pause();
+    seek(i);
+    if (route.screen !== "overview") go({ screen: "overview" });
   });
+  $("speed").addEventListener("change", (e) => { live.speed = Number(e.target.value); });
+  $("stream-select").addEventListener("change", (e) => setStream(NORA.streams.find((s) => s.name === e.target.value)));
 
-  // One animation loop: advances the playhead, restyles a few times a second, and asks
-  // the visible view to draw its moving dots every frame while playing.
-  let lastTick = 0, lastStyle = 0;
+  let lastTick = 0, lastStep = 0;
   function tick(now) {
     const dt = lastTick ? Math.min(0.25, (now - lastTick) / 1000) : 0;
     lastTick = now;
-    if (state.mode === "live" && live.playing) {
+    if (live.playing) {
       live.clock += dt;
       if (live.stream && !live.feed) {
         const s = live.stream;
         live.playhead += (dt * live.speed) / s.step;
-        if (live.playhead >= s.times.length - 1) live.playhead = 0;
+        if (live.playhead >= s.times.length - 1) seek(0);
         const i = Math.floor(live.playhead);
         if (i !== live.index) {
-          if (i < live.index) resetAlarms(s.frameValues[i], s.times[i]);
-          else evaluate(s.frameValues[i], s.times[i], false);
+          const previous = live.frames[live.index];
           live.index = i;
+          trackTrips(frame());
+          spawnPeaks(previous, frame());
         }
-        if (now - lastStyle > 140) { lastStyle = now; showFrame(); }
+        live.time = s.times[live.index] + (live.playhead - live.index) * s.step;
+        if (now - lastStep > 250) { lastStep = now; step(); }
       }
-      const view = current();
-      if (!reduceMotion && view && view.ready) view.draw();
     }
+    const view = current();
+    if (route.screen === "unit" && view && view.ready) view.draw();
     requestAnimationFrame(tick);
   }
 
   // ------------------------------------------------------------------ live feed
   function connectFeed(url) {
-    // Drop any recorded stream first: until the feed's `meta` arrives, `evaluate`
-    // would otherwise fire the old stream's events against the feed's timestamps.
-    live.stream = null;
-    live.feedEvents = [];
     live.feed = new EventSource(url);
+    live.stream = null;
     document.body.classList.add("feed-mode");
-    const select = $("stream-select"), tag = $("stream-tag");
-    select.replaceChildren(h("option", null, "Connecting to live feed"));
+    const select = $("stream-select");
+    select.replaceChildren(h("option", null, "Connecting to the live feed"));
     select.disabled = true;
-    tag.textContent = "Live feed";
-    tag.className = "tag feed";
     $("speed").parentElement.hidden = true;
     live.feed.addEventListener("meta", (message) => {
       const meta = JSON.parse(message.data);
-      live.stream = null;
       live.feedEvents = meta.events || [];
-      select.replaceChildren(h("option", null, meta.title || "Live feed"));
-      tag.title = meta.source || "";
+      live.feedPigs = meta.pigs || [];
+      select.replaceChildren(h("option", null, `${meta.title || "Live feed"} (live)`));
     });
     live.feed.addEventListener("frame", (message) => {
-      const frame = JSON.parse(message.data);
-      for (const [id, v] of Object.entries(frame.values)) {
-        const m = Math.abs(v);
-        live.typical[id] = Math.max((live.typical[id] || 0) * 0.995, m);
-        live.maxAbs = Math.max(live.maxAbs, m);
+      const f = JSON.parse(message.data);
+      for (const [id, v] of Object.entries(f.values)) {
+        live.typical[id] = Math.max((live.typical[id] || 0) * 0.995, Math.abs(v));
+        live.maxAbs = Math.max(live.maxAbs, Math.abs(v));
       }
-      live.values = frame.values;
-      live.time = frame.t;
-      evaluate(frame.values, frame.t, live.history.length === 0);
-      live.history.push({ t: frame.t, total: totalOf(frame.values).value });
-      if (live.history.length > 240) live.history.shift();
+      const previous = live.frames[live.frames.length - 1];
+      live.frames.push({ t: f.t, flows: f.values, metrics: f.metrics || {}, plan: f.plan || null });
+      if (live.frames.length > 240) live.frames.shift();
+      live.index = live.frames.length - 1;
+      live.values = f.values;
+      live.time = f.t;
+      trackTrips(frame());
+      spawnPeaks(previous, frame());
       if (!live.playing) play();
-      showFrame();
+      step();
     });
-    live.feed.addEventListener("error", () => { tag.textContent = "Reconnecting"; });
-    live.feed.addEventListener("open", () => { tag.textContent = "Live feed"; });
   }
 
   // ------------------------------------------------------------------ start
-  function applyTheme() {
-    document.documentElement.dataset.theme = themeName;
-    for (const view of Object.values(views)) if (view.mounted && view.theme) view.theme(themeName);
-    restyle();
+  const byName = {};
+  for (const id of [...nodeIds, ...pipeIds]) byName[nameOf(id).toLowerCase()] = id;
+  $("asset-names").replaceChildren(...Object.keys(byName).sort().map((n) => h("option", { value: nameOf(byName[n]) })));
+  $("search").addEventListener("change", (e) => {
+    const id = byName[e.target.value.trim().toLowerCase()];
+    if (id) { e.target.value = ""; go({ screen: "asset", asset: id }); }
+  });
+  function setTheme(next) {
+    theme = next;
+    try { localStorage.setItem("nora-theme", theme); } catch (error) { /* private mode */ }
+    applyPalette();
     buildKey();
+    buildSettings();
+    for (const view of Object.values(views)) if (view.mounted && view.theme) view.theme(theme);
+    refreshScreens();
     drawSpark();
   }
+  function markTabs() {
+    for (const tab of document.querySelectorAll("[data-view]")) tab.setAttribute("aria-selected", String(tab.dataset.view === state.view));
+    for (const tab of document.querySelectorAll("[data-mode]")) tab.setAttribute("aria-selected", String(tab.dataset.mode === state.mode));
+  }
+
   function start() {
-    $("theme").addEventListener("click", () => {
-      themeName = themeName === "day" ? "night" : "day";
-      try { localStorage.setItem("nora-theme", themeName); } catch (error) { /* private mode */ }
-      applyTheme();
-    });
-    $("fit").addEventListener("click", () => { const view = current(); if (view && view.ready) view.fit(); });
-    for (const tab of document.querySelectorAll("[data-view]")) tab.addEventListener("click", () => setView(tab.dataset.view));
-    modeTabs.forEach((tab) => tab.addEventListener("click", () => setMode(tab.dataset.mode)));
-    addEventListener("resize", () => { const view = current(); if (view && view.mounted) view.resize(); drawSpark(); });
-
-    if (embed) {
-      document.body.classList.add("embed");
-      $("brand").href = location.pathname;
-      $("brand").target = "_blank";
-      $("brand").title = "Open the full app";
-    } else if (NORA.links && NORA.links.home) {
-      $("brand").href = NORA.links.home;
+    $("crumb-overview").addEventListener("click", () => go({ screen: "overview" }));
+    const unitSelect = $("crumb-unit");
+    unitSelect.replaceChildren(h("option", { value: "all" }, "2 All units"), ...NORA.units.map((u) => h("option", { value: u.id }, `2 ${u.name}`)));
+    unitSelect.addEventListener("change", () => go({ screen: "unit", unit: unitSelect.value }));
+    unitSelect.addEventListener("mousedown", () => { if (route.screen !== "unit") go({ screen: "unit", unit: unitSelect.value }); });
+    $("crumb-asset").addEventListener("click", () => go({ screen: "asset", asset: route.asset }));
+    $("plan-chip").addEventListener("click", () => go({ screen: "overview" }));
+    $("theme-toggle").addEventListener("click", () => setTheme(theme === "light" ? "dark" : "light"));
+    for (const tab of document.querySelectorAll("[data-view]")) {
+      tab.addEventListener("click", () => { state.view = tab.dataset.view; markTabs(); render(); });
     }
-
-    const hasStreams = NORA.streams.length > 0 || params.has("live");
-    document.querySelector('[data-mode="live"]').hidden = !hasStreams;
-    if (NORA.streams.length) {
+    for (const tab of document.querySelectorAll("[data-mode]")) {
+      tab.addEventListener("click", () => { state.mode = tab.dataset.mode; markTabs(); restyle(); });
+    }
+    addEventListener("resize", () => { const view = current(); if (view && view.mounted) view.resize(); drawSpark(); });
+    if (embed) document.body.classList.add("embed");
+    if (views[params.get("view")]) state.view = params.get("view");
+    if (["live", "load", "risk", "plain"].includes(params.get("mode"))) state.mode = params.get("mode");
+    markTabs();
+    buildKey();
+    buildSettings();
+    if (!embed && !storedFlag("nora-guide-seen")) openGuide();
+    if (NORA.streams.length || params.has("live")) {
+      document.body.classList.add("has-player");
+      $("player").hidden = false;
+    }
+    if (params.has("live")) connectFeed(params.get("live"));
+    else if (NORA.streams.length) {
       const select = $("stream-select");
-      select.replaceChildren(...NORA.streams.map((s) => h("option", { value: s.name }, s.title)));
+      select.replaceChildren(...NORA.streams.map((s) => h("option", { value: s.name }, `${s.title}${s.synthetic ? " (synthetic)" : ""}`)));
       select.disabled = NORA.streams.length < 2;
       const wanted = NORA.streams.find((s) => s.name === params.get("stream")) || NORA.streams[0];
       select.value = wanted.name;
       setStream(wanted);
     }
-
-    document.documentElement.dataset.theme = themeName;
-    setView(views[params.get("view")] ? params.get("view") : "map");
-    const startMode = params.has("live") || params.get("autoplay") === "1" ? "live" : params.get("mode");
-    setMode(modeTabs.some((t) => t.dataset.mode === startMode && !t.hidden) ? startMode : "network");
-    if (params.has("live")) connectFeed(params.get("live"));
-    else if (params.get("autoplay") === "1" && state.mode === "live") play();
+    go(fromHash() || (C.screen.start === "network" ? { screen: "unit", unit: "all" } : { screen: "overview" }), false);
+    if (params.get("autoplay") === "1" || (C.screen.autoplay && params.get("autoplay") !== "0" && !params.has("live"))) play();
     requestAnimationFrame(tick);
   }
 
   return {
-    state, live, views, embed, reduceMotion, nodeIds, pipeIds,
-    palette, theme: () => themeName, fmt, nameOf, esc,
-    pipeStyle, nodeStyle, drawDots, register, select, restyle,
-    setView, start,
+    state, live, route, views, settings: () => settings, embed, reduceMotion, nodeIds, pipeIds,
+    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
+    pipeStyle, nodeStyle, markers, window4h, flowRate, liveValue, thresholds: T, register, restyle, go, start, theme: () => theme, select: (id) => (id ? go({ screen: "asset", asset: id }) : null),
   };
 })();
