@@ -22,7 +22,7 @@ grid_entries = true         # notional onshore entries into the national grids
 [flow]
 direction = "vertical"      # vertical (top to bottom), horizontal, or auto (follows the screen)
 density = "comfortable"     # compact, comfortable or spacious
-animation = false           # faint dots along flowing pipelines (pigs and peaks always show)
+animation = true            # flow bands in and out of the nodes (pigs and peaks always show)
 
 # Alarm thresholds. Three priorities: warning (amber), medium (orange), critical (red).
 [thresholds]

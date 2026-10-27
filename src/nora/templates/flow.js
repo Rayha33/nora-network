@@ -230,14 +230,40 @@
     }
     if (App.state.mode !== "live") return;
     if (App.settings().animation && App.live.playing && !App.reduceMotion) {
-      ctx.fillStyle = C.active;
-      ctx.globalAlpha = 0.6;
-      for (const id of App.pipeIds) {
-        const v = App.live.values[id], e = edges.get(id);
-        if (!v || Math.abs(v) < 0.05 || !e || App.pipeStyle(id).hidden) continue;
-        for (let k = 0; k < 3; k++) {
-          const along = (k / 3 + App.live.clock * 0.08) % 1, p = pointAlong(e, v >= 0 ? along : 1 - along, positions);
-          ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI * 2); ctx.fill();
+      /* Simulated flow at the nodes, not on the lines (same as the Map view):
+         short solid bands sliding into the icon where gas arrives and out of it
+         where gas leaves, scaled by how much the line carries. */
+      const scale = network.getScale();
+      ctx.lineCap = "round";
+      ctx.strokeStyle = C.active;
+      for (const nid of App.nodeIds) {
+        const pn = positions[nid];
+        if (!pn) continue;
+        for (const pid of App.pipeIds) {
+          const v = App.live.values[pid], p = NORA.assets[pid], e = edges.get(pid);
+          if (!v || Math.abs(v) < 0.05 || !p || !e || (p.from !== nid && p.to !== nid)) continue;
+          if (App.pipeStyle(pid).hidden) continue;
+          const on = positions[p.from === nid ? p.to : p.from];
+          if (!on) continue;
+          const dx = on.x - pn.x, dy = on.y - pn.y, len = Math.hypot(dx, dy);
+          if (len < 8) continue;
+          const ux = dx / len, uy = dy / len;
+          // The stub shrinks with short lines and with zoom, like on the Map.
+          const stubScreen = Math.min(26, len * scale * 0.4);
+          const stub = stubScreen / scale, band = Math.max(3, Math.min(8, stubScreen * 0.5)) / scale;
+          const inflow = (p.to === nid) === (v > 0);
+          const share = Math.min(1, Math.abs(v) / (p.capacity || 30));
+          ctx.lineWidth = (1.6 + share * 2.2) / scale;
+          for (let k = 0; k < 2; k++) {
+            const t = (App.live.clock * 0.45 + k / 2) % 1;
+            const d = inflow ? (stub - band) * (1 - t) + band : (stub - band) * t + band;
+            ctx.globalAlpha = 0.25 + (inflow ? t : 1 - t) * 0.55;
+            const cx = pn.x + ux * d, cy = pn.y + uy * d;
+            ctx.beginPath();
+            ctx.moveTo(cx - ux * band / 2, cy - uy * band / 2);
+            ctx.lineTo(cx + ux * band / 2, cy + uy * band / 2);
+            ctx.stroke();
+          }
         }
       }
       ctx.globalAlpha = 1;

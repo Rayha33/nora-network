@@ -26,7 +26,7 @@ DEFAULTS: dict = {
     },
     "labels": {"names": True, "line_values": "auto"},
     "assets": {"hide": [], "grid_entries": True},
-    "flow": {"direction": "vertical", "density": "comfortable", "animation": False},
+    "flow": {"direction": "vertical", "density": "comfortable", "animation": True},
     "thresholds": {
         "load": [1.01, 1.05, 1.10],
         "nomination": [0.03, 0.06, 0.10],
