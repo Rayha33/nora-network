@@ -119,6 +119,62 @@ end = 2026-01-05T04:00:00Z
     assert flows[1] > 0 and flows[4] > 0
 
 
+def test_quality_excursions_ramp_hold_and_repeat(tiny, tmp_path):
+    toml = """
+[synthetic]
+start = 2026-01-05T00:00:00Z
+steps = 12
+seed = 3
+quality = true
+[[synthetic.excursions]]
+asset = "gas"
+metric = "h2s_ppm"
+peak = 5.0
+start = 2026-01-05T02:00:00Z
+hours = 1
+every_hours = 6
+"""
+    make_stream(tmp_path / "q", toml)
+    stream = load_stream("q", tiny, tmp_path)
+    assets, values = stream.metrics["h2s_ppm"]
+    assert list(assets) == ["gas"]  # readings at fields only
+    h2s = [row[0] for row in values]
+    for hour in (2, 3, 8, 9):  # held for an hour, and again 6 hours on
+        assert h2s[hour] == pytest.approx(5.0, abs=0.1)
+    assert max(h2s[:1] + h2s[5:7]) < 2  # back to its usual level in between
+    assert "co2_molpct" in stream.metrics
+
+
+def test_unknown_excursion_field_is_reported(tiny, tmp_path):
+    toml = """
+[synthetic]
+steps = 2
+quality = true
+[[synthetic.excursions]]
+asset = "hubb"
+metric = "h2s_ppm"
+peak = 5.0
+start = 2026-01-05T00:00:00Z
+"""
+    make_stream(tmp_path / "bad", toml)
+    with pytest.raises(DataError, match="not a field"):
+        load_stream("bad", tiny, tmp_path)
+
+
+def test_pig_programme_repeats(tiny, tmp_path):
+    toml = """
+[synthetic]
+steps = 2
+[[pigs]]
+pipeline = "pipe_a"
+launch = 2026-01-05T00:00:00Z
+every_hours = 12
+"""
+    make_stream(tmp_path / "pig", toml)
+    pig = load_stream("pig", tiny, tmp_path).payload()["pigs"][0]
+    assert pig["every"] == 12 * 3600
+
+
 def test_scaffold_guesses_the_mapping(tiny, tmp_path):
     raw = tmp_path / "export.csv"
     raw.write_text(

@@ -36,6 +36,7 @@ DEFAULTS: dict = {
         "plan_lookahead_hours": 6,
     },
     "pipelines": {"gas_velocity_mps": 8.0, "step_min": 0.05},
+    "quality": {"h2s_ppm": [2.5, 3.0, 3.3], "co2_molpct": [2.2, 2.35, 2.5], "follow_from": 0.8},
     "pressure": {
         "field": [80, 220],
         "hub": [70, 200],
@@ -58,6 +59,8 @@ DEFAULTS: dict = {
         "warning": "#ffbf00",
         "medium": "#ff7a1a",
         "critical": "#e5322d",
+        "h2s": "#857c3a",
+        "co2": "#4d7391",
     },
     "colors_dark": {
         "paper": "#2a2e32",
@@ -72,6 +75,8 @@ DEFAULTS: dict = {
         "warning": "#ffbf00",
         "medium": "#ff7a1a",
         "critical": "#ff4d47",
+        "h2s": "#bcb26e",
+        "co2": "#86a8c4",
     },
     "map": {
         "style": "https://tiles.openfreemap.org/styles/positron",
@@ -149,7 +154,7 @@ def _check(section: str, key: str, value) -> str | None:
             and all(isinstance(v, int | float) for v in value)
         )
         return None if ok and value[0] < value[1] else "must be [min, max] in bar, min below max"
-    if section == "thresholds" and isinstance(default, list):
+    if section in ("thresholds", "quality") and isinstance(default, list):
         ok = (
             isinstance(value, list)
             and len(value) == 3

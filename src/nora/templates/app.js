@@ -72,6 +72,45 @@ const App = (() => {
   const formatTime = (t) => timeFormat(t, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + " UTC";
   const shortTime = (t) => timeFormat(t, { weekday: "short", hour: "2-digit", minute: "2-digit" });
 
+  /* A gas quality parcel: a calm-coloured dot. The strongest parcel of a slug also gets
+     a label (concentration, next stop and ETA) and, if it breaches a limit now or at
+     the exit, the alarm badge: colour alone never carries the alarm. */
+  function drawParcel(ctx, marker, x, y, size) {
+    const color = COLORS[QUALITY[marker.gas].color], r = size * (marker.lead ? 0.85 : 0.6);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = Math.max(1, size / 6);
+    ctx.strokeStyle = COLORS.casing;
+    ctx.stroke();
+    if (marker.lead) {
+      const fontSize = Math.max(11, size * 1.6), pad = fontSize * 0.45, lx = x + size * 1.8, ly = y - size - fontSize * 1.4;
+      ctx.font = `600 ${fontSize}px Archivo, sans-serif`;
+      const w1 = ctx.measureText(marker.label).width;
+      ctx.font = `${fontSize * 0.92}px Archivo, sans-serif`;
+      const w2 = ctx.measureText(marker.sub).width;
+      const w = Math.max(w1, w2) + pad * 2 + size * 0.5, hgt = fontSize * 2.5;
+      ctx.globalAlpha = 0.92;
+      ctx.fillStyle = COLORS.surface;
+      ctx.fillRect(lx, ly - hgt / 2, w, hgt);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = color;
+      ctx.fillRect(lx, ly - hgt / 2, size * 0.5, hgt);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = COLORS.text;
+      ctx.font = `600 ${fontSize}px Archivo, sans-serif`;
+      ctx.fillText(marker.label, lx + size * 0.5 + pad, ly - fontSize * 0.55);
+      ctx.fillStyle = COLORS.text_dim;
+      ctx.font = `${fontSize * 0.92}px Archivo, sans-serif`;
+      ctx.fillText(marker.sub, lx + size * 0.5 + pad, ly + fontSize * 0.6);
+      if (marker.level) drawBadge(ctx, marker.level, lx + w + size * 0.2, ly - hgt / 2, size);
+    }
+    ctx.restore();
+  }
+
   // ------------------------------------------------------------------ alarm levels
   // 0 normal, 1 warning (amber, priority 3), 2 medium (orange, 2), 3 critical (red, 1).
   const LEVEL = ["Normal", "Warning", "Medium", "Critical"];
@@ -156,6 +195,7 @@ const App = (() => {
   }
   // A pig (capsule) or peak (triangle) at x, y, turned along the line by `angle`.
   function drawMarker(ctx, marker, x, y, angle, size = 7) {
+    if (marker.kind === "quality") { drawParcel(ctx, marker, x, y, size); return; }
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
@@ -247,6 +287,7 @@ const App = (() => {
     typical: {},
     down: {}, // pipelines whose flow has collapsed
     peaks: [], // flow changes travelling down pipelines
+    quality: [], // parcels of H₂S or CO₂-rich gas travelling with the flow
     conditions: [], // active abnormal conditions, worst first
     levelOf: {}, // asset -> worst active level
   };
@@ -349,6 +390,13 @@ const App = (() => {
     for (const peak of live.peaks) {
       add(peak.level, peak.id, "peak", `${nameOf(peak.id)}: flow ${peak.delta > 0 ? "rose" : "fell"} ${fmt(Math.abs(peak.delta), 1)} MSm³/d in one step`);
     }
+    for (const s of slugs()) {
+      if (s.exit && s.exitLevel) {
+        add(s.exitLevel, s.exit.node, "quality", `${qualityText(s.q.metric, s.exit.conc)} expected at ${nameOf(s.exit.node)} ${etaText(s.exit.t)}; limit ${C.quality[s.q.metric][2]} ${QUALITY[s.q.metric].unit}`);
+      } else if (s.level) {
+        add(1, s.q.origin, "quality", `${qualityText(s.q.metric, s.q.conc)} from ${nameOf(s.q.origin)}${s.exit ? `, diluted to ${fmt(s.exit.conc, QUALITY[s.q.metric].digits)} by ${nameOf(s.exit.node)}` : ""}`);
+      }
+    }
     const events = (live.stream && live.stream.events) || live.feedEvents || [];
     for (const event of events) {
       if (live.time >= event.start && live.time < event.end && !event.planned) add(2, event.asset, "event", event.label);
@@ -397,7 +445,8 @@ const App = (() => {
     if (live.time == null) return out;
     const pigs = (live.stream && live.stream.pigs) || live.feedPigs || [];
     for (const pig of pigs) {
-      const along = ((live.time - pig.launch) * pig.speed) / (assets[pig.pipeline].km * 1000);
+      const since = live.time - pig.launch, run = pig.every > 0 && since > 0 ? since % pig.every : since;
+      const along = (run * pig.speed) / (assets[pig.pipeline].km * 1000);
       if (along >= 0 && along <= 1) out.push({ kind: "pig", id: pig.pipeline, along, label: "PIG", level: 0, title: pig.label });
     }
     const v = C.pipelines.gas_velocity_mps;
@@ -406,7 +455,121 @@ const App = (() => {
       out.push({ kind: "peak", id: peak.id, along: peak.forward ? travelled : 1 - travelled,
         label: `${peak.delta > 0 ? "+" : "−"}${fmt(Math.abs(peak.delta))}`, level: peak.level, rising: peak.delta > 0 });
     }
-    return out;
+    const leads = new Map(slugs().map((s) => [s.q, s]));
+    for (const q of live.quality) {
+      const along = q.arrived ? 1 : Math.min(1, (live.time - q.t0) / travelSeconds(q.pid)), s = leads.get(q);
+      out.push({ kind: "quality", gas: q.metric, id: q.pid, along: q.forward ? along : 1 - along, lead: Boolean(s),
+        level: s ? Math.max(s.level, s.exitLevel) : 0, label: s ? qualityText(q.metric, q.conc) : "",
+        sub: s ? (q.arrived ? `At ${nameOf(q.arrived.node)}` : `${nameOf(s.next.node)} ${etaText(s.next.t)}`) : "" });
+    }
+    return out.sort((a, b) => Number(Boolean(a.lead)) - Number(Boolean(b.lead)));
+  }
+
+  // ------------------------------------------------------------------ gas quality
+  /* H₂S and CO₂ peaks travel with the gas. Each hour a field's reading is at or above
+     `follow_from` of its warning level, a parcel of that gas is followed: down the line
+     taking most of the gas out of each node, diluted where other gas joins it. The
+     parcels from one excursion form a slug; its strongest parcel carries the label. */
+  const QUALITY = {
+    h2s_ppm: { name: "H₂S", unit: "ppm", digits: 1, color: "h2s" },
+    co2_molpct: { name: "CO₂", unit: "mol %", digits: 2, color: "co2" },
+  };
+  const isExit = (id) => ["terminal", "lng", "market"].includes(assets[id].type);
+  const travelSeconds = (pid) => (Math.max(1, assets[pid].km || 1) * 1000) / C.pipelines.gas_velocity_mps;
+  // The line taking most gas out of a node, in the direction it flows.
+  function onward(node, flows) {
+    let best = null, most = 0.05;
+    for (const pid of pipeIds) {
+      const v = flows[pid], p = assets[pid];
+      if (v === undefined || p.type === "onshore") continue;
+      const out = p.from === node ? v : p.to === node ? -v : 0;
+      if (out > most) { most = out; best = { pid, forward: p.from === node }; }
+    }
+    return best;
+  }
+  // Concentration after mixing at a node: the other gas is assumed to carry the median
+  // field reading. An estimate, and labelled as one.
+  function mixAt(node, pid, conc, name, f) {
+    const inflow = throughput(node, f.flows), mine = Math.abs(f.flows[pid] || 0);
+    if (!inflow || mine >= inflow) return conc;
+    const readings = Object.values((f.metrics || {})[name] || {}).filter((v) => v != null).sort((a, b) => a - b);
+    const other = readings.length ? readings[Math.floor(readings.length / 2)] : 0;
+    return other + (conc - other) * (mine / inflow);
+  }
+  function spawnQuality(previous, current) {
+    if (!current) return;
+    for (const name of Object.keys(QUALITY)) {
+      const readings = (current.metrics || {})[name];
+      if (!readings) continue;
+      const follow = C.quality[name][0] * C.quality.follow_from;
+      for (const [node, value] of Object.entries(readings)) {
+        if (value == null || value < follow || !assets[node]) continue;
+        const route = onward(node, current.flows);
+        if (!route) continue;
+        const was = previous ? ((previous.metrics || {})[name] || {})[node] : null;
+        let slug = `${name}:${node}:${current.t}`;
+        if (was != null && was >= follow) {
+          for (let k = live.quality.length - 1; k >= 0; k--) {
+            if (live.quality[k].origin === node && live.quality[k].metric === name) { slug = live.quality[k].slug; break; }
+          }
+        }
+        live.quality.push({ metric: name, origin: node, slug, conc: value, pid: route.pid, forward: route.forward, t0: current.t, arrived: null });
+      }
+    }
+  }
+  // Move parcels on to the time shown; at each node they mix and take the next line.
+  function advanceQuality(time = live.time, f = frame()) {
+    if (time == null) return;
+    live.quality = live.quality.filter((q) => {
+      for (let hops = 0; !q.arrived && hops < 20 && time >= q.t0 + travelSeconds(q.pid); hops++) {
+        const p = assets[q.pid], node = q.forward ? p.to : p.from, at = q.t0 + travelSeconds(q.pid);
+        q.conc = mixAt(node, q.pid, q.conc, q.metric, f);
+        const next = isExit(node) ? null : onward(node, f.flows);
+        if (!next || next.pid === q.pid) q.arrived = { node, t: at };
+        else Object.assign(q, { pid: next.pid, forward: next.forward, t0: at });
+      }
+      return !q.arrived || time - q.arrived.t < 3600; // shown for an hour at the exit
+    });
+  }
+  function replayQuality(index) {
+    live.quality = [];
+    for (let i = Math.max(0, index - 36); i <= index && live.frames[i]; i++) {
+      spawnQuality(live.frames[i - 1], live.frames[i]);
+      advanceQuality(live.frames[i].t, live.frames[i]);
+    }
+  }
+  // Where a parcel goes next and where it leaves the network, with times and the
+  // concentration expected there, following today's flows.
+  function project(q, f = frame()) {
+    if (q.arrived) { const at = { node: q.arrived.node, t: q.arrived.t, conc: q.conc }; return { next: at, exit: at }; }
+    let pid = q.pid, node = q.forward ? assets[pid].to : assets[pid].from;
+    let t = q.t0 + travelSeconds(pid), conc = mixAt(node, pid, q.conc, q.metric, f);
+    const next = { node, t, conc };
+    for (let hops = 0; hops < 20 && !isExit(node); hops++) {
+      const r = onward(node, f.flows);
+      if (!r || r.pid === pid) break;
+      pid = r.pid;
+      node = r.forward ? assets[pid].to : assets[pid].from;
+      t += travelSeconds(pid);
+      conc = mixAt(node, pid, conc, q.metric, f);
+    }
+    return { next, exit: isExit(node) ? { node, t, conc } : null };
+  }
+  // One entry per slug: its strongest parcel, where it heads, and how it compares with
+  // the limits now and at the exit.
+  function slugs() {
+    const lead = new Map();
+    for (const q of live.quality) if (!lead.has(q.slug) || q.conc > lead.get(q.slug).conc) lead.set(q.slug, q);
+    return [...lead.values()].map((q) => {
+      const ahead = project(q), limits = C.quality[q.metric];
+      return { q, ...ahead, level: level(q.conc, limits), exitLevel: ahead.exit ? level(ahead.exit.conc, limits) : 0 };
+    });
+  }
+  const qualityText = (name, value) => `${QUALITY[name].name} ${fmt(value, QUALITY[name].digits)} ${QUALITY[name].unit}`;
+  function etaText(t) {
+    const hours = (t - live.time) / 3600;
+    if (hours <= 0) return "now";
+    return `${hours > 12 ? shortTime(t) : timeFormat(t, { hour: "2-digit", minute: "2-digit" })} (in ${fmt(hours, 1)} h)`;
   }
 
   // ------------------------------------------------------------------ styling rules (both views)
@@ -547,6 +710,16 @@ const App = (() => {
       value: `${fmt(p, 1)} bar, window ${fmt(low)}–${fmt(high)}`,
     };
   }
+  function qualityIndicator(id, name) {
+    const v = metric(name, id), limits = C.quality[name], lvl = level(v, limits);
+    return {
+      id, unit: QUALITY[name].unit, lvl, band: [0, limits[0]],
+      bar: rangeBar({ min: 0, max: limits[2] * 1.5, value: v, lvl, band: [0, limits[0]],
+        ticks: limits.map((at, i) => ({ at, level: i + 1 })) }),
+      series: series((f) => metric(name, id, f)),
+      value: `${qualityText(name, v)}, limit ${limits[2]}`,
+    };
+  }
   function loadIndicator(id) {
     const d = assets[id], v = Math.abs(frame().flows[id] || 0), u = v / d.capacity;
     return {
@@ -622,6 +795,25 @@ const App = (() => {
   }
 
   // Level 1: plan, exit points, alarms, pressures, busiest lines, units.
+  /* Where each H₂S or CO₂ peak is, where it goes next, and what is expected when it
+     leaves the network: an estimate, with its basis shown. */
+  function qualityBox() {
+    if (!live.frames.some((f) => Object.keys(QUALITY).some((name) => (f.metrics || {})[name]))) return null;
+    const rows = slugs().sort((a, b) => Math.max(b.level, b.exitLevel) - Math.max(a.level, a.exitLevel));
+    const swatch = (name) => svg("0 0 14 14", `<circle cx="7" cy="7" r="5" fill="${COLORS[QUALITY[name].color]}" stroke="${COLORS.casing}"/>`);
+    const limits = Object.keys(QUALITY).map((name) => `${QUALITY[name].name} ${C.quality[name][2]} ${QUALITY[name].unit}`).join(", ");
+    return h("div", { class: "box" }, h("h2", null, "Gas quality on its way"),
+      rows.length ? h("table", { class: "data quality" },
+        h("thead", null, h("tr", null, ["Peak", "Now", "Next stop", "Leaves the network", ""].map((t) => h("th", null, t)))),
+        h("tbody", null, rows.map((s) => h("tr", { onclick: () => go({ screen: "asset", asset: s.q.arrived ? s.q.arrived.node : s.q.pid }) },
+          h("td", null, swatch(s.q.metric), ` ${QUALITY[s.q.metric].name} from ${nameOf(s.q.origin)}`),
+          h("td", null, fmt(s.q.conc, QUALITY[s.q.metric].digits), ` ${QUALITY[s.q.metric].unit}`),
+          h("td", null, s.q.arrived ? `Arrived at ${nameOf(s.q.arrived.node)}` : `${nameOf(s.next.node)}, ${etaText(s.next.t)}`),
+          h("td", null, s.exit ? `${nameOf(s.exit.node)}, ${fmt(s.exit.conc, QUALITY[s.q.metric].digits)} ${QUALITY[s.q.metric].unit}, ${etaText(s.exit.t)}` : "No exit on today's flows"),
+          h("td", null, badge(s.exitLevel || Math.min(1, s.level), ""))))))
+        : h("p", { class: "empty" }, `No H₂S or CO₂ peaks in the network. Limits: ${limits}.`),
+      h("p", { class: "dim small" }, `Estimate. Gas travels at ${fmt(C.pipelines.gas_velocity_mps)} m/s along the line taking most of the flow; where gas joins, it is assumed to carry the median field reading. Limits from nora.toml.`));
+  }
   function renderOverview() {
     const f = frame(), plan = f.plan;
     const exits = exitPoints.filter((id) => metric("nomination_msm3d", id) != null || throughput(id, f.flows) > 0.05);
@@ -650,6 +842,7 @@ const App = (() => {
         h("div", { class: "box" }, h("h2", null, "Exit points: actual flow against the hourly nomination"),
           bank(exits.map(exitIndicator), "No exit-point readings in this dataset.")),
         h("div", { class: "box" }, h("h2", null, "Active alarms"), alarmList(live.conditions.slice(0, 12))),
+        qualityBox(),
         h("div", { class: "box" }, h("h2", null, "Pressures at plants, hubs and terminals"),
           bank(pressures.slice(0, 10).map(pressureIndicator), "No pressure readings in this dataset.")),
         h("div", { class: "box" }, h("h2", null, "Busiest pipelines"), bank(loaded.map(loadIndicator), "No flow readings yet.")),
@@ -664,6 +857,7 @@ const App = (() => {
     if (d.kind === "node") {
       if (exitPoints.includes(id) && (metric("nomination_msm3d", id) != null || throughput(id, f.flows) != null)) indicators.push(exitIndicator(id));
       if (metric("pressure_bar", id) != null && C.pressure[d.type]) indicators.push(pressureIndicator(id));
+      for (const name of Object.keys(QUALITY)) if (metric(name, id) != null) indicators.push(qualityIndicator(id, name));
     } else if (d.capacity && f.flows[id] != null) indicators.push(loadIndicator(id));
     const conds = live.conditions.filter((c) => c.id === id);
     screens.asset.replaceChildren(h("div", { class: "screen-body" },
@@ -856,7 +1050,9 @@ const App = (() => {
       h("h3", null, "Moving along the lines"),
       h("ul", null,
         h("li", null, svg("0 0 26 14", `<rect x="4" y="3" width="18" height="8" rx="4" fill="${COLORS.active}" stroke="${COLORS.text}"/>`), "Pig, at its own speed"),
-        h("li", null, svg("0 0 26 14", `<path d="M13 2l6 10H7z" fill="${COLORS.active}" stroke="${COLORS.text}"/>`), "Peak: a change in flow, moving with the gas")),
+        h("li", null, svg("0 0 26 14", `<path d="M13 2l6 10H7z" fill="${COLORS.active}" stroke="${COLORS.text}"/>`), "Peak: a change in flow, moving with the gas"),
+        h("li", null, svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.h2s}" stroke="${COLORS.casing}"/>`), "H₂S peak: ppm, next stop and when it gets there"),
+        h("li", null, svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.co2}" stroke="${COLORS.casing}"/>`), "CO₂ peak: mol %, next stop and when it gets there")),
       h("h3", null, "Indicators"),
       rangeBar({ min: 0, max: 10, value: 6, band: [3, 7], ticks: [{ at: 1.5, level: 3 }, { at: 8.5, level: 3 }], target: 5 }),
       h("p", { class: "dim", style: "margin:4px 0 0" }, "Light band: normal range. Ticks: alarm limits. Hollow diamond: the target (nomination). Pointer: the value now. Trends show the last hours, dashed where they are heading."),
@@ -972,6 +1168,7 @@ const App = (() => {
     live.index = Math.floor(live.playhead);
     live.down = {};
     live.peaks = [];
+    replayQuality(live.index);
     trackTrips(frame());
     step();
   }
@@ -991,6 +1188,7 @@ const App = (() => {
       scrub.value = String(live.index);
     }
     prunePeaks();
+    advanceQuality();
     evaluate();
     if (live.time != null) $("clock").textContent = formatTime(live.time);
     restyle();
@@ -1075,6 +1273,7 @@ const App = (() => {
         const i = Math.floor(live.playhead);
         if (i !== live.index) {
           const previous = live.frames[live.index];
+          for (let k = live.index + 1; k <= i; k++) spawnQuality(live.frames[k - 1], live.frames[k]);
           live.index = i;
           trackTrips(frame());
           spawnPeaks(previous, frame());
@@ -1117,6 +1316,7 @@ const App = (() => {
       live.time = f.t;
       trackTrips(frame());
       spawnPeaks(previous, frame());
+      spawnQuality(previous, frame());
       if (!live.playing) play();
       step();
     });
