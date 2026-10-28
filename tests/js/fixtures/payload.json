@@ -26536,7 +26536,8 @@
    "theme": "light",
    "autoplay": true,
    "speed": 600,
-   "now_in_middle": true
+   "now_in_middle": true,
+   "display": "auto"
   },
   "labels": {
    "names": true,

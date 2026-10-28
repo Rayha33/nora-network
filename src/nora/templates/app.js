@@ -78,7 +78,8 @@ const App = (() => {
      next stop. */
   function markerLabel(ctx, marker, x, y, size, detail) {
     if (!marker.value || (!detail && !marker.level && marker.kind !== "quality")) return;
-    const font = 11, gap = 4, lx = x + size * 0.9, ly = y - size * 0.9; // labels never under 11 px
+    const k = display.scale; // labels never under 11 px, larger on a wall
+    const font = 11 * k, gap = 4 * k, lx = x + size * 0.9, ly = y - size * 0.9;
     const parts = [[marker.value, COLORS.text], [marker.eta || "", COLORS.text_dim]];
     if (detail >= 2 && marker.to) parts.push([marker.to, COLORS.text_dim]);
     ctx.save();
@@ -86,7 +87,7 @@ const App = (() => {
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.lineJoin = "round";
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 3 * k;
     ctx.strokeStyle = COLORS.paper;
     let cx = lx;
     for (const [text, color] of parts) {
@@ -97,7 +98,7 @@ const App = (() => {
       cx += ctx.measureText(text).width + gap;
     }
     ctx.restore();
-    if (marker.level) drawBadge(ctx, marker.level, cx + 2, ly - font * 0.6, 4.5);
+    if (marker.level) drawBadge(ctx, marker.level, cx + 2 * k, ly - font * 0.6, 4.5 * k);
   }
   // A gas quality parcel: a calm-coloured dot; the strongest parcel of a slug is labelled.
   function drawParcel(ctx, marker, x, y, size, detail) {
@@ -107,7 +108,7 @@ const App = (() => {
     ctx.arc(x, y, size * (marker.lead ? 0.45 : 0.3), 0, Math.PI * 2);
     ctx.fillStyle = COLORS[QUALITY[marker.gas].color];
     ctx.fill();
-    ctx.lineWidth = 0.8;
+    ctx.lineWidth = 0.8 * display.scale;
     ctx.strokeStyle = COLORS.casing;
     ctx.stroke();
     ctx.restore();
@@ -264,6 +265,7 @@ const App = (() => {
      own calm colour, so nothing reads as an alarm badge (triangle/diamond/square in
      amber/orange/red). */
   function drawMarker(ctx, marker, x, y, angle, size = 7, detail = 1) {
+    size *= display.scale; // markers are drawn in screen pixels in every view
     if (marker.kind === "quality") { drawParcel(ctx, marker, x, y, size, detail); return; }
     ctx.save();
     ctx.translate(x, y);
@@ -277,7 +279,7 @@ const App = (() => {
     }
     ctx.fillStyle = marker.kind === "pig" ? COLORS.pig : COLORS.peak;
     ctx.fill();
-    ctx.lineWidth = 0.8;
+    ctx.lineWidth = 0.8 * display.scale;
     ctx.strokeStyle = COLORS.casing;
     ctx.stroke();
     ctx.restore();
@@ -294,6 +296,8 @@ const App = (() => {
     density: C.flow.density,
     animation: C.flow.animation,
     speed: C.screen.speed || 60,  // default playback: data seconds per real second
+    display: C.screen.display || "auto", // auto, desk, wall or compact
+    scale: "auto", // UI size: auto or a factor such as 1.25
   };
   function readSettings() {
     let saved = {}, shared = {};
@@ -308,6 +312,46 @@ const App = (() => {
     try { localStorage.setItem("nora-settings", JSON.stringify(settings)); } catch (error) { /* private mode */ }
   }
 
+  // ------------------------------------------------------------------ display
+  /* Control-room display profiles (issue #59). The same page runs on a video wall read
+     from metres away, at an operator desk and on a tablet. One UI scale drives the
+     chrome (CSS zoom on the bars, player, sidebar, sheets and screens), and the views
+     read App.uiScale() for whatever they draw in screen pixels. Auto picks the profile
+     and the scale from the window; ?display= and ?scale=, or Settings, override them. */
+  const PROFILES = ["desk", "wall", "compact"];
+  const autoProfile = (width) => (width < 900 ? "compact" : width >= 3000 ? "wall" : "desk");
+  // 1 up to 1920 px wide, rising to 1.5 at 3840 and 2.2 at 7680 (a 4×2 wall of 1080p cubes).
+  function autoScale(width) {
+    if (width <= 1920) return 1;
+    if (width <= 3840) return 1 + (0.5 * (width - 1920)) / 1920;
+    return Math.min(2.2, 1.5 + (0.7 * (width - 3840)) / 3840);
+  }
+  const display = { profile: null, scale: 1 };
+  function chosenProfileFor(asked) { return PROFILES.includes(asked) ? asked : autoProfile(window.innerWidth); }
+  const chosenProfile = () => chosenProfileFor(params.get("display") || settings.display);
+  function chosenScale(profile) {
+    let asked = Number(params.get("scale") || (settings.scale === "auto" ? NaN : settings.scale));
+    if (asked > 4) asked /= 100; // ?scale=150 means 150 %
+    return asked >= 0.75 && asked <= 3 ? asked : autoScaleFor(profile);
+  }
+  // A wall is read from 5-10 m: body text at least about 20 px (13 px × 1.5).
+  const autoScaleFor = (profile) => (profile === "wall" ? Math.max(1.5, autoScale(window.innerWidth)) : autoScale(window.innerWidth));
+  // Returns true when the profile or scale changed, so the views can re-fit.
+  function applyDisplay() {
+    const profile = chosenProfile(), scale = Math.round(chosenScale(profile) * 100) / 100;
+    if (profile === display.profile && scale === display.scale) return false;
+    display.profile = profile;
+    display.scale = scale;
+    document.documentElement.dataset.display = profile;
+    document.documentElement.style.setProperty("--ui-scale", String(scale));
+    return true;
+  }
+  applyDisplay();
+  // Control rooms are dim: a wall starts dark unless the link or the operator chose.
+  if (display.profile === "wall" && !params.get("theme") && !storedTheme() && theme !== "dark") {
+    theme = "dark";
+    applyPalette();
+  }
   // ------------------------------------------------------------------ indexes
   const nodeIds = Object.keys(assets).filter((id) => assets[id].kind === "node").sort();
   const pipeIds = Object.keys(assets).filter((id) => assets[id].kind === "pipeline").sort();
@@ -1486,7 +1530,8 @@ const App = (() => {
         h("li", null, "Choose a unit, or All units, to see it on the Map or as a Flow: gas moves from the top to the bottom."),
         h("li", null, "Drag the year, top right, to show the network as it was, or will be: planned assets appear at their startup year, shut-down ones disappear from their shutdown year."),
         h("li", null, "Choose What-if, then click assets to take them offline: the pipeline loads and the deliverable gas update. Click the chip in the header to restore them all."),
-        h("li", null, "Click any asset or line for its detail. Diagnostics shows the numbers behind it.")),
+        h("li", null, "Click any asset or line for its detail. Diagnostics shows the numbers behind it."),
+        h("li", null, "Settings, Display: choose the screen (operator desk, video wall: large, dark, the pointer hides; or tablet) and the size of everything. New window opens this screen again for another monitor.")),
       h("h3", null, "Grey means all is well"),
       h("p", { class: "dim" }, "Colour appears only when something needs attention, always with a shape and a number as well:"),
       h("ul", null, [3, 2, 1].map((l) => h("li", null, badge(l), h("span", { class: "dim" }, ["", "pre-warning", "medium priority", "act now"][l])))),
@@ -1535,17 +1580,30 @@ const App = (() => {
       choose("Direction", "direction", [["vertical", "Top to bottom"], ["horizontal", "Left to right"], ["auto", "Follow the screen"]]),
       choose("Spacing", "density", [["compact", "Compact"], ["comfortable", "Comfortable"], ["spacious", "Spacious"]]),
       check("Flow bands in and out of the nodes", "animation"),
+      h("h3", null, "Display"),
+      choose("Screen", "display", [["auto", `Auto (${autoProfile(window.innerWidth)})`], ["desk", "Operator desk"], ["wall", "Video wall"], ["compact", "Tablet or phone"]]),
+      choose("Size", "scale", [["auto", `Auto (${Math.round(autoScaleFor(chosenProfile()) * 100)} %)`],
+        ...["1", "1.25", "1.5", "1.75", "2"].map((v) => [v, `${Number(v) * 100} %`])]),
       h("div", { class: "actions" },
         h("button", { type: "button", class: "text", onclick: copyLink }, "Copy link"),
+        h("button", { type: "button", class: "text", title: "Open this screen in its own window, for another monitor", onclick: () => window.open(location.href, "_blank", "noopener") }, "New window"),
         h("button", { type: "button", class: "text", onclick: () => update({ ...DEFAULT_SETTINGS }) }, "Reset")),
       h("p", { class: "dim", style: "margin:8px 0 0" }, "Defaults come from nora.toml in the repository."));
   }
   function update(changes) {
     settings = { ...settings, ...changes };
     saveSettings();
+    const resized = applyDisplay();
     buildSettings();
     for (const view of Object.values(views)) if (view.ready && view.applySettings) view.applySettings();
+    if (resized) displayChanged();
     restyle();
+  }
+  // After the profile or scale changed: the stage has a new size, so re-fit and redraw.
+  function displayChanged() {
+    const view = current();
+    if (view && view.mounted) view.resize();
+    drawSpark();
   }
   function copyLink() {
     const url = new URL(location.href);
@@ -1702,7 +1760,8 @@ const App = (() => {
   // The track shows the plan status over time: plain where it holds, marked where not.
   function drawSpark() {
     if ($("player").hidden) return;
-    const ratio = window.devicePixelRatio || 1, width = spark.clientWidth, height = spark.clientHeight;
+    // The player is zoomed by the UI scale: draw at that resolution, or the track blurs.
+    const ratio = (window.devicePixelRatio || 1) * display.scale, width = spark.clientWidth, height = spark.clientHeight;
     if (!width) return;
     spark.width = width * ratio;
     spark.height = height * ratio;
@@ -1900,8 +1959,10 @@ const App = (() => {
       ...items.map((it) => it === "-"
         ? h("div", { class: "rule" })
         : h("button", { type: "button", role: "menuitem", onclick: () => { closeMenu(); it.act(); } }, it.label)));
-    el.style.left = Math.max(8, Math.min(x, innerWidth - 200)) + "px";
-    el.style.top = Math.max(8, Math.min(y, innerHeight - 10 - items.length * 32)) + "px";
+    // The menu is zoomed by the UI scale, so its position is in zoomed pixels.
+    const k = display.scale;
+    el.style.left = Math.max(8, Math.min(x, innerWidth - 240 * k)) / k + "px"; // min-width 220 + padding
+    el.style.top = Math.max(8, Math.min(y, innerHeight - (10 + items.length * 32) * k)) / k + "px";
     document.body.append(el);
     menu.el = el;
   }
@@ -1968,7 +2029,15 @@ const App = (() => {
         if (route.screen !== "unit") go({ screen: "unit", unit: route.unit || "all" });
       });
     }
-    addEventListener("resize", () => { const view = current(); if (view && view.mounted) view.resize(); drawSpark(); });
+    addEventListener("resize", () => {
+      if (applyDisplay()) { // a window dragged to another screen may change profile or scale
+        buildSettings();
+        for (const view of Object.values(views)) if (view.ready && view.applySettings) view.applySettings();
+      }
+      const view = current();
+      if (view && view.mounted) view.resize();
+      drawSpark();
+    });
     if (embed) document.body.classList.add("embed");
     if (views[params.get("view")]) state.view = params.get("view");
     if (["live", "load", "risk", "whatif", "plain"].includes(params.get("mode"))) state.mode = params.get("mode");
@@ -1998,7 +2067,31 @@ const App = (() => {
     }
     go(fromHash() || (C.screen.start === "network" ? { screen: "unit", unit: "all" } : { screen: "overview" }), false);
     if (params.get("autoplay") === "1" || (C.screen.autoplay && params.get("autoplay") !== "0" && !params.has("live"))) play();
+    kiosk();
     requestAnimationFrame(tick);
+  }
+  /* Wall behaviour: the pointer hides after a few idle seconds, and ?rotate=SECONDS
+     (any profile) cycles Overview, Map and Flow for a screen nobody stands at. */
+  function kiosk() {
+    let idle = 0;
+    const wake = () => {
+      document.body.classList.remove("idle");
+      clearTimeout(idle);
+      if (display.profile === "wall") idle = setTimeout(() => document.body.classList.add("idle"), 4000);
+    };
+    for (const type of ["pointermove", "pointerdown", "keydown"]) addEventListener(type, wake);
+    wake();
+    const every = Number(params.get("rotate"));
+    if (!(every >= 10)) return;
+    const stops = [() => go({ screen: "overview" }), () => showView("map"), () => showView("flow")];
+    let at = 0;
+    setInterval(() => { at = (at + 1) % stops.length; stops[at](); }, every * 1000);
+  }
+  function showView(name) {
+    state.view = name;
+    markTabs();
+    if (route.screen !== "unit") go({ screen: "unit", unit: route.unit || "all" });
+    else render();
   }
 
   return {
@@ -2014,6 +2107,9 @@ const App = (() => {
     pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
     timeState,
+    // The display profile (desk, wall or compact) and the one UI scale (1 = 100 %).
+    display: () => display.profile,
+    uiScale: () => display.scale,
     // Flow through a node now (MSm³/d) and its pressure (bar), for the views to show.
     reading: (id) => ({ flow: throughput(id, frame().flows), pressure: metric("pressure_bar", id) }),
     dayDelivery, register, restyle, go, start, theme: () => theme,
