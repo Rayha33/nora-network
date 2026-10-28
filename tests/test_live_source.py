@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from nora.integrations import SOURCES, gassco
+from nora.integrations import SOURCES, gassco, interconnector
 from nora.live import poll, serve
 
 FIXTURE = Path(__file__).parent / "data" / "gassco_realTimeGraphData.json"
@@ -28,7 +28,11 @@ class _ApiHandler(BaseHTTPRequestHandler):
         if self.path == "/down":
             self.send_error(503)
             return
-        payload = FIXTURE.read_bytes()
+        payload = (
+            (FIXTURE.parent / "national_gas_latest.json").read_bytes()
+            if self.path == "/national-gas"
+            else FIXTURE.read_bytes()
+        )
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(payload)))
@@ -64,6 +68,29 @@ def test_gassco_fetch_maps_countries_to_market_nodes(api_url, monkeypatch):
     }
     assert all(r.metric == gassco.metric for r in readings)
     assert readings[0].when.tzinfo is not None  # epoch ms became an aware datetime
+
+
+def test_interconnector_combines_bacton_export_and_import_into_signed_iuk_flow(
+    api_url, monkeypatch
+):
+    monkeypatch.setenv("NORA_NATIONAL_GAS_URL", api_url + "/national-gas")
+    now = datetime(2026, 10, 28, 12, 0, tzinfo=UTC)
+    readings = list(interconnector.fetch(now - timedelta(minutes=2), now))
+    assert len(readings) == 1
+    reading = readings[0]
+    assert reading.asset == "iuk"
+    assert reading.metric == "flow_msm3d"
+    assert reading.value == pytest.approx(12.3 - 4.5)
+    assert reading.when == datetime(2026, 10, 28, 9, 48, tzinfo=UTC)
+
+
+def test_interconnector_sign_reverses_for_zeebrugge_to_bacton():
+    fixture = json.loads((Path(__file__).parent / "data" / "national_gas_latest.json").read_text())
+    imported = fixture["data"]["Supply from entry points"]["data"][1]
+    imported["09:44"] = 14.5
+    when, value = interconnector.parse(fixture)
+    assert value == pytest.approx(12.3 - 14.5)
+    assert when.tzinfo is not None
 
 
 def test_poll_yields_frames_and_survives_a_dead_api(api_url, monkeypatch, capsys):
@@ -137,7 +164,7 @@ def test_cli_offers_the_source_flag():
 
 
 def test_sources_registry_only_contains_ready_connectors():
-    assert set(SOURCES) == {"gassco"}
+    assert set(SOURCES) == {"gassco", "interconnector"}
 
 
 def test_a_nan_from_a_polled_source_becomes_null_not_invalid_json(api_url, monkeypatch, tmp_path):

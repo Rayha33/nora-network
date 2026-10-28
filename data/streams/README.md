@@ -47,6 +47,21 @@ data/streams/
 
 Commit the folder and open a pull request. Your preview link will show the replay.
 
+## Public live sources
+
+`nora live --source gassco` serves aggregate Norwegian exports by receiving country.
+For the physically bidirectional Interconnector (IUK) between Bacton and Zeebrugge:
+
+```bash
+nora live --source interconnector --poll-seconds 120
+```
+
+This polls National Gas's public latest-flows API. Positive `iuk` values mean Bacton →
+Zeebrugge; negative values mean Zeebrugge → Bacton, in MSm³/d. The existing map arrows,
+flow quadrants and asset readings use that sign directly. Zeebrugge/IUK is operated by
+Interconnector/Fluxys, not GTS. The static GitHub Pages replay cannot poll this API
+because it does not allow cross-origin browser requests; use the local live server above.
+
 ## stream.toml reference
 
 ```toml

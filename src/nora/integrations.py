@@ -16,18 +16,21 @@ the plan check and the overview then use them like any other reading.
 Live: subclass Connector, implement `fetch`, and serve it with nora.live like `replay`
 (yield (wait, frame) pairs; the server writes keepalive comments while it waits).
 
-Gassco's real-time endpoint is the one live source that needs no credentials:
-`nora live --source gassco` polls it (see GasscoRealTime below and live.poll).
+Public live sources need no credentials: `nora live --source gassco` polls aggregate
+Norwegian exports, and `nora live --source interconnector --poll-seconds 120` polls
+signed physical IUK flow from National Gas (see below).
 """
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.request
 from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from zoneinfo import ZoneInfo
 
 # Gassco's names for the exit points where Norwegian gas lands, mapped to NORA nodes.
 EXIT_POINTS = {
@@ -158,9 +161,81 @@ class GasscoRealTime(Connector):
                 yield Reading(when, asset, self.metric, float(node["value"]))
 
 
+class NationalGasInterconnector(Connector):
+    """Signed physical IUK flow from National Gas's public latest-flows API.
+
+    Bacton INT Export is Bacton -> Zeebrugge (positive, the pipeline CSV direction);
+    BACTON IC is Zeebrugge -> Bacton (negative). Both are mcm/day, numerically the
+    same unit as MSm3/d. National Gas updates the instantaneous readings every two
+    minutes. Zeebrugge/IUK is operated by Interconnector/Fluxys, not GTS.
+    """
+
+    name = "National Gas IUK physical flow"
+    metric = "flow_msm3d"
+    env = ()
+    url_default = "https://data.nationalgas.com/api/latest-gas-flows"
+
+    def url(self) -> str:
+        return os.environ.get("NORA_NATIONAL_GAS_URL", self.url_default)
+
+    def status(self) -> str:
+        return f"ready ({self.url()})"
+
+    def meta(self) -> dict:
+        return {
+            "name": "interconnector",
+            "title": self.name,
+            "description": (
+                "Signed physical flow on Interconnector (IUK): positive Bacton to "
+                "Zeebrugge, negative Zeebrugge to Bacton. National Gas instantaneous "
+                "readings in MSm3/d; Zeebrugge/IUK is operated by Interconnector/Fluxys."
+            ),
+            "source": self.url_default,
+            "synthetic": False,
+        }
+
+    @staticmethod
+    def parse(payload: dict) -> tuple[datetime, float]:
+        data = payload["data"]
+
+        def latest(section: str, label: str) -> float:
+            for row in data[section]["data"]:
+                name = row.get("SYSTEM ENTRY NAME") or row.get("TERMINAL TOTALS")
+                if name and name.casefold() == label.casefold():
+                    readings = [
+                        (time, value)
+                        for time, value in row.items()
+                        if re.fullmatch(r"\d{2}:\d{2}", time) and isinstance(value, (int, float))
+                    ]
+                    if readings:
+                        return float(sorted(readings)[-1][1])
+            raise ValueError(f"National Gas: missing {label} reading")
+
+        published = data.get("publishedDate")
+        if not published:
+            raise ValueError("National Gas: missing publication timestamp")
+        local = datetime.strptime(published, "%d/%m/%Y %H:%M").replace(
+            tzinfo=ZoneInfo("Europe/London")
+        )
+        value = latest("Demand from interconnectors", "Bacton INT Export") - latest(
+            "Supply from entry points", "BACTON IC"
+        )
+        return local.astimezone(UTC), value
+
+    def fetch(self, start: datetime, end: datetime) -> Iterator[Reading]:
+        request = urllib.request.Request(
+            self.url(), headers={"User-Agent": USER_AGENT, "Accept": "application/json"}
+        )
+        with urllib.request.urlopen(request, timeout=30) as response:
+            payload = json.load(response)
+        when, value = self.parse(payload)
+        yield Reading(when, "iuk", self.metric, value)
+
+
 gassco = GasscoRealTime()
+interconnector = NationalGasInterconnector()
 
 # Live sources `nora live --source <name>` can poll.
-SOURCES = {"gassco": gassco}
+SOURCES = {"gassco": gassco, "interconnector": interconnector}
 
-CONNECTORS = (Origo(), GassocoBooking(), gassco)
+CONNECTORS = (Origo(), GassocoBooking(), gassco, interconnector)
