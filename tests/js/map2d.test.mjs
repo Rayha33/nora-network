@@ -108,7 +108,7 @@ test("peaks: Flow samples the pipeline path instead of joining only head and tai
   assert.deepEqual(path.at(-1), App.views.flow.pointAlong(edge, extent[1], pos));
 });
 
-test("flow circles: the fitted overview stays simple until labels are readable", () => {
+test("flow nodes: the fitted overview stays simple until labels are readable", () => {
   const { App } = loadApp();
   assert.equal(App.views.flow.detailedFlow(0.24), false, "the whole-network fit uses clean totals, not tiny labels");
   assert.equal(App.views.flow.detailedFlow(1), true, "full labels appear at 100% zoom");
@@ -118,7 +118,7 @@ test("flow circles: the fitted overview stays simple until labels are readable",
   assert.deepEqual(Array.from(App.views.flow.overviewNameLines("Zeebrugge terminal")), ["Zeebrugge", "terminal"], "long names wrap instead of shrinking");
 });
 
-test("flow circles: live flow (MSm³/d) and pressure (bar) for each node", () => {
+test("flow nodes: live flow (MSm³/d) and pressure (bar) for each node", () => {
   const loaded = loadApp();
   const { App } = loaded;
   loadFirstHour(App, loaded.NORA);
@@ -154,7 +154,7 @@ test("pipelines: alarms never recolor the whole route", () => {
   assert.notEqual(style.color, App.levelColor[3], "critical red is not used for the route");
 });
 
-test("flow circles: each outgoing line's flow sits in the quadrant facing that line", () => {
+test("flow nodes: each outgoing line's flow sits in the quadrant facing that line", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;
   loadFirstHour(App, NORA);
@@ -186,7 +186,7 @@ test("flow circles: each outgoing line's flow sits in the quadrant facing that l
   assert.equal(after, `${side[0] === "S" ? "N" : "S"}${side[1] === "E" ? "W" : "E"}`, "dragged past it, the flow faces the line again");
 });
 
-test("flow circles: incoming and outgoing totals share space dynamically", () => {
+test("flow nodes: incoming and outgoing totals share space dynamically", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;
   loadFirstHour(App, NORA);
@@ -240,7 +240,7 @@ test("flow circles: incoming and outgoing totals share space dynamically", () =>
   assert.ok(mixed.radius > 30, "the mixed-direction circle expands for two stacked readings");
 });
 
-test("flow circles: a mixed quadrant renders separate numeric readings without prefixes", () => {
+test("flow nodes: a mixed quadrant renders separate numeric readings without prefixes", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;
   loadFirstHour(App, NORA);
@@ -282,7 +282,7 @@ test("flow circles: a mixed quadrant renders separate numeric readings without p
   assert.notEqual(incoming.y, outgoing.y, "the two readings have their own lines");
 });
 
-test("flow circles: animated overlays stay outside enlarged nodes", () => {
+test("flow nodes: animated overlays stay outside enlarged nodes", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;
   loadFirstHour(App, NORA);
@@ -307,7 +307,7 @@ test("flow circles: animated overlays stay outside enlarged nodes", () => {
   assert.equal(App.views.flow.animateStubs(0.8), true, "animation returns when the drawing has room");
 });
 
-test("exit circles: within-day delivery against the nominations, as a share", () => {
+test("exit nodes: within-day delivery against the nominations, as a share", () => {
   const { App, NORA } = loadApp();
   const exit = "easington";
   const pipe = App.pipeIds.find((id) => NORA.assets[id].to === exit && NORA.assets[id].type !== "onshore");
@@ -326,7 +326,7 @@ test("exit circles: within-day delivery against the nominations, as a share", ()
   assert.equal(App.dayDelivery(exit).share, 0, "only this gas day counts");
 });
 
-test("exit circles: gray target bounds and one prominent current-delivery line", () => {
+test("exit nodes: gray target bounds and one prominent current-delivery line", () => {
   const { App } = loadApp();
   const strokes = [];
   let path = [];
@@ -372,12 +372,16 @@ function loadFirstHour(App, nora) {
   App.live.time = stream.times[0];
 }
 
-test("flow circles: pressure is outside while flow stays inside", () => {
+/* Ray, 28 Oct: "we want to use squares instead of circles as nodes as we can pack in
+   more information and numbers". A live node is a square holding its pressure, its
+   rate of change, the flow on each line and its trend; the name sits below it. */
+test("flow squares: pressure, rate, flows and trend sit inside the square, the name below", () => {
   const loaded = loadApp();
-  const { App } = loaded;
+  const { App, NORA } = loaded;
   loadFirstHour(App, loaded.NORA);
   App.state.mode = "live";
-  const id = App.nodeIds.find((node) => App.reading(node).pressure != null);
+  App.live.values = App.live.frames[0].flows;
+  const id = App.nodeIds.find((node) => App.reading(node).pressure != null && App.reading(node).flow > 1);
   const calls = [];
   const ctx = new Proxy({}, {
     get(target, key) {
@@ -388,16 +392,31 @@ test("flow circles: pressure is outside while flow stays inside", () => {
     set(target, key, value) { target[key] = value; return true; },
   });
   App.views.flow.card(id)({ ctx, x: 0, y: 0, state: { selected: false, hover: false } }).drawNode();
-  const pressure = `${App.fmt(App.reading(id).pressure)} bar`;
-  const label = calls.find((c) => c.op === "fillText" && c.args[0] === pressure);
-  assert.ok(label, "the measured pressure is written");
-  assert.ok(label.args[2] > 30, "pressure sits below the circle, not inside it");
+  const half = App.views.flow.circleRadius(id);
+  assert.ok(calls.some((c) => c.op === "roundRect" || c.op === "rect"), "the node is drawn as a square");
+  assert.ok(!calls.some((c) => c.op === "arc"), "not as a circle");
+  const inside = (c) => Math.abs(c.args[1]) <= half && Math.abs(c.args[2]) <= half;
+  const pressure = calls.find((c) => c.op === "fillText" && c.args[0] === `${App.fmt(App.reading(id).pressure)} bar`);
+  assert.ok(pressure && inside(pressure), "the pressure is inside the square");
   const flows = calls.filter((c) => c.op === "fillText" && /M$/.test(c.args[0]));
-  assert.ok(flows.length > 0, "flow readings are present");
-  for (const flow of flows) assert.ok(Math.abs(flow.args[2]) <= 30, "flow remains inside the circle");
+  assert.ok(flows.length > 0 && flows.every(inside), "the flow readings are inside the square");
+  const name = calls.find((c) => c.op === "fillText" && c.args[0] === NORA.assets[id].name);
+  assert.ok(name && name.args[2] > half, "the name sits below the square");
+  for (const other of App.nodeIds) assert.equal(App.views.flow.circleRadius(other), half, "every live square is one size");
 });
 
-test("flow circles: every reading is at least 11 px", () => {
+test("flow squares: lines and markers leave a square at its edge, corners too", () => {
+  const { App } = loadApp();
+  App.state.mode = "live";
+  const half = App.views.flow.circleRadius();
+  const edge = { from: "a", to: "b" };
+  const diagonal = App.views.flow.pointAlong(edge, 0, { a: { x: 0, y: 0 }, b: { x: 1000, y: 1000 } });
+  assert.ok(Math.max(Math.abs(diagonal.x), Math.abs(diagonal.y)) > half, "a marker on a diagonal line starts outside the square's corner");
+  const straight = App.views.flow.pointAlong(edge, 0, { a: { x: 0, y: 0 }, b: { x: 0, y: 1000 } });
+  assert.ok(straight.y > half && straight.y < half * 1.5, "and just below a square's edge on a straight one");
+});
+
+test("flow nodes: every reading is at least 11 px", () => {
   const loaded = loadApp();
   const { App } = loaded;
   loadFirstHour(App, loaded.NORA);
@@ -420,7 +439,7 @@ test("flow circles: every reading is at least 11 px", () => {
 /* Ray, 28 Oct: "the line shouldn't go over the text". Lines leave a Flow node
    downwards, straight through where its name is written, so the name, rate and trend
    sit on a paper backing drawn before the text, at full opacity. */
-test("flow circles: no line runs through a node's name", () => {
+test("flow nodes: no line runs through a node's name", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;
   loadFirstHour(App, loaded.NORA);

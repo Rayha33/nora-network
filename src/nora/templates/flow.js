@@ -1,19 +1,32 @@
 /* Flow view (level 2): the whole network as a gas flow overview on dotted paper, top to
    bottom by default (fields at the top, markets at the bottom), with straight lines.
    vis-network draws the nodes, edges and options pyvis produced; each node is drawn as
-   a circle holding its live incoming and outgoing flow (MSm³/d), with pressure (bar),
-   its name, rate of change and a 4-hour trend below (the last 2 hours of flow, solid, and the next 2
-   hours of nominations, dashed). Stage and rank come from layout.py
+   a square holding its pressure (bar), rate of change, the incoming and outgoing flow
+   on each line (MSm³/d) and a 4-hour trend (the last 2 hours of flow, solid, and the
+   next 2 hours of nominations, dashed), with its name below. Stage and rank come from layout.py
    (NORA.grid); direction and spacing from the settings; colours, widths and labels from
    App.pipeStyle / App.nodeStyle. Alarm badges, pigs and peaks are drawn on top. */
 (() => {
   "use strict";
   const view = { ready: false, mounted: false };
   const C = App.colors; // updated in place when the theme switches
-  /* Circles, not squares: a Flow node is a circle filled by its state grey, holding
-     the live numbers (no icon: Ray, 28 Oct, "this is valuable space ... for live flow
-     values and pressures"), with its name and rate below and a sparkline under that. */
+  /* Squares, not circles (Ray, 28 Oct: "we want to use squares instead of circles as
+     nodes as we can pack in more information and numbers"; the Map keeps its circles).
+     A live square holds the pressure and the rate of change along its top, the flow on
+     each line in the quarter facing it (incoming above outgoing), and the 4-hour trend
+     along its foot, with an exit point's within-day delivery bar under it; the name
+     sits below the square, on the paper. Every live square is one size, so the drawing
+     reads as a tidy grid. No icons: the space is for numbers. */
   const CIRC = { r: 30, name: 14, sub: 12, trend: 12, pad: 8 };
+  const SQUARE = { live: 64, plain: 30, corner: 4 }; // half a side, in canvas units
+  const nodeHalf = () => (App.state.mode === "live" ? SQUARE.live : SQUARE.plain);
+  // How far a line runs inside a square before it leaves it, along the unit vector (ux, uy).
+  const edgeGap = (half, ux, uy) => half / Math.max(Math.abs(ux), Math.abs(uy), 1e-6);
+  function squarePath(ctx, x, y, half) {
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x - half, y - half, half * 2, half * 2, SQUARE.corner);
+    else ctx.rect(x - half, y - half, half * 2, half * 2);
+  }
   const NAME_FONT = "600 11.5px Archivo, system-ui, sans-serif", SUB_FONT = "11px Archivo, system-ui, sans-serif";
   /* Right of the timeline's now every reading is the model's: those numbers are set in
      italics (the player says "Model" too), so a forecast never reads as a measurement. */
@@ -40,8 +53,7 @@
     // needs both in/out labels also gets room from its neighbours.
     framePos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id,
       direction === "vertical" ? { x: rank * baseRankGap, y: stage * baseGap } : { x: stage * baseGap, y: rank * baseRankGap }]));
-    const reserved = App.state.mode === "live" ? 70 : CIRC.r; // a quadrant may gain its second direction during playback
-    const extra = Math.max(0, Math.max(reserved, ...App.nodeIds.map((id) => circleRadius(id))) - CIRC.r) * 2;
+    const extra = Math.max(0, nodeHalf() - CIRC.r) * 2; // room for the squares
     const rankGap = baseRankGap + extra;
     const across = (Math.max(...ranks) - Math.min(...ranks) + 1) * rankGap;
     const aspect = direction === "vertical" ? el.clientHeight / el.clientWidth : el.clientWidth / el.clientHeight;
@@ -174,11 +186,8 @@
     for (const [side, cell] of Object.entries(q)) if (cell.out) out[side] = cell.out;
     return out;
   }
-  function circleRadius(id, positions = framePos) {
-    const cells = Object.values(flowQuadrants(id, positions));
-    if (!cells.length) return CIRC.r;
-    return cells.some((cell) => cell.in && cell.out) ? 70 : 62;
-  }
+  // Half the side of a node's square (one size for every live node).
+  function circleRadius() { return nodeHalf(); }
   function detailedFlow(scale) {
     return scale >= 1; // never render the detailed 11 px labels below their actual size
   }
@@ -221,61 +230,88 @@
   }
   // A reading inside a circle, on a patch of the circle's own fill so the day bar never
   // runs through a number. Text stays at its real screen size at every zoom.
-  function reading(ctx, text, x, y, look) {
+  function reading(ctx, text, x, y, look, align = "center") {
     const ratio = (network && network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
     const point = network ? network.canvasToDOM({ x, y }) : { x, y };
     ctx.save();
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    const w = ctx.measureText(text).width;
+    const w = ctx.measureText(text).width, left = align === "left" ? point.x : align === "right" ? point.x - w : point.x - w / 2;
+    const ink = ctx.fillStyle;
     ctx.fillStyle = look.fill;
-    ctx.fillRect(point.x - w / 2 - 2, point.y - 8, w + 4, 16);
+    ctx.fillRect(left - 2, point.y - 8, w + 4, 16);
+    ctx.fillStyle = ink;
+    ctx.textAlign = align;
     ctx.fillText(text, point.x, point.y);
     ctx.restore();
   }
-  function drawQuadrants(ctx, x, y, id, look, { day, total, r = CIRC.r, positions = framePos }) {
-    const q = flowQuadrants(id, positions), at = r * 0.45;
+  /* The flow on each line, in the quarter of the square facing it: the upper cells
+     for lines to the north, the lower ones for lines to the south; incoming (dim) above
+     outgoing. A node with no flowing line shows its total in the middle. */
+  function drawQuadrants(ctx, x, y, id, look, { total, r = SQUARE.live, positions = framePos }) {
+    const q = flowQuadrants(id, positions), dx = r * 0.5, rows = { N: -r * 0.36, S: r * 0.16 };
     ctx.save();
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillStyle = look.ink;
     ctx.font = modelFont("600 13px Archivo, system-ui, sans-serif");
     for (const [side, cell] of Object.entries(q)) {
-      const [ux, uy] = QUAD[side], both = cell.in && cell.out;
+      const both = cell.in && cell.out, cx = x + (side[1] === "E" ? dx : -dx), cy = y + rows[side[0]];
       const labels = [];
       if (cell.in) labels.push({ text: `${App.fmt(cell.in, cell.in < 10 ? 1 : 0)}M`, dy: both ? -7 : 0, ink: look.dim });
       if (cell.out) labels.push({ text: `${App.fmt(cell.out, cell.out < 10 ? 1 : 0)}M`, dy: both ? 7 : 0, ink: look.ink });
       for (const label of labels) {
         ctx.fillStyle = label.ink;
-        reading(ctx, fitText(ctx, label.text, r * 1.15), x + ux * at, y + uy * at + label.dy, look);
+        reading(ctx, fitText(ctx, label.text, r * 0.9), cx, cy + label.dy, look);
       }
     }
-    // Flow faces both incoming and outgoing lines. Pressure stays outside the circle.
-    if (day) drawDayBar(ctx, x, y + 1, day, look);
     if (!Object.keys(q).length && total != null) {
-      ctx.font = modelFont("600 13px Archivo, system-ui, sans-serif");
       ctx.fillStyle = look.ink;
-      reading(ctx, `${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y + at, look);
+      reading(ctx, `${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y + (rows.N + rows.S) / 2, look);
     }
     ctx.restore();
   }
-  // vis-network custom shape: the circle for one node, name and live numbers below it.
+  /* A live square, inside: the pressure (left) and how fast the flow through it is
+     changing (right) along the top; the flow per quarter in the middle; the 4-hour
+     trend along the foot, and at exit points the within-day delivery bar under it.
+     Readings are written at their real screen size on a patch of the square's fill. */
+  function drawSquare(ctx, x, y, id, look, { half, now, day }) {
+    const pad = half * 0.14, top = y - half * 0.8;
+    ctx.save();
+    ctx.textBaseline = "middle";
+    if (now && now.pressure != null) {
+      ctx.font = modelFont(SUB_FONT);
+      ctx.fillStyle = look.dim;
+      reading(ctx, `${App.fmt(now.pressure)} bar`, x - half + pad, top, look, "left");
+    }
+    const rate = App.flowRate(id);
+    if (rate != null && Math.abs(rate) >= 0.05) {
+      const through = App.window4h(id).past.slice(-1)[0] || 0;
+      const fast = through > 0 && Math.abs(rate) / through >= App.thresholds.step[0];
+      ctx.font = modelFont(`${fast ? 600 : 400} 11px Archivo, system-ui, sans-serif`);
+      ctx.fillStyle = fast ? look.ink : look.dim;
+      reading(ctx, `${rate > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(rate), 1)}/h`, x + half - pad, top, look, "right");
+    }
+    drawQuadrants(ctx, x, y, id, look, { total: now ? now.flow : null, r: half });
+    drawTrend(ctx, id, x - half + pad, y + half * 0.42, (half - pad) * 2, half * 0.26, look);
+    if (day) drawDayBar(ctx, x, y + half * 0.84, day, look);
+    ctx.restore();
+  }
+  // vis-network custom shape: the square for one node, its readings inside, its name below.
   function card(id) {
     return ({ ctx, x, y, state: { selected, hover } }) => {
-      const dimensionsRadius = App.state.mode === "live" ? circleRadius(id) : CIRC.r;
+      const size = nodeHalf();
       return ({
       drawNode() {
         const s = App.nodeStyle(id), d = NORA.assets[id];
         const live = App.state.mode === "live";
-        const detailed = detailedFlow(network ? network.getScale() : 1);
-        const radius = live ? circleRadius(id) : CIRC.r;
+        const scale = network ? network.getScale() : 1, detailed = detailedFlow(scale);
+        const half = nodeHalf();
         const look = C.card[s.inactive ? "inactive" : live ? "active" : "normal"];
         ctx.save();
         ctx.globalAlpha = s.dim ? 0.35 : 1;
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        squarePath(ctx, x, y, half);
         ctx.fillStyle = look.fill;
         ctx.fill();
-        if (s.level) { // alarm: dark casing ring, colour inside it, never colour alone
+        if (s.level) { // alarm: dark casing, colour inside it, never colour alone
           ctx.lineWidth = 5; ctx.strokeStyle = C.casing; ctx.stroke();
           ctx.lineWidth = 3; ctx.strokeStyle = App.levelColor[s.level]; ctx.stroke();
         } else {
@@ -283,85 +319,65 @@
           ctx.strokeStyle = selected || hover ? look.ink : look.edge;
           ctx.stroke();
         }
-        // Inside the circle: flow now (MSm³/d). Pressure sits outside, below the name.
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         const now = live ? App.reading(id) : null;
         const big = live ? (now.flow == null ? "–" : App.fmt(now.flow, now.flow < 10 ? 1 : 0))
           : App.state.mode === "load" && d.modelFlow != null ? App.fmt(d.modelFlow)
           : App.state.mode === "risk" && d.lost ? `−${App.fmt(d.lost)}` : "";
-        const day = live ? App.dayDelivery(id) : null; // exit points: within-day delivery bar
-        const pressure = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "";
-        if (live && overviewReading(network ? network.getScale() : 1, radius)) {
+        if (live && overviewReading(scale, half)) {
           ctx.fillStyle = look.ink;
           ctx.font = modelFont("600 13px Archivo, system-ui, sans-serif");
-          reading(ctx, big, x, y, look); // one readable total when the circle can contain it
-        } else if (live && detailed) drawQuadrants(ctx, x, y, id, look, { day, total: now.flow, r: radius });
+          reading(ctx, big, x, y, look); // zoomed out: one readable total when the square can hold it
+        } else if (live && detailed) drawSquare(ctx, x, y, id, look, { half, now, day: App.dayDelivery(id) });
         else if (big) {
           ctx.fillStyle = look.ink;
           ctx.font = "600 12.5px Archivo, system-ui, sans-serif";
-          if (detailed) ctx.fillText(fitText(ctx, big, CIRC.r * 1.6), x, y);
-          else if (overviewReading(network ? network.getScale() : 1, radius)) reading(ctx, big, x, y, look);
+          if (detailed) ctx.fillText(fitText(ctx, big, half * 1.6), x, y);
+          else if (overviewReading(scale, half)) reading(ctx, big, x, y, look);
         }
         if (!detailed) {
-          drawnBoxes[id] = [x - radius, y - radius, x + radius, y + radius];
-          drawOverviewName(ctx, id, x, y, radius);
+          drawnBoxes[id] = [x - half, y - half, x + half, y + half];
+          drawOverviewName(ctx, id, x, y, half);
           ctx.restore();
-          if (s.level) App.drawBadge(ctx, s.level, x + radius - 3, y - radius + 3, 8);
+          if (s.level) App.drawBadge(ctx, s.level, x + half - 2, y - half + 2, 8);
           return;
         }
-        // Name below the circle, then the rate of change (bold when it is fast) and the
-        // trend, on a paper backing: lines leave a node downwards, and no line may run
-        // through its text (Ray, 28 Oct).
+        /* The name below the square (and, outside Live, what the mode says about the
+           node), on a paper backing: lines leave a node downwards, and no line may run
+           through its text (Ray, 28 Oct). Text on the paper takes the paper's ink. */
         ctx.textBaseline = "alphabetic";
         ctx.textAlign = "center";
-        const nameY = y + radius + CIRC.name, pressureY = nameY + CIRC.sub;
-        const subY = pressureY + (pressure ? CIRC.sub : 0);
-        // Text under the circle sits on the paper, not in the circle: it takes the
-        // paper's ink. A dark (offline) circle's light ink was unreadable there.
+        const nameY = y + half + CIRC.name, subY = nameY + CIRC.sub;
         const paperInk = { ...look, ink: C.text, dim: C.text_dim };
         ctx.font = NAME_FONT;
-        const name = fitText(ctx, d.name, radius * 3);
-        let width = ctx.measureText(name).width;
-        const r = live ? App.flowRate(id) : null;
+        const name = fitText(ctx, d.name, half * 3);
+        let width = Math.max(ctx.measureText(name).width, half);
         let sub = null;
-        if (r != null && Math.abs(r) >= 0.05) {
-          const through = App.window4h(id).past.slice(-1)[0] || 0;
-          const fast = through > 0 && Math.abs(r) / through >= App.thresholds.step[0];
-          sub = { text: `${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`, font: `${fast ? 600 : 400} 11px Archivo, system-ui, sans-serif`, ink: fast ? paperInk.ink : paperInk.dim };
-        } else if (s.sub && !live) {
+        if (s.sub && !live) {
           ctx.font = SUB_FONT;
-          sub = { text: fitText(ctx, s.sub, CIRC.r * 3), font: SUB_FONT, ink: paperInk.dim };
+          sub = fitText(ctx, s.sub, half * 3);
+          width = Math.max(width, ctx.measureText(sub).width);
         }
-        if (sub) { ctx.font = sub.font; width = Math.max(width, ctx.measureText(sub.text).width); }
-        if (pressure) { ctx.font = modelFont(SUB_FONT); width = Math.max(width, ctx.measureText(pressure).width); }
-        if (live) width = Math.max(width, radius * 2);
-        const bottom = live ? subY + 4 + CIRC.trend : (sub ? subY : nameY) + 4;
-        const half = Math.max(radius, width / 2 + 4);
-        drawnBoxes[id] = [x - half, y - radius, x + half, bottom];
+        const bottom = (sub ? subY : nameY) + 4;
+        drawnBoxes[id] = [x - Math.max(half, width / 2 + 4), y - half, x + Math.max(half, width / 2 + 4), bottom];
         ctx.save();
         ctx.globalAlpha = 1;
         ctx.fillStyle = C.paper;
-        ctx.fillRect(x - width / 2 - 4, y + radius + 1.5, width + 8, bottom - (y + radius + 1.5));
+        ctx.fillRect(x - width / 2 - 4, y + half + 1.5, width + 8, bottom - (y + half + 1.5));
         ctx.restore();
         ctx.fillStyle = paperInk.ink;
         ctx.font = NAME_FONT;
         ctx.fillText(name, x, nameY);
-        if (pressure) {
-          ctx.font = modelFont(SUB_FONT);
-          ctx.fillStyle = paperInk.dim;
-          ctx.fillText(pressure, x, pressureY);
-        }
         if (sub) {
-          ctx.font = sub.font;
-          ctx.fillStyle = sub.ink;
-          ctx.fillText(sub.text, x, subY);
+          ctx.font = SUB_FONT;
+          ctx.fillStyle = paperInk.dim;
+          ctx.fillText(sub, x, subY);
         }
-        if (live) drawTrend(ctx, id, x - radius, subY + 2, radius * 2, CIRC.trend, paperInk);
         ctx.restore();
-        if (s.level) App.drawBadge(ctx, s.level, x + radius - 3, y - radius + 3, 8);
+        if (s.level) App.drawBadge(ctx, s.level, x + half - 2, y - half + 2, 8);
       },
-      nodeDimensions: { width: dimensionsRadius * 2, height: dimensionsRadius * 2 + CIRC.name + CIRC.sub * 2 + CIRC.trend + 4 },
+      nodeDimensions: { width: size * 2, height: size * 2 + CIRC.name + CIRC.sub + 4 },
       });
     };
   }
@@ -382,11 +398,11 @@
 
   function pointAlong(edge, along, positions) {
     const a = positions[edge.from], b = positions[edge.to];
-    const len = Math.hypot(b.x - a.x, b.y - a.y);
-    // Route markers use the visible line segment, not the centres hidden by the
-    // enlarged circles. Keep a small gap so neither a dot nor a peak band enters a node.
+    const len = Math.hypot(b.x - a.x, b.y - a.y) || 1, ux = (b.x - a.x) / len, uy = (b.y - a.y) / len;
+    // Route markers use the visible line segment, from where it leaves one square to
+    // where it enters the next, with a small gap so no dot or peak band enters a node.
     const screenScale = network ? network.getScale() : 1;
-    const gapA = circleRadius(edge.from, positions) + 8 / screenScale, gapB = circleRadius(edge.to, positions) + 8 / screenScale;
+    const gapA = edgeGap(nodeHalf(), ux, uy) + 8 / screenScale, gapB = edgeGap(nodeHalf(), ux, uy) + 8 / screenScale;
     const start = Math.min(0.45, gapA / len), end = Math.max(0.55, 1 - gapB / len);
     const t = start + (end - start) * along;
     return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, angle: Math.atan2(b.y - a.y, b.x - a.x) };
@@ -398,16 +414,16 @@
   function animateStubs(scale) {
     return scale >= 0.5 && App.settings().animation && App.live.playing && !App.reduceMotion;
   }
-  function stubDistance(id, travel, scale, positions = framePos) {
-    return circleRadius(id, positions) + 10 / scale + travel;
+  function stubDistance(id, travel, scale, positions = framePos, ux = 1, uy = 0) {
+    return edgeGap(nodeHalf(), ux, uy) + 10 / scale + travel;
   }
   function stubClear(a, b, positions, scale) {
     const vx = b.x - a.x, vy = b.y - a.y, length2 = vx * vx + vy * vy;
     for (const [id, point] of Object.entries(positions)) {
       if (!point) continue;
       const t = length2 ? Math.max(0, Math.min(1, ((point.x - a.x) * vx + (point.y - a.y) * vy) / length2)) : 0;
-      const distance = Math.hypot(point.x - (a.x + vx * t), point.y - (a.y + vy * t));
-      if (distance < circleRadius(id, positions) + 2 / scale) return false;
+      const px = a.x + vx * t, py = a.y + vy * t; // nearest point; inside a square is by its larger offset
+      if (Math.max(Math.abs(point.x - px), Math.abs(point.y - py)) < nodeHalf() + 2 / scale) return false;
     }
     return true;
   }
@@ -483,7 +499,7 @@
         ctx.lineWidth = (1.6 + share * 2.2) / scale;
         for (let k = 0; k < 2; k++) {
           const t = (App.live.clock * 0.45 + k / 2) % 1;
-          const d = stubDistance(nid, inflow ? (stub - band) * (1 - t) + band : (stub - band) * t + band, scale, positions);
+          const d = stubDistance(nid, inflow ? (stub - band) * (1 - t) + band : (stub - band) * t + band, scale, positions, ux, uy);
           ctx.globalAlpha = 0.25 + (inflow ? t : 1 - t) * 0.55;
           const cx = pn.x + ux * d, cy = pn.y + uy * d;
           const x1 = cx - ux * band / 2, y1 = cy - uy * band / 2;
@@ -525,7 +541,7 @@
       const p = positions[nid];
       if (!p || App.nodeStyle(nid).hidden) continue; // not placed, or hidden
       const dom = toDOM(p);
-      const score = Math.hypot(dom.x - at.x, dom.y - at.y) - circleRadius(nid, positions) * scale;
+      const score = Math.max(Math.abs(dom.x - at.x), Math.abs(dom.y - at.y)) - nodeHalf() * scale; // to the square's edge
       if (score < bestScore) { bestScore = score; best = nid; }
     }
     for (const pid of App.pipeIds) {
@@ -681,7 +697,7 @@
     const positions = Object.values(network.getPositions());
     if (!positions.length || !el.clientWidth) return 0;
     const xs = positions.map((p) => p.x), ys = positions.map((p) => p.y);
-    const margin = Math.max(CIRC.r, ...App.nodeIds.map((id) => circleRadius(id))) * 6;
+    const margin = nodeHalf() * 6;
     const w = Math.max(...xs) - Math.min(...xs) + margin, h = Math.max(...ys) - Math.min(...ys) + margin;
     return Math.min(el.clientWidth / w, el.clientHeight / h) * 0.8;
   }
@@ -716,7 +732,8 @@
 
   view.quadrants = quadrants; // for tests: which side of a node each outflow is written on
   view.flowQuadrants = flowQuadrants;
-  view.circleRadius = circleRadius;
+  view.circleRadius = circleRadius; // half a square's side
+  view.drawSquare = drawSquare;
   view.drawQuadrants = drawQuadrants;
   view.drawDayBar = drawDayBar;
   view.pointAlong = pointAlong;
