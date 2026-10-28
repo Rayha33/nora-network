@@ -297,6 +297,36 @@ test("flow nodes: incoming and outgoing totals share space dynamically", () => {
   assert.ok(mixed.radius > 30, "the mixed-direction circle expands for two stacked readings");
 });
 
+test("flow squares: every connected pipeline gets its own flow value inside the square", () => {
+  const loaded = loadApp();
+  const { App, NORA } = loaded;
+  loadFirstHour(App, NORA);
+  App.state.mode = "live";
+  App.live.values = App.live.frames[0].flows;
+  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 258, y: stage * 204 }]));
+  const id = "ttf"; // seven connected lines: the case quadrant totals cannot represent
+  const expected = App.pipeIds.filter((pid) => {
+    const p = NORA.assets[pid];
+    return (p.from === id || p.to === id) && !App.pipeStyle(pid).hidden;
+  });
+  assert.equal(expected.length, 7);
+  const labels = [];
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
+      if (key === "fillText") return (text, x, y) => labels.push({ text, x, y });
+      return () => {};
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  const half = App.views.flow.circleRadius(id);
+  App.views.flow.drawQuadrants(ctx, 0, 0, id, App.colors.card.active, { total: null, r: half, positions: pos });
+  assert.equal(labels.length, expected.length, "one reading per line, never a quadrant sum or a dropped zero");
+  assert.ok(labels.every((label) => Math.abs(label.x) <= half && Math.abs(label.y) <= half), "every flow is inside the square");
+  assert.ok(labels.every((label) => /M$|^–$/.test(label.text)), "every label is a flow value or an explicit missing value");
+});
+
 test("flow nodes: a mixed quadrant renders separate numeric readings without prefixes", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;
@@ -436,10 +466,88 @@ function loadFirstHour(App, nora) {
   App.live.time = stream.times[0];
 }
 
-/* Ray, 28 Oct: "we want to use squares instead of circles as nodes as we can pack in
-   more information and numbers". A live node is a square holding its pressure, its
-   rate of change, the flow on each line and its trend; the name sits below it. */
-test("flow squares: pressure, rate, flows and trend sit inside the square, the name below", () => {
+test("flow squares: every line end has its node pressure just outside the square", () => {
+  const loaded = loadApp();
+  const { App, NORA } = loaded;
+  loadFirstHour(App, NORA);
+  App.state.mode = "live";
+  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 258, y: stage * 204 }]));
+  const id = "sleipner";
+  const expected = App.pipeIds.filter((pid) => {
+    const p = NORA.assets[pid];
+    return (p.from === id || p.to === id) && !App.pipeStyle(pid).hidden;
+  });
+  const labels = [];
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
+      if (key === "fillText") return (text, x, y) => labels.push({ text, x, y });
+      return () => {};
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  const half = App.views.flow.circleRadius(id);
+  App.views.flow.drawEndpointPressures(ctx, 0, 0, id, App.colors.card.active, { half, positions: pos });
+  const pressures = labels.filter((label) => label.text === `${App.fmt(App.reading(id).pressure)} bar`);
+  assert.equal(pressures.length, expected.length, "one pressure for every pipeline end at this node");
+  assert.ok(pressures.every((label) => Math.max(Math.abs(label.x), Math.abs(label.y)) > half), "each pressure is outside the square");
+});
+
+test("flow squares: endpoint pressure labels at a node never overlap each other", () => {
+  const loaded = loadApp();
+  const { App, NORA } = loaded;
+  loadFirstHour(App, NORA);
+  App.state.mode = "live";
+  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: stage * 204, y: rank * 258 }]));
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
+      return () => {};
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  const collisions = [];
+  for (const id of App.nodeIds) {
+    const boxes = App.views.flow.drawEndpointPressures(ctx, 0, 0, id, App.colors.card.active, { half: 64, positions: pos });
+    for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+      const a = boxes[i], b = boxes[j];
+      if (a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1]) collisions.push(`${id}: ${i}/${j}`);
+    }
+  }
+  assert.deepEqual(collisions, [], "every pressure remains readable, even at a busy hub");
+});
+
+test("flow squares: pressure labels also avoid labels from neighbouring nodes", () => {
+  const loaded = loadApp();
+  const { App, NORA } = loaded;
+  loadFirstHour(App, NORA);
+  App.state.mode = "live";
+  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: stage * 250, y: rank * 72 }]));
+  pos.grain_lng = { x: -1350, y: 1344 };
+  pos.nbp = { x: -1466, y: 1536 };
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
+      return () => {};
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  const placed = [];
+  App.views.flow.drawEndpointPressures(ctx, pos.grain_lng.x, pos.grain_lng.y, "grain_lng", App.colors.card.active, { half: 64, positions: pos, placed });
+  App.views.flow.drawEndpointPressures(ctx, pos.nbp.x, pos.nbp.y, "nbp", App.colors.card.active, { half: 64, positions: pos, placed });
+  assert.equal(placed.length, 6, "both nodes register every endpoint label in the shared layout");
+  for (let i = 0; i < placed.length; i++) for (let j = i + 1; j < placed.length; j++) {
+    const a = placed[i], b = placed[j];
+    assert.ok(!(a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1]), `pressure boxes ${i} and ${j} do not overlap`);
+  }
+});
+
+/* A live node is a square holding one flow value per line, with pressure repeated outside
+   at every line end; the rate and trend remain where there is room, and the name sits below. */
+test("flow squares: rate, flows and trend sit inside, pressure moves to the line ends", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;
   loadFirstHour(App, loaded.NORA);
@@ -461,7 +569,7 @@ test("flow squares: pressure, rate, flows and trend sit inside the square, the n
   assert.ok(!calls.some((c) => c.op === "arc"), "not as a circle");
   const inside = (c) => Math.abs(c.args[1]) <= half && Math.abs(c.args[2]) <= half;
   const pressure = calls.find((c) => c.op === "fillText" && c.args[0] === `${App.fmt(App.reading(id).pressure)} bar`);
-  assert.ok(pressure && inside(pressure), "the pressure is inside the square");
+  assert.equal(pressure, undefined, "pressure is no longer drawn inside the square");
   const flows = calls.filter((c) => c.op === "fillText" && /M$/.test(c.args[0]));
   assert.ok(flows.length > 0 && flows.every(inside), "the flow readings are inside the square");
   const name = calls.find((c) => c.op === "fillText" && c.args[0] === NORA.assets[id].name);

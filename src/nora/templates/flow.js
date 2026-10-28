@@ -1,22 +1,21 @@
 /* Flow view (level 2): the whole network as a gas flow overview on dotted paper, top to
    bottom by default (fields at the top, markets at the bottom), with straight lines.
    vis-network draws the nodes, edges and options pyvis produced; each node is drawn as
-   a square holding its pressure (bar), rate of change, the incoming and outgoing flow
-   on each line (MSm³/d) and a 4-hour trend (the last 2 hours of flow, solid, and the
-   next 2 hours of nominations, dashed), with its name below. Stage and rank come from layout.py
-   (NORA.grid); direction and spacing from the settings; colours, widths and labels from
-   App.pipeStyle / App.nodeStyle. Alarm badges, pigs and peaks are drawn on top. */
+   a square holding one flow value for every connected line (MSm³/d), with its pressure
+   repeated just outside the square at every line end. Rate of change and a 4-hour trend
+   remain where the line readings leave room; the name sits below. Stage and rank come
+   from layout.py (NORA.grid); direction and spacing come from the settings; colours,
+   widths and labels come from App.pipeStyle / App.nodeStyle. */
 (() => {
   "use strict";
   const view = { ready: false, mounted: false };
   const C = App.colors; // updated in place when the theme switches
   /* Squares, not circles (Ray, 28 Oct: "we want to use squares instead of circles as
      nodes as we can pack in more information and numbers"; the Map keeps its circles).
-     A live square holds the pressure and the rate of change along its top, the flow on
-     each line in the quarter facing it (incoming above outgoing), and the 4-hour trend
-     along its foot, with an exit point's within-day delivery bar under it; the name
-     sits below the square, on the paper. Every live square is one size, so the drawing
-     reads as a tidy grid. No icons: the space is for numbers. */
+     A live square holds one flow reading per connected line, stacked in the column facing
+     that line; pressure sits outside at each line end. Rate and trend are secondary and
+     yield to dense line readings. The name sits below the square, on the paper. Every live
+     square is one size, so the drawing reads as a tidy grid. No icons: space is for numbers. */
   const CIRC = { r: 30, name: 14, sub: 12, trend: 12, pad: 8 };
   const SQUARE = { live: 64, plain: 30, corner: 4 }; // half a side, in canvas units
   const nodeHalf = () => (App.state.mode === "live" ? SQUARE.live : SQUARE.plain);
@@ -65,10 +64,12 @@
 
   // The paper: a dot grid in canvas units, so it pans and zooms with the drawing.
   let framePos = {}; // node positions for this frame (nodes can be dragged)
+  let pressurePlacements = []; // screen-clear endpoint labels across the whole drawing
   let overviewBoxes = []; // screen-space circles and accepted names at low zoom
   function paper(ctx) {
     App.frame.begin(); // ends after the overlay: one cache for the whole vis frame
     framePos = network.getPositions();
+    pressurePlacements = [];
     drawnBoxes = {}; // refilled as the nodes are drawn
     const scale = network.getScale();
     overviewBoxes = scale < 1 ? Object.entries(framePos).map(([id, p]) => {
@@ -160,6 +161,27 @@
     const p = NORA.assets[pid];
     for (const end of [p.from, p.to]) (linesAt[end] = linesAt[end] || []).push(pid);
   }
+  /* One reading for every visible line at this node. Zero is a real flow and gets a
+     label too; only an actually missing value is shown as an en dash. */
+  function lineReadings(id, positions = framePos) {
+    const here = positions[id], out = [];
+    if (!here) return out;
+    for (const pid of linesAt[id] || []) {
+      const p = NORA.assets[pid], v = App.live.values[pid];
+      if ((p.from !== id && p.to !== id) || App.pipeStyle(pid).hidden) continue;
+      const otherId = p.from === id ? p.to : p.from, other = positions[otherId];
+      if (!other) continue;
+      const dx = other.x - here.x, dy = other.y - here.y, length = Math.hypot(dx, dy) || 1;
+      const value = v == null ? null : Math.abs(v);
+      out.push({
+        pid, otherId, value, ux: dx / length, uy: dy / length,
+        side: `${dy > 0 ? "S" : "N"}${dx >= 0 ? "E" : "W"}`,
+        direction: v == null || v === 0 ? null : (p.from === id) === (v > 0) ? "out" : "in",
+        text: value == null ? "–" : `${App.fmt(value, value < 10 ? 1 : 0)}M`,
+      });
+    }
+    return out;
+  }
   /* Asked for several times per node per frame (circle size, readings, line ends):
      within one frame each node and set of positions is worked out once. */
   function flowQuadrants(id, positions = framePos) {
@@ -244,45 +266,39 @@
     ctx.fillText(text, point.x, point.y);
     ctx.restore();
   }
-  /* The flow on each line, in the quarter of the square facing it: the upper cells
-     for lines to the north, the lower ones for lines to the south; incoming (dim) above
-     outgoing. A node with no flowing line shows its total in the middle. */
+  /* Every line gets its own flow reading inside the square. Values are stacked in the
+     east/west column facing their lines, north before south; no quadrant totals and no
+     dropped zero flows. A node with no visible lines keeps its total in the middle. */
   function drawQuadrants(ctx, x, y, id, look, { total, r = SQUARE.live, positions = framePos }) {
-    const q = flowQuadrants(id, positions), dx = r * 0.5, rows = { N: -r * 0.36, S: r * 0.16 };
+    const readings = lineReadings(id, positions), dx = r * 0.5;
     ctx.save();
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.font = modelFont("600 13px Archivo, system-ui, sans-serif");
-    for (const [side, cell] of Object.entries(q)) {
-      const both = cell.in && cell.out, cx = x + (side[1] === "E" ? dx : -dx), cy = y + rows[side[0]];
-      const labels = [];
-      if (cell.in) labels.push({ text: `${App.fmt(cell.in, cell.in < 10 ? 1 : 0)}M`, dy: both ? -7 : 0, ink: look.dim });
-      if (cell.out) labels.push({ text: `${App.fmt(cell.out, cell.out < 10 ? 1 : 0)}M`, dy: both ? 7 : 0, ink: look.ink });
-      for (const label of labels) {
-        ctx.fillStyle = label.ink;
-        reading(ctx, fitText(ctx, label.text, r * 0.9), cx, cy + label.dy, look);
-      }
+    ctx.font = modelFont("600 12px Archivo, system-ui, sans-serif");
+    for (const column of ["W", "E"]) {
+      const lines = readings.filter((line) => line.side[1] === column)
+        .sort((a, b) => a.side[0].localeCompare(b.side[0]) || a.pid.localeCompare(b.pid));
+      const cx = x + (column === "E" ? dx : -dx), step = lines.length > 5 ? 13 : 14, start = y - (lines.length - 1) * step / 2;
+      lines.forEach((line, index) => {
+        ctx.fillStyle = line.direction === "out" ? look.ink : look.dim;
+        reading(ctx, fitText(ctx, line.text, r * 0.9), cx, start + index * step, look);
+      });
     }
-    if (!Object.keys(q).length && total != null) {
+    if (!readings.length && total != null) {
       ctx.fillStyle = look.ink;
-      reading(ctx, `${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y + (rows.N + rows.S) / 2, look);
+      reading(ctx, `${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y, look);
     }
     ctx.restore();
   }
-  /* A live square, inside: the pressure (left) and how fast the flow through it is
-     changing (right) along the top; the flow per quarter in the middle; the 4-hour
-     trend along the foot, and at exit points the within-day delivery bar under it.
-     Readings are written at their real screen size on a patch of the square's fill. */
+  /* A live square: one flow value per connected line, with the rate and trend retained
+     only where they do not compete with a dense stack of required line readings. */
   function drawSquare(ctx, x, y, id, look, { half, now, day }) {
     const pad = half * 0.14, top = y - half * 0.8;
+    const readings = lineReadings(id), maxColumn = Math.max(0,
+      ...["W", "E"].map((column) => readings.filter((line) => line.side[1] === column).length));
     ctx.save();
     ctx.textBaseline = "middle";
-    if (now && now.pressure != null) {
-      ctx.font = modelFont(SUB_FONT);
-      ctx.fillStyle = look.dim;
-      reading(ctx, `${App.fmt(now.pressure)} bar`, x - half + pad, top, look, "left");
-    }
-    const rate = App.flowRate(id);
+    const rate = maxColumn <= 4 ? App.flowRate(id) : null;
     if (rate != null && Math.abs(rate) >= 0.05) {
       const through = App.window4h(id).past.slice(-1)[0] || 0;
       const fast = through > 0 && Math.abs(rate) / through >= App.thresholds.step[0];
@@ -291,9 +307,43 @@
       reading(ctx, `${rate > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(rate), 1)}/h`, x + half - pad, top, look, "right");
     }
     drawQuadrants(ctx, x, y, id, look, { total: now ? now.flow : null, r: half });
-    drawTrend(ctx, id, x - half + pad, y + half * 0.42, (half - pad) * 2, half * 0.26, look);
+    if (maxColumn <= 2) drawTrend(ctx, id, x - half + pad, y + half * 0.42, (half - pad) * 2, half * 0.26, look);
     if (day) drawDayBar(ctx, x, y + half * 0.84, day, look);
     ctx.restore();
+  }
+  /* The pressure belongs to a pipeline end, not to the middle of the node. Repeat the
+     node's measured pressure beside every connected line, just beyond the square. A
+     node without a measurement says so rather than borrowing a neighbour's pressure. */
+  function drawEndpointPressures(ctx, x, y, id, look, { half, positions = framePos, placed = network ? pressurePlacements : [] }) {
+    const readings = lineReadings(id, positions), now = App.reading(id);
+    const text = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "– bar";
+    const scale = network ? network.getScale() : 1, boxes = [];
+    ctx.save();
+    ctx.font = modelFont(SUB_FONT);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const width = ctx.measureText(text).width;
+    for (const line of readings) {
+      const gap = edgeGap(half, line.ux, line.uy);
+      const projectedHalf = (Math.abs(line.ux) * width / 2 + Math.abs(line.uy) * 8) / scale;
+      let px, py, box;
+      // Keep the label on its own pipeline, moving it outward until it is clear of
+      // the pressures already placed at this node. Never drop or overprint a value.
+      for (let attempt = 0; ; attempt++) {
+        const distance = gap + projectedHalf + (5 + attempt * 18) / scale;
+        px = x + line.ux * distance;
+        py = y + line.uy * distance;
+        box = [px - width / (2 * scale) - 2 / scale, py - 8 / scale,
+          px + width / (2 * scale) + 2 / scale, py + 8 / scale];
+        if (!placed.some((other) => box[0] < other[2] && box[2] > other[0] && box[1] < other[3] && box[3] > other[1])) break;
+      }
+      ctx.fillStyle = look.dim;
+      reading(ctx, text, px, py, { ...look, fill: C.paper });
+      boxes.push(box);
+      placed.push(box);
+    }
+    ctx.restore();
+    return boxes;
   }
   // vis-network custom shape: the square for one node, its readings inside, its name below.
   function card(id) {
@@ -325,12 +375,15 @@
         const big = live ? (now.flow == null ? "–" : App.fmt(now.flow, now.flow < 10 ? 1 : 0))
           : App.state.mode === "load" && d.modelFlow != null ? App.fmt(d.modelFlow)
           : App.state.mode === "risk" && d.lost ? `−${App.fmt(d.lost)}` : "";
+        let pressureBoxes = [];
         if (live && overviewReading(scale, half)) {
           ctx.fillStyle = look.ink;
           ctx.font = modelFont("600 13px Archivo, system-ui, sans-serif");
           reading(ctx, big, x, y, look); // zoomed out: one readable total when the square can hold it
-        } else if (live && detailed) drawSquare(ctx, x, y, id, look, { half, now, day: App.dayDelivery(id) });
-        else if (big) {
+        } else if (live && detailed) {
+          drawSquare(ctx, x, y, id, look, { half, now, day: App.dayDelivery(id) });
+          pressureBoxes = drawEndpointPressures(ctx, x, y, id, look, { half });
+        } else if (big) {
           ctx.fillStyle = look.ink;
           ctx.font = "600 12.5px Archivo, system-ui, sans-serif";
           if (detailed) ctx.fillText(fitText(ctx, big, half * 1.6), x, y);
@@ -348,7 +401,7 @@
            through its text (Ray, 28 Oct). Text on the paper takes the paper's ink. */
         ctx.textBaseline = "alphabetic";
         ctx.textAlign = "center";
-        const nameY = y + half + CIRC.name, subY = nameY + CIRC.sub;
+        let nameY = y + half + CIRC.name, subY = nameY + CIRC.sub;
         const paperInk = { ...look, ink: C.text, dim: C.text_dim };
         ctx.font = NAME_FONT;
         const name = fitText(ctx, d.name, half * 3);
@@ -359,12 +412,23 @@
           sub = fitText(ctx, s.sub, half * 3);
           width = Math.max(width, ctx.measureText(sub).width);
         }
+        const pressures = pressureBoxes || [], left = x - width / 2 - 4, right = x + width / 2 + 4;
+        const nameTop = () => nameY - 12;
+        for (const box of pressures) {
+          if (box[0] < right && box[2] > left && box[3] > nameTop() && box[1] < nameY + 4) {
+            nameY = box[3] + 12;
+            subY = nameY + CIRC.sub;
+          }
+        }
         const bottom = (sub ? subY : nameY) + 4;
-        drawnBoxes[id] = [x - Math.max(half, width / 2 + 4), y - half, x + Math.max(half, width / 2 + 4), bottom];
+        const ownBox = [x - Math.max(half, width / 2 + 4), y - half, x + Math.max(half, width / 2 + 4), bottom];
+        drawnBoxes[id] = [ownBox, ...pressures].reduce((all, box) => [
+          Math.min(all[0], box[0]), Math.min(all[1], box[1]), Math.max(all[2], box[2]), Math.max(all[3], box[3]),
+        ]);
         ctx.save();
         ctx.globalAlpha = 1;
         ctx.fillStyle = C.paper;
-        ctx.fillRect(x - width / 2 - 4, y + half + 1.5, width + 8, bottom - (y + half + 1.5));
+        ctx.fillRect(left, nameTop(), width + 8, bottom - nameTop());
         ctx.restore();
         ctx.fillStyle = paperInk.ink;
         ctx.font = NAME_FONT;
@@ -742,9 +806,11 @@
 
   view.quadrants = quadrants; // for tests: which side of a node each outflow is written on
   view.flowQuadrants = flowQuadrants;
+  view.lineReadings = lineReadings;
   view.circleRadius = circleRadius; // half a square's side
   view.drawSquare = drawSquare;
   view.drawQuadrants = drawQuadrants;
+  view.drawEndpointPressures = drawEndpointPressures;
   view.drawDayBar = drawDayBar;
   view.pointAlong = pointAlong;
   view.bandPath = bandPath;
