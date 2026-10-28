@@ -1030,6 +1030,12 @@ const App = (() => {
   }
 
   // ------------------------------------------------------------------ styling rules (both views)
+  // The visible portion of a pipeline between its two node circles. A marker reaching
+  // 0 or 1 stops at the circle edge; the next pipeline resumes beyond the other side.
+  function visibleRange(length, gapA, gapB = gapA) {
+    if (!(length > 0)) return [0, 1];
+    return [Math.min(0.45, gapA / length), Math.max(0.55, 1 - gapB / length)];
+  }
   // Major named routes on the Map only. Split physical pipelines share one short name;
   // feeders, short links and notional grid entries stay quiet.
   function pipeMapName(id) {
@@ -2235,7 +2241,7 @@ const App = (() => {
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
-    pipeStyle, pipeMapName, nodeStyle, markers, window4h, flowRate, thresholds: T,
+    pipeStyle, pipeMapName, visibleRange, nodeStyle, markers, window4h, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
     timeState,
     // The display profile (desk, wall or compact) and the one UI scale (1 = 100 %).

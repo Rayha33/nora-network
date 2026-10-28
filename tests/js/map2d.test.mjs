@@ -282,6 +282,13 @@ test("flow circles: a mixed quadrant renders separate numeric readings without p
   assert.notEqual(incoming.y, outgoing.y, "the two readings have their own lines");
 });
 
+test("markers: pipeline endpoints stop outside node circles", () => {
+  const { App } = loadApp();
+  assert.deepEqual(Array.from(App.visibleRange(100, 10)), [0.1, 0.9], "ten percent is clear at each end");
+  assert.deepEqual(Array.from(App.visibleRange(20, 10)), [0.45, 0.55], "even a short line keeps a usable visible segment");
+  assert.deepEqual(Array.from(App.visibleRange(0, 10)), [0, 1], "a degenerate line cannot produce NaN positions");
+});
+
 test("flow circles: animated overlays stay outside enlarged nodes", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;

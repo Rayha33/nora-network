@@ -386,8 +386,7 @@
     // Route markers use the visible line segment, not the centres hidden by the
     // enlarged circles. Keep a small gap so neither a dot nor a peak band enters a node.
     const screenScale = network ? network.getScale() : 1;
-    const gapA = circleRadius(edge.from, positions) + 8 / screenScale, gapB = circleRadius(edge.to, positions) + 8 / screenScale;
-    const start = Math.min(0.45, gapA / len), end = Math.max(0.55, 1 - gapB / len);
+    const [start, end] = App.visibleRange(len, circleRadius(edge.from, positions) + 8 / screenScale, circleRadius(edge.to, positions) + 8 / screenScale);
     const t = start + (end - start) * along;
     return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, angle: Math.atan2(b.y - a.y, b.x - a.x) };
   }
