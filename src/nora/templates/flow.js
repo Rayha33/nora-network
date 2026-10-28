@@ -338,6 +338,10 @@
     const t = start + (end - start) * along;
     return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, angle: Math.atan2(b.y - a.y, b.x - a.x) };
   }
+  function bandPath(edge, extent, positions) {
+    const steps = Math.max(4, Math.ceil(Math.abs(extent[1] - extent[0]) * 32));
+    return Array.from({ length: steps + 1 }, (_, i) => pointAlong(edge, extent[0] + (extent[1] - extent[0]) * (i / steps), positions));
+  }
   function animateStubs(scale) {
     return scale >= 0.5 && App.settings().animation && App.live.playing && !App.reduceMotion;
   }
@@ -445,8 +449,10 @@
   function drawMoving(ctx, positions, scale) {
     const detail = scale >= 0.9 ? 2 : scale >= 0.5 ? 1 : 0;
     const marksNow = App.markers().filter((m) => edges.get(m.id) && !App.pipeStyle(m.id).hidden);
-    const at = (m, t) => network.canvasToDOM(pointAlong(edges.get(m.id), Math.max(0, Math.min(1, t)), positions));
-    for (const m of marksNow) if (m.extent) App.drawBand(ctx, m, at(m, m.extent[0]), at(m, m.extent[1]), 3.2 * App.uiScale());
+    for (const m of marksNow) if (m.extent) {
+      const path = bandPath(edges.get(m.id), m.extent, positions).map((p) => network.canvasToDOM(p));
+      App.drawBand(ctx, m, path[0], path[path.length - 1], 3.2 * App.uiScale(), path);
+    }
     const taken = marksNow.length ? nodeBoxes() : []; // labels keep clear of the circles' text
     for (const m of marksNow) {
       const p = pointAlong(edges.get(m.id), Math.max(0, Math.min(1, m.along)), positions);
@@ -621,6 +627,7 @@
   view.drawQuadrants = drawQuadrants;
   view.drawDayBar = drawDayBar;
   view.pointAlong = pointAlong;
+  view.bandPath = bandPath;
   view.animateStubs = animateStubs;
   view.stubDistance = stubDistance;
   view.stubClear = stubClear;

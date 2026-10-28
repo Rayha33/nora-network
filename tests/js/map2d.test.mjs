@@ -97,6 +97,17 @@ test("peaks: opaque ends taper to a quieter centre behind the dot", () => {
   assert.ok(alpha(stops[Math.floor(stops.length / 2)]) < 128, "the centre lets the dot stand out");
 });
 
+test("peaks: Flow samples the pipeline path instead of joining only head and tail", () => {
+  const { App, NORA } = loadApp();
+  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 258, y: stage * 204 }]));
+  const edge = Object.values(NORA.assets).find((asset) => asset.from && asset.to && App.nodeIds.includes(asset.from) && App.nodeIds.includes(asset.to));
+  const extent = [0.2, 0.8];
+  const path = App.views.flow.bandPath(edge, extent, pos);
+  assert.ok(path.length >= 5, "the moving body follows several points on the visible line");
+  assert.deepEqual(path[0], App.views.flow.pointAlong(edge, extent[0], pos));
+  assert.deepEqual(path.at(-1), App.views.flow.pointAlong(edge, extent[1], pos));
+});
+
 test("flow circles: live flow (MSm³/d) and pressure (bar) for each node", () => {
   const loaded = loadApp();
   const { App } = loaded;
