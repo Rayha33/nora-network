@@ -64,3 +64,28 @@ test("sidebar: pipelines open too, and staying on the unit keeps it open", () =>
   App.sidebar.close();
   assert.equal(App.sidebar.id(), null, "closed again");
 });
+/* Ray, 28 Oct: "the text in sidebar should not be bold because i can barely read it".
+   The global `svg` rule outlines shapes; the asset picture's labels must never inherit it,
+   whatever the stylesheet says, so each label carries stroke:none and a regular weight. */
+test("sidebar: the asset picture's labels are never outlined or bold", () => {
+  const loaded = loadApp();
+  assertHealthy(assert, loaded);
+  const { App, document } = loaded;
+  App.go({ screen: "unit", unit: "all" });
+  for (const id of ["draupner_e", "europipe_1"]) {
+    App.select(id);
+    const markup = [];
+    const walk = (node) => {
+      if (!node || typeof node !== "object") return;
+      if (node._innerHTML) markup.push(node._innerHTML);
+      for (const child of node.children || []) walk(child);
+    };
+    walk(document.getElementById("side-body"));
+    const labels = markup.join("").match(/<text[^>]*>/g) || [];
+    assert.ok(labels.length >= 2, `${id}: the picture has labels`);
+    for (const tag of labels) {
+      assert.match(tag, /stroke:none/, `${id}: a label is never outlined`);
+      assert.doesNotMatch(tag, /font-weight="(6|7)00"|font-weight:\s*(7|8|9)00/, `${id}: and never bold`);
+    }
+  }
+});
