@@ -14,49 +14,69 @@
 </head>
 <body>
 <header class="bar">
-  <a class="brand" id="brand" href="./">NORA</a>
-  <nav class="crumbs" aria-label="Screens">
-    <button type="button" id="crumb-overview" title="Level 1: is the plan holding, and what needs attention"><span class="level">1</span>Overview</button>
-    <span class="sep">›</span>
-    <select id="crumb-unit" aria-label="Unit" title="Level 2: one part of the network, or all of it"></select>
-    <span class="sep" id="sep-asset" hidden>›</span>
-    <button type="button" id="crumb-asset" hidden></button>
-    <span class="sep" id="sep-diag" hidden>›</span>
-    <button type="button" id="crumb-diag" hidden title="Level 4: the raw numbers behind this asset"><span class="level">4</span>Diagnostics</button>
-  </nav>
-  <div class="seg" id="views" role="tablist" aria-label="Network view">
-    <button type="button" role="tab" data-view="map" title="Every asset where it really is">Map</button>
-    <button type="button" role="tab" data-view="flow" title="How gas travels: fields at the top, markets at the bottom">Flow</button>
+  <div class="bar-primary">
+    <a class="brand" id="brand" href="./" aria-label="NORA home">
+      <span class="brand-mark" aria-hidden="true">N</span>
+      <span class="brand-copy"><strong>NORA</strong><small>Network operations</small></span>
+    </a>
+    <nav class="crumbs" aria-label="Screens">
+      <button type="button" id="crumb-overview" title="Level 1: is the plan holding, and what needs attention"><span class="level">1</span>Overview</button>
+      <span class="sep">›</span>
+      <select id="crumb-unit" aria-label="Unit" title="Level 2: one part of the network, or all of it"></select>
+      <span class="sep" id="sep-asset" hidden>›</span>
+      <button type="button" id="crumb-asset" hidden></button>
+      <span class="sep" id="sep-diag" hidden>›</span>
+      <button type="button" id="crumb-diag" hidden title="Level 4: the raw numbers behind this asset"><span class="level">4</span>Diagnostics</button>
+    </nav>
+    <div class="primary-actions">
+      <div class="alarm-counts" id="alarm-counts" aria-live="polite"></div>
+      <button type="button" class="plan-chip" id="plan-chip" aria-live="polite" title="Can the network deliver what shippers nominated? Opens the overview"></button>
+      <label class="search" title="Find an asset by name">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+        <span class="sr-only">Find an asset</span>
+        <input id="search" list="asset-names" placeholder="Find an asset" autocomplete="off" spellcheck="false">
+        <datalist id="asset-names"></datalist>
+      </label>
+      <div class="utility-actions">
+        <button type="button" class="icon" id="key-toggle" aria-expanded="false" aria-controls="key" aria-label="Guide" title="Guide: what this shows and how to use it"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M6.2 6.3a1.9 1.9 0 1 1 2.6 1.8c-.5.2-.8.6-.8 1.1v.4"/><circle cx="8" cy="11.4" r=".4" class="fill"/></svg></button>
+        <button type="button" class="icon" id="theme-toggle" aria-label="Switch light and dark" title="Switch light and dark"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/><path d="M8 2.5a5.5 5.5 0 0 1 0 11z" class="fill"/></svg></button>
+        <button type="button" class="icon" id="settings-toggle" aria-expanded="false" aria-controls="settings" aria-label="Settings" title="Settings: labels, what to show, flow layout"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5h7M12 4.5h2M2 11.5h2M7 11.5h7"/><circle cx="10.5" cy="4.5" r="1.5"/><circle cx="5.5" cy="11.5" r="1.5"/></svg></button>
+      </div>
+    </div>
   </div>
-  <div class="seg" id="modes" role="tablist" aria-label="What the lines show">
-    <button type="button" role="tab" data-mode="live" title="Flows, pressures and nominations from the data being played">Live</button>
-    <button type="button" role="tab" data-mode="load" title="Model: how full each pipeline is when the network delivers all it can">Load</button>
-    <button type="button" role="tab" data-mode="risk" title="Model: how much gas is lost if an asset trips">Risk</button>
-    <button type="button" role="tab" data-mode="whatif" title="What-if: click assets to take them offline and see what the network can still deliver">What-if</button>
-    <button type="button" role="tab" data-mode="plain" title="Just the network, no values">Plain</button>
+  <div class="bar-secondary">
+    <span class="toolbar-label">View</span>
+    <div class="seg" id="views" role="tablist" aria-label="Network view">
+      <button type="button" role="tab" data-view="map" title="Every asset where it really is">Map</button>
+      <button type="button" role="tab" data-view="flow" title="How gas travels: fields at the top, markets at the bottom">Flow</button>
+    </div>
+    <span class="toolbar-rule" aria-hidden="true"></span>
+    <span class="toolbar-label">Mode</span>
+    <div class="seg modes" id="modes" role="tablist" aria-label="What the lines show">
+      <button type="button" role="tab" data-mode="live" title="Flows, pressures and nominations from the data being played">Live</button>
+      <button type="button" role="tab" data-mode="load" title="Model: how full each pipeline is when the network delivers all it can">Load</button>
+      <button type="button" role="tab" data-mode="risk" title="Model: how much gas is lost if an asset trips">Risk</button>
+      <button type="button" role="tab" data-mode="whatif" title="What-if: click assets to take them offline and see what the network can still deliver">What-if</button>
+      <button type="button" role="tab" data-mode="plain" title="Just the network, no values">Plain</button>
+    </div>
+    <div class="spacer"></div>
+    <label class="year" id="year-wrap" title="Timeline: drag the year to show the network as it was, or will be, in that year. Planned assets appear at their startup year; decommissioned ones disappear from their shutdown year">
+      <span class="toolbar-label">Network year</span>
+      <input type="range" id="year" min="1900" max="2100" step="1" value="1900" aria-label="Year shown on the timeline">
+      <output id="year-out" for="year" aria-live="polite"></output>
+    </label>
   </div>
-  <label class="year" id="year-wrap" title="Timeline: drag the year to show the network as it was, or will be, in that year. Planned assets appear at their startup year; decommissioned ones disappear from their shutdown year">
-    <span class="sr-only">Year shown</span>
-    <input type="range" id="year" min="1900" max="2100" step="1" value="1900" aria-label="Year shown on the timeline">
-    <output id="year-out" for="year" aria-live="polite"></output>
-  </label>
-  <div class="spacer"></div>
-  <div class="alarm-counts" id="alarm-counts" aria-live="polite"></div>
-  <button type="button" class="plan-chip" id="plan-chip" aria-live="polite" title="Can the network deliver what shippers nominated? Opens the overview"></button>
-  <label class="search" title="Find an asset by name">
-    <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
-    <span class="sr-only">Find an asset</span>
-    <input id="search" list="asset-names" placeholder="Find" autocomplete="off" spellcheck="false">
-    <datalist id="asset-names"></datalist>
-  </label>
-  <button type="button" class="icon" id="key-toggle" aria-expanded="false" aria-controls="key" aria-label="Guide" title="Guide: what this shows and how to use it"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M6.2 6.3a1.9 1.9 0 1 1 2.6 1.8c-.5.2-.8.6-.8 1.1v.4"/><circle cx="8" cy="11.4" r=".4" class="fill"/></svg></button>
-  <button type="button" class="icon" id="theme-toggle" aria-label="Switch light and dark" title="Switch light and dark"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/><path d="M8 2.5a5.5 5.5 0 0 1 0 11z" class="fill"/></svg></button>
-  <button type="button" class="icon" id="settings-toggle" aria-expanded="false" aria-controls="settings" aria-label="Settings" title="Settings: labels, what to show, flow layout"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5h7M12 4.5h2M2 11.5h2M7 11.5h7"/><circle cx="10.5" cy="4.5" r="1.5"/><circle cx="5.5" cy="11.5" r="1.5"/></svg></button>
 </header>
 
 <main class="stage">
   <section id="screen-overview" class="screen paper" aria-label="Level 1: overview"></section>
-  <div id="view-map" class="view" hidden aria-label="Level 2: unit on the map"></div>
+  <div id="view-map" class="view" hidden aria-label="Level 2: unit on the map">
+    <section class="map-context" aria-label="Current network view">
+      <span class="eyebrow" id="map-kicker">All operating units</span>
+      <h1 id="map-unit">North Sea gas network</h1>
+      <div class="map-context-meta"><span class="live-indicator" aria-hidden="true"></span><span id="map-mode-label">Live operations</span><span class="meta-separator">·</span><span>MSm³/d</span></div>
+    </section>
+  </div>
   <div id="view-flow" class="view" hidden aria-label="Level 2: unit as a gas flow overview"></div>
   <section id="screen-asset" class="screen paper" hidden aria-label="Level 3: asset detail"></section>
   <section id="screen-diag" class="screen paper" hidden aria-label="Level 4: diagnostics"></section>
@@ -76,21 +96,27 @@
 <aside class="pop" id="settings" hidden aria-label="Settings"></aside>
 
 <section class="player" id="player" hidden aria-label="Data player">
-  <button type="button" class="play" id="play" aria-label="Play" title="Play or pause the data">
-    <svg viewBox="0 0 16 16" aria-hidden="true" class="when-paused"><path d="M5 3.5v9l7.5-4.5z"/></svg>
-    <svg viewBox="0 0 16 16" aria-hidden="true" class="when-playing"><path d="M4.5 3.5h2.5v9H4.5zM9 3.5h2.5v9H9z"/></svg>
-  </button>
-  <div class="now">
-    <select id="stream-select" aria-label="Dataset"></select>
-    <time id="clock"></time>
+  <div class="transport">
+    <button type="button" class="play" id="play" aria-label="Play" title="Play or pause the data">
+      <svg viewBox="0 0 16 16" aria-hidden="true" class="when-paused"><path d="M5 3.5v9l7.5-4.5z"/></svg>
+      <svg viewBox="0 0 16 16" aria-hidden="true" class="when-playing"><path d="M4.5 3.5h2.5v9H4.5zM9 3.5h2.5v9H9z"/></svg>
+    </button>
+    <div class="now">
+      <span class="player-label">Dataset</span>
+      <select id="stream-select" aria-label="Dataset"></select>
+      <time id="clock"></time>
+    </div>
   </div>
-  <div class="track" title="Drag to move through time. Marks show when the plan is at risk; boxes are events">
-    <canvas id="spark" aria-hidden="true"></canvas>
-    <input type="range" id="scrub" min="0" max="0" step="1" value="0" aria-label="Position in the data">
+  <div class="timeline">
+    <div class="timeline-label"><span>Replay timeline</span><span>UTC</span></div>
+    <div class="track" title="Drag to move through time. Marks show when the plan is at risk; boxes are events">
+      <canvas id="spark" aria-hidden="true"></canvas>
+      <input type="range" id="scrub" min="0" max="0" step="1" value="0" aria-label="Position in the data">
+    </div>
   </div>
   <button type="button" class="next" id="next-problem" title="Jump to the next hour where the plan is at risk">Next problem</button>
-  <label class="speed" title="How fast the data plays"><span class="sr-only">Playback speed</span>
-    <select id="speed">
+  <label class="speed" title="How fast the data plays"><span class="player-label">Playback</span>
+    <select id="speed" aria-label="Playback speed">
       <option value="1">Real time</option>
       <option value="60">1 min / s</option>
       <option value="120">2 min / s</option>

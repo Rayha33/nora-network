@@ -14,6 +14,7 @@
      the live numbers (no icon: Ray, 28 Oct, "this is valuable space ... for live flow
      values and pressures"), with its name and rate below and a sparkline under that. */
   const CIRC = { r: 30, name: 14, sub: 12, trend: 12, pad: 8 };
+  const NAME_FONT = "600 11.5px Archivo, system-ui, sans-serif", SUB_FONT = "11px Archivo, system-ui, sans-serif";
   const SPACING = { // [stage, rank] in canvas units
     vertical: { compact: [96, 160], comfortable: [124, 178], spacious: [160, 210] },
     horizontal: { compact: [210, 62], comfortable: [250, 72], spacious: [300, 90] },
@@ -145,7 +146,17 @@
     }
     return out;
   }
-  function drawQuadrants(ctx, x, y, id, look, { pressure, day, total }) {
+  // A reading inside a circle, on a patch of the circle's own fill: the faint + and the
+  // day bar never run through a number.
+  function reading(ctx, text, x, y, look) {
+    const w = ctx.measureText(text).width;
+    ctx.save();
+    ctx.fillStyle = look.fill;
+    ctx.fillRect(x - w / 2 - 1.5, y - 6.5, w + 3, 13);
+    ctx.restore();
+    ctx.fillText(text, x, y);
+  }
+  function drawQuadrants(ctx, x, y, id, look, { day, total }) {
     const r = CIRC.r, q = quadrants(id), at = r * 0.42;
     ctx.save();
     ctx.globalAlpha = 0.35; // the faint +
@@ -159,28 +170,18 @@
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = look.ink;
-    ctx.font = "700 9.5px Archivo, system-ui, sans-serif";
+    ctx.font = "600 11px Archivo, system-ui, sans-serif";
     for (const [side, flow] of Object.entries(q)) {
       const [ux, uy] = QUAD[side];
-      ctx.fillText(fitText(ctx, `${App.fmt(flow, flow < 10 ? 1 : 0)}M`, r * 0.85), x + ux * at, y + uy * at);
+      reading(ctx, fitText(ctx, `${App.fmt(flow, flow < 10 ? 1 : 0)}M`, r * 0.85), x + ux * at, y + uy * at, look);
     }
-    // Pressure: across the top half when both upper quadrants are free (the usual case,
-    // gas arriving from above), else in a free quadrant. The exit day bar runs across
-    // the middle; a node with nothing leaving it (a market) shows its arrival below.
-    if (pressure) {
-      ctx.font = "600 8.5px Archivo, system-ui, sans-serif";
-      ctx.fillStyle = look.dim;
-      if (!q.NE && !q.NW) ctx.fillText(fitText(ctx, pressure, r * 1.5), x, y - at);
-      else {
-        const free = ["SW", "SE", "NW", "NE"].find((side) => !(side in q));
-        if (free) ctx.fillText(fitText(ctx, pressure.replace(" bar", "b"), r * 0.85), x + QUAD[free][0] * at, y + QUAD[free][1] * at);
-      }
-    }
+    // Flow remains in the quadrants facing its outgoing lines. Pressure is written
+    // outside the circle with the asset name, where it has room to stay readable.
     if (day) drawDayBar(ctx, x, y + 1, day, look);
     if (!Object.keys(q).length && total != null) {
-      ctx.font = "700 9.5px Archivo, system-ui, sans-serif";
+      ctx.font = "600 11px Archivo, system-ui, sans-serif";
       ctx.fillStyle = look.ink;
-      ctx.fillText(`${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y + at);
+      reading(ctx, `${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y + at, look);
     }
     ctx.restore();
   }
@@ -205,7 +206,7 @@
           ctx.strokeStyle = selected || hover ? look.ink : look.edge;
           ctx.stroke();
         }
-        // Inside the circle: flow now (MSm³/d), and pressure (bar) when it is measured.
+        // Inside the circle: flow now (MSm³/d). Pressure sits outside, below the name.
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         const now = live ? App.reading(id) : null;
@@ -214,36 +215,59 @@
           : App.state.mode === "risk" && d.lost ? `−${App.fmt(d.lost)}` : "";
         const day = live ? App.dayDelivery(id) : null; // exit points: within-day delivery bar
         const pressure = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "";
-        if (live) drawQuadrants(ctx, x, y, id, look, { pressure, day, total: now.flow });
+        if (live) drawQuadrants(ctx, x, y, id, look, { day, total: now.flow });
         else if (big) {
           ctx.fillStyle = look.ink;
-          ctx.font = "700 12.5px Archivo, system-ui, sans-serif";
+          ctx.font = "600 12.5px Archivo, system-ui, sans-serif";
           ctx.fillText(fitText(ctx, big, CIRC.r * 1.6), x, y);
         }
-        // Name below the circle, then the rate of change (bold when it is fast).
+        // Name below the circle, then the rate of change (bold when it is fast) and the
+        // trend, on a paper backing: lines leave a node downwards, and no line may run
+        // through its text (Ray, 28 Oct).
         ctx.textBaseline = "alphabetic";
         ctx.textAlign = "center";
-        let nameY = y + CIRC.r + CIRC.name;
-        ctx.fillStyle = look.ink;
-        ctx.font = "600 11.5px Archivo, system-ui, sans-serif";
-        ctx.fillText(fitText(ctx, d.name, CIRC.r * 3), x, nameY);
+        const nameY = y + CIRC.r + CIRC.name, pressureY = nameY + CIRC.sub;
+        const subY = pressureY + (pressure ? CIRC.sub : 0);
+        ctx.font = NAME_FONT;
+        const name = fitText(ctx, d.name, CIRC.r * 3);
+        let width = ctx.measureText(name).width;
         const r = live ? App.flowRate(id) : null;
+        let sub = null;
         if (r != null && Math.abs(r) >= 0.05) {
           const through = App.window4h(id).past.slice(-1)[0] || 0;
           const fast = through > 0 && Math.abs(r) / through >= App.thresholds.step[0];
-          ctx.font = `${fast ? 700 : 400} 10px Archivo, system-ui, sans-serif`;
-          ctx.fillStyle = fast ? look.ink : look.dim;
-          ctx.fillText(`${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`, x, nameY + CIRC.sub);
+          sub = { text: `${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`, font: `${fast ? 600 : 400} 11px Archivo, system-ui, sans-serif`, ink: fast ? look.ink : look.dim };
         } else if (s.sub && !live) {
-          ctx.fillStyle = look.dim;
-          ctx.font = "10px Archivo, system-ui, sans-serif";
-          ctx.fillText(fitText(ctx, s.sub, CIRC.r * 3), x, nameY + CIRC.sub);
+          ctx.font = SUB_FONT;
+          sub = { text: fitText(ctx, s.sub, CIRC.r * 3), font: SUB_FONT, ink: look.dim };
         }
-        if (live) drawTrend(ctx, id, x - CIRC.r, nameY + CIRC.sub + 2, CIRC.r * 2, CIRC.trend, look);
+        if (sub) { ctx.font = sub.font; width = Math.max(width, ctx.measureText(sub.text).width); }
+        if (pressure) { ctx.font = SUB_FONT; width = Math.max(width, ctx.measureText(pressure).width); }
+        if (live) width = Math.max(width, CIRC.r * 2);
+        const bottom = live ? subY + 4 + CIRC.trend : (sub ? subY : nameY) + 4;
+        ctx.save();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = C.paper;
+        ctx.fillRect(x - width / 2 - 4, y + CIRC.r + 1.5, width + 8, bottom - (y + CIRC.r + 1.5));
+        ctx.restore();
+        ctx.fillStyle = look.ink;
+        ctx.font = NAME_FONT;
+        ctx.fillText(name, x, nameY);
+        if (pressure) {
+          ctx.font = SUB_FONT;
+          ctx.fillStyle = look.dim;
+          ctx.fillText(pressure, x, pressureY);
+        }
+        if (sub) {
+          ctx.font = sub.font;
+          ctx.fillStyle = sub.ink;
+          ctx.fillText(sub.text, x, subY);
+        }
+        if (live) drawTrend(ctx, id, x - CIRC.r, subY + 2, CIRC.r * 2, CIRC.trend, look);
         ctx.restore();
         if (s.level) App.drawBadge(ctx, s.level, x + CIRC.r - 3, y - CIRC.r + 3, 8);
       },
-      nodeDimensions: { width: CIRC.r * 2, height: CIRC.r * 2 + CIRC.name + CIRC.sub + CIRC.trend + 4 },
+      nodeDimensions: { width: CIRC.r * 2, height: CIRC.r * 2 + CIRC.name + CIRC.sub * 2 + CIRC.trend + 4 },
     });
   }
 
@@ -446,7 +470,10 @@
     if (!view.ready) return;
     nodes.update(App.nodeIds.map((id) => {
       const s = App.nodeStyle(id);
-      return { id, hidden: s.hidden, title: `${NORA.assets[id].name}${s.sub ? `\n${s.sub}` : ""}` };
+      const details = App.state.mode === "live"
+        ? [s.flow ? `${s.flow} MSm³/d` : "", s.pressure].filter(Boolean).join("\n")
+        : s.sub;
+      return { id, hidden: s.hidden, title: `${NORA.assets[id].name}${details ? `\n${details}` : ""}` };
     }));
     edges.update(App.pipeIds.map((id) => {
       const s = App.pipeStyle(id);
@@ -507,5 +534,6 @@
   };
 
   view.quadrants = quadrants; // for tests: which side of a node each outflow is written on
+  view.card = card; // for tests: the renderer of one node
   App.register("flow", view);
 })();
