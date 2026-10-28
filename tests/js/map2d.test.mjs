@@ -74,7 +74,23 @@ test("peaks: the band and head follow every bend in the pipeline path", () => {
     set(target, key, value) { target[key] = value; return true; },
   });
   App.drawBand(ctx, { kind: "peak" }, { x: 0, y: 0 }, { x: 100, y: 100 }, 8, [{ x: 0, y: 0 }, { x: 50, y: 60 }, { x: 100, y: 100 }]);
-  assert.ok(curves.some(([cx, cy]) => cx === 50 && cy === 60), "the flexible body curves through the pipeline bend");
+  assert.ok(lines.some(([x, y]) => x === 50 && y === 60), "the body passes through the actual pipeline vertex");
+  assert.equal(curves.length, 0, "no smoothing curve may cut across the pipeline bend");
+});
+
+test("peaks: band sampling includes route vertices between head and tail", () => {
+  const { App } = loadApp();
+  assert.equal(typeof App.bandStops, "function");
+  const forward = App.bandStops([0.1, 0.9], [0.1, 0.35, 0.55, 0.9]);
+  assert.ok(forward.includes(0.35) && forward.includes(0.55), "neither bend is skipped");
+  assert.equal(forward[0], 0.1);
+  assert.equal(forward.at(-1), 0.9);
+  const reverse = App.bandStops([0.9, 0.1], [0.1, 0.35, 0.55, 0.9]);
+  assert.ok(reverse.every((value, i) => i === 0 || reverse[i - 1] > value), "reverse flow keeps head after tail");
+  assert.ok(reverse.includes(0.35) && reverse.includes(0.55));
+  const trimmed = App.bandStops([0.05, 0.95], [0, 0.23, 0.51, 0.77, 1], [0.1, 0.9]);
+  assert.ok(trimmed.some((value) => Math.abs(value - 0.1625) < 1e-9),
+    "a raw route vertex is converted into the same node-trimmed coordinates as the marker");
 });
 
 test("peaks: opaque ends taper to a quieter centre behind the dot", () => {

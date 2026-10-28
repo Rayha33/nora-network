@@ -575,6 +575,26 @@
    "source": "https://en.wikipedia.org/wiki/Central_Area_Transmission_System",
    "notes": "Central North Sea entry point to CATS",
    "line": 30,
+   "lost": 0.0,
+   "share": 0.0,
+   "modelFlow": 0.0,
+   "supply": false
+  },
+  "cats_t5": {
+   "kind": "node",
+   "name": "CATS T5 (Stella tie-in)",
+   "type": "hub",
+   "country": "GB",
+   "lat": 57.029375,
+   "lon": 1.203222,
+   "operator": "",
+   "capacity": null,
+   "status": "operating",
+   "startup": null,
+   "shutdown": null,
+   "source": "https://services-eu1.arcgis.com/OZMfUznmLTnWccBc/arcgis/rest/services/UKCS_offshore_infrastructure_pipeline_linear_(WGS84)/FeatureServer/1",
+   "notes": "Offshore tee on the CATS trunkline; receives Culzean gas at Stella PLEM",
+   "line": 31,
    "lost": 15.0,
    "share": 0.0166,
    "modelFlow": 15.0,
@@ -594,7 +614,7 @@
    "shutdown": null,
    "source": "https://totalenergies.com/newsroom/uk-total-starts-production-culzean-field?lang=eng",
    "notes": "High-pressure high-temperature field exporting through CATS",
-   "line": 31,
+   "line": 32,
    "lost": 15.0,
    "share": 0.0166,
    "modelFlow": 15.0,
@@ -614,7 +634,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Elgin%E2%80%93Franklin_fields",
    "notes": "Exports through SEAL",
-   "line": 32,
+   "line": 33,
    "lost": 15.0,
    "share": 0.0166,
    "modelFlow": 15.0,
@@ -634,7 +654,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/List%20of%20oil%20and%20gas%20fields%20of%20the%20North%20Sea",
    "notes": "Aggregate of mature southern gas fields",
-   "line": 33,
+   "line": 34,
    "lost": 15.0,
    "share": 0.0166,
    "modelFlow": 15.0,
@@ -654,7 +674,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/St_Fergus_Gas_Plant",
    "notes": "Gas terminal in Aberdeenshire",
-   "line": 34,
+   "line": 35,
    "lost": 79.0,
    "share": 0.0877,
    "modelFlow": 79.0,
@@ -674,7 +694,7 @@
    "shutdown": null,
    "source": "https://nstauthority.co.uk/the-move-to-net-zero/ukcs-oil-and-gas-terminals/teesside",
    "notes": "CATS receiving terminal at Seal Sands",
-   "line": 35,
+   "line": 36,
    "lost": 15.0,
    "share": 0.0166,
    "modelFlow": 15.0,
@@ -694,7 +714,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Easington_Gas_Terminal",
    "notes": "Langeled receiving terminal",
-   "line": 36,
+   "line": 37,
    "lost": 117.0,
    "share": 0.1298,
    "modelFlow": 117.0,
@@ -714,7 +734,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Bacton_Gas_Terminal",
    "notes": "Terminal for SEAL and the IUK and BBL interconnectors",
-   "line": 37,
+   "line": 38,
    "lost": 30.0,
    "share": 0.0333,
    "modelFlow": 30.0,
@@ -734,7 +754,7 @@
    "shutdown": null,
    "source": "https://nationalgrid.com/our-businesses/national-grid-ventures/grain-lng/who-we-are",
    "notes": "LNG import terminal on the Thames estuary",
-   "line": 38,
+   "line": 39,
    "lost": 58.0,
    "share": 0.0644,
    "modelFlow": 58.0,
@@ -754,7 +774,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Tyra_West_%E2%80%93_F3_pipeline",
    "notes": "Start of NOGAT; tie-in point for Danish gas",
-   "line": 39,
+   "line": 40,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 8.0,
@@ -774,7 +794,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/L10_gas_field",
    "notes": "Main hub of the NGT system; aggregate of tied-in fields",
-   "line": 40,
+   "line": 41,
    "lost": 10.0,
    "share": 0.0111,
    "modelFlow": 10.0,
@@ -794,7 +814,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/K13_gas_fields",
    "notes": "Start of WGT; aggregate of tied-in fields",
-   "line": 41,
+   "line": 42,
    "lost": 5.0,
    "share": 0.0055,
    "modelFlow": 5.0,
@@ -814,7 +834,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/NOGAT_Pipeline_System",
    "notes": "Terminal for NOGAT and WGT",
-   "line": 42,
+   "line": 43,
    "lost": 5.0,
    "share": 0.0055,
    "modelFlow": 13.0,
@@ -834,7 +854,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/BBL_Pipeline",
    "notes": "BBL compressor station",
-   "line": 43,
+   "line": 44,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 0.0,
@@ -854,7 +874,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Uithuizen_Gas_Plant",
    "notes": "NGT receiving terminal",
-   "line": 44,
+   "line": 45,
    "lost": 10.0,
    "share": 0.0111,
    "modelFlow": 10.0,
@@ -874,7 +894,7 @@
    "shutdown": null,
    "source": "https://gateterminal.com/en",
    "notes": "LNG import terminal at Rotterdam",
-   "line": 45,
+   "line": 46,
    "lost": 44.0,
    "share": 0.0488,
    "modelFlow": 44.0,
@@ -894,7 +914,7 @@
    "shutdown": null,
    "source": "https://gasunie.nl/en/projects/eemsenergyterminal",
    "notes": "Floating LNG import terminal",
-   "line": 46,
+   "line": 47,
    "lost": 22.0,
    "share": 0.0244,
    "modelFlow": 22.0,
@@ -914,7 +934,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Norpipe",
    "notes": "Norpipe receiving terminal",
-   "line": 47,
+   "line": 48,
    "lost": 44.0,
    "share": 0.0488,
    "modelFlow": 44.0,
@@ -934,7 +954,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Europipe_II",
    "notes": "Landfall of Europipe I and II",
-   "line": 48,
+   "line": 49,
    "lost": 90.0,
    "share": 0.0999,
    "modelFlow": 107.0,
@@ -954,7 +974,7 @@
    "shutdown": null,
    "source": "https://wilhelmshaven-lng.de/en",
    "notes": "Floating LNG import terminal",
-   "line": 49,
+   "line": 50,
    "lost": 27.0,
    "share": 0.03,
    "modelFlow": 27.0,
@@ -974,7 +994,7 @@
    "shutdown": null,
    "source": "https://fluxys.com/en/about-us/fluxys-belgium/infrastructure",
    "notes": "Terminal for Zeepipe and IUK",
-   "line": 50,
+   "line": 51,
    "lost": 42.0,
    "share": 0.0466,
    "modelFlow": 42.0,
@@ -994,7 +1014,7 @@
    "shutdown": null,
    "source": "https://fluxys.com/en/about-us/zeebrugge-lng",
    "notes": "LNG import terminal",
-   "line": 51,
+   "line": 52,
    "lost": 30.0,
    "share": 0.0333,
    "modelFlow": 30.0,
@@ -1014,7 +1034,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Franpipe",
    "notes": "Franpipe receiving terminal",
-   "line": 52,
+   "line": 53,
    "lost": 55.0,
    "share": 0.061,
    "modelFlow": 55.0,
@@ -1034,7 +1054,7 @@
    "shutdown": null,
    "source": "https://edf.fr/en/dunkerquelng",
    "notes": "LNG import terminal",
-   "line": 53,
+   "line": 54,
    "lost": 36.0,
    "share": 0.0399,
    "modelFlow": 36.0,
@@ -1054,7 +1074,7 @@
    "shutdown": null,
    "source": "https://totalenergies.com/company/projects/gas/tyra-offshore-gas-hub-north-sea-denmark",
    "notes": "Redeveloped Danish hub; restarted in 2024",
-   "line": 54,
+   "line": 55,
    "lost": 8.0,
    "share": 0.0089,
    "modelFlow": 8.0,
@@ -1074,7 +1094,7 @@
    "shutdown": null,
    "source": "https://en.energinet.dk/about-our-news/news/2022/11/01/nybro-commissioning",
    "notes": "Gas treatment plant and Baltic Pipe compression",
-   "line": 55,
+   "line": 56,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 10.0,
@@ -1094,7 +1114,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Baltic_Pipe",
    "notes": "Subsea tie-in on Europipe II",
-   "line": 56,
+   "line": 57,
    "lost": 71.0,
    "share": 0.0788,
    "modelFlow": 71.0,
@@ -1114,7 +1134,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/National_Balancing_Point_(UK)",
    "notes": "Virtual trading point; map placement is schematic",
-   "line": 57,
+   "line": 58,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 299.0,
@@ -1134,7 +1154,7 @@
    "shutdown": null,
    "source": "https://gasunie.nl/en/gas-infrastructure/ttf---dutch-gas-trading-platform",
    "notes": "Virtual trading point; map placement is schematic",
-   "line": 58,
+   "line": 59,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 216.0,
@@ -1154,7 +1174,7 @@
    "shutdown": null,
    "source": "https://tradinghub.eu/en-gb",
    "notes": "Virtual trading point; map placement is schematic",
-   "line": 59,
+   "line": 60,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 192.1,
@@ -1174,7 +1194,7 @@
    "shutdown": null,
    "source": "https://balansys.eu/commercial-information",
    "notes": "Virtual trading point; map placement is schematic",
-   "line": 60,
+   "line": 61,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 72.0,
@@ -1194,7 +1214,7 @@
    "shutdown": null,
    "source": "https://ice.com/products/82426582/French-PEG-Natural-Gas-Futures",
    "notes": "Virtual trading point; map placement is schematic",
-   "line": 61,
+   "line": 62,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 91.0,
@@ -1214,7 +1234,7 @@
    "shutdown": null,
    "source": "https://hedgeweek.com/news/pegas-launches-danish-etf-contracts",
    "notes": "Virtual trading point; map placement is schematic",
-   "line": 62,
+   "line": 63,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 25.1,
@@ -1234,7 +1254,7 @@
    "shutdown": null,
    "source": "https://gaz-system.pl/en/for-customers/market-information/data-exchange.html",
    "notes": "Reached through Baltic Pipe; map placement is schematic",
-   "line": 63,
+   "line": 64,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": null,
@@ -1254,7 +1274,7 @@
    "shutdown": null,
    "source": "https://equinor.com/energy/tjeldbergodden",
    "notes": "Methanol plant: the gas consumer at the end of Haltenpipe",
-   "line": 64,
+   "line": 65,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 6.0,
@@ -1274,7 +1294,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Rough_(facility)",
    "notes": "Depleted field 29 km east of Easington; 44.8 MSm3/d design withdrawal",
-   "line": 65,
+   "line": 66,
    "lost": 45.0,
    "share": 0.0499,
    "modelFlow": 45.0,
@@ -1294,7 +1314,7 @@
    "shutdown": null,
    "source": "https://ebn.nl/en/projects/norg-gas-storage",
    "notes": "Largest Dutch seasonal storage in a depleted field; around 31 GW delivery capacity",
-   "line": 66,
+   "line": 67,
    "lost": 70.0,
    "share": 0.0777,
    "modelFlow": 70.0,
@@ -1314,7 +1334,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Bergermeer_gas_storage",
    "notes": "Depleted-field storage near Alkmaar; 4.1 bcm working volume",
-   "line": 67,
+   "line": 68,
    "lost": 57.0,
    "share": 0.0632,
    "modelFlow": 57.0,
@@ -1334,7 +1354,7 @@
    "shutdown": null,
    "source": "https://equinorstorage.de/en.html",
    "notes": "Salt-cavern storage near Wilhelmshaven; firm withdrawal 312840 Sm3/h",
-   "line": 68,
+   "line": 69,
    "lost": 7.5,
    "share": 0.0083,
    "modelFlow": 7.5,
@@ -1354,7 +1374,7 @@
    "shutdown": null,
    "source": "https://ewe-gasspeicher.de/en/transparency/storage-capacities/jemgum",
    "notes": "Salt-cavern storage on the Ems; maximum withdrawal 2875 MWh/h",
-   "line": 69,
+   "line": 70,
    "lost": 6.6,
    "share": 0.0073,
    "modelFlow": 6.6,
@@ -1374,7 +1394,7 @@
    "shutdown": null,
    "source": "https://cdn.orsted.com/-/media/www/docs/corp/com/sustainability/reports---en/dong_energy_annual_report_2007_en.pdf",
    "notes": "Depleted-field storage on Zealand; withdrawal capacity 7.9 MSm3/d",
-   "line": 70,
+   "line": 71,
    "lost": 7.9,
    "share": 0.0088,
    "modelFlow": 7.9,
@@ -1394,7 +1414,7 @@
    "shutdown": null,
    "source": "https://ogj.com/home/article/17238459/danish-projects-reveal-characteristics-and-limits-of-gas-cavern-storage",
    "notes": "Salt-cavern storage in northern Jutland; design delivery 7.2 MSm3/d",
-   "line": 71,
+   "line": 72,
    "lost": 7.2,
    "share": 0.008,
    "modelFlow": 7.2,
@@ -2282,47 +2302,69 @@
   },
   "culzean_cats": {
    "kind": "pipeline",
-   "name": "Culzean - CATS",
+   "name": "Culzean - CATS T5",
    "type": "feeder",
    "from": "culzean",
-   "to": "cats_riser",
+   "to": "cats_t5",
    "capacity": 15.0,
-   "length": null,
-   "diameter": null,
+   "length": 52.0,
+   "diameter": 22.0,
    "commissioned": 2019,
    "bidirectional": false,
    "status": "operating",
    "operator": "",
-   "source": "https://en.wikipedia.org/wiki/Central_Area_Transmission_System",
-   "notes": "",
+   "source": "https://services-eu1.arcgis.com/OZMfUznmLTnWccBc/arcgis/rest/services/UKCS_offshore_infrastructure_pipeline_linear_(WGS84)/FeatureServer/1",
+   "notes": "Via Culzean SSIV to Stella PLEM at CATS T5 (NSTA PL4106)",
    "line": 42,
    "lost": 15.0,
    "share": 0.0166,
    "modelFlow": 15.0,
    "utilization": 1.0,
-   "km": 62.4
+   "km": 52.0
   },
-  "cats": {
+  "cats_north": {
    "kind": "pipeline",
-   "name": "CATS",
+   "name": "CATS (riser - T5)",
    "type": "export",
    "from": "cats_riser",
-   "to": "teesside",
+   "to": "cats_t5",
    "capacity": 48.0,
-   "length": 404.0,
+   "length": 89.5,
    "diameter": 36.0,
    "commissioned": 1993,
    "bidirectional": false,
    "status": "operating",
    "operator": "",
-   "source": "https://en.wikipedia.org/wiki/Central_Area_Transmission_System",
-   "notes": "",
+   "source": "https://services-eu1.arcgis.com/OZMfUznmLTnWccBc/arcgis/rest/services/UKCS_offshore_infrastructure_pipeline_linear_(WGS84)/FeatureServer/1",
+   "notes": "Northern section of NSTA PL774",
    "line": 43,
+   "lost": 0.0,
+   "share": 0.0,
+   "modelFlow": 0.0,
+   "utilization": 0.0,
+   "km": 89.5
+  },
+  "cats": {
+   "kind": "pipeline",
+   "name": "CATS (T5 - Teesside)",
+   "type": "export",
+   "from": "cats_t5",
+   "to": "teesside",
+   "capacity": 48.0,
+   "length": 315.0,
+   "diameter": 36.0,
+   "commissioned": 1993,
+   "bidirectional": false,
+   "status": "operating",
+   "operator": "",
+   "source": "https://services-eu1.arcgis.com/OZMfUznmLTnWccBc/arcgis/rest/services/UKCS_offshore_infrastructure_pipeline_linear_(WGS84)/FeatureServer/1",
+   "notes": "Southern section of NSTA PL774",
+   "line": 44,
    "lost": 15.0,
    "share": 0.0166,
    "modelFlow": 15.0,
    "utilization": 0.3125,
-   "km": 404.0
+   "km": 315.0
   },
   "seal": {
    "kind": "pipeline",
@@ -2339,7 +2381,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "",
-   "line": 44,
+   "line": 45,
    "lost": 15.0,
    "share": 0.0166,
    "modelFlow": 15.0,
@@ -2361,7 +2403,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "Several pipelines modelled as one",
-   "line": 45,
+   "line": 46,
    "lost": 15.0,
    "share": 0.0166,
    "modelFlow": 15.0,
@@ -2383,7 +2425,7 @@
    "operator": "",
    "source": "https://www.interconnector.com/",
    "notes": "",
-   "line": 46,
+   "line": 47,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 0.0,
@@ -2405,7 +2447,7 @@
    "operator": "",
    "source": "https://bblcompany.com/",
    "notes": "Physical reverse flow added in 2019 at lower capacity",
-   "line": 47,
+   "line": 48,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 0.0,
@@ -2427,7 +2469,7 @@
    "operator": "",
    "source": "https://en.wikipedia.org/wiki/NOGAT",
    "notes": "",
-   "line": 48,
+   "line": 49,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 8.0,
@@ -2449,7 +2491,7 @@
    "operator": "",
    "source": "https://en.wikipedia.org/wiki/Noordgastransport",
    "notes": "Main line of the NGT system",
-   "line": 49,
+   "line": 50,
    "lost": 10.0,
    "share": 0.0111,
    "modelFlow": 10.0,
@@ -2471,7 +2513,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "",
-   "line": 50,
+   "line": 51,
    "lost": 5.0,
    "share": 0.0055,
    "modelFlow": 5.0,
@@ -2493,7 +2535,7 @@
    "operator": "",
    "source": "https://www.nationalgrid.com/",
    "notes": "Notional entry into the national grid",
-   "line": 51,
+   "line": 52,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 79.0,
@@ -2515,7 +2557,7 @@
    "operator": "",
    "source": "https://www.nationalgrid.com/",
    "notes": "Notional entry into the national grid",
-   "line": 52,
+   "line": 53,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 15.0,
@@ -2537,7 +2579,7 @@
    "operator": "",
    "source": "https://www.nationalgrid.com/",
    "notes": "Notional entry into the national grid",
-   "line": 53,
+   "line": 54,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 117.0,
@@ -2559,7 +2601,7 @@
    "operator": "",
    "source": "https://www.nationalgrid.com/",
    "notes": "Notional entry into the national grid",
-   "line": 54,
+   "line": 55,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 30.0,
@@ -2581,7 +2623,7 @@
    "operator": "",
    "source": "https://www.nationalgrid.com/",
    "notes": "Notional entry into the national grid",
-   "line": 55,
+   "line": 56,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 58.0,
@@ -2603,7 +2645,7 @@
    "operator": "",
    "source": "https://www.gasunie.nl/",
    "notes": "Notional entry into the national grid",
-   "line": 56,
+   "line": 57,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 13.0,
@@ -2625,7 +2667,7 @@
    "operator": "",
    "source": "https://www.gasunie.nl/",
    "notes": "Notional entry into the national grid",
-   "line": 57,
+   "line": 58,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 0.0,
@@ -2647,7 +2689,7 @@
    "operator": "",
    "source": "https://www.gasunie.nl/",
    "notes": "Notional entry into the national grid",
-   "line": 58,
+   "line": 59,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 10.0,
@@ -2669,7 +2711,7 @@
    "operator": "",
    "source": "https://www.gasunie.nl/",
    "notes": "Notional entry into the national grid",
-   "line": 59,
+   "line": 60,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 44.0,
@@ -2691,7 +2733,7 @@
    "operator": "",
    "source": "https://www.gasunie.nl/",
    "notes": "Notional entry into the national grid",
-   "line": 60,
+   "line": 61,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 22.0,
@@ -2713,7 +2755,7 @@
    "operator": "",
    "source": "https://www.tradinghub.eu/",
    "notes": "Notional entry into the national grid",
-   "line": 61,
+   "line": 62,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 44.0,
@@ -2735,7 +2777,7 @@
    "operator": "",
    "source": "https://www.tradinghub.eu/",
    "notes": "Notional entry into the national grid",
-   "line": 62,
+   "line": 63,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 107.0,
@@ -2757,7 +2799,7 @@
    "operator": "",
    "source": "https://www.tradinghub.eu/",
    "notes": "Notional entry into the national grid",
-   "line": 63,
+   "line": 64,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 27.0,
@@ -2779,7 +2821,7 @@
    "operator": "",
    "source": "https://www.fluxys.com/",
    "notes": "Notional entry into the national grid",
-   "line": 64,
+   "line": 65,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 42.0,
@@ -2801,7 +2843,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "Notional entry into the national grid",
-   "line": 65,
+   "line": 66,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 30.0,
@@ -2823,7 +2865,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "Notional entry into the national grid",
-   "line": 66,
+   "line": 67,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 55.0,
@@ -2845,7 +2887,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "Notional entry into the national grid",
-   "line": 67,
+   "line": 68,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 36.0,
@@ -2867,7 +2909,7 @@
    "operator": "",
    "source": "https://www.energinet.dk/",
    "notes": "Notional grid entry capped near Danish demand so Baltic Pipe gas continues to Poland",
-   "line": 68,
+   "line": 69,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 10.0,
@@ -2889,7 +2931,7 @@
    "operator": "Centrica Energy Storage+",
    "source": "https://en.wikipedia.org/wiki/Rough_(facility)",
    "notes": "Storage line between the Rough Bravo complex and the Easington terminal",
-   "line": 69,
+   "line": 70,
    "lost": 45.0,
    "share": 0.0499,
    "modelFlow": 45.0,
@@ -2911,7 +2953,7 @@
    "operator": "",
    "source": "https://www.gasunie.nl/",
    "notes": "Notional entry into the national grid",
-   "line": 70,
+   "line": 71,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 70.0,
@@ -2933,7 +2975,7 @@
    "operator": "",
    "source": "https://www.gasunie.nl/",
    "notes": "Notional entry into the national grid",
-   "line": 71,
+   "line": 72,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 57.0,
@@ -2955,7 +2997,7 @@
    "operator": "",
    "source": "https://www.tradinghub.eu/",
    "notes": "Notional entry into the national grid",
-   "line": 72,
+   "line": 73,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 7.5,
@@ -2977,7 +3019,7 @@
    "operator": "",
    "source": "https://www.tradinghub.eu/",
    "notes": "Notional entry into the national grid",
-   "line": 73,
+   "line": 74,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 6.6,
@@ -2999,7 +3041,7 @@
    "operator": "",
    "source": "https://www.energinet.dk/",
    "notes": "Notional entry into the national grid",
-   "line": 74,
+   "line": 75,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 7.9,
@@ -3021,7 +3063,7 @@
    "operator": "",
    "source": "https://www.energinet.dk/",
    "notes": "Notional entry into the national grid",
-   "line": 75,
+   "line": 76,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 7.2,
@@ -3165,6 +3207,22 @@
      "type": "Feature",
      "id": 8,
      "properties": {
+      "asset": "cats_t5",
+      "name": "CATS T5 (Stella tie-in)",
+      "type": "hub"
+     },
+     "geometry": {
+      "type": "Point",
+      "coordinates": [
+       1.203222,
+       57.029375
+      ]
+     }
+    },
+    {
+     "type": "Feature",
+     "id": 9,
+     "properties": {
       "asset": "culzean",
       "name": "Culzean",
       "type": "field"
@@ -3179,7 +3237,7 @@
     },
     {
      "type": "Feature",
-     "id": 9,
+     "id": 10,
      "properties": {
       "asset": "den_helder",
       "name": "Den Helder",
@@ -3195,7 +3253,7 @@
     },
     {
      "type": "Feature",
-     "id": 10,
+     "id": 11,
      "properties": {
       "asset": "dornum",
       "name": "Dornum",
@@ -3211,7 +3269,7 @@
     },
     {
      "type": "Feature",
-     "id": 11,
+     "id": 12,
      "properties": {
       "asset": "draupner_e",
       "name": "Draupner E",
@@ -3227,7 +3285,7 @@
     },
     {
      "type": "Feature",
-     "id": 12,
+     "id": 13,
      "properties": {
       "asset": "draupner_s",
       "name": "Draupner S",
@@ -3243,7 +3301,7 @@
     },
     {
      "type": "Feature",
-     "id": 13,
+     "id": 14,
      "properties": {
       "asset": "dunkirk",
       "name": "Dunkirk (Franpipe)",
@@ -3259,7 +3317,7 @@
     },
     {
      "type": "Feature",
-     "id": 14,
+     "id": 15,
      "properties": {
       "asset": "dunkirk_lng",
       "name": "Dunkirk LNG",
@@ -3275,7 +3333,7 @@
     },
     {
      "type": "Feature",
-     "id": 15,
+     "id": 16,
      "properties": {
       "asset": "easington",
       "name": "Easington",
@@ -3291,7 +3349,7 @@
     },
     {
      "type": "Feature",
-     "id": 16,
+     "id": 17,
      "properties": {
       "asset": "edvard_grieg",
       "name": "Edvard Grieg",
@@ -3307,7 +3365,7 @@
     },
     {
      "type": "Feature",
-     "id": 17,
+     "id": 18,
      "properties": {
       "asset": "eemshaven_lng",
       "name": "Eemshaven LNG",
@@ -3323,7 +3381,7 @@
     },
     {
      "type": "Feature",
-     "id": 18,
+     "id": 19,
      "properties": {
       "asset": "ekofisk",
       "name": "Ekofisk",
@@ -3339,7 +3397,7 @@
     },
     {
      "type": "Feature",
-     "id": 19,
+     "id": 20,
      "properties": {
       "asset": "elgin_franklin",
       "name": "Elgin-Franklin",
@@ -3355,7 +3413,7 @@
     },
     {
      "type": "Feature",
-     "id": 20,
+     "id": 21,
      "properties": {
       "asset": "emden",
       "name": "Emden",
@@ -3371,7 +3429,7 @@
     },
     {
      "type": "Feature",
-     "id": 21,
+     "id": 22,
      "properties": {
       "asset": "etf",
       "name": "ETF (Denmark)",
@@ -3387,7 +3445,7 @@
     },
     {
      "type": "Feature",
-     "id": 22,
+     "id": 23,
      "properties": {
       "asset": "etzel",
       "name": "Etzel Gas-Lager",
@@ -3403,7 +3461,7 @@
     },
     {
      "type": "Feature",
-     "id": 23,
+     "id": 24,
      "properties": {
       "asset": "f3fb",
       "name": "F3-FB",
@@ -3419,7 +3477,7 @@
     },
     {
      "type": "Feature",
-     "id": 24,
+     "id": 25,
      "properties": {
       "asset": "flags_brent",
       "name": "FLAGS North (Brent area)",
@@ -3435,7 +3493,7 @@
     },
     {
      "type": "Feature",
-     "id": 25,
+     "id": 26,
      "properties": {
       "asset": "frigg",
       "name": "Frigg",
@@ -3451,7 +3509,7 @@
     },
     {
      "type": "Feature",
-     "id": 26,
+     "id": 27,
      "properties": {
       "asset": "gate_lng",
       "name": "Gate terminal",
@@ -3467,7 +3525,7 @@
     },
     {
      "type": "Feature",
-     "id": 27,
+     "id": 28,
      "properties": {
       "asset": "gjoa",
       "name": "Gj\u00f8a",
@@ -3483,7 +3541,7 @@
     },
     {
      "type": "Feature",
-     "id": 28,
+     "id": 29,
      "properties": {
       "asset": "grain_lng",
       "name": "Grain LNG",
@@ -3499,7 +3557,7 @@
     },
     {
      "type": "Feature",
-     "id": 29,
+     "id": 30,
      "properties": {
       "asset": "gudrun",
       "name": "Gudrun",
@@ -3515,7 +3573,7 @@
     },
     {
      "type": "Feature",
-     "id": 30,
+     "id": 31,
      "properties": {
       "asset": "gullfaks",
       "name": "Gullfaks",
@@ -3531,7 +3589,7 @@
     },
     {
      "type": "Feature",
-     "id": 31,
+     "id": 32,
      "properties": {
       "asset": "heidrun",
       "name": "Heidrun",
@@ -3547,7 +3605,7 @@
     },
     {
      "type": "Feature",
-     "id": 32,
+     "id": 33,
      "properties": {
       "asset": "heimdal",
       "name": "Heimdal",
@@ -3563,7 +3621,7 @@
     },
     {
      "type": "Feature",
-     "id": 33,
+     "id": 34,
      "properties": {
       "asset": "irpa",
       "name": "Irpa",
@@ -3579,7 +3637,7 @@
     },
     {
      "type": "Feature",
-     "id": 34,
+     "id": 35,
      "properties": {
       "asset": "jemgum",
       "name": "Jemgum Gas Storage",
@@ -3595,7 +3653,7 @@
     },
     {
      "type": "Feature",
-     "id": 35,
+     "id": 36,
      "properties": {
       "asset": "johan_sverdrup",
       "name": "Johan Sverdrup",
@@ -3611,7 +3669,7 @@
     },
     {
      "type": "Feature",
-     "id": 36,
+     "id": 37,
      "properties": {
       "asset": "k13a",
       "name": "K13-A",
@@ -3627,7 +3685,7 @@
     },
     {
      "type": "Feature",
-     "id": 37,
+     "id": 38,
      "properties": {
       "asset": "karsto",
       "name": "K\u00e5rst\u00f8",
@@ -3643,7 +3701,7 @@
     },
     {
      "type": "Feature",
-     "id": 38,
+     "id": 39,
      "properties": {
       "asset": "kollsnes",
       "name": "Kollsnes",
@@ -3659,7 +3717,7 @@
     },
     {
      "type": "Feature",
-     "id": 39,
+     "id": 40,
      "properties": {
       "asset": "kvitebjorn",
       "name": "Kvitebj\u00f8rn",
@@ -3675,7 +3733,7 @@
     },
     {
      "type": "Feature",
-     "id": 40,
+     "id": 41,
      "properties": {
       "asset": "l10a",
       "name": "L10-A",
@@ -3691,7 +3749,7 @@
     },
     {
      "type": "Feature",
-     "id": 41,
+     "id": 42,
      "properties": {
       "asset": "lille_torup",
       "name": "Lille Torup Gas Storage",
@@ -3707,7 +3765,7 @@
     },
     {
      "type": "Feature",
-     "id": 42,
+     "id": 43,
      "properties": {
       "asset": "nbp",
       "name": "NBP (Great Britain)",
@@ -3723,7 +3781,7 @@
     },
     {
      "type": "Feature",
-     "id": 43,
+     "id": 44,
      "properties": {
       "asset": "norg",
       "name": "Norg Gas Storage",
@@ -3739,7 +3797,7 @@
     },
     {
      "type": "Feature",
-     "id": 44,
+     "id": 45,
      "properties": {
       "asset": "norne",
       "name": "Norne",
@@ -3755,7 +3813,7 @@
     },
     {
      "type": "Feature",
-     "id": 45,
+     "id": 46,
      "properties": {
       "asset": "nybro",
       "name": "Nybro",
@@ -3771,7 +3829,7 @@
     },
     {
      "type": "Feature",
-     "id": 46,
+     "id": 47,
      "properties": {
       "asset": "nyhamna",
       "name": "Nyhamna",
@@ -3787,7 +3845,7 @@
     },
     {
      "type": "Feature",
-     "id": 47,
+     "id": 48,
      "properties": {
       "asset": "odin",
       "name": "Odin",
@@ -3803,7 +3861,7 @@
     },
     {
      "type": "Feature",
-     "id": 48,
+     "id": 49,
      "properties": {
       "asset": "ormen_lange",
       "name": "Ormen Lange",
@@ -3819,7 +3877,7 @@
     },
     {
      "type": "Feature",
-     "id": 49,
+     "id": 50,
      "properties": {
       "asset": "oseberg",
       "name": "Oseberg",
@@ -3835,7 +3893,7 @@
     },
     {
      "type": "Feature",
-     "id": 50,
+     "id": 51,
      "properties": {
       "asset": "peg",
       "name": "PEG (France)",
@@ -3851,7 +3909,7 @@
     },
     {
      "type": "Feature",
-     "id": 51,
+     "id": 52,
      "properties": {
       "asset": "pl_vtp",
       "name": "Poland VTP",
@@ -3867,7 +3925,7 @@
     },
     {
      "type": "Feature",
-     "id": 52,
+     "id": 53,
      "properties": {
       "asset": "rough",
       "name": "Rough Gas Storage",
@@ -3883,7 +3941,7 @@
     },
     {
      "type": "Feature",
-     "id": 53,
+     "id": 54,
      "properties": {
       "asset": "sleipner",
       "name": "Sleipner",
@@ -3899,7 +3957,7 @@
     },
     {
      "type": "Feature",
-     "id": 54,
+     "id": 55,
      "properties": {
       "asset": "sns_fields",
       "name": "Southern North Sea fields",
@@ -3915,7 +3973,7 @@
     },
     {
      "type": "Feature",
-     "id": 55,
+     "id": 56,
      "properties": {
       "asset": "st_fergus",
       "name": "St Fergus",
@@ -3931,7 +3989,7 @@
     },
     {
      "type": "Feature",
-     "id": 56,
+     "id": 57,
      "properties": {
       "asset": "statfjord",
       "name": "Statfjord",
@@ -3947,7 +4005,7 @@
     },
     {
      "type": "Feature",
-     "id": 57,
+     "id": 58,
      "properties": {
       "asset": "stenlille",
       "name": "Stenlille Gas Storage",
@@ -3963,7 +4021,7 @@
     },
     {
      "type": "Feature",
-     "id": 58,
+     "id": 59,
      "properties": {
       "asset": "teesside",
       "name": "Teesside (CATS)",
@@ -3979,7 +4037,7 @@
     },
     {
      "type": "Feature",
-     "id": 59,
+     "id": 60,
      "properties": {
       "asset": "the",
       "name": "THE (Germany)",
@@ -3995,7 +4053,7 @@
     },
     {
      "type": "Feature",
-     "id": 60,
+     "id": 61,
      "properties": {
       "asset": "tjeldbergodden",
       "name": "Tjeldbergodden",
@@ -4011,7 +4069,7 @@
     },
     {
      "type": "Feature",
-     "id": 61,
+     "id": 62,
      "properties": {
       "asset": "troll",
       "name": "Troll",
@@ -4027,7 +4085,7 @@
     },
     {
      "type": "Feature",
-     "id": 62,
+     "id": 63,
      "properties": {
       "asset": "ttf",
       "name": "TTF (Netherlands)",
@@ -4043,7 +4101,7 @@
     },
     {
      "type": "Feature",
-     "id": 63,
+     "id": 64,
      "properties": {
       "asset": "tyra",
       "name": "Tyra",
@@ -4059,7 +4117,7 @@
     },
     {
      "type": "Feature",
-     "id": 64,
+     "id": 65,
      "properties": {
       "asset": "uithuizen",
       "name": "Uithuizen",
@@ -4075,7 +4133,7 @@
     },
     {
      "type": "Feature",
-     "id": 65,
+     "id": 66,
      "properties": {
       "asset": "visund",
       "name": "Visund",
@@ -4091,7 +4149,7 @@
     },
     {
      "type": "Feature",
-     "id": 66,
+     "id": 67,
      "properties": {
       "asset": "wilhelmshaven_lng",
       "name": "Wilhelmshaven LNG",
@@ -4107,7 +4165,7 @@
     },
     {
      "type": "Feature",
-     "id": 67,
+     "id": 68,
      "properties": {
       "asset": "zeebrugge",
       "name": "Zeebrugge",
@@ -4123,7 +4181,7 @@
     },
     {
      "type": "Feature",
-     "id": 68,
+     "id": 69,
      "properties": {
       "asset": "zeebrugge_lng",
       "name": "Zeebrugge LNG",
@@ -4139,7 +4197,7 @@
     },
     {
      "type": "Feature",
-     "id": 69,
+     "id": 70,
      "properties": {
       "asset": "ztp",
       "name": "ZTP (Belgium)",
@@ -4586,6 +4644,78 @@
         52.86
        ],
        [
+        4.716,
+        52.881
+       ],
+       [
+        4.658,
+        52.882
+       ],
+       [
+        4.617,
+        52.888
+       ],
+       [
+        4.345,
+        52.97
+       ],
+       [
+        3.998,
+        53.006
+       ],
+       [
+        3.491,
+        52.992
+       ],
+       [
+        2.602,
+        52.838
+       ],
+       [
+        2.574,
+        52.827
+       ],
+       [
+        2.547,
+        52.796
+       ],
+       [
+        2.521,
+        52.783
+       ],
+       [
+        2.265,
+        52.749
+       ],
+       [
+        2.091,
+        52.751
+       ],
+       [
+        2.062,
+        52.759
+       ],
+       [
+        2.011,
+        52.795
+       ],
+       [
+        1.98,
+        52.806
+       ],
+       [
+        1.609,
+        52.844
+       ],
+       [
+        1.506,
+        52.865
+       ],
+       [
+        1.468,
+        52.859
+       ],
+       [
         1.46,
         52.86
        ]
@@ -4624,8 +4754,60 @@
       "type": "LineString",
       "coordinates": [
        [
-        1.802,
-        57.759
+        1.203222,
+        57.029375
+       ],
+       [
+        1.202,
+        56.652
+       ],
+       [
+        1.193,
+        56.629
+       ],
+       [
+        0.698,
+        56.207
+       ],
+       [
+        0.191,
+        55.764
+       ],
+       [
+        -0.335,
+        55.291
+       ],
+       [
+        -0.756,
+        54.903
+       ],
+       [
+        -0.811,
+        54.859
+       ],
+       [
+        -0.941,
+        54.796
+       ],
+       [
+        -0.949,
+        54.781
+       ],
+       [
+        -0.95,
+        54.689
+       ],
+       [
+        -0.966,
+        54.666
+       ],
+       [
+        -0.997,
+        54.65
+       ],
+       [
+        -1.106,
+        54.624
        ],
        [
         -1.195,
@@ -4638,6 +4820,43 @@
      "type": "Feature",
      "id": 8,
      "properties": {
+      "asset": "cats_north",
+      "onshore": false
+     },
+     "geometry": {
+      "type": "LineString",
+      "coordinates": [
+       [
+        1.802,
+        57.759
+       ],
+       [
+        1.644,
+        57.661
+       ],
+       [
+        1.599,
+        57.594
+       ],
+       [
+        1.578,
+        57.495
+       ],
+       [
+        1.209,
+        57.057
+       ],
+       [
+        1.203222,
+        57.029375
+       ]
+      ]
+     }
+    },
+    {
+     "type": "Feature",
+     "id": 9,
+     "properties": {
       "asset": "culzean_cats",
       "onshore": false
      },
@@ -4649,15 +4868,39 @@
         57.2
        ],
        [
-        1.802,
-        57.759
+        1.91,
+        57.191
+       ],
+       [
+        1.938,
+        57.176
+       ],
+       [
+        1.946,
+        57.164
+       ],
+       [
+        1.937,
+        57.152
+       ],
+       [
+        1.905,
+        57.142
+       ],
+       [
+        1.812,
+        57.13
+       ],
+       [
+        1.203222,
+        57.029375
        ]
       ]
      }
     },
     {
      "type": "Feature",
-     "id": 9,
+     "id": 10,
      "properties": {
       "asset": "den_helder_ttf",
       "onshore": true
@@ -4678,7 +4921,7 @@
     },
     {
      "type": "Feature",
-     "id": 10,
+     "id": 11,
      "properties": {
       "asset": "dornum_the",
       "onshore": true
@@ -4699,7 +4942,7 @@
     },
     {
      "type": "Feature",
-     "id": 11,
+     "id": 12,
      "properties": {
       "asset": "draupner_bridge",
       "onshore": false
@@ -4720,7 +4963,7 @@
     },
     {
      "type": "Feature",
-     "id": 12,
+     "id": 13,
      "properties": {
       "asset": "dunkirk_lng_peg",
       "onshore": true
@@ -4741,7 +4984,7 @@
     },
     {
      "type": "Feature",
-     "id": 13,
+     "id": 14,
      "properties": {
       "asset": "dunkirk_peg",
       "onshore": true
@@ -4762,7 +5005,7 @@
     },
     {
      "type": "Feature",
-     "id": 14,
+     "id": 15,
      "properties": {
       "asset": "easington_nbp",
       "onshore": true
@@ -4783,7 +5026,7 @@
     },
     {
      "type": "Feature",
-     "id": 15,
+     "id": 16,
      "properties": {
       "asset": "eemshaven_ttf",
       "onshore": true
@@ -4804,7 +5047,7 @@
     },
     {
      "type": "Feature",
-     "id": 16,
+     "id": 17,
      "properties": {
       "asset": "emden_the",
       "onshore": true
@@ -4825,7 +5068,7 @@
     },
     {
      "type": "Feature",
-     "id": 17,
+     "id": 18,
      "properties": {
       "asset": "etzel_the",
       "onshore": true
@@ -4846,7 +5089,7 @@
     },
     {
      "type": "Feature",
-     "id": 18,
+     "id": 19,
      "properties": {
       "asset": "europipe_1",
       "onshore": false
@@ -4971,7 +5214,7 @@
     },
     {
      "type": "Feature",
-     "id": 19,
+     "id": 20,
      "properties": {
       "asset": "europipe_2_north",
       "onshore": false
@@ -5112,7 +5355,7 @@
     },
     {
      "type": "Feature",
-     "id": 20,
+     "id": 21,
      "properties": {
       "asset": "europipe_2_south",
       "onshore": false
@@ -5193,7 +5436,7 @@
     },
     {
      "type": "Feature",
-     "id": 21,
+     "id": 22,
      "properties": {
       "asset": "flags",
       "onshore": false
@@ -5206,6 +5449,134 @@
         61.05
        ],
        [
+        1.697,
+        61.024
+       ],
+       [
+        1.69,
+        61.008
+       ],
+       [
+        1.66,
+        60.987
+       ],
+       [
+        1.599,
+        60.834
+       ],
+       [
+        1.542,
+        60.734
+       ],
+       [
+        1.53,
+        60.721
+       ],
+       [
+        0.829,
+        60.379
+       ],
+       [
+        0.815,
+        60.366
+       ],
+       [
+        0.716,
+        60.225
+       ],
+       [
+        0.701,
+        60.21
+       ],
+       [
+        -0.081,
+        59.708
+       ],
+       [
+        -0.176,
+        59.618
+       ],
+       [
+        -0.231,
+        59.583
+       ],
+       [
+        -0.284,
+        59.522
+       ],
+       [
+        -0.526,
+        59.289
+       ],
+       [
+        -0.608,
+        59.23
+       ],
+       [
+        -0.788,
+        59.07
+       ],
+       [
+        -0.799,
+        59.054
+       ],
+       [
+        -1.063,
+        58.482
+       ],
+       [
+        -1.348,
+        58.027
+       ],
+       [
+        -1.379,
+        57.97
+       ],
+       [
+        -1.522,
+        57.752
+       ],
+       [
+        -1.537,
+        57.735
+       ],
+       [
+        -1.577,
+        57.715
+       ],
+       [
+        -1.597,
+        57.695
+       ],
+       [
+        -1.603,
+        57.673
+       ],
+       [
+        -1.594,
+        57.646
+       ],
+       [
+        -1.597,
+        57.635
+       ],
+       [
+        -1.662,
+        57.589
+       ],
+       [
+        -1.679,
+        57.583
+       ],
+       [
+        -1.774,
+        57.585
+       ],
+       [
+        -1.829,
+        57.579
+       ],
+       [
         -1.85,
         57.553
        ]
@@ -5214,7 +5585,7 @@
     },
     {
      "type": "Feature",
-     "id": 22,
+     "id": 23,
      "properties": {
       "asset": "franpipe",
       "onshore": false
@@ -5387,7 +5758,7 @@
     },
     {
      "type": "Feature",
-     "id": 23,
+     "id": 24,
      "properties": {
       "asset": "gate_ttf",
       "onshore": true
@@ -5408,7 +5779,7 @@
     },
     {
      "type": "Feature",
-     "id": 24,
+     "id": 25,
      "properties": {
       "asset": "gjoa_flags",
       "onshore": false
@@ -5457,7 +5828,7 @@
     },
     {
      "type": "Feature",
-     "id": 25,
+     "id": 26,
      "properties": {
       "asset": "grain_nbp",
       "onshore": true
@@ -5478,7 +5849,7 @@
     },
     {
      "type": "Feature",
-     "id": 26,
+     "id": 27,
      "properties": {
       "asset": "gudrun_sleipner",
       "onshore": false
@@ -5535,7 +5906,7 @@
     },
     {
      "type": "Feature",
-     "id": 27,
+     "id": 28,
      "properties": {
       "asset": "gullfaks_statfjord",
       "onshore": false
@@ -5556,7 +5927,7 @@
     },
     {
      "type": "Feature",
-     "id": 28,
+     "id": 29,
      "properties": {
       "asset": "haltenpipe",
       "onshore": false
@@ -5793,7 +6164,7 @@
     },
     {
      "type": "Feature",
-     "id": 29,
+     "id": 30,
      "properties": {
       "asset": "heidrun_asgard",
       "onshore": false
@@ -5854,7 +6225,7 @@
     },
     {
      "type": "Feature",
-     "id": 30,
+     "id": 31,
      "properties": {
       "asset": "irpa_tieback",
       "onshore": false
@@ -5875,7 +6246,7 @@
     },
     {
      "type": "Feature",
-     "id": 31,
+     "id": 32,
      "properties": {
       "asset": "iuk",
       "onshore": false
@@ -5888,6 +6259,110 @@
         52.86
        ],
        [
+        1.472,
+        52.859
+       ],
+       [
+        1.494,
+        52.864
+       ],
+       [
+        1.514,
+        52.862
+       ],
+       [
+        1.665,
+        52.813
+       ],
+       [
+        1.972,
+        52.799
+       ],
+       [
+        1.992,
+        52.79
+       ],
+       [
+        2.052,
+        52.737
+       ],
+       [
+        2.228,
+        52.575
+       ],
+       [
+        2.263,
+        52.442
+       ],
+       [
+        2.496,
+        52.007
+       ],
+       [
+        2.464,
+        51.826
+       ],
+       [
+        2.461,
+        51.802
+       ],
+       [
+        2.465,
+        51.79
+       ],
+       [
+        2.515,
+        51.758
+       ],
+       [
+        2.563,
+        51.742
+       ],
+       [
+        2.598,
+        51.726
+       ],
+       [
+        2.617,
+        51.711
+       ],
+       [
+        2.777,
+        51.639
+       ],
+       [
+        2.806,
+        51.61
+       ],
+       [
+        2.843,
+        51.595
+       ],
+       [
+        2.882,
+        51.588
+       ],
+       [
+        2.965,
+        51.543
+       ],
+       [
+        3.078,
+        51.495
+       ],
+       [
+        3.089,
+        51.48
+       ],
+       [
+        3.105,
+        51.382
+       ],
+       [
+        3.175,
+        51.325
+       ],
+       [
         3.178,
         51.34
        ]
@@ -5896,7 +6371,7 @@
     },
     {
      "type": "Feature",
-     "id": 32,
+     "id": 33,
      "properties": {
       "asset": "jemgum_the",
       "onshore": true
@@ -5917,7 +6392,7 @@
     },
     {
      "type": "Feature",
-     "id": 33,
+     "id": 34,
      "properties": {
       "asset": "kvitebjorn_kollsnes",
       "onshore": false
@@ -5986,7 +6461,7 @@
     },
     {
      "type": "Feature",
-     "id": 34,
+     "id": 35,
      "properties": {
       "asset": "langeled_north",
       "onshore": false
@@ -6187,7 +6662,7 @@
     },
     {
      "type": "Feature",
-     "id": 35,
+     "id": 36,
      "properties": {
       "asset": "langeled_south",
       "onshore": false
@@ -6296,7 +6771,7 @@
     },
     {
      "type": "Feature",
-     "id": 36,
+     "id": 37,
      "properties": {
       "asset": "lille_torup_etf",
       "onshore": true
@@ -6317,7 +6792,7 @@
     },
     {
      "type": "Feature",
-     "id": 37,
+     "id": 38,
      "properties": {
       "asset": "ngt",
       "onshore": false
@@ -6330,6 +6805,62 @@
         53.4
        ],
        [
+        4.22,
+        53.398
+       ],
+       [
+        4.252,
+        53.407
+       ],
+       [
+        4.319,
+        53.415
+       ],
+       [
+        4.803,
+        53.404
+       ],
+       [
+        5.449,
+        53.532
+       ],
+       [
+        6.11,
+        53.563
+       ],
+       [
+        6.271,
+        53.561
+       ],
+       [
+        6.374,
+        53.573
+       ],
+       [
+        6.588,
+        53.56
+       ],
+       [
+        6.611,
+        53.546
+       ],
+       [
+        6.611,
+        53.5
+       ],
+       [
+        6.636,
+        53.473
+       ],
+       [
+        6.649,
+        53.468
+       ],
+       [
+        6.689,
+        53.467
+       ],
+       [
         6.67,
         53.42
        ]
@@ -6338,7 +6869,7 @@
     },
     {
      "type": "Feature",
-     "id": 38,
+     "id": 39,
      "properties": {
       "asset": "ngts",
       "onshore": false
@@ -6459,7 +6990,7 @@
     },
     {
      "type": "Feature",
-     "id": 39,
+     "id": 40,
      "properties": {
       "asset": "nogat",
       "onshore": false
@@ -6472,6 +7003,82 @@
         54.85
        ],
        [
+        4.696,
+        54.853
+       ],
+       [
+        4.823,
+        54.206
+       ],
+       [
+        4.738,
+        54.147
+       ],
+       [
+        4.617,
+        54.082
+       ],
+       [
+        4.589,
+        54.037
+       ],
+       [
+        4.526,
+        53.968
+       ],
+       [
+        4.497,
+        53.961
+       ],
+       [
+        4.354,
+        53.839
+       ],
+       [
+        4.347,
+        53.827
+       ],
+       [
+        4.353,
+        53.816
+       ],
+       [
+        4.708,
+        53.545
+       ],
+       [
+        4.825,
+        53.34
+       ],
+       [
+        4.821,
+        53.315
+       ],
+       [
+        4.678,
+        53.151
+       ],
+       [
+        4.487,
+        52.948
+       ],
+       [
+        4.489,
+        52.936
+       ],
+       [
+        4.501,
+        52.927
+       ],
+       [
+        4.611,
+        52.894
+       ],
+       [
+        4.71,
+        52.882
+       ],
+       [
         4.76,
         52.95
        ]
@@ -6480,7 +7087,7 @@
     },
     {
      "type": "Feature",
-     "id": 40,
+     "id": 41,
      "properties": {
       "asset": "norg_ttf",
       "onshore": true
@@ -6501,7 +7108,7 @@
     },
     {
      "type": "Feature",
-     "id": 41,
+     "id": 42,
      "properties": {
       "asset": "norpipe",
       "onshore": false
@@ -6602,7 +7209,7 @@
     },
     {
      "type": "Feature",
-     "id": 42,
+     "id": 43,
      "properties": {
       "asset": "nybro_etf",
       "onshore": true
@@ -6623,7 +7230,7 @@
     },
     {
      "type": "Feature",
-     "id": 43,
+     "id": 44,
      "properties": {
       "asset": "ogt",
       "onshore": false
@@ -6688,7 +7295,7 @@
     },
     {
      "type": "Feature",
-     "id": 44,
+     "id": 45,
      "properties": {
       "asset": "ormen_lange_nyhamna",
       "onshore": false
@@ -6825,7 +7432,7 @@
     },
     {
      "type": "Feature",
-     "id": 45,
+     "id": 46,
      "properties": {
       "asset": "polarled",
       "onshore": false
@@ -7098,7 +7705,7 @@
     },
     {
      "type": "Feature",
-     "id": 46,
+     "id": 47,
      "properties": {
       "asset": "rough_easington",
       "onshore": false
@@ -7119,7 +7726,7 @@
     },
     {
      "type": "Feature",
-     "id": 47,
+     "id": 48,
      "properties": {
       "asset": "sage",
       "onshore": false
@@ -7132,6 +7739,114 @@
         59.55
        ],
        [
+        1.534,
+        59.544
+       ],
+       [
+        1.495,
+        59.538
+       ],
+       [
+        1.47,
+        59.52
+       ],
+       [
+        1.398,
+        59.491
+       ],
+       [
+        1.347,
+        59.416
+       ],
+       [
+        1.34,
+        59.256
+       ],
+       [
+        1.241,
+        59.165
+       ],
+       [
+        1.219,
+        59.106
+       ],
+       [
+        1.2,
+        59.034
+       ],
+       [
+        1.191,
+        59.018
+       ],
+       [
+        1.176,
+        58.866
+       ],
+       [
+        0.802,
+        58.578
+       ],
+       [
+        0.733,
+        58.494
+       ],
+       [
+        0.606,
+        58.406
+       ],
+       [
+        0.601,
+        58.397
+       ],
+       [
+        0.601,
+        58.328
+       ],
+       [
+        0.554,
+        58.258
+       ],
+       [
+        0.399,
+        58.212
+       ],
+       [
+        0.197,
+        58.164
+       ],
+       [
+        0.048,
+        58.113
+       ],
+       [
+        -0.104,
+        58.098
+       ],
+       [
+        -0.161,
+        58.085
+       ],
+       [
+        -0.291,
+        58.034
+       ],
+       [
+        -0.399,
+        58.001
+       ],
+       [
+        -0.704,
+        57.948
+       ],
+       [
+        -1.553,
+        57.594
+       ],
+       [
+        -1.829,
+        57.589
+       ],
+       [
         -1.85,
         57.553
        ]
@@ -7140,7 +7855,7 @@
     },
     {
      "type": "Feature",
-     "id": 48,
+     "id": 49,
      "properties": {
       "asset": "seal",
       "onshore": false
@@ -7153,6 +7868,110 @@
         57.01
        ],
        [
+        1.902,
+        56.967
+       ],
+       [
+        1.909,
+        56.951
+       ],
+       [
+        1.908,
+        56.94
+       ],
+       [
+        1.887,
+        56.834
+       ],
+       [
+        1.806,
+        56.658
+       ],
+       [
+        1.689,
+        56.315
+       ],
+       [
+        1.664,
+        56.163
+       ],
+       [
+        1.636,
+        55.899
+       ],
+       [
+        1.497,
+        55.094
+       ],
+       [
+        1.415,
+        54.588
+       ],
+       [
+        1.414,
+        54.164
+       ],
+       [
+        1.406,
+        54.137
+       ],
+       [
+        1.409,
+        54.118
+       ],
+       [
+        1.425,
+        54.09
+       ],
+       [
+        1.448,
+        53.938
+       ],
+       [
+        1.445,
+        53.847
+       ],
+       [
+        1.463,
+        53.774
+       ],
+       [
+        1.465,
+        53.724
+       ],
+       [
+        1.412,
+        53.5
+       ],
+       [
+        1.408,
+        53.336
+       ],
+       [
+        1.413,
+        53.322
+       ],
+       [
+        1.435,
+        53.301
+       ],
+       [
+        1.465,
+        53.246
+       ],
+       [
+        1.461,
+        52.909
+       ],
+       [
+        1.456,
+        52.867
+       ],
+       [
+        1.465,
+        52.861
+       ],
+       [
         1.46,
         52.86
        ]
@@ -7161,7 +7980,7 @@
     },
     {
      "type": "Feature",
-     "id": 49,
+     "id": 50,
      "properties": {
       "asset": "sleipner_draupner",
       "onshore": false
@@ -7198,7 +8017,7 @@
     },
     {
      "type": "Feature",
-     "id": 50,
+     "id": 51,
      "properties": {
       "asset": "sns_bacton",
       "onshore": false
@@ -7219,7 +8038,7 @@
     },
     {
      "type": "Feature",
-     "id": 51,
+     "id": 52,
      "properties": {
       "asset": "st_fergus_nbp",
       "onshore": true
@@ -7240,7 +8059,7 @@
     },
     {
      "type": "Feature",
-     "id": 52,
+     "id": 53,
      "properties": {
       "asset": "statpipe_dry",
       "onshore": false
@@ -7337,7 +8156,7 @@
     },
     {
      "type": "Feature",
-     "id": 53,
+     "id": 54,
      "properties": {
       "asset": "statpipe_ekofisk",
       "onshore": false
@@ -7394,7 +8213,7 @@
     },
     {
      "type": "Feature",
-     "id": 54,
+     "id": 55,
      "properties": {
       "asset": "statpipe_heimdal",
       "onshore": false
@@ -7431,7 +8250,7 @@
     },
     {
      "type": "Feature",
-     "id": 55,
+     "id": 56,
      "properties": {
       "asset": "statpipe_rich",
       "onshore": false
@@ -7568,7 +8387,7 @@
     },
     {
      "type": "Feature",
-     "id": 56,
+     "id": 57,
      "properties": {
       "asset": "stenlille_etf",
       "onshore": true
@@ -7589,7 +8408,7 @@
     },
     {
      "type": "Feature",
-     "id": 57,
+     "id": 58,
      "properties": {
       "asset": "sverdrup_karsto",
       "onshore": false
@@ -7610,7 +8429,7 @@
     },
     {
      "type": "Feature",
-     "id": 58,
+     "id": 59,
      "properties": {
       "asset": "tampen_link",
       "onshore": false
@@ -7659,7 +8478,7 @@
     },
     {
      "type": "Feature",
-     "id": 59,
+     "id": 60,
      "properties": {
       "asset": "teesside_nbp",
       "onshore": true
@@ -7680,7 +8499,7 @@
     },
     {
      "type": "Feature",
-     "id": 60,
+     "id": 61,
      "properties": {
       "asset": "troll_kollsnes",
       "onshore": false
@@ -7737,7 +8556,7 @@
     },
     {
      "type": "Feature",
-     "id": 61,
+     "id": 62,
      "properties": {
       "asset": "tyra_f3",
       "onshore": false
@@ -7750,6 +8569,38 @@
         55.72
        ],
        [
+        4.755,
+        55.706
+       ],
+       [
+        4.736,
+        55.595
+       ],
+       [
+        4.724,
+        55.38
+       ],
+       [
+        4.721,
+        55.209
+       ],
+       [
+        4.725,
+        55.169
+       ],
+       [
+        4.718,
+        55.133
+       ],
+       [
+        4.708,
+        54.877
+       ],
+       [
+        4.698,
+        54.851
+       ],
+       [
         4.72,
         54.85
        ]
@@ -7758,7 +8609,7 @@
     },
     {
      "type": "Feature",
-     "id": 62,
+     "id": 63,
      "properties": {
       "asset": "tyra_nybro",
       "onshore": false
@@ -7771,6 +8622,30 @@
         55.72
        ],
        [
+        4.85,
+        55.705
+       ],
+       [
+        4.886,
+        55.703
+       ],
+       [
+        6.637,
+        55.751
+       ],
+       [
+        7.666,
+        55.767
+       ],
+       [
+        8.016,
+        55.752
+       ],
+       [
+        8.152,
+        55.692
+       ],
+       [
         8.42,
         55.67
        ]
@@ -7779,7 +8654,7 @@
     },
     {
      "type": "Feature",
-     "id": 63,
+     "id": 64,
      "properties": {
       "asset": "uhgp",
       "onshore": false
@@ -7828,7 +8703,7 @@
     },
     {
      "type": "Feature",
-     "id": 64,
+     "id": 65,
      "properties": {
       "asset": "uithuizen_ttf",
       "onshore": true
@@ -7849,7 +8724,7 @@
     },
     {
      "type": "Feature",
-     "id": 65,
+     "id": 66,
      "properties": {
       "asset": "vesterled",
       "onshore": false
@@ -7998,7 +8873,7 @@
     },
     {
      "type": "Feature",
-     "id": 66,
+     "id": 67,
      "properties": {
       "asset": "visund_kvitebjorn",
       "onshore": false
@@ -8047,7 +8922,7 @@
     },
     {
      "type": "Feature",
-     "id": 67,
+     "id": 68,
      "properties": {
       "asset": "wgt",
       "onshore": false
@@ -8060,6 +8935,38 @@
         53.22
        ],
        [
+        3.653,
+        53.271
+       ],
+       [
+        3.993,
+        53.246
+       ],
+       [
+        4.161,
+        53.217
+       ],
+       [
+        4.168,
+        53.213
+       ],
+       [
+        4.365,
+        52.972
+       ],
+       [
+        4.449,
+        52.941
+       ],
+       [
+        4.612,
+        52.892
+       ],
+       [
+        4.716,
+        52.881
+       ],
+       [
         4.76,
         52.95
        ]
@@ -8068,7 +8975,7 @@
     },
     {
      "type": "Feature",
-     "id": 68,
+     "id": 69,
      "properties": {
       "asset": "wilhelmshaven_the",
       "onshore": true
@@ -8089,7 +8996,7 @@
     },
     {
      "type": "Feature",
-     "id": 69,
+     "id": 70,
      "properties": {
       "asset": "zeebrugge_lng_ztp",
       "onshore": true
@@ -8110,7 +9017,7 @@
     },
     {
      "type": "Feature",
-     "id": 70,
+     "id": 71,
      "properties": {
       "asset": "zeebrugge_ztp",
       "onshore": true
@@ -8131,7 +9038,7 @@
     },
     {
      "type": "Feature",
-     "id": 71,
+     "id": 72,
      "properties": {
       "asset": "zeepipe_1",
       "onshore": false
@@ -8276,7 +9183,7 @@
     },
     {
      "type": "Feature",
-     "id": 72,
+     "id": 73,
      "properties": {
       "asset": "zeepipe_2a",
       "onshore": false
@@ -8393,7 +9300,7 @@
     },
     {
      "type": "Feature",
-     "id": 73,
+     "id": 74,
      "properties": {
       "asset": "zeepipe_2b",
       "onshore": false
@@ -26045,283 +26952,287 @@
  "grid": {
   "aasta_hansteen": [
    1,
-   -5.26
+   -3.37
   ],
   "asgard": [
    1,
-   0.94
+   3.83
   ],
   "bacton": [
    6,
-   -4.18
+   -4.23
   ],
   "balgzand": [
    6,
-   -0.98
+   -1.03
   ],
   "baltic_tie": [
    3,
-   3.46
+   2.51
   ],
   "bergermeer": [
    7,
-   0.96
+   -0.19
   ],
   "beryl": [
    1,
-   -7.26
+   -6.49
   ],
   "cats_riser": [
+   0,
+   -8.46
+  ],
+  "cats_t5": [
    1,
-   -8.72
+   -7.93
   ],
   "culzean": [
    0,
-   -9.06
+   -7.46
   ],
   "den_helder": [
    6,
-   0.02
+   0.23
   ],
   "dornum": [
    6,
-   4.19
+   2.58
   ],
   "draupner_e": [
    5,
-   0.84
+   -0.97
   ],
   "draupner_s": [
    4,
-   0.77
+   0.52
   ],
   "dunkirk": [
    6,
-   -2.18
+   -3.23
   ],
   "dunkirk_lng": [
    7,
-   -2.14
+   -4.29
   ],
   "easington": [
    6,
-   -5.18
+   -5.23
   ],
   "edvard_grieg": [
    0,
-   -7.06
+   -6.46
   ],
   "eemshaven_lng": [
    7,
-   2.96
+   2.36
   ],
   "ekofisk": [
    5,
-   3.04
+   3.13
   ],
   "elgin_franklin": [
    5,
-   -3.85
+   -3.93
   ],
   "emden": [
    6,
-   3.19
+   3.58
   ],
   "etf": [
    8,
-   8.2
+   7.57
   ],
   "etzel": [
    7,
-   5.86
+   5.26
   ],
   "f3fb": [
    1,
-   1.94
+   1.63
   ],
   "flags_brent": [
    2,
-   -5.05
+   -4.21
   ],
   "frigg": [
    0,
-   -8.06
+   -5.46
   ],
   "gate_lng": [
    7,
-   -0.24
+   -1.19
   ],
   "gjoa": [
    1,
-   -6.26
+   -5.37
   ],
   "grain_lng": [
    7,
-   -5.67
+   -5.49
   ],
   "gudrun": [
    2,
-   -2.28
+   -2.52
   ],
   "gullfaks": [
    0,
-   -2.26
+   -2.37
   ],
   "heidrun": [
    0,
-   -0.21
+   4.48
   ],
   "heimdal": [
    1,
-   -3.26
+   -1.37
   ],
   "irpa": [
    0,
-   -5.06
+   -3.37
   ],
   "jemgum": [
    7,
-   4.86
+   4.26
   ],
   "johan_sverdrup": [
    1,
-   2.94
+   2.63
   ],
   "k13a": [
    5,
-   -0.16
+   0.58
   ],
   "karsto": [
    2,
-   1.23
+   1.51
   ],
   "kollsnes": [
    2,
-   -1.08
+   -0.52
   ],
   "kvitebjorn": [
    1,
-   -1.06
+   -0.37
   ],
   "l10a": [
    5,
-   1.84
+   1.58
   ],
   "lille_torup": [
    7,
-   8.06
+   7.46
   ],
   "nbp": [
    8,
-   -5.66
+   -5.96
   ],
   "norg": [
    7,
-   1.96
+   1.36
   ],
   "norne": [
    0,
-   0.94
+   3.48
   ],
   "nybro": [
    4,
-   3.21
+   1.82
   ],
   "nyhamna": [
    2,
-   -4.05
+   -1.52
   ],
   "odin": [
    0,
-   -6.06
+   -4.46
   ],
   "ormen_lange": [
    1,
-   -4.26
+   -4.37
   ],
   "oseberg": [
    0,
-   -3.26
+   -1.37
   ],
   "peg": [
    8,
-   -2.48
+   -4.08
   ],
   "pl_vtp": [
    8,
-   3.57
+   -2.08
   ],
   "rough": [
    5,
-   -4.85
+   -5.13
   ],
   "sleipner": [
    3,
-   -2.18
+   -1.48
   ],
   "sns_fields": [
    5,
-   -2.85
+   -2.93
   ],
   "st_fergus": [
    6,
-   -6.18
+   -6.23
   ],
   "statfjord": [
    1,
-   -2.26
+   -2.37
   ],
   "stenlille": [
    7,
-   9.06
+   8.46
   ],
   "teesside": [
    6,
-   -7.18
+   -7.23
   ],
   "the": [
    8,
-   5.16
+   4.53
   ],
   "tjeldbergodden": [
    8,
-   -1.48
+   2.94
   ],
   "troll": [
    1,
-   -0.06
+   0.63
   ],
   "ttf": [
    8,
-   0.58
+   0.22
   ],
   "tyra": [
    0,
-   2.74
+   2.43
   ],
   "uithuizen": [
    6,
-   1.11
+   1.23
   ],
   "visund": [
    0,
-   -1.21
+   -0.37
   ],
   "wilhelmshaven_lng": [
    7,
-   6.86
+   6.26
   ],
   "zeebrugge": [
    6,
-   -3.18
+   -2.23
   ],
   "zeebrugge_lng": [
    7,
-   -3.34
+   -2.74
   ],
   "ztp": [
    8,
-   -3.63
+   -3.08
   ]
  },
  "units": [
@@ -26419,6 +27330,7 @@
    "nodes": [
     "st_fergus",
     "cats_riser",
+    "cats_t5",
     "culzean",
     "elgin_franklin",
     "teesside",
@@ -26432,6 +27344,7 @@
    "pipelines": [
     "bacton_nbp",
     "cats",
+    "cats_north",
     "culzean_cats",
     "easington_nbp",
     "grain_nbp",
@@ -26808,161 +27721,168 @@
     {
      "label": "Pig on Baltic Pipe (Denmark - Poland)",
      "pipeline": "baltic_pipe_east",
-     "launch": 1792418400,
+     "launch": 1792416384,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Baltic Pipe (North Sea leg)",
      "pipeline": "baltic_pipe_ns",
-     "launch": 1792468800,
+     "launch": 1792464768,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on BBL",
      "pipeline": "bbl",
-     "launch": 1792519200,
+     "launch": 1792513152,
      "speed": 4.0,
      "every": 1209600
     },
     {
-     "label": "Pig on CATS",
+     "label": "Pig on CATS (T5 - Teesside)",
      "pipeline": "cats",
-     "launch": 1792569600,
+     "launch": 1792561536,
+     "speed": 4.0,
+     "every": 1209600
+    },
+    {
+     "label": "Pig on CATS (riser - T5)",
+     "pipeline": "cats_north",
+     "launch": 1792609920,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Europipe II (K\u00e5rst\u00f8 - Baltic tie-in)",
      "pipeline": "europipe_2_north",
-     "launch": 1792620000,
+     "launch": 1792658304,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Europipe II (Baltic tie-in - Dornum)",
      "pipeline": "europipe_2_south",
-     "launch": 1792670400,
+     "launch": 1792706688,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on FLAGS",
      "pipeline": "flags",
-     "launch": 1792720800,
+     "launch": 1792755072,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Franpipe",
      "pipeline": "franpipe",
-     "launch": 1792771200,
+     "launch": 1792803456,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Haltenpipe",
      "pipeline": "haltenpipe",
-     "launch": 1792821600,
+     "launch": 1792851840,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Langeled (north)",
      "pipeline": "langeled_north",
-     "launch": 1792872000,
+     "launch": 1792900224,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on NGT",
      "pipeline": "ngt",
-     "launch": 1792922400,
+     "launch": 1792948608,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Norpipe Gas",
      "pipeline": "norpipe",
-     "launch": 1792972800,
+     "launch": 1792996992,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Polarled",
      "pipeline": "polarled",
-     "launch": 1793023200,
+     "launch": 1793045376,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on SAGE",
      "pipeline": "sage",
-     "launch": 1793073600,
+     "launch": 1793093760,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on SEAL",
      "pipeline": "seal",
-     "launch": 1793124000,
+     "launch": 1793142144,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Statpipe (dry gas)",
      "pipeline": "statpipe_dry",
-     "launch": 1793174400,
+     "launch": 1793190528,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Statpipe (Draupner - Ekofisk)",
      "pipeline": "statpipe_ekofisk",
-     "launch": 1793224800,
+     "launch": 1793238912,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Statpipe (Heimdal leg)",
      "pipeline": "statpipe_heimdal",
-     "launch": 1793275200,
+     "launch": 1793287296,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Tyra - Nybro",
      "pipeline": "tyra_nybro",
-     "launch": 1793325600,
+     "launch": 1793335680,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on WGT",
      "pipeline": "wgt",
-     "launch": 1793376000,
+     "launch": 1793384064,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Zeepipe I",
      "pipeline": "zeepipe_1",
-     "launch": 1793426400,
+     "launch": 1793432448,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Zeepipe IIA",
      "pipeline": "zeepipe_2a",
-     "launch": 1793476800,
+     "launch": 1793480832,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Zeepipe IIB",
      "pipeline": "zeepipe_2b",
-     "launch": 1793527200,
+     "launch": 1793529216,
      "speed": 4.0,
      "every": 1209600
     }
@@ -27146,6 +28066,7 @@
     "bbl",
     "bergermeer_ttf",
     "cats",
+    "cats_north",
     "culzean_cats",
     "den_helder_ttf",
     "dornum_the",
@@ -27222,6 +28143,7 @@
      0.0,
      47.16,
      12.28,
+     0.0,
      12.28,
      10.75,
      102.78,
@@ -27297,6 +28219,7 @@
      0.0,
      46.85,
      12.04,
+     0.0,
      12.04,
      10.72,
      100.72,
@@ -27372,6 +28295,7 @@
      0.0,
      45.17,
      12.03,
+     0.0,
      12.03,
      10.4,
      99.02,
@@ -27447,6 +28371,7 @@
      0.0,
      44.66,
      11.85,
+     0.0,
      11.85,
      10.22,
      97.34,
@@ -27522,6 +28447,7 @@
      0.0,
      44.84,
      12.27,
+     0.0,
      12.27,
      10.21,
      97.93,
@@ -27597,6 +28523,7 @@
      0.0,
      44.34,
      12.25,
+     0.0,
      12.25,
      10.42,
      100.75,
@@ -27672,6 +28599,7 @@
      0.0,
      44.38,
      12.36,
+     0.0,
      12.36,
      10.6,
      101.02,
@@ -27747,6 +28675,7 @@
      0.0,
      44.16,
      12.65,
+     0.0,
      12.65,
      10.68,
      101.44,
@@ -27822,6 +28751,7 @@
      0.0,
      45.1,
      12.88,
+     0.0,
      12.88,
      10.51,
      102.42,
@@ -27897,6 +28827,7 @@
      0.0,
      45.9,
      13.08,
+     0.0,
      13.08,
      10.75,
      102.59,
@@ -27972,6 +28903,7 @@
      0.0,
      45.74,
      13.03,
+     0.0,
      13.03,
      10.88,
      102.22,
@@ -28047,6 +28979,7 @@
      0.0,
      46.49,
      13.19,
+     0.0,
      13.19,
      10.88,
      102.83,
@@ -28122,6 +29055,7 @@
      0.0,
      46.56,
      13.48,
+     0.0,
      13.48,
      10.66,
      102.54,
@@ -28197,6 +29131,7 @@
      0.0,
      46.44,
      13.53,
+     0.0,
      13.53,
      10.8,
      103.21,
@@ -28272,6 +29207,7 @@
      0.0,
      47.85,
      13.43,
+     0.0,
      13.43,
      11.01,
      104.69,
@@ -28347,6 +29283,7 @@
      0.0,
      49.12,
      13.55,
+     0.0,
      13.55,
      11.31,
      105.82,
@@ -28422,6 +29359,7 @@
      0.0,
      50.49,
      13.63,
+     0.0,
      13.63,
      11.54,
      107.0,
@@ -28497,6 +29435,7 @@
      0.0,
      50.91,
      13.94,
+     0.0,
      13.94,
      11.94,
      107.0,
@@ -28572,6 +29511,7 @@
      0.0,
      51.91,
      13.87,
+     0.0,
      13.87,
      12.03,
      107.0,
@@ -28647,6 +29587,7 @@
      0.0,
      51.1,
      13.91,
+     0.0,
      13.91,
      12.19,
      107.0,
@@ -28722,6 +29663,7 @@
      0.0,
      50.59,
      13.85,
+     0.0,
      13.85,
      12.01,
      107.0,
@@ -28797,6 +29739,7 @@
      0.0,
      51.16,
      13.79,
+     0.0,
      13.79,
      11.88,
      107.0,
@@ -28872,6 +29815,7 @@
      0.0,
      51.63,
      13.48,
+     0.0,
      13.48,
      11.58,
      107.0,
@@ -28947,6 +29891,7 @@
      0.0,
      50.4,
      12.78,
+     0.0,
      12.78,
      11.18,
      104.39,
@@ -29022,6 +29967,7 @@
      0.0,
      48.23,
      12.38,
+     0.0,
      12.38,
      10.74,
      102.58,
@@ -29097,6 +30043,7 @@
      0.0,
      47.43,
      12.03,
+     0.0,
      12.03,
      10.46,
      101.35,
@@ -29172,6 +30119,7 @@
      0.0,
      46.64,
      11.64,
+     0.0,
      11.64,
      10.01,
      99.92,
@@ -29247,6 +30195,7 @@
      0.0,
      45.96,
      11.08,
+     0.0,
      11.08,
      9.89,
      99.67,
@@ -29322,6 +30271,7 @@
      0.0,
      45.39,
      11.31,
+     0.0,
      11.31,
      9.87,
      100.1,
@@ -29397,6 +30347,7 @@
      0.0,
      45.5,
      11.43,
+     0.0,
      11.43,
      10.15,
      100.35,
@@ -29472,6 +30423,7 @@
      0.0,
      46.8,
      11.7,
+     0.0,
      11.7,
      10.21,
      101.58,
@@ -29547,6 +30499,7 @@
      0.0,
      48.17,
      11.83,
+     0.0,
      11.83,
      10.27,
      101.85,
@@ -29622,6 +30575,7 @@
      0.0,
      48.6,
      11.89,
+     0.0,
      11.89,
      10.51,
      102.72,
@@ -29697,6 +30651,7 @@
      0.0,
      49.14,
      11.96,
+     0.0,
      11.96,
      10.62,
      102.58,
@@ -29772,6 +30727,7 @@
      0.0,
      50.13,
      11.94,
+     0.0,
      11.94,
      10.84,
      103.47,
@@ -29847,6 +30803,7 @@
      0.0,
      49.61,
      12.15,
+     0.0,
      12.15,
      10.86,
      104.3,
@@ -29922,6 +30879,7 @@
      0.0,
      48.6,
      12.38,
+     0.0,
      12.38,
      11.1,
      104.99,
@@ -29997,6 +30955,7 @@
      0.0,
      48.99,
      12.74,
+     0.0,
      12.74,
      11.08,
      106.43,
@@ -30072,6 +31031,7 @@
      0.0,
      49.02,
      13.07,
+     0.0,
      13.07,
      11.28,
      107.0,
@@ -30147,6 +31107,7 @@
      0.0,
      49.1,
      13.35,
+     0.0,
      13.35,
      11.24,
      107.0,
@@ -30222,6 +31183,7 @@
      0.0,
      49.99,
      13.47,
+     0.0,
      13.47,
      11.46,
      107.0,
@@ -30297,6 +31259,7 @@
      0.0,
      51.4,
      13.61,
+     0.0,
      13.61,
      11.74,
      107.0,
@@ -30372,6 +31335,7 @@
      0.0,
      51.28,
      13.67,
+     0.0,
      13.67,
      11.66,
      107.0,
@@ -30447,6 +31411,7 @@
      0.0,
      50.72,
      13.71,
+     0.0,
      13.71,
      11.72,
      107.0,
@@ -30522,6 +31487,7 @@
      0.0,
      50.79,
      13.56,
+     0.0,
      13.56,
      11.62,
      107.0,
@@ -30597,6 +31563,7 @@
      0.0,
      50.98,
      13.17,
+     0.0,
      13.17,
      11.5,
      107.0,
@@ -30672,6 +31639,7 @@
      0.0,
      51.02,
      12.95,
+     0.0,
      12.95,
      11.38,
      105.95,
@@ -30747,6 +31715,7 @@
      0.0,
      48.94,
      12.53,
+     0.0,
      12.53,
      11.05,
      103.5,
@@ -30822,6 +31791,7 @@
      0.0,
      47.71,
      12.28,
+     0.0,
      12.28,
      10.64,
      100.57,
@@ -30897,6 +31867,7 @@
      0.0,
      45.71,
      12.04,
+     0.0,
      12.04,
      10.42,
      99.92,
@@ -30972,6 +31943,7 @@
      0.0,
      45.38,
      11.88,
+     0.0,
      11.88,
      10.12,
      98.84,
@@ -31047,6 +32019,7 @@
      0.0,
      44.24,
      11.71,
+     0.0,
      11.71,
      10.16,
      98.26,
@@ -31122,6 +32095,7 @@
      0.0,
      44.13,
      11.83,
+     0.0,
      11.83,
      10.23,
      98.13,
@@ -31197,6 +32171,7 @@
      0.0,
      44.95,
      11.72,
+     0.0,
      11.72,
      10.56,
      97.93,
@@ -31272,6 +32247,7 @@
      0.0,
      45.1,
      11.8,
+     0.0,
      11.8,
      10.51,
      52.69,
@@ -31347,6 +32323,7 @@
      0.0,
      45.87,
      11.82,
+     0.0,
      11.82,
      10.64,
      52.69,
@@ -31422,6 +32399,7 @@
      0.0,
      46.69,
      11.95,
+     0.0,
      11.95,
      10.52,
      52.3,
@@ -31497,6 +32475,7 @@
      0.0,
      47.69,
      12.02,
+     0.0,
      12.02,
      10.29,
      53.59,
@@ -31572,6 +32551,7 @@
      0.0,
      46.88,
      12.26,
+     0.0,
      12.26,
      10.41,
      53.91,
@@ -31647,6 +32627,7 @@
      0.0,
      46.26,
      12.2,
+     0.0,
      12.2,
      10.28,
      54.92,
@@ -31722,6 +32703,7 @@
      0.0,
      45.01,
      12.03,
+     0.0,
      12.03,
      10.41,
      55.79,
@@ -31797,6 +32779,7 @@
      0.0,
      46.45,
      12.27,
+     0.0,
      12.27,
      10.64,
      57.83,
@@ -31872,6 +32855,7 @@
      0.0,
      47.35,
      12.21,
+     0.0,
      12.21,
      10.7,
      59.0,
@@ -31947,6 +32931,7 @@
      0.0,
      47.63,
      12.59,
+     0.0,
      12.59,
      10.96,
      60.52,
@@ -32022,6 +33007,7 @@
      0.0,
      49.12,
      13.09,
+     0.0,
      13.09,
      10.98,
      63.78,
@@ -32097,6 +33083,7 @@
      0.0,
      49.9,
      13.38,
+     0.0,
      13.38,
      11.22,
      67.07,
@@ -32172,6 +33159,7 @@
      0.0,
      50.32,
      13.46,
+     0.0,
      13.46,
      11.35,
      70.79,
@@ -32247,6 +33235,7 @@
      0.0,
      51.78,
      13.29,
+     0.0,
      13.29,
      11.52,
      107.0,
@@ -32322,6 +33311,7 @@
      0.0,
      51.8,
      13.23,
+     0.0,
      13.23,
      11.66,
      107.0,
@@ -32397,6 +33387,7 @@
      0.0,
      52.35,
      13.12,
+     0.0,
      13.12,
      11.59,
      107.0,
@@ -32472,6 +33463,7 @@
      0.0,
      51.21,
      13.17,
+     0.0,
      13.17,
      11.5,
      107.0,
@@ -32547,6 +33539,7 @@
      0.0,
      48.16,
      12.78,
+     0.0,
      12.78,
      11.26,
      104.51,
@@ -32622,6 +33615,7 @@
      0.0,
      47.42,
      12.36,
+     0.0,
      12.36,
      10.92,
      102.21,
@@ -32697,6 +33691,7 @@
      0.0,
      45.95,
      12.06,
+     0.0,
      12.06,
      10.61,
      98.14,
@@ -32772,6 +33767,7 @@
      0.0,
      44.6,
      11.88,
+     0.0,
      11.88,
      10.53,
      97.0,
@@ -32847,6 +33843,7 @@
      0.0,
      42.49,
      11.73,
+     0.0,
      11.73,
      10.42,
      96.14,
@@ -32922,6 +33919,7 @@
      0.0,
      42.9,
      11.74,
+     0.0,
      11.74,
      10.34,
      96.6,
@@ -32997,6 +33995,7 @@
      0.0,
      43.68,
      11.78,
+     0.0,
      11.78,
      10.54,
      98.15,
@@ -33072,6 +34071,7 @@
      0.0,
      44.35,
      11.93,
+     0.0,
      11.93,
      10.4,
      99.59,
@@ -33147,6 +34147,7 @@
      0.0,
      45.08,
      12.31,
+     0.0,
      12.31,
      10.57,
      102.2,
@@ -33222,6 +34223,7 @@
      0.0,
      46.17,
      12.51,
+     0.0,
      12.51,
      10.61,
      103.76,
@@ -33297,6 +34299,7 @@
      0.0,
      47.45,
      12.65,
+     0.0,
      12.65,
      10.64,
      103.83,
@@ -33372,6 +34375,7 @@
      0.0,
      46.49,
      12.46,
+     0.0,
      12.46,
      10.58,
      106.2,
@@ -33447,6 +34451,7 @@
      0.0,
      46.82,
      12.38,
+     0.0,
      12.38,
      10.59,
      104.55,
@@ -33522,6 +34527,7 @@
      0.0,
      46.35,
      12.54,
+     0.0,
      12.54,
      10.67,
      103.78,
@@ -33597,6 +34603,7 @@
      0.0,
      47.09,
      12.77,
+     0.0,
      12.77,
      10.86,
      104.26,
@@ -33672,6 +34679,7 @@
      0.0,
      47.75,
      12.71,
+     0.0,
      12.71,
      10.93,
      105.16,
@@ -33747,6 +34755,7 @@
      0.0,
      48.12,
      12.71,
+     0.0,
      12.71,
      11.18,
      107.0,
@@ -33822,6 +34831,7 @@
      0.0,
      48.93,
      12.76,
+     0.0,
      12.76,
      11.54,
      107.0,
@@ -33897,6 +34907,7 @@
      0.0,
      48.83,
      13.38,
+     0.0,
      13.38,
      11.57,
      107.0,
@@ -33972,6 +34983,7 @@
      0.0,
      49.92,
      13.33,
+     0.0,
      13.33,
      11.71,
      107.0,
@@ -34047,6 +35059,7 @@
      0.0,
      49.71,
      13.37,
+     0.0,
      13.37,
      11.65,
      107.0,
@@ -34122,6 +35135,7 @@
      0.0,
      50.07,
      13.53,
+     0.0,
      13.53,
      11.72,
      107.0,
@@ -34197,6 +35211,7 @@
      0.0,
      49.67,
      13.11,
+     0.0,
      13.11,
      11.72,
      105.44,
@@ -34272,6 +35287,7 @@
      0.0,
      49.54,
      13.2,
+     0.0,
      13.2,
      11.39,
      102.57,
@@ -34347,6 +35363,7 @@
      0.0,
      48.76,
      13.02,
+     0.0,
      13.02,
      10.88,
      101.7,
@@ -34422,6 +35439,7 @@
      0.0,
      46.75,
      12.91,
+     0.0,
      12.91,
      10.64,
      98.6,
@@ -34497,6 +35515,7 @@
      0.0,
      46.06,
      12.53,
+     0.0,
      12.53,
      10.41,
      96.1,
@@ -34572,6 +35591,7 @@
      0.0,
      45.68,
      11.98,
+     0.0,
      11.98,
      10.4,
      95.77,
@@ -34647,6 +35667,7 @@
      0.0,
      44.4,
      11.63,
+     0.0,
      11.63,
      10.4,
      95.57,
@@ -34722,6 +35743,7 @@
      0.0,
      44.79,
      11.53,
+     0.0,
      11.53,
      10.38,
      96.16,
@@ -34797,6 +35819,7 @@
      0.0,
      44.35,
      11.72,
+     0.0,
      11.72,
      10.64,
      96.59,
@@ -34872,6 +35895,7 @@
      0.0,
      45.16,
      11.93,
+     0.0,
      11.93,
      10.88,
      99.02,
@@ -34947,6 +35971,7 @@
      0.0,
      45.76,
      11.93,
+     0.0,
      11.93,
      10.83,
      99.63,
@@ -35022,6 +36047,7 @@
      0.0,
      46.38,
      12.09,
+     0.0,
      12.09,
      11.09,
      100.53,
@@ -35097,6 +36123,7 @@
      0.0,
      46.71,
      12.07,
+     0.0,
      12.07,
      11.03,
      102.35,
@@ -35172,6 +36199,7 @@
      0.0,
      46.91,
      12.22,
+     0.0,
      12.22,
      11.07,
      101.07,
@@ -35247,6 +36275,7 @@
      0.0,
      45.16,
      12.12,
+     0.0,
      12.12,
      11.09,
      103.08,
@@ -35322,6 +36351,7 @@
      0.0,
      45.09,
      12.28,
+     0.0,
      12.28,
      11.21,
      103.96,
@@ -35397,6 +36427,7 @@
      0.0,
      44.94,
      12.3,
+     0.0,
      12.3,
      11.37,
      104.04,
@@ -35472,6 +36503,7 @@
      0.0,
      45.74,
      12.38,
+     0.0,
      12.38,
      11.53,
      106.22,
@@ -35547,6 +36579,7 @@
      0.0,
      46.38,
      12.66,
+     0.0,
      12.66,
      11.63,
      107.0,
@@ -35622,6 +36655,7 @@
      0.0,
      47.59,
      12.71,
+     0.0,
      12.71,
      11.78,
      107.0,
@@ -35697,6 +36731,7 @@
      0.0,
      48.26,
      12.97,
+     0.0,
      12.97,
      11.76,
      107.0,
@@ -35772,6 +36807,7 @@
      0.0,
      49.69,
      13.35,
+     0.0,
      13.35,
      11.76,
      107.0,
@@ -35847,6 +36883,7 @@
      0.0,
      50.67,
      13.31,
+     0.0,
      13.31,
      11.62,
      107.0,
@@ -35922,6 +36959,7 @@
      0.0,
      49.98,
      13.2,
+     0.0,
      13.2,
      11.7,
      107.0,
@@ -35997,6 +37035,7 @@
      0.0,
      50.59,
      13.07,
+     0.0,
      13.07,
      11.49,
      107.0,
@@ -36072,6 +37111,7 @@
      0.0,
      50.0,
      12.94,
+     0.0,
      12.94,
      11.31,
      107.0,
@@ -36147,6 +37187,7 @@
      0.0,
      48.17,
      12.89,
+     0.0,
      12.89,
      10.94,
      106.9,
@@ -36222,6 +37263,7 @@
      0.0,
      43.12,
      11.78,
+     0.0,
      11.78,
      10.13,
      99.06,
@@ -36297,6 +37339,7 @@
      0.0,
      43.22,
      11.22,
+     0.0,
      11.22,
      10.03,
      97.31,
@@ -36372,6 +37415,7 @@
      0.0,
      43.12,
      11.0,
+     0.0,
      11.0,
      9.49,
      95.9,
@@ -36447,6 +37491,7 @@
      0.0,
      41.73,
      11.01,
+     0.0,
      11.01,
      9.36,
      94.68,
@@ -36522,6 +37567,7 @@
      0.0,
      40.94,
      10.69,
+     0.0,
      10.69,
      9.17,
      93.82,
@@ -36597,6 +37643,7 @@
      0.0,
      42.12,
      10.8,
+     0.0,
      10.8,
      9.05,
      94.75,
@@ -36672,6 +37719,7 @@
      0.0,
      42.38,
      10.97,
+     0.0,
      10.97,
      9.27,
      95.54,
@@ -36747,6 +37795,7 @@
      0.0,
      43.34,
      11.19,
+     0.0,
      11.19,
      9.31,
      96.66,
@@ -36822,6 +37871,7 @@
      0.0,
      42.82,
      11.28,
+     0.0,
      11.28,
      9.48,
      97.61,
@@ -36897,6 +37947,7 @@
      0.0,
      44.35,
      11.35,
+     0.0,
      11.35,
      9.51,
      96.74,
@@ -36972,6 +38023,7 @@
      0.0,
      44.24,
      11.5,
+     0.0,
      11.5,
      9.47,
      97.25,
@@ -37047,6 +38099,7 @@
      0.0,
      43.9,
      11.63,
+     0.0,
      11.63,
      9.68,
      98.54,
@@ -37122,6 +38175,7 @@
      0.0,
      44.36,
      11.95,
+     0.0,
      11.95,
      9.6,
      98.89,
@@ -37197,6 +38251,7 @@
      0.0,
      45.06,
      12.27,
+     0.0,
      12.27,
      9.81,
      97.8,
@@ -37272,6 +38327,7 @@
      0.0,
      46.27,
      12.39,
+     0.0,
      12.39,
      9.91,
      99.23,
@@ -37347,6 +38403,7 @@
      0.0,
      46.7,
      12.43,
+     0.0,
      12.43,
      10.22,
      99.77,
@@ -37422,6 +38479,7 @@
      0.0,
      48.03,
      12.46,
+     0.0,
      12.46,
      10.35,
      101.27,
@@ -37497,6 +38555,7 @@
      0.0,
      49.16,
      12.87,
+     0.0,
      12.87,
      10.52,
      102.9,
@@ -37572,6 +38631,7 @@
      0.0,
      49.74,
      12.85,
+     0.0,
      12.85,
      10.81,
      105.14,
@@ -37647,6 +38707,7 @@
      0.0,
      48.84,
      12.92,
+     0.0,
      12.92,
      10.84,
      105.96,
@@ -37722,6 +38783,7 @@
      0.0,
      48.33,
      12.78,
+     0.0,
      12.78,
      10.86,
      105.23,
@@ -37797,6 +38859,7 @@
      0.0,
      48.87,
      12.62,
+     0.0,
      12.62,
      10.71,
      102.53,
@@ -37872,6 +38935,7 @@
      0.0,
      47.45,
      12.07,
+     0.0,
      12.07,
      10.29,
      101.53,
@@ -37947,6 +39011,7 @@
      0.0,
      44.74,
      11.47,
+     0.0,
      11.47,
      9.98,
      99.12,
@@ -38022,6 +39087,7 @@
      0.0,
      43.1,
      11.3,
+     0.0,
      11.3,
      9.95,
      97.51,
@@ -38097,6 +39163,7 @@
      0.0,
      43.03,
      10.69,
+     0.0,
      10.69,
      9.61,
      96.1,
@@ -38172,6 +39239,7 @@
      0.0,
      42.85,
      10.74,
+     0.0,
      10.74,
      9.48,
      95.21,
@@ -38247,6 +39315,7 @@
      0.0,
      42.08,
      10.6,
+     0.0,
      10.6,
      9.28,
      94.37,
@@ -38322,6 +39391,7 @@
      0.0,
      43.47,
      10.32,
+     0.0,
      10.32,
      9.46,
      93.57,
@@ -38397,6 +39467,7 @@
      0.0,
      42.88,
      10.27,
+     0.0,
      10.27,
      9.47,
      93.83,
@@ -38472,6 +39543,7 @@
      0.0,
      43.75,
      10.35,
+     0.0,
      10.35,
      9.74,
      95.81,
@@ -38547,6 +39619,7 @@
      0.0,
      44.88,
      10.53,
+     0.0,
      10.53,
      9.78,
      96.88,
@@ -38622,6 +39695,7 @@
      0.0,
      44.92,
      10.51,
+     0.0,
      10.51,
      9.9,
      97.33,
@@ -38697,6 +39771,7 @@
      0.0,
      45.98,
      10.63,
+     0.0,
      10.63,
      10.04,
      97.94,
@@ -38772,6 +39847,7 @@
      0.0,
      45.66,
      10.6,
+     0.0,
      10.6,
      10.06,
      98.31,
@@ -38847,6 +39923,7 @@
      0.0,
      46.15,
      10.96,
+     0.0,
      10.96,
      9.97,
      96.67,
@@ -38922,6 +39999,7 @@
      0.0,
      46.03,
      10.96,
+     0.0,
      10.96,
      10.02,
      95.99,
@@ -38997,6 +40075,7 @@
      0.0,
      46.67,
      11.04,
+     0.0,
      11.04,
      10.06,
      96.98,
@@ -39072,6 +40151,7 @@
      0.0,
      47.19,
      11.19,
+     0.0,
      11.19,
      10.3,
      97.48,
@@ -39147,6 +40227,7 @@
      0.0,
      47.35,
      11.61,
+     0.0,
      11.61,
      10.53,
      97.91,
@@ -39222,6 +40303,7 @@
      0.0,
      49.19,
      11.7,
+     0.0,
      11.7,
      10.76,
      98.68,
@@ -39297,6 +40379,7 @@
      0.0,
      49.85,
      11.82,
+     0.0,
      11.82,
      11.04,
      99.26,
@@ -39372,6 +40455,7 @@
      0.0,
      51.04,
      12.0,
+     0.0,
      12.0,
      11.14,
      100.8,
@@ -39447,6 +40531,7 @@
      0.0,
      50.12,
      12.34,
+     0.0,
      12.34,
      11.22,
      101.04,
@@ -39522,6 +40607,7 @@
      0.0,
      50.74,
      12.25,
+     0.0,
      12.25,
      11.24,
      100.36,
@@ -39597,6 +40683,7 @@
      0.0,
      50.75,
      11.99,
+     0.0,
      11.99,
      11.19,
      100.7,
@@ -39672,6 +40759,7 @@
      0.0,
      49.21,
      11.96,
+     0.0,
      11.96,
      10.98,
      98.62,
@@ -39747,6 +40835,7 @@
      0.0,
      47.39,
      11.65,
+     0.0,
      11.65,
      10.81,
      98.06,
@@ -53866,7 +54955,7 @@
       "baltic_tie",
       "bergermeer",
       "beryl",
-      "cats_riser",
+      "cats_t5",
       "culzean",
       "den_helder",
       "dornum",

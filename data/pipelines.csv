@@ -39,8 +39,9 @@ tampen_link,Tampen Link,statfjord,flags_brent,link,23,32,25,false,2007,operating
 gjoa_flags,Gjøa gas export,gjoa,flags_brent,feeder,130,28,17,false,2010,operating,,https://gassco.no/en/our-activities/pipelines-and-platforms,
 flags,FLAGS,flags_brent,st_fergus,export,450,36,33,false,1982,operating,,https://en.wikipedia.org/wiki/FLAGS,
 sage,SAGE,beryl,st_fergus,export,323,30,30,false,1992,operating,,"approximate, public data",
-culzean_cats,Culzean - CATS,culzean,cats_riser,feeder,,,15,false,2019,operating,,https://en.wikipedia.org/wiki/Central_Area_Transmission_System,
-cats,CATS,cats_riser,teesside,export,404,36,48,false,1993,operating,,https://en.wikipedia.org/wiki/Central_Area_Transmission_System,
+culzean_cats,Culzean - CATS T5,culzean,cats_t5,feeder,52,22,15,false,2019,operating,,https://services-eu1.arcgis.com/OZMfUznmLTnWccBc/arcgis/rest/services/UKCS_offshore_infrastructure_pipeline_linear_(WGS84)/FeatureServer/1,Via Culzean SSIV to Stella PLEM at CATS T5 (NSTA PL4106)
+cats_north,CATS (riser - T5),cats_riser,cats_t5,export,89.5,36,48,false,1993,operating,,https://services-eu1.arcgis.com/OZMfUznmLTnWccBc/arcgis/rest/services/UKCS_offshore_infrastructure_pipeline_linear_(WGS84)/FeatureServer/1,Northern section of NSTA PL774
+cats,CATS (T5 - Teesside),cats_t5,teesside,export,315,36,48,false,1993,operating,,https://services-eu1.arcgis.com/OZMfUznmLTnWccBc/arcgis/rest/services/UKCS_offshore_infrastructure_pipeline_linear_(WGS84)/FeatureServer/1,Southern section of NSTA PL774
 seal,SEAL,elgin_franklin,bacton,export,474,34,35,false,2000,operating,,"approximate, public data",
 sns_bacton,Southern North Sea gathering,sns_fields,bacton,feeder,,,15,false,,operating,,"approximate, public data",Several pipelines modelled as one
 iuk,Interconnector (IUK),bacton,zeebrugge,interconnector,235,40,70,true,1998,operating,,https://www.interconnector.com/,

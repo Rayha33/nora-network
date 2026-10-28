@@ -414,8 +414,12 @@
       return { x: p.x, y: p.y, angle: Math.atan2(pb.y - pa.y, pb.x - pa.x) };
     };
     const projectBand = (id, extent) => {
-      const steps = Math.max(4, Math.ceil(Math.abs(extent[1] - extent[0]) * 32));
-      return Array.from({ length: steps + 1 }, (_, i) => project(id, extent[0] + (extent[1] - extent[0]) * (i / steps)));
+      // Include every laid-route vertex inside the band, not just uniform samples:
+      // otherwise a moving head/tail visibly cuts across a bend between two samples.
+      const cumulative = routeLengths[id], total = cumulative[cumulative.length - 1] || 1;
+      const [start, end] = visibleRanges[id];
+      const vertices = cumulative.map((distance) => distance / total);
+      return App.bandStops(extent, vertices, [start, end]).map((along) => project(id, along));
     };
     if (App.settings().animation && App.live.playing && !App.reduceMotion) {
       /* Simulated flow at the nodes, not on the lines: short solid bands sliding

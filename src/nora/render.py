@@ -194,8 +194,8 @@ ROUTES = DATA_DIR / "geo" / "routes.json"
 
 
 def routes(path: Path = ROUTES) -> dict[str, list[list[float]]]:
-    """The laid routes of the pipelines SODIR registers (scripts/build_routes.py), by
-    pipeline id; empty if the file is missing."""
+    """Laid pipeline routes from the SODIR, NSTA and EMODnet public registers, by pipeline
+    id; empty if the file is missing."""
     try:
         return json.loads(path.read_text(encoding="utf-8"))["routes"]
     except FileNotFoundError:
@@ -218,9 +218,9 @@ def _route_line(route: list[list[float]] | None, start: list[float], end: list[f
 
 
 def map_geojson(net: Network) -> dict[str, dict]:
-    """Nodes and pipelines as GeoJSON at their true coordinates; pipelines follow their
-    laid route where SODIR registers one. Feature ids are numbers because MapLibre keys
-    its per-feature styling (feature state) on them."""
+    """Nodes and pipelines as GeoJSON at their true coordinates; physical pipelines follow
+    their laid routes where a public register supplies one. Feature ids are numbers because
+    MapLibre keys its per-feature styling (feature state) on them."""
     where = {node.id: [node.lon, node.lat] for node in net.nodes}
     laid = routes()
     nodes = [

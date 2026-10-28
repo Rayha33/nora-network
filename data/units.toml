@@ -20,7 +20,7 @@ nodes = ["karsto", "johan_sverdrup", "gudrun", "sleipner", "draupner_s", "draupn
 [units.uk]
 name = "UK landings"
 nodes = [
-    "st_fergus", "cats_riser", "culzean", "elgin_franklin", "teesside", "easington",
+    "st_fergus", "cats_riser", "cats_t5", "culzean", "elgin_franklin", "teesside", "easington",
     "sns_fields", "bacton", "grain_lng", "nbp", "rough",
 ]
 

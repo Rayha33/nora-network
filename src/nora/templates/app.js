@@ -219,16 +219,9 @@ const App = (() => {
     ctx.globalAlpha = 1;
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
-    if (points.length === 2) ctx.lineTo(points[1].x, points[1].y);
-    else {
-      // A continuous snake-like body: bend through the route samples instead of
-      // drawing a straight chord or a sequence of visibly kinked segments.
-      for (let i = 1; i < points.length - 1; i++) {
-        const point = points[i], next = points[i + 1];
-        ctx.quadraticCurveTo(point.x, point.y, (point.x + next.x) / 2, (point.y + next.y) / 2);
-      }
-      ctx.lineTo(head.x, head.y);
-    }
+    // Follow the registered pipeline polyline exactly. Quadratic smoothing used the
+    // bends as control handles and pulled the moving band off the physical route.
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
     if (len < 1) ctx.lineTo(a.x + 0.5, a.y);
     ctx.strokeStyle = COLORS.casing;
     ctx.lineWidth = width + 1.2;
@@ -1104,6 +1097,21 @@ const App = (() => {
   function visibleRange(length, gapA, gapB = gapA) {
     if (!(length > 0)) return [0, 1];
     return [Math.min(0.45, gapA / length), Math.max(0.55, 1 - gapB / length)];
+  }
+  /* Samples for a moving band, in tail-to-head order. Uniform samples keep short
+     segments fluid; the route's own vertices are mandatory so no bend is skipped. */
+  function bandStops(extent, vertices = [], visible = null) {
+    const [a, b] = extent, lo = Math.min(a, b), hi = Math.max(a, b);
+    const steps = Math.max(4, Math.ceil(Math.abs(b - a) * 32));
+    const stops = Array.from({ length: steps + 1 }, (_, i) => a + ((b - a) * i) / steps);
+    // Route distances run over the whole line; markers run over its visible part between
+    // the node circles. Convert vertices into that same public 0..1 coordinate system.
+    const positions = visible
+      ? vertices.map((value) => (value - visible[0]) / (visible[1] - visible[0]))
+      : vertices;
+    for (const value of positions) if (Number.isFinite(value) && value > lo && value < hi) stops.push(value);
+    stops.sort((x, y) => (a <= b ? x - y : y - x));
+    return stops.filter((value, i) => i === 0 || Math.abs(value - stops[i - 1]) > 1e-9);
   }
   // Major named routes on the Map only. Split physical pipelines share one short name;
   // feeders, short links and notional grid entries stay quiet.
@@ -2422,7 +2430,7 @@ const App = (() => {
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
-    pipeStyle, pipeMapName, visibleRange, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
+    pipeStyle, pipeMapName, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
     timeState, timelineWindow,
     // The display profile (desk, wall or compact) and the one UI scale (1 = 100 %).
