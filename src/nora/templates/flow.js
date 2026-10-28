@@ -350,7 +350,20 @@
 
   function pointAlong(edge, along, positions) {
     const a = positions[edge.from], b = positions[edge.to];
-    return { x: a.x + (b.x - a.x) * along, y: a.y + (b.y - a.y) * along, angle: Math.atan2(b.y - a.y, b.x - a.x) };
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    // Route markers use the visible line segment, not the centres hidden by the
+    // enlarged circles. Keep a small gap so neither a dot nor a peak band enters a node.
+    const screenScale = network ? network.getScale() : 1;
+    const gapA = circleRadius(edge.from, positions) + 8 / screenScale, gapB = circleRadius(edge.to, positions) + 8 / screenScale;
+    const start = Math.min(0.45, gapA / len), end = Math.max(0.55, 1 - gapB / len);
+    const t = start + (end - start) * along;
+    return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, angle: Math.atan2(b.y - a.y, b.x - a.x) };
+  }
+  function animateStubs(scale) {
+    return scale >= 0.5 && App.settings().animation && App.live.playing && !App.reduceMotion;
+  }
+  function stubDistance(id, travel, scale, positions = framePos) {
+    return circleRadius(id, positions) + 10 / scale + travel;
   }
   function overlay(ctx) {
     const positions = network.getPositions();
@@ -360,7 +373,9 @@
       if (s.level && !s.hidden && e) { const m = pointAlong(e, 0.5, positions); App.drawBadge(ctx, s.level, m.x + 12, m.y, 7); }
     }
     if (App.state.mode !== "live") return;
-    if (App.settings().animation && App.live.playing && !App.reduceMotion) {
+    // At low zoom a stub outside its own node can cross a neighbour. Keep the fitted
+    // overview calm; these decorative strokes only appear once the drawing has room.
+    if (animateStubs(network.getScale())) {
       /* Simulated flow at the nodes, not on the lines (same as the Map view):
          short solid bands sliding into the icon where gas arrives and out of it
          where gas leaves, scaled by how much the line carries. */
@@ -387,7 +402,7 @@
           ctx.lineWidth = (1.6 + share * 2.2) / scale;
           for (let k = 0; k < 2; k++) {
             const t = (App.live.clock * 0.45 + k / 2) % 1;
-            const d = inflow ? (stub - band) * (1 - t) + band : (stub - band) * t + band;
+            const d = stubDistance(nid, inflow ? (stub - band) * (1 - t) + band : (stub - band) * t + band, scale, positions);
             ctx.globalAlpha = 0.25 + (inflow ? t : 1 - t) * 0.55;
             const cx = pn.x + ux * d, cy = pn.y + uy * d;
             ctx.beginPath();
@@ -563,6 +578,9 @@
   view.flowQuadrants = flowQuadrants;
   view.circleRadius = circleRadius;
   view.drawQuadrants = drawQuadrants;
+  view.pointAlong = pointAlong;
+  view.animateStubs = animateStubs;
+  view.stubDistance = stubDistance;
   view.card = card; // for tests: the renderer of one node
   App.register("flow", view);
 })();

@@ -209,6 +209,27 @@ test("flow circles: a mixed quadrant renders separate incoming and outgoing labe
   assert.notEqual(incoming.y, outgoing.y, "the two readings have their own lines");
 });
 
+test("flow circles: animated overlays stay outside enlarged nodes", () => {
+  const loaded = loadApp();
+  const { App, NORA } = loaded;
+  loadFirstHour(App, NORA);
+  App.state.mode = "live";
+  App.live.values = App.live.frames[0].flows;
+  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 258, y: stage * 204 }]));
+  const edge = Object.values(NORA.assets).find((asset) => asset.from && asset.to && App.nodeIds.includes(asset.from) && App.nodeIds.includes(asset.to));
+  for (const [along, node] of [[0, edge.from], [1, edge.to]]) {
+    const point = App.views.flow.pointAlong(edge, along, pos);
+    const radius = App.views.flow.circleRadius(node, pos);
+    assert.ok(Math.hypot(point.x - pos[node].x, point.y - pos[node].y) > radius, "route markers stop beyond the circle");
+  }
+  assert.ok(App.views.flow.stubDistance(edge.from, 0, 1, pos) > App.views.flow.circleRadius(edge.from, pos), "animated flow strokes start outside the circle");
+  App.settings().animation = true;
+  App.live.playing = true;
+  App.reduceMotion = false;
+  assert.equal(App.views.flow.animateStubs(0.1), false, "decorative strokes are disabled when neighbouring nodes are too dense");
+  assert.equal(App.views.flow.animateStubs(0.8), true, "animation returns when the drawing has room");
+});
+
 test("exit circles: within-day delivery against the nominations, as a share", () => {
   const { App, NORA } = loadApp();
   const exit = "easington";
