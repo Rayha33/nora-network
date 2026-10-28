@@ -125,6 +125,20 @@ test("flow circles: live flow (MSm³/d) and pressure (bar) for each node", () =>
   assert.ok(readings.some((r) => r.pressure > 0), "and a pressure where it is measured");
 });
 
+test("map: major pipelines have concise persistent names", () => {
+  const { App } = loadApp();
+  assert.equal(App.pipeMapName("europipe_1"), "Europipe I");
+  assert.equal(App.pipeMapName("europipe_2_north"), "Europipe II");
+  assert.equal(App.pipeMapName("europipe_2_south"), "Europipe II");
+  assert.equal(App.pipeMapName("franpipe"), "Franpipe");
+  assert.equal(App.pipeMapName("zeepipe_1"), "Zeepipe I");
+  assert.equal(App.pipeMapName("langeled_south"), "Langeled");
+  assert.equal(App.pipeMapName("iuk"), "Interconnector (IUK)");
+  assert.equal(App.pipeMapName("ogt"), "Oseberg Gas Transport");
+  assert.equal(App.pipeMapName("troll_kollsnes"), "", "small feeders stay quiet");
+  assert.equal(App.pipeMapName("bacton_nbp"), "", "notional grid entries stay quiet");
+});
+
 test("pipelines: alarms never recolor the whole route", () => {
   const loaded = loadApp();
   const { App } = loaded;

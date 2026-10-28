@@ -1029,6 +1029,15 @@ const App = (() => {
   }
 
   // ------------------------------------------------------------------ styling rules (both views)
+  // Major named routes on the Map only. Split physical pipelines share one short name;
+  // feeders, short links and notional grid entries stay quiet.
+  function pipeMapName(id) {
+    const d = assets[id];
+    if (!d || (!["trunk", "export", "interconnector"].includes(d.type) && id !== "ogt")) return "";
+    if (id.startsWith("europipe_2")) return "Europipe II";
+    if (id.startsWith("langeled_")) return "Langeled";
+    return d.name;
+  }
   /* A pipeline always stays in the state grey palette. Alarms use a badge, shape and
      value beside the line; colouring the whole route would overwhelm the control room. */
   function pipeStyle(id) { return cached("pipe", id, () => pipeStyleNow(id)); }
@@ -2178,7 +2187,7 @@ const App = (() => {
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
-    pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T,
+    pipeStyle, pipeMapName, nodeStyle, markers, window4h, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
     timeState,
     // The display profile (desk, wall or compact) and the one UI scale (1 = 100 %).
