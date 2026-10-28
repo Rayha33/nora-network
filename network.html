@@ -1397,13 +1397,18 @@ const App = (() => {
       const a = clip01(lo - pad), b = clip01(hi + pad);
       return forward ? [a, b] : [b, a];
     };
+    const peakExtentOf = (pid, at, forward) => {
+      const pad = (v * stepSeconds) / 2 / lineMetres(pid);
+      const half = Math.min(pad, at, 1 - at); // clip both sides equally around the dot
+      return forward ? [at - half, at + half] : [at + half, at - half];
+    };
     for (const peak of live.peaks) {
       const place = peakPlace(peak);
       if (!place) continue;
       const d = assets[place.pid];
       out.push({ kind: "peak", id: place.pid, along: place.along, level: peak.level, rising: place.delta > 0,
         value: `${place.delta > 0 ? "+" : "−"}${fmt(Math.abs(place.delta), 1)}`, eta: clock(place.exitAt),
-        to: nameOf(place.forward ? d.to : d.from), extent: extentOf(place.pid, place.along, place.along, place.forward) });
+        to: nameOf(place.forward ? d.to : d.from), extent: peakExtentOf(place.pid, place.along, place.forward) });
     }
     /* A slug of H₂S or CO₂ is drawn as one band per line it covers, from its rear parcel
        to its front parcel; the dot (and the label) sits on its strongest parcel. */
