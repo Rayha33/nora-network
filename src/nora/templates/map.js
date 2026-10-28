@@ -395,8 +395,20 @@
     sizeCanvas();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (App.state.mode !== "live") return;
+    const visibleRanges = {};
+    const visibleAlong = (id, along) => {
+      if (!visibleRanges[id]) {
+        const points = ends[id].map((lonlat) => map.project(lonlat));
+        const total = points.slice(1).reduce((sum, point, index) => sum + Math.hypot(point.x - points[index].x, point.y - points[index].y), 0) || 1;
+        const z = map.getZoom(), k = App.uiScale();
+        const radius = (z <= 3 ? 3.5 : z <= 6 ? 3.5 + ((z - 3) / 3) * 2 : z <= 9 ? 5.5 + ((z - 6) / 3) * 2.5 : 8) * k;
+        visibleRanges[id] = App.visibleRange(total, radius + 8 * k);
+      }
+      const [start, end] = visibleRanges[id];
+      return start + (end - start) * Math.max(0, Math.min(1, along));
+    };
     const project = (id, along) => {
-      const r = alongRoute(id, along), p = map.project(r.at), pa = map.project(r.a), pb = map.project(r.b);
+      const r = alongRoute(id, visibleAlong(id, along)), p = map.project(r.at), pa = map.project(r.a), pb = map.project(r.b);
       return { x: p.x, y: p.y, angle: Math.atan2(pb.y - pa.y, pb.x - pa.x) };
     };
     const projectBand = (id, extent) => {

@@ -47,7 +47,8 @@ function NoraCanvasMap(view) {
     const pts = pipeById[id].line.map(([lon, lat]) => toScreen(lon, lat));
     const lengths = pts.slice(1).map((p, i) => Math.hypot(p.x - pts[i].x, p.y - pts[i].y));
     const total = lengths.reduce((a, b) => a + b, 0) || 1;
-    let d = Math.max(0, Math.min(1, t)) * total;
+    const [start, end] = App.visibleRange(total, nodeRadius() + 8 * App.uiScale());
+    let d = (start + (end - start) * Math.max(0, Math.min(1, t))) * total;
     for (let i = 0; i < lengths.length; i++) {
       if (d <= lengths[i] || i === lengths.length - 1) {
         const f = lengths[i] ? Math.min(1, d / lengths[i]) : 0, a = pts[i], b = pts[i + 1];
