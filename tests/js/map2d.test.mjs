@@ -24,6 +24,10 @@ test("map: without WebGL (or MapLibre) the Map view draws on a plain canvas inst
     assert.equal(typeof view[name], "function", `it implements view.${name}`);
   }
   assert.doesNotThrow(() => { view.restyle(); view.draw(); view.resize(); view.focus(App.nodeIds[0], false); });
+  view.zoomAt(100, 100, 0.000001); // reach the minimum zoom at the centre
+  const before = view.camera();
+  view.zoomAt(400, 30, 0.5); // another zoom-out gesture away from the centre
+  assert.deepEqual(view.camera(), before, "zooming beyond the limit does not slide the camera");
 });
 
 test("map: the page carries the coastline the canvas map fills as land", () => {
