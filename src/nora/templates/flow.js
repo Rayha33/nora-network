@@ -426,12 +426,28 @@
     const marks = App.markers().filter((m) => edges.get(m.id) && !App.pipeStyle(m.id).hidden);
     const at = (m, t) => network.canvasToDOM(pointAlong(edges.get(m.id), Math.max(0, Math.min(1, t)), positions));
     for (const m of marks) if (m.extent) App.drawBand(ctx, m, at(m, m.extent[0]), at(m, m.extent[1]));
+    const taken = marks.length ? nodeBoxes(positions, scale) : [];
     for (const m of marks) {
       const p = pointAlong(edges.get(m.id), Math.max(0, Math.min(1, m.along)), positions);
       const dom = network.canvasToDOM(p);
-      App.drawMarker(ctx, m, dom.x, dom.y, p.angle, 6.5, detail);
+      App.drawMarker(ctx, m, dom.x, dom.y, p.angle, 6.5, detail, taken);
     }
     ctx.restore();
+  }
+
+  /* Screen boxes of every circle with the name, pressure, rate and trend under it, so
+     the labels of pigs and peaks keep clear of them. Names are at most 3 radii wide. */
+  function nodeBoxes(positions, scale) {
+    const live = App.state.mode === "live", out = [];
+    for (const id of App.nodeIds) {
+      const p = positions[id];
+      if (!p || App.nodeStyle(id).hidden) continue;
+      const r = live ? circleRadius(id, positions) : CIRC.r;
+      const top = network.canvasToDOM({ x: p.x, y: p.y - r });
+      const bottom = network.canvasToDOM({ x: p.x, y: p.y + r + CIRC.name + CIRC.sub * 2 + CIRC.trend + 4 });
+      out.push([top.x - r * 1.5 * scale, top.y, top.x + r * 1.5 * scale, bottom.y]);
+    }
+    return out;
   }
 
   view.mount = (container) => {

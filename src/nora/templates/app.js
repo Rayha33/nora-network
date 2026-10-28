@@ -75,32 +75,50 @@ const App = (() => {
   /* The label beside a moving marker: its value, then the ETA in a dimmer tone, in
      small regular type with a paper halo (no box, so nothing covers the map). `detail`
      follows the zoom: 0 labels only gas quality and alarms, 1 every marker, 2 adds the
-     next stop. */
-  function markerLabel(ctx, marker, x, y, size, detail) {
+     next stop. `taken` holds the screen boxes already used (node circles and names,
+     labels already placed): the label goes in the first corner beside the dot that is
+     clear of them, so it never lands on other text (Ray: no text over text). With no
+     clear corner it is left out; hovering the marker still shows it. */
+  function labelSpot(x, y, d, w, h, taken) {
+    const spots = [[x + d, y - d], [x + d, y + d], [x - d - w, y - d], [x - d - w, y + d]];
+    for (const [lx, ly] of taken ? spots : spots.slice(0, 1)) {
+      const box = [lx - 2, ly - h / 2, lx + w + 2, ly + h / 2];
+      if (taken && taken.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) continue;
+      if (taken) taken.push(box);
+      return [lx, ly];
+    }
+    return null;
+  }
+  function markerLabel(ctx, marker, x, y, size, detail, taken) {
     if (!marker.value || (!detail && !marker.level && marker.kind !== "quality")) return;
-    const font = 11, gap = 4, lx = x + size * 0.9, ly = y - size * 0.9; // labels never under 11 px
+    const font = 11, gap = 4; // labels never under 11 px
     const parts = [[marker.value, COLORS.text], [marker.eta || "", COLORS.text_dim]];
     if (detail >= 2 && marker.to) parts.push([marker.to, COLORS.text_dim]);
+    const shown = parts.filter(([text]) => text);
     ctx.save();
     ctx.font = `${font}px Archivo, sans-serif`;
+    const widths = shown.map(([text]) => ctx.measureText(text).width);
+    const w = widths.reduce((a, b) => a + b, 0) + gap * (shown.length - 1) + (marker.level ? 12 : 0);
+    const spot = labelSpot(x, y, size * 0.9, w, font + 3, taken);
+    if (!spot) { ctx.restore(); return; }
+    const ly = spot[1];
+    let cx = spot[0];
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.lineJoin = "round";
     ctx.lineWidth = 3;
     ctx.strokeStyle = COLORS.paper;
-    let cx = lx;
-    for (const [text, color] of parts) {
-      if (!text) continue;
+    shown.forEach(([text, color], i) => {
       ctx.strokeText(text, cx, ly);
       ctx.fillStyle = color;
       ctx.fillText(text, cx, ly);
-      cx += ctx.measureText(text).width + gap;
-    }
+      cx += widths[i] + gap;
+    });
     ctx.restore();
     if (marker.level) drawBadge(ctx, marker.level, cx + 2, ly - font * 0.6, 4.5);
   }
   // A gas quality parcel: a calm-coloured dot; the strongest parcel of a slug is labelled.
-  function drawParcel(ctx, marker, x, y, size, detail) {
+  function drawParcel(ctx, marker, x, y, size, detail, taken) {
     if (marker.noDot) return; // the band shows this stretch; the dot is on the strongest part
     ctx.save();
     ctx.beginPath();
@@ -111,7 +129,7 @@ const App = (() => {
     ctx.strokeStyle = COLORS.casing;
     ctx.stroke();
     ctx.restore();
-    if (marker.lead) markerLabel(ctx, marker, x, y, size, detail);
+    if (marker.lead) markerLabel(ctx, marker, x, y, size, detail, taken);
   }
 
   /* The stretch of gas a peak covers, from tail (a) to head (b), in screen pixels: an
@@ -263,8 +281,8 @@ const App = (() => {
      at x, y, turned along the line by `angle`. Each kind has its own shape AND its
      own calm colour, so nothing reads as an alarm badge (triangle/diamond/square in
      amber/orange/red). */
-  function drawMarker(ctx, marker, x, y, angle, size = 7, detail = 1) {
-    if (marker.kind === "quality") { drawParcel(ctx, marker, x, y, size, detail); return; }
+  function drawMarker(ctx, marker, x, y, angle, size = 7, detail = 1, taken = null) {
+    if (marker.kind === "quality") { drawParcel(ctx, marker, x, y, size, detail, taken); return; }
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
@@ -281,7 +299,7 @@ const App = (() => {
     ctx.strokeStyle = COLORS.casing;
     ctx.stroke();
     ctx.restore();
-    if (marker.kind !== "pig") markerLabel(ctx, marker, x, y, size, detail);
+    if (marker.kind !== "pig") markerLabel(ctx, marker, x, y, size, detail, taken);
   }
 
   // ------------------------------------------------------------------ settings
@@ -949,7 +967,7 @@ const App = (() => {
         const m = Math.abs(v);
         out.width = 1 + 4 * Math.sqrt(m / live.maxAbs);
         out.color = m < 0.05 ? COLORS.inactive : COLORS.active;
-        out.label = fmt(m, 1);
+        out.label = m < 0.05 ? "" : fmt(m, 1); // the dark grey line already says "no flow"
         out.level = levelOf(id);
         if (d.bidirectional) Object.assign(out, { forward: v >= 0, backward: v < 0 });
       }

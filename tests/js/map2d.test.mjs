@@ -359,3 +359,36 @@ test("flow circles: no line runs through a node's name", () => {
     assert.ok(by <= ny - 10 && by + bh >= ny + 3, `${id}: and its height, descenders too`);
   }
 });
+
+/* Ray: no text over text. A peak's value and ETA go in the first corner beside its dot
+   that is clear of the node circles and names (and of labels already placed); with no
+   clear corner the label is left out, and hovering the dot still shows it. */
+test("marker labels: never over a node name or another label", () => {
+  const { App } = loadApp();
+  const texts = [];
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "measureText") return (t) => ({ width: String(t).length * 6 });
+      if (key === "fillText") return (t, x, y) => texts.push({ t, x, y });
+      return () => {};
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  const peak = { kind: "peak", value: "H₂S 3.2", eta: "09:30", id: "p" };
+  const labelAt = (taken) => {
+    texts.length = 0;
+    App.drawMarker(ctx, peak, 100, 100, 0, 6.5, 1, taken);
+    return texts.length ? texts[0] : null;
+  };
+  const free = labelAt([]);
+  assert.ok(free.x > 100 && free.y < 100, "with room, the label sits up and to the right");
+  const name = [100, 80, 200, 99]; // a node name where that label would go
+  const moved = labelAt([name]);
+  assert.ok(moved, "a blocked corner moves the label");
+  assert.ok(!(moved.x < name[2] && moved.x + 60 > name[0] && moved.y > name[1] && moved.y < name[3]), "off the name");
+  assert.equal(labelAt([[0, 0, 300, 300]]), null, "with no clear corner the label is left out");
+  const taken = [];
+  const first = labelAt(taken), second = labelAt(taken);
+  assert.ok(second && (second.x !== first.x || second.y !== first.y), "a second peak at the same spot labels elsewhere");
+});
