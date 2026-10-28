@@ -84,16 +84,17 @@ test("flow circles: each outgoing line's flow sits in the quadrant facing that l
     }
     const shown = Object.values(q).reduce((a, b) => a + b, 0);
     assert.ok(Math.abs(shown - out) < 1e-6, `${id}: every outgoing flow is written once`);
-    for (const side of Object.keys(q)) assert.ok(["N", "E", "S", "W"].includes(side), "four quadrants");
+    for (const side of Object.keys(q)) assert.ok(["NE", "SE", "SW", "NW"].includes(side), "four quadrants");
     if (Object.keys(q).length) checked++;
   }
   assert.ok(checked > 10, "many nodes send gas out");
   // Drag a node to the other side of its outgoing line's far end: the number moves quadrant.
   const id = App.nodeIds.find((n) => Object.keys(App.views.flow.quadrants(n, pos)).length === 1);
   const [side] = Object.keys(App.views.flow.quadrants(id, pos));
-  const flipped = { ...pos, [id]: { x: pos[id].x + (side === "E" ? 4000 : side === "W" ? -4000 : 0), y: pos[id].y + (side === "S" ? 4000 : side === "N" ? -4000 : 0) } };
+  const [sx, sy] = [side[1] === "E" ? 1 : -1, side[0] === "S" ? 1 : -1];
+  const flipped = { ...pos, [id]: { x: pos[id].x + sx * 9000, y: pos[id].y + sy * 9000 } };
   const [after] = Object.keys(App.views.flow.quadrants(id, flipped));
-  assert.equal(after, { E: "W", W: "E", S: "N", N: "S" }[side], "dragged past it, the flow faces the line again");
+  assert.equal(after, `${side[0] === "S" ? "N" : "S"}${side[1] === "E" ? "W" : "E"}`, "dragged past it, the flow faces the line again");
 });
 
 test("exit circles: within-day delivery against the nominations, as a share", () => {

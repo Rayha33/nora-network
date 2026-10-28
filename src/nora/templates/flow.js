@@ -125,11 +125,12 @@
     if (day.level) { ctx.strokeStyle = C.casing; ctx.lineWidth = 1; ctx.stroke(); }
     ctx.restore();
   }
-  /* Four quadrants inside each circle, facing right, down, left and up (split by a faint
-     ×). The flow of every line leaving the node is written in the quadrant facing that
-     line (lines on the same side are summed); directions come from this frame's
-     positions, so the numbers move to the right quadrant when a node is dragged. */
-  const QUAD = { E: [1, 0], S: [0, 1], W: [-1, 0], N: [0, -1] };
+  /* Four quadrants inside each circle, split by a faint +: up-right, down-right,
+     down-left and up-left. The flow of every line leaving the node is written in the
+     quadrant facing that line (lines on the same side are summed), so the two lines a
+     node splits into each get their own number. Directions come from this frame's
+     positions, so the numbers move quadrant when a node is dragged. */
+  const QUAD = { NE: [1, -1], SE: [1, 1], SW: [-1, 1], NW: [-1, -1] };
   function quadrants(id, positions = framePos) {
     const here = positions[id], out = {};
     if (!here) return out;
@@ -139,46 +140,47 @@
       if ((p.from === id) !== (v > 0)) continue; // gas comes in on this line, not out
       const other = positions[p.from === id ? p.to : p.from];
       if (!other) continue;
-      const dx = other.x - here.x, dy = other.y - here.y;
-      const side = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "E" : "W") : (dy > 0 ? "S" : "N");
+      const side = `${other.y - here.y > 0 ? "S" : "N"}${other.x - here.x >= 0 ? "E" : "W"}`;
       out[side] = (out[side] || 0) + Math.abs(v);
     }
     return out;
   }
   function drawQuadrants(ctx, x, y, id, look, { pressure, day, total }) {
-    const r = CIRC.r, q = quadrants(id), at = r * 0.55;
+    const r = CIRC.r, q = quadrants(id), at = r * 0.42;
     ctx.save();
-    ctx.globalAlpha = 0.35; // the faint ×
+    ctx.globalAlpha = 0.35; // the faint +
     ctx.strokeStyle = look.edge;
     ctx.lineWidth = 0.6;
-    const k = r * 0.62;
     ctx.beginPath();
-    ctx.moveTo(x - k, y - k); ctx.lineTo(x + k, y + k);
-    ctx.moveTo(x + k, y - k); ctx.lineTo(x - k, y + k);
+    ctx.moveTo(x - r * 0.8, y); ctx.lineTo(x + r * 0.8, y);
+    ctx.moveTo(x, y - r * 0.8); ctx.lineTo(x, y + r * 0.8);
     ctx.stroke();
     ctx.globalAlpha = 1;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = look.ink;
-    ctx.font = "700 10px Archivo, system-ui, sans-serif";
+    ctx.font = "700 9.5px Archivo, system-ui, sans-serif";
     for (const [side, flow] of Object.entries(q)) {
       const [ux, uy] = QUAD[side];
-      ctx.fillText(fitText(ctx, `${App.fmt(flow, flow < 10 ? 1 : 0)}M`, r * 0.9), x + ux * at, y + uy * at);
+      ctx.fillText(fitText(ctx, `${App.fmt(flow, flow < 10 ? 1 : 0)}M`, r * 0.85), x + ux * at, y + uy * at);
     }
-    // Pressure in a free quadrant (top first); the exit day bar through the centre; a
-    // node with nothing leaving it (a market) shows what arrives, in the centre.
-    const free = ["N", "W", "E", "S"].find((side) => !(side in q));
-    if (pressure && free) {
-      const [ux, uy] = QUAD[free];
+    // Pressure: across the top half when both upper quadrants are free (the usual case,
+    // gas arriving from above), else in a free quadrant. The exit day bar runs across
+    // the middle; a node with nothing leaving it (a market) shows its arrival below.
+    if (pressure) {
       ctx.font = "600 8.5px Archivo, system-ui, sans-serif";
       ctx.fillStyle = look.dim;
-      ctx.fillText(fitText(ctx, pressure, r * 0.9), x + ux * at, y + uy * at);
+      if (!q.NE && !q.NW) ctx.fillText(fitText(ctx, pressure, r * 1.5), x, y - at);
+      else {
+        const free = ["SW", "SE", "NW", "NE"].find((side) => !(side in q));
+        if (free) ctx.fillText(fitText(ctx, pressure.replace(" bar", "b"), r * 0.85), x + QUAD[free][0] * at, y + QUAD[free][1] * at);
+      }
     }
-    if (day) drawDayBar(ctx, x, y + 2, day, look);
-    else if (!Object.keys(q).length && total != null) {
-      ctx.font = "700 10px Archivo, system-ui, sans-serif";
+    if (day) drawDayBar(ctx, x, y + 1, day, look);
+    if (!Object.keys(q).length && total != null) {
+      ctx.font = "700 9.5px Archivo, system-ui, sans-serif";
       ctx.fillStyle = look.ink;
-      ctx.fillText(`${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y);
+      ctx.fillText(`${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y + at);
     }
     ctx.restore();
   }
