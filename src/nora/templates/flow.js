@@ -3,7 +3,9 @@
    vis-network draws the nodes, edges and options pyvis produced; each node is drawn as
    a square holding its pressure (bar), rate of change, the incoming and outgoing flow
    on each line (MSm³/d) and a 4-hour trend (the last 2 hours of flow, solid, and the
-   next 2 hours of nominations, dashed), with its name below. Stage and rank come from layout.py
+   next 2 hours of nominations, dashed), with its name below. Both ends of every visible
+   line also carry that end node's pressure on the paper, just outside the square. Stage and
+   rank come from layout.py
    (NORA.grid); direction and spacing from the settings; colours, widths and labels from
    App.pipeStyle / App.nodeStyle. Alarm badges, pigs and peaks are drawn on top. */
 (() => {
@@ -13,12 +15,12 @@
   /* Squares, not circles (Ray, 28 Oct: "we want to use squares instead of circles as
      nodes as we can pack in more information and numbers"; the Map keeps its circles).
      A live square holds the pressure and the rate of change along its top, the flow on
-     each line in the quarter facing it (incoming above outgoing), and the 4-hour trend
+     each line just inside that line's connection point, and the 4-hour trend
      along its foot, with an exit point's within-day delivery bar under it; the name
      sits below the square, on the paper. Every live square is one size, so the drawing
      reads as a tidy grid. No icons: the space is for numbers. */
   const CIRC = { r: 30, name: 14, sub: 12, trend: 12, pad: 8 };
-  const SQUARE = { live: 64, plain: 30, corner: 4 }; // half a side, in canvas units
+  const SQUARE = { live: 72, plain: 30, corner: 4 }; // half a side, in canvas units
   const nodeHalf = () => (App.state.mode === "live" ? SQUARE.live : SQUARE.plain);
   // How far a line runs inside a square before it leaves it, along the unit vector (ux, uy).
   const edgeGap = (half, ux, uy) => half / Math.max(Math.abs(ux), Math.abs(uy), 1e-6);
@@ -130,23 +132,35 @@
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(nowX, y - 1); ctx.lineTo(nowX, y + h + 1); ctx.stroke();
   }
-  /* Three lines: the minimum and maximum end-of-day target bounds in gray, and the
-     current delivery position in a stronger line. The current line takes the alarm
-     colour only outside the target bounds. */
+  /* End-of-day delivery at an exit point: a wide, shaded on-target band and a strong
+     current-delivery marker. On target is calm ink; outside takes the alarm colour.
+     With no nomination data, keep a quiet dashed track rather than inventing a state. */
   function drawDayBar(ctx, x, y, day, look) {
-    const T = App.thresholds.nomination, half = 11, full = T[2] * 1.2;
+    const T = App.thresholds.nomination, half = 44, full = T[2] * 1.2;
     const at = (share) => x + Math.max(-1, Math.min(1, share / full)) * half;
     ctx.save();
     ctx.lineCap = "butt";
+    if (day && Number.isFinite(day.share)) {
+      const left = at(-T[0]), right = at(T[0]);
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = look.dim;
+      ctx.fillRect(left, y - 5, right - left, 10); // the target area, not just its bounds
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.setLineDash([3, 3]);
+    }
     ctx.strokeStyle = look.dim;
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x - half, y); ctx.lineTo(x + half, y); ctx.stroke(); // the track
-    for (const share of [-T[0], T[0]]) {
-      ctx.beginPath(); ctx.moveTo(at(share), y - 4); ctx.lineTo(at(share), y + 4); ctx.stroke();
+    ctx.setLineDash([]);
+    if (day && Number.isFinite(day.share)) {
+      for (const share of [-T[0], T[0]]) {
+        ctx.beginPath(); ctx.moveTo(at(share), y - 4); ctx.lineTo(at(share), y + 4); ctx.stroke();
+      }
+      ctx.strokeStyle = day.level ? App.levelColor[day.level] : look.ink;
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(at(day.share), y - 6); ctx.lineTo(at(day.share), y + 6); ctx.stroke();
     }
-    ctx.strokeStyle = day.level ? App.levelColor[day.level] : look.ink;
-    ctx.lineWidth = 2.4;
-    ctx.beginPath(); ctx.moveTo(at(day.share), y - 6); ctx.lineTo(at(day.share), y + 6); ctx.stroke();
     ctx.restore();
   }
   /* Four quadrants inside each circle. Every visible line contributes to the side
@@ -159,6 +173,39 @@
   for (const pid of App.pipeIds) {
     const p = NORA.assets[pid];
     for (const end of [p.from, p.to]) (linesAt[end] = linesAt[end] || []).push(pid);
+  }
+  /* One reading for every visible line connected to this node. Zero is a real reading:
+     the line still needs its value at the connection. The unit vector points at the
+     far end, so the renderer can put the value just inside that side of the square. */
+  function flowConnections(id, positions = framePos) {
+    const here = positions[id], out = [];
+    if (!here) return out;
+    for (const pid of linesAt[id] || []) {
+      const p = NORA.assets[pid], value = App.live.values[pid];
+      if (value == null || Number.isNaN(value) || (p.from !== id && p.to !== id) || App.pipeStyle(pid).hidden) continue;
+      const other = positions[p.from === id ? p.to : p.from];
+      if (!other) continue;
+      const dx = other.x - here.x, dy = other.y - here.y, length = Math.hypot(dx, dy);
+      const ux = length ? dx / length : 1, uy = length ? dy / length : 0;
+      out.push({ pid, value, ux, uy, incoming: value === 0 ? p.to === id : !((p.from === id) === (value > 0)) });
+    }
+    return out;
+  }
+  /* Both ends of every visible line carry the pressure of the node at that end. Keep
+     a null reading as null: the renderer can show an honest "– bar" instead of making
+     up a value for the few nodes for which the data has no pressure. */
+  function pressureConnections(positions = framePos) {
+    const out = [];
+    for (const pid of App.pipeIds) {
+      const p = NORA.assets[pid], from = positions[p.from], to = positions[p.to];
+      if (!from || !to || App.pipeStyle(pid).hidden) continue;
+      for (const [node, other, here, there] of [[p.from, p.to, from, to], [p.to, p.from, to, from]]) {
+        const dx = there.x - here.x, dy = there.y - here.y, length = Math.hypot(dx, dy);
+        out.push({ pid, node, other, value: App.reading(node).pressure ?? null,
+          ux: length ? dx / length : 1, uy: length ? dy / length : 0 });
+      }
+    }
+    return out;
   }
   /* Asked for several times per node per frame (circle size, readings, line ends):
      within one frame each node and set of positions is worked out once. */
@@ -244,55 +291,145 @@
     ctx.fillText(text, point.x, point.y);
     ctx.restore();
   }
-  /* The flow on each line, in the quarter of the square facing it: the upper cells
-     for lines to the north, the lower ones for lines to the south; incoming (dim) above
-     outgoing. A node with no flowing line shows its total in the middle. */
-  function drawQuadrants(ctx, x, y, id, look, { total, r = SQUARE.live, positions = framePos }) {
-    const q = flowQuadrants(id, positions), dx = r * 0.5, rows = { N: -r * 0.36, S: r * 0.16 };
+  const boxesOverlap = (a, b, gap = 0) => a[0] - gap < b[2] && a[2] + gap > b[0] && a[1] - gap < b[3] && a[3] + gap > b[1];
+  /* Lay out one value per connected line. The first choice is 12 screen px inside the
+     exact point where the line meets the square. If another value already occupies it,
+     slide sideways or inward; never merge lines and never write text over text. Boxes
+     are canvas-space versions of reading()'s constant-screen-size backing patches. */
+  function flowLabelLayout(ctx, x, y, id, r, positions = framePos, reserved = []) {
+    const scale = network ? network.getScale() : 1, rows = flowConnections(id, positions);
+    rows.sort((a, b) => Math.atan2(a.uy, a.ux) - Math.atan2(b.uy, b.ux) || a.pid.localeCompare(b.pid));
+    const placed = [], offsets = [0];
+    for (let d = 12; d <= r * 2; d += 12) offsets.push(d, -d);
+    const insets = [];
+    for (let d = 12; d <= r * 2; d += 12) insets.push(d);
+    for (const row of rows) {
+      const magnitude = Math.abs(row.value), text = `${App.fmt(magnitude, magnitude < 10 ? 1 : 0)}M`;
+      const w = (ctx.measureText(text).width + 4) / scale, h = 16 / scale, pad = 2 / scale;
+      const gap = edgeGap(r, row.ux, row.uy), tx = -row.uy, ty = row.ux;
+      const desired = { x: x + row.ux * (gap - 12 / scale), y: y + row.uy * (gap - 12 / scale) };
+      let best = null, bestScore = Infinity;
+      for (const inset of insets) for (const offset of offsets) {
+        const along = gap - inset / scale;
+        let cx = x + row.ux * along + tx * offset / scale, cy = y + row.uy * along + ty * offset / scale;
+        cx = Math.max(x - r + pad + w / 2, Math.min(x + r - pad - w / 2, cx));
+        cy = Math.max(y - r + pad + h / 2, Math.min(y + r - pad - h / 2, cy));
+        const box = [cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2];
+        if (reserved.some((other) => boxesOverlap(box, other, 1 / scale)) || placed.some((other) => boxesOverlap(box, other.box, 1 / scale))) continue;
+        const score = Math.hypot(cx - desired.x, cy - desired.y) * scale + inset * 0.02;
+        if (score < bestScore) { best = { ...row, text, x: cx, y: cy, box }; bestScore = score; }
+      }
+      if (best) placed.push(best);
+    }
+    return placed;
+  }
+  /* Pressure belongs to the node at each end of a line. Put it on the paper, just
+     outside that node's square and beside the line, at BOTH ends. Unlike the flow
+     values inside the square, these labels must clear every square and node name. */
+  function pressureLabelLayout(ctx, positions = framePos, reserved = []) {
+    const scale = network ? network.getScale() : 1, half = nodeHalf(), rows = pressureConnections(positions);
+    const degree = {};
+    for (const row of rows) degree[row.node] = (degree[row.node] || 0) + 1;
+    rows.sort((a, b) => Math.max(degree[b.node], degree[b.other]) - Math.max(degree[a.node], degree[a.other])
+      || a.pid.localeCompare(b.pid) || a.node.localeCompare(b.node));
+    const obstacles = Object.values(positions).filter(Boolean).map((p) => [p.x - half, p.y - half, p.x + half, p.y + half]);
+    obstacles.push(...Object.values(drawnBoxes), ...reserved);
+    const placed = [], offsets = [0], outsets = [];
+    for (let d = 12; d <= 96; d += 12) offsets.push(d, -d);
+    for (let d = 12; d <= 120; d += 12) outsets.push(d);
+    ctx.font = modelFont("11px Archivo, system-ui, sans-serif");
+    for (const row of rows) {
+      const here = positions[row.node], text = `${App.fmt(row.value)} bar`;
+      const w = (ctx.measureText(text).width + 4) / scale, h = 16 / scale;
+      const gap = edgeGap(half, row.ux, row.uy), tx = -row.uy, ty = row.ux;
+      const desired = { x: here.x + row.ux * (gap + 12 / scale), y: here.y + row.uy * (gap + 12 / scale) };
+      let best = null, bestScore = Infinity;
+      for (const outset of outsets) for (const offset of offsets) {
+        const along = gap + outset / scale;
+        const cx = here.x + row.ux * along + tx * offset / scale, cy = here.y + row.uy * along + ty * offset / scale;
+        const box = [cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2];
+        if (obstacles.some((other) => boxesOverlap(box, other, 1 / scale)) || placed.some((other) => boxesOverlap(box, other.box, 1 / scale))) continue;
+        const score = Math.hypot(cx - desired.x, cy - desired.y) * scale + outset * 0.02;
+        if (score < bestScore) { best = { ...row, text, x: cx, y: cy, box }; bestScore = score; }
+      }
+      if (best) placed.push(best);
+    }
+    return placed;
+  }
+  function drawEndpointPressures(ctx, positions = framePos) {
+    const scale = network ? network.getScale() : 1;
+    if (network && (App.state.mode !== "live" || !detailedFlow(scale))) return [];
     ctx.save();
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.font = modelFont("600 13px Archivo, system-ui, sans-serif");
-    for (const [side, cell] of Object.entries(q)) {
-      const both = cell.in && cell.out, cx = x + (side[1] === "E" ? dx : -dx), cy = y + rows[side[0]];
-      const labels = [];
-      if (cell.in) labels.push({ text: `${App.fmt(cell.in, cell.in < 10 ? 1 : 0)}M`, dy: both ? -7 : 0, ink: look.dim });
-      if (cell.out) labels.push({ text: `${App.fmt(cell.out, cell.out < 10 ? 1 : 0)}M`, dy: both ? 7 : 0, ink: look.ink });
-      for (const label of labels) {
-        ctx.fillStyle = label.ink;
-        reading(ctx, fitText(ctx, label.text, r * 0.9), cx, cy + label.dy, look);
-      }
+    ctx.fillStyle = C.text_dim;
+    const labels = pressureLabelLayout(ctx, positions);
+    for (const label of labels) reading(ctx, label.text, label.x, label.y, { fill: C.paper });
+    ctx.restore();
+    return labels.map((label) => {
+      if (!network) return label.box;
+      const lo = network.canvasToDOM({ x: label.box[0], y: label.box[1] }), hi = network.canvasToDOM({ x: label.box[2], y: label.box[3] });
+      return [lo.x, lo.y, hi.x, hi.y];
+    });
+  }
+  /* The flow on every line, just inside the square beside that line's connection.
+     Incoming values are dim, outgoing values strong; zero-flow lines retain their 0.0M
+     reading. A node with no connected reading shows its total in the middle. */
+  function drawConnectionValues(ctx, x, y, id, look, { total, r = SQUARE.live, positions = framePos, reserved = [] }) {
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = modelFont("600 11px Archivo, system-ui, sans-serif");
+    const labels = flowLabelLayout(ctx, x, y, id, r, positions, reserved);
+    for (const label of labels) {
+      ctx.fillStyle = label.incoming ? look.dim : look.ink;
+      reading(ctx, label.text, label.x, label.y, look);
     }
-    if (!Object.keys(q).length && total != null) {
+    if (!labels.length && total != null) {
       ctx.fillStyle = look.ink;
-      reading(ctx, `${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y + (rows.N + rows.S) / 2, look);
+      reading(ctx, `${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y, look);
     }
     ctx.restore();
   }
   /* A live square, inside: the pressure (left) and how fast the flow through it is
-     changing (right) along the top; the flow per quarter in the middle; the 4-hour
-     trend along the foot, and at exit points the within-day delivery bar under it.
-     Readings are written at their real screen size on a patch of the square's fill. */
-  function drawSquare(ctx, x, y, id, look, { half, now, day }) {
-    const pad = half * 0.14, top = y - half * 0.8;
+     changing (right) along the top; every line's flow beside its connection; the
+     4-hour trend along the foot, and at exit points the within-day delivery bar under
+     it. Readings are written at their real screen size on a patch of the square's fill. */
+  function drawSquare(ctx, x, y, id, look, { half, now, day, positions = framePos, level = 0 }) {
+    const pad = half * 0.14, top = y - half * 0.8, scale = network ? network.getScale() : 1;
+    const exit = NORA.assets[id].type === "terminal";
+    const reserved = [];
+    const readingBox = (text, px, py, align) => {
+      const w = (ctx.measureText(text).width + 4) / scale, h = 16 / scale;
+      const left = align === "left" ? px : align === "right" ? px - w : px - w / 2;
+      return [left, py - h / 2, left + w, py + h / 2];
+    };
     ctx.save();
     ctx.textBaseline = "middle";
     if (now && now.pressure != null) {
+      const text = `${App.fmt(now.pressure)} bar`, px = x - half + pad;
       ctx.font = modelFont(SUB_FONT);
       ctx.fillStyle = look.dim;
-      reading(ctx, `${App.fmt(now.pressure)} bar`, x - half + pad, top, look, "left");
+      reserved.push(readingBox(text, px, top, "left"));
+      reading(ctx, text, px, top, look, "left");
     }
     const rate = App.flowRate(id);
     if (rate != null && Math.abs(rate) >= 0.05) {
       const through = App.window4h(id).past.slice(-1)[0] || 0;
       const fast = through > 0 && Math.abs(rate) / through >= App.thresholds.step[0];
+      const text = `${rate > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(rate), 1)}/h`, px = x + half - pad - (level ? 20 : 0);
       ctx.font = modelFont(`${fast ? 600 : 400} 11px Archivo, system-ui, sans-serif`);
       ctx.fillStyle = fast ? look.ink : look.dim;
-      reading(ctx, `${rate > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(rate), 1)}/h`, x + half - pad, top, look, "right");
+      reserved.push(readingBox(text, px, top, "right"));
+      reading(ctx, text, px, top, look, "right");
     }
-    drawQuadrants(ctx, x, y, id, look, { total: now ? now.flow : null, r: half });
-    drawTrend(ctx, id, x - half + pad, y + half * 0.42, (half - pad) * 2, half * 0.26, look);
-    if (day) drawDayBar(ctx, x, y + half * 0.84, day, look);
+    const trendY = y + half * 0.42, trendH = half * 0.26;
+    reserved.push([x - half + pad, trendY - 1 / scale, x + half - pad, trendY + trendH + 1 / scale]);
+    if (exit) reserved.push([x - 46, y + half * 0.84 - 7, x + 46, y + half * 0.84 + 7]);
+    if (level) reserved.push([x + half - 10, y - half - 6, x + half + 6, y - half + 10]);
+    drawConnectionValues(ctx, x, y, id, look, { total: now ? now.flow : null, r: half, positions, reserved });
+    drawTrend(ctx, id, x - half + pad, trendY, (half - pad) * 2, trendH, look);
+    if (exit) drawDayBar(ctx, x, y + half * 0.84, day, look);
     ctx.restore();
   }
   // vis-network custom shape: the square for one node, its readings inside, its name below.
@@ -329,7 +466,7 @@
           ctx.fillStyle = look.ink;
           ctx.font = modelFont("600 13px Archivo, system-ui, sans-serif");
           reading(ctx, big, x, y, look); // zoomed out: one readable total when the square can hold it
-        } else if (live && detailed) drawSquare(ctx, x, y, id, look, { half, now, day: App.dayDelivery(id) });
+        } else if (live && detailed) drawSquare(ctx, x, y, id, look, { half, now, day: App.dayDelivery(id), level: s.level });
         else if (big) {
           ctx.fillStyle = look.ink;
           ctx.font = "600 12.5px Archivo, system-ui, sans-serif";
@@ -431,6 +568,7 @@
   }
   function overlayNow(ctx) {
     const positions = network.getPositions();
+    linePressureBoxes = drawEndpointPressures(ctx, positions);
     lineValueBoxes = drawLineValues(ctx, positions);
     drawDirection(ctx);
     for (const id of App.pipeIds) {
@@ -522,7 +660,7 @@
       const path = bandPath(edges.get(m.id), m.extent, positions).map((p) => network.canvasToDOM(p));
       App.drawBand(ctx, m, path[0], path[path.length - 1], 3.2 * App.uiScale(), path);
     }
-    const taken = marksNow.length ? [...nodeBoxes(), ...lineValueBoxes] : []; // labels keep clear of the circles' text and line values
+    const taken = marksNow.length ? [...nodeBoxes(), ...linePressureBoxes, ...lineValueBoxes] : []; // keep marker labels clear of node, pressure and line text
     drawnMarks = [];
     for (const m of marksNow) {
       const p = pointAlong(edges.get(m.id), Math.max(0, Math.min(1, m.along)), positions);
@@ -560,7 +698,7 @@
   /* Screen boxes of every circle drawn this frame with the name, pressure, rate and
      trend under it, so the labels of pigs and peaks keep clear of them. Each node
      records its box (in canvas units) as it is drawn, so this costs no extra pass. */
-  let drawnBoxes = {}, lineValueBoxes = [];
+  let drawnBoxes = {}, lineValueBoxes = [], linePressureBoxes = [];
   // Where pigs and peaks were drawn this frame (screen pixels), so a click can open one.
   let drawnMarks = [];
   function markAt(x, y) {
@@ -742,9 +880,14 @@
 
   view.quadrants = quadrants; // for tests: which side of a node each outflow is written on
   view.flowQuadrants = flowQuadrants;
+  view.flowConnections = flowConnections;
+  view.pressureConnections = pressureConnections;
+  view.pressureLabelLayout = pressureLabelLayout;
+  view.drawEndpointPressures = drawEndpointPressures;
   view.circleRadius = circleRadius; // half a square's side
   view.drawSquare = drawSquare;
-  view.drawQuadrants = drawQuadrants;
+  view.drawQuadrants = drawConnectionValues; // compatibility name for the existing test/API surface
+  view.drawConnectionValues = drawConnectionValues;
   view.drawDayBar = drawDayBar;
   view.pointAlong = pointAlong;
   view.bandPath = bandPath;

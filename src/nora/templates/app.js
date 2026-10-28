@@ -1740,8 +1740,7 @@ const App = (() => {
     return r.screen === "overview" ? "#/overview" : r.screen === "unit" ? `#/unit/${r.unit}` : `#/${r.screen}/${r.asset}`;
   }
   function go(next, push = true) {
-    Object.assign(route, { focus: null }, next);
-    if (route.screen === "unit" && !unitById[route.unit]) route.unit = "all";
+    Object.assign(route, { focus: null }, next, { unit: "all" });
     if (route.screen !== "unit") closeSidebar();
     const hash = hashFor(route);
     if (push && location.hash !== hash) history.pushState(null, "", `${location.pathname}${location.search}${hash}`);
@@ -1760,20 +1759,9 @@ const App = (() => {
     const s = route.screen;
     for (const [key, el] of Object.entries(screens)) el.hidden = key !== s;
     for (const [key, el] of Object.entries(containers)) el.hidden = !(s === "unit" && key === state.view);
-    // The Map/Flow and mode tabs stay in the bar on every screen: one constant top bar.
-    $("crumb-overview").setAttribute("aria-current", s === "overview" ? "page" : "false");
-    const unitSelect = $("crumb-unit");
-    unitSelect.value = s === "asset" || s === "diag" ? unitOf[route.asset] || "all" : route.unit;
-    unitSelect.setAttribute("aria-current", s === "unit" ? "page" : "false");
-    const mapUnit = route.unit === "all" ? null : unitById[route.unit];
-    $("map-kicker").textContent = mapUnit ? "Operating unit" : "All operating units";
-    $("map-unit").textContent = mapUnit ? mapUnit.name : "North Sea gas network";
-    const deep = s === "asset" || s === "diag";
-    $("sep-asset").hidden = $("crumb-asset").hidden = !deep;
-    $("sep-diag").hidden = $("crumb-diag").hidden = s !== "diag";
-    if (deep) $("crumb-asset").replaceChildren(h("span", { class: "level" }, "3"), nameOf(route.asset));
-    $("crumb-asset").setAttribute("aria-current", s === "asset" ? "page" : "false");
-    $("crumb-diag").setAttribute("aria-current", s === "diag" ? "page" : "false");
+    // The Map/Flow and mode tabs stay in the one-row bar on every screen.
+    $("map-kicker").textContent = "All operating units";
+    $("map-unit").textContent = "North Sea gas network";
     if (s === "unit") {
       const view = views[state.view];
       if (!view.mounted) { view.mounted = true; view.mount(containers[state.view]); }
@@ -2317,12 +2305,6 @@ const App = (() => {
   }
 
   function start() {
-    $("crumb-overview").addEventListener("click", () => go({ screen: "overview" }));
-    const unitSelect = $("crumb-unit");
-    unitSelect.replaceChildren(h("option", { value: "all" }, "2 All units"), ...NORA.units.map((u) => h("option", { value: u.id }, `2 ${u.name}`)));
-    unitSelect.addEventListener("change", () => go({ screen: "unit", unit: unitSelect.value }));
-    unitSelect.addEventListener("mousedown", () => { if (route.screen !== "unit") go({ screen: "unit", unit: unitSelect.value }); });
-    $("crumb-asset").addEventListener("click", () => go({ screen: "asset", asset: route.asset }));
     $("plan-chip").addEventListener("click", () => {
       // In What-if the chip is the restore-all control; otherwise it opens the overview.
       if (state.mode === "whatif" && whatif.offline.size) {

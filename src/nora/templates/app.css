@@ -30,7 +30,7 @@
   --gap: 8px;
   --ctl: 34px;              /* every control in the bars: one height, one text size */
   --ctl-font: 12.5px;
-  --bar-h: 112px;
+  --bar-h: 52px;
   --player-h: 76px;
   --ui-scale: 1;            /* set by app.js from the display profile, the window or Settings */
   color-scheme: light;
@@ -87,61 +87,45 @@ body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer 
 .dots-layer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
 .notice { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; color: var(--text-dim); text-align: center; }
 
-/* The top bar: navigation and status on the first row, what the network view shows
-   on the second. Every control is one height (--ctl) and one text size, and neither
-   row changes size between pages or modes (Ray: "the boxes have different sizes"). */
+/* One quiet top row: fixed network scope, view controls, status and utilities.
+   It scrolls horizontally on a narrow screen instead of becoming a second row. */
 .bar {
   position: fixed; inset: 0 0 auto; height: var(--bar-h); z-index: 20;
   background: var(--panel); border-bottom: 1px solid var(--rule);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 .bar-primary {
-  height: 60px; display: flex; align-items: center; gap: 20px; padding: 0 20px;
-  border-bottom: 1px solid var(--rule);
+  height: 100%; display: flex; align-items: center; gap: 12px; padding: 0 14px;
+  overflow-x: auto; scrollbar-width: none; white-space: nowrap;
 }
+.bar-primary::-webkit-scrollbar { display: none; }
+.bar-controls { display: flex; align-items: center; gap: 8px; flex: none; }
 .brand { display: flex; align-items: center; gap: 10px; flex: none; color: inherit; text-decoration: none; }
 .brand-mark {
   display: grid; place-items: center; width: 32px; height: 32px; border-radius: 7px;
   background: var(--selected-bg); color: var(--selected-text); font-size: 16px; font-weight: 700;
   letter-spacing: -0.04em; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
-.brand-copy { display: grid; line-height: 1; gap: 5px; }
+.brand-copy { display: flex; align-items: baseline; gap: 8px; line-height: 1; white-space: nowrap; }
 .brand-copy strong { font-size: 15px; font-stretch: 125%; letter-spacing: 0.13em; }
 .brand-copy small, .toolbar-label, .player-label, .timeline-label, .eyebrow {
   font-size: 11px; font-weight: 400; color: var(--text-dim);
 }
-.crumbs { display: flex; align-items: center; gap: 3px; min-width: 0; }
-.crumbs button, .crumbs select {
-  height: var(--ctl); border: 0; background: transparent; padding: 0 8px; border-radius: 6px; cursor: pointer;
-  font-size: var(--ctl-font); color: var(--text-dim); white-space: nowrap; max-width: 240px; overflow: hidden; text-overflow: ellipsis;
-}
-.crumbs button:hover, .crumbs select:hover { background: var(--band); color: var(--text); }
-.crumbs .level {
-  display: inline-grid; place-items: center; width: 17px; height: 17px; margin-right: 6px;
-  border: 1px solid var(--rule-strong); border-radius: 4px; font: 600 11px/1 var(--mono);
-}
-.crumbs button[aria-current="page"], .crumbs select[aria-current="page"] { color: var(--text); font-weight: 600; }
-.crumbs .sep { color: var(--text-dim); opacity: 0.55; }
-.crumbs button:disabled { cursor: default; opacity: 0.5; }
-.primary-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.primary-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; min-width: 0; flex: none; }
 .utility-actions { display: flex; gap: 2px; padding-left: 5px; border-left: 1px solid var(--rule); }
 
-.bar-secondary { height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 20px; }
-.toolbar-label { flex: none; margin-right: 1px; }
-.toolbar-rule { width: 1px; height: 20px; margin: 0 5px; background: var(--rule); }
-.spacer { flex: 1; }
 .seg { display: flex; gap: 2px; height: var(--ctl); padding: 3px; background: var(--band); border: 1px solid var(--rule); border-radius: 8px; flex: none; }
 .seg button {
-  display: flex; align-items: center; justify-content: center; min-width: 52px; height: 100%;
-  border: 0; background: transparent; padding: 0 13px; border-radius: 5px; white-space: nowrap;
+  display: flex; align-items: center; justify-content: center; min-width: 44px; height: 100%;
+  border: 0; background: transparent; padding: 0 9px; border-radius: 5px; white-space: nowrap;
   cursor: pointer; color: var(--text-dim); font-size: var(--ctl-font); font-weight: 400; line-height: 1;
 }
 .seg button:hover { color: var(--text); background: var(--surface); }
 .seg button[aria-selected="true"] { background: var(--selected-bg); color: var(--selected-text); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14); }
 
-.year { display: flex; align-items: center; gap: 10px; flex: none; height: var(--ctl); }
-.year input { width: 140px; height: 20px; margin: 0; accent-color: var(--text); cursor: ew-resize; }
-.year output { font: 500 var(--ctl-font)/1 var(--font); min-width: 72px; }
+.year { display: flex; align-items: center; gap: 8px; flex: none; height: var(--ctl); }
+.year input { width: 90px; height: 20px; margin: 0; accent-color: var(--text); cursor: ew-resize; }
+.year output { font: 500 var(--ctl-font)/1 var(--font); min-width: 50px; }
 .year output .dim { font-weight: 400; }
 .icon {
   display: grid; place-items: center; width: var(--ctl); height: var(--ctl); padding: 0; border: 0;
@@ -161,7 +145,7 @@ body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer 
 .plan-chip {
   display: flex; align-items: center; justify-content: center; gap: 7px; height: var(--ctl); padding: 0 12px;
   border: 1px solid var(--rule); border-radius: 7px; background: var(--surface); cursor: pointer; min-width: 0;
-  white-space: nowrap; max-width: 400px; font-size: var(--ctl-font); font-weight: 400;
+  white-space: nowrap; max-width: 220px; font-size: var(--ctl-font); font-weight: 400;
 }
 .plan-chip:hover { border-color: var(--rule-strong); background: var(--raised); }
 .plan-chip span { overflow: hidden; text-overflow: ellipsis; }
@@ -448,23 +432,16 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 }
 
 @media (max-width: 860px) {
-  :root { --bar-h: 164px; }
-  .bar-primary { height: 112px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px 12px; padding: 10px 14px; }
+  :root { --bar-h: 52px; }
+  .bar-primary { gap: 10px; padding: 0 12px; }
   .brand-copy small { display: none; }
   .brand-mark { width: 30px; height: 30px; }
-  .crumbs { justify-self: end; min-width: 0; }
-  .crumbs button, .crumbs select { max-width: 180px; }
-  .primary-actions { grid-column: 1 / -1; width: 100%; margin: 0; }
-  .plan-chip { flex: 1; max-width: none; justify-content: flex-start; }
+  .primary-actions { gap: 6px; }
+  .plan-chip { max-width: 180px; padding: 0 9px; }
   .search { flex: none; }
   .search:focus-within { width: 150px; }
   .search:focus-within input, .search input:not(:placeholder-shown) { width: 105px; }
-  .utility-actions { margin-left: auto; }
-  .bar-secondary { height: 52px; padding: 0 14px; overflow-x: auto; scrollbar-width: none; }
-  .bar-secondary::-webkit-scrollbar { display: none; }
-  .bar-secondary .spacer { min-width: 4px; }
-  .seg { flex: none; }
-  .year { padding-right: 4px; }
+  .year { display: none; }
   .cols { grid-template-columns: minmax(0, 1fr); }
   .screen-body { padding: 22px 18px 40px; }
   .bank { grid-template-columns: minmax(90px, 1fr) minmax(110px, 1.6fr) 70px; }
@@ -482,20 +459,14 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 @media (max-width: 600px) {
   :root { --player-h: 112px; }
   .brand-copy { display: none; }
-  .bar-primary { column-gap: 8px; }
-  .crumbs { justify-self: stretch; }
-  .crumbs button, .crumbs select { max-width: 145px; padding: 0 5px; }
-  .crumbs .level { display: none; }
+  .bar-primary { gap: 8px; }
   .primary-actions { gap: 4px; }
-  .plan-chip { padding: 0 9px; }
+  .plan-chip { max-width: 150px; padding: 0 8px; }
   .utility-actions { padding-left: 2px; }
   .search { padding: 0 7px; }
-  .search:focus-within { position: absolute; left: 14px; right: 14px; top: 66px; width: auto; z-index: 2; }
+  .search:focus-within { position: absolute; left: 14px; right: 14px; top: 60px; width: auto; z-index: 2; }
   .search:focus-within input { width: 100%; }
-  .bar-secondary { gap: 7px; }
-  .bar-secondary > .toolbar-label, .toolbar-rule { display: none; }
-  .seg button { padding: 0 11px; }
-  .year input { width: 110px; }
+  .seg button { padding: 0 8px; }
   .map-context { display: none; } /* on a phone the map needs the room; the bar names the unit */
   .player { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 58px 44px; gap: 0 12px; padding: 0 14px 6px; }
   .transport { grid-column: 1; grid-row: 1; }

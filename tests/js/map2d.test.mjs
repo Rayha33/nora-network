@@ -297,7 +297,7 @@ test("flow nodes: incoming and outgoing totals share space dynamically", () => {
   assert.ok(mixed.radius > 30, "the mixed-direction circle expands for two stacked readings");
 });
 
-test("flow nodes: a mixed quadrant renders separate numeric readings without prefixes", () => {
+test("flow nodes: lines sharing a quadrant keep separate numeric readings without prefixes", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;
   loadFirstHour(App, NORA);
@@ -331,12 +331,11 @@ test("flow nodes: a mixed quadrant renders separate numeric readings without pre
     set(target, key, value) { target[key] = value; return true; },
   });
   App.views.flow.drawQuadrants(ctx, 0, 0, id, App.colors.card.active, { day: null, total: null, r: 44, positions: pos });
-  const incoming = labels.find((label, index) => /^\d/.test(label.text) && labels.some((other, otherIndex) => otherIndex > index && /^\d/.test(other.text) && other.x === label.x && Math.abs(other.y - label.y) === 14));
-  const outgoing = labels.find((label) => label !== incoming && /^\d/.test(label.text) && label.x === incoming?.x && Math.abs(label.y - incoming.y) === 14);
-  assert.ok(incoming && outgoing, `both directions are numeric readings on separate lines: ${JSON.stringify(labels)}`);
+  const own = labels.filter((label) => label.text === "5.0M");
+  assert.equal(own.length, 2, `the two connected lines keep their own readings: ${JSON.stringify(labels)}`);
   assert.ok(labels.every((label) => !/^(in|out)\s/.test(label.text)), "position alone communicates direction");
   assert.equal(quadrantStrokes, 0, "no quadrant divider lines are drawn inside the node");
-  assert.notEqual(incoming.y, outgoing.y, "the two readings have their own lines");
+  assert.ok(own[0].x !== own[1].x || own[0].y !== own[1].y, "the two readings have their own positions");
 });
 
 test("markers: pipeline endpoints stop outside node circles", () => {
@@ -361,9 +360,10 @@ test("flow nodes: animated overlays stay outside enlarged nodes", () => {
   }
   assert.ok(App.views.flow.stubDistance(edge.from, 0, 1, pos) > App.views.flow.circleRadius(edge.from, pos), "animated flow strokes start outside the circle");
   const spaced = { own: { x: 0, y: 0 }, neighbour: { x: 300, y: 0 } };
-  assert.equal(App.views.flow.stubClear({ x: 72, y: 0 }, { x: 80, y: 0 }, spaced, 1), true, "a stroke with clear space is drawn");
+  const half = App.views.flow.circleRadius();
+  assert.equal(App.views.flow.stubClear({ x: half + 8, y: 0 }, { x: half + 16, y: 0 }, spaced, 1), true, "a stroke with clear space is drawn");
   const crowded = { own: { x: 0, y: 0 }, neighbour: { x: 100, y: 0 } };
-  assert.equal(App.views.flow.stubClear({ x: 72, y: 0 }, { x: 80, y: 0 }, crowded, 1), false, "a stroke stops rather than entering a neighbouring node");
+  assert.equal(App.views.flow.stubClear({ x: half + 8, y: 0 }, { x: half + 16, y: 0 }, crowded, 1), false, "a stroke stops rather than entering a neighbouring node");
   App.settings().animation = true;
   App.live.playing = true;
   App.reduceMotion = false;
@@ -410,7 +410,7 @@ test("exit nodes: gray target bounds and one prominent current-delivery line", (
   const vertical = strokes.filter((s) => s.path.length === 2 && s.path[0][0] === s.path[1][0]);
   assert.equal(vertical.length, 3, "minimum, maximum and current are the three vertical markers");
   const tolerance = App.thresholds.nomination[0];
-  const half = 11, full = App.thresholds.nomination[2] * 1.2;
+  const half = 44, full = App.thresholds.nomination[2] * 1.2;
   const positions = vertical.map((s) => s.path[0][0]).sort((a, b) => a - b);
   const expected = [100 - tolerance / full * half, 100 + 0.02 / full * half, 100 + tolerance / full * half].sort((a, b) => a - b);
   positions.forEach((x, i) => assert.ok(Math.abs(x - expected[i]) < 1e-9));
@@ -575,7 +575,7 @@ test("map: the canvas map keeps the map card, so navigation keeps working", () =
   assert.equal(App.views.map.canvasMap, true, "the canvas map took over");
   const unit = NORA.units[1];
   assert.doesNotThrow(() => App.go({ screen: "unit", unit: unit.id }), "navigating after the fallback");
-  assert.equal(document.getElementById("map-unit").textContent, unit.name, "the card names the unit");
+  assert.equal(document.getElementById("map-unit").textContent, "North Sea gas network", "the card keeps the fixed all-units scope");
   assert.doesNotThrow(() => App.go({ screen: "overview" }), "and on to the overview");
 });
 
