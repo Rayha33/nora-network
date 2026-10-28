@@ -2725,6 +2725,42 @@ const App = (() => {
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(nowX, y - 1); ctx.lineTo(nowX, y + h + 1); ctx.stroke();
   }
+  /* The live bar graph inside each circle: one ring buffer of recent throughput
+     per node, sampled as the playhead moves (ten samples per frame), drawn as
+     small bars that grow and shrink with the simulated flow. Older bars are
+     paler, the newest is full ink; a node with no flow shows a flat line. */
+  const BARS = { n: 6, w: 4, gap: 2, maxH: CIRC.r * 1.1 };
+  const barHist = {}, barAt = {};
+  function liveBars(id) {
+    const at = Math.floor((App.live.playhead || 0) * 10) / 10; // sample 10x per frame
+    if (barAt[id] === at) return barHist[id];
+    barAt[id] = at;
+    const past = App.window4h(id).past.filter((v) => v != null);
+    const last = past.length ? past[past.length - 1] : 0;
+    const r = App.flowRate(id) || 0;
+    const v = Math.max(0, last + r * (at - Math.floor(at))); // live: latest frame plus its trend
+    const h = barHist[id] = barHist[id] || [];
+    h.push(v);
+    if (h.length > BARS.n) h.shift();
+    return h;
+  }
+  function drawLiveBars(ctx, id, x, y, look) {
+    const h = liveBars(id), max = Math.max(1, ...h);
+    ctx.save();
+    ctx.beginPath(); ctx.arc(x, y, CIRC.r - 4, 0, Math.PI * 2); ctx.clip();
+    let bx = x - (BARS.n * BARS.w + (BARS.n - 1) * BARS.gap) / 2;
+    const base = y + CIRC.r - 9;
+    ctx.fillStyle = look.ink;
+    for (let i = 0; i < BARS.n; i++) {
+      const bh = Math.max(1.5, (h[i] / max) * BARS.maxH);
+      ctx.globalAlpha = 0.3 + 0.7 * ((i + 1) / BARS.n);
+      ctx.fillRect(bx, base - bh, BARS.w, bh);
+      bx += BARS.w + BARS.gap;
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
   // vis-network custom shape: the circle for one node, name and live numbers below it.
   function card(id) {
     return ({ ctx, x, y, state: { selected, hover } }) => ({
@@ -2746,8 +2782,11 @@ const App = (() => {
           ctx.strokeStyle = selected || hover ? look.ink : look.edge;
           ctx.stroke();
         }
-        const icon = images[d.type];
-        if (icon && icon.complete) ctx.drawImage(icon, x - CIRC.r / 2, y - CIRC.r / 2, CIRC.r, CIRC.r);
+        if (live) drawLiveBars(ctx, id, x, y, look); // the bar graph: live simulated flow in the circle
+        else {
+          const icon = images[d.type];
+          if (icon && icon.complete) ctx.drawImage(icon, x - CIRC.r / 2, y - CIRC.r / 2, CIRC.r, CIRC.r);
+        }
         // Name below the circle, then the rate of change (bold when it is fast).
         ctx.textBaseline = "alphabetic";
         ctx.textAlign = "center";
