@@ -455,7 +455,7 @@
       }
       ctx.globalAlpha = 1;
     }
-    // Peaks as bands from tail to head, then pipeline names and every marker on top.
+    // Moving bands and peak markers first; pipeline names are painted last below.
     const marks = App.markers().filter((m) => ends[m.id] && !App.pipeStyle(m.id).hidden);
     const zoom = map.getZoom(), detail = zoom >= 6.5 ? 2 : zoom >= 5 ? 1 : 0, u = App.uiScale();
     const taken = (marks.length || App.settings().names) ? nodeBoxes(ctx) : [];
@@ -478,8 +478,14 @@
       ctx.restore();
     }
     for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]), 3.2 * u, projectBand(m.id, m.extent));
-    // MapLibre's own label layer would be below this canvas. Paint names here instead,
-    // after the bands, so a moving snake can never cross out a pipeline's name.
+    drawnMarks = [];
+    for (const m of marks) {
+      const p = project(m.id, m.along);
+      App.drawMarker(ctx, m, p.x, p.y, p.angle, m.kind === "pig" ? 10 : 6.5, detail, taken);
+      if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
+    }
+    // MapLibre's label layer is below this canvas. Paint pipeline names last so neither
+    // a moving band nor the peak marker itself can cross out the text.
     ctx.save();
     ctx.font = `${11.5 * u}px Archivo, system-ui, sans-serif`;
     ctx.textAlign = "center";
@@ -490,12 +496,6 @@
       ctx.fillStyle = C.text; ctx.fillText(label.text, label.x, label.y);
     }
     ctx.restore();
-    drawnMarks = [];
-    for (const m of marks) {
-      const p = project(m.id, m.along);
-      App.drawMarker(ctx, m, p.x, p.y, p.angle, m.kind === "pig" ? 10 : 6.5, detail, taken);
-      if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
-    }
   }
 
   /* Screen boxes of the node dots and their names, where MapLibre puts them (under the

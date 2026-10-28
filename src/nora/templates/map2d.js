@@ -179,15 +179,10 @@ function NoraCanvasMap(view) {
       const s = App.pipeStyle(p.id);
       if (s.level && !s.hidden) { const m = along(p.id, 0.5); App.drawBadge(ctx, s.level, m.x + 8 * u, m.y - 7 * u, 7 * u); }
     }
-    // Pigs, peaks and gas quality: bands first, then the pipeline names and markers.
+    // Bands and peak markers sit below the names: a crossing peak can never erase text.
     const z = zoom(), detail = z >= 6.5 ? 2 : z >= 5 ? 1 : 0, marks = live ? App.markers() : [];
     for (const m of marks) {
       if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]), 3.2 * u, bandPath(m.id, m.extent));
-    }
-    ctx.textBaseline = "middle";
-    for (const label of pipeLabels) {
-      ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(label.text, label.x, label.y);
-      ctx.fillStyle = C.text; ctx.fillText(label.text, label.x, label.y);
     }
     ctx.textBaseline = "top";
     drawnMarks = [];
@@ -198,6 +193,12 @@ function NoraCanvasMap(view) {
       App.drawMarker(ctx, m, p.x, p.y, p.angle, m.kind === "pig" ? 10 : 6.5, detail, taken);
       if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
     }
+    ctx.textBaseline = "middle";
+    for (const label of pipeLabels) {
+      ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(label.text, label.x, label.y);
+      ctx.fillStyle = C.text; ctx.fillText(label.text, label.x, label.y);
+    }
+    ctx.textBaseline = "top";
   }
 
   // ------------------------------------------------------------------ camera
