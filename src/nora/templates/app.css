@@ -1,8 +1,8 @@
 /* NORA operations UI: a quiet instrument panel on calm grey paper. Colour is reserved
    for abnormal states. The palette roles (paper, panel, state greys, text) come from
    nora.toml and are set on :root by app.js; the values here are only the first paint.
-   The surface tokens below sit between those greys, so panels and cards stay calm on
-   the paper instead of glowing white. */
+   app.js also derives the surfaces (surface, raised, band, rule) from the palette for
+   each theme; the values here match them, so the first paint does not flicker. */
 :root {
   --paper: #c6c9cc;
   --dots: #b4b8bc;
@@ -15,9 +15,9 @@
   --warning: #ffbf00;
   --medium: #ff7a1a;
   --critical: #e5322d;
-  --surface: #d9dcde;       /* cards on the paper */
-  --raised: #e6e8ea;        /* inputs and pressed controls: light, never pure white */
-  --band: #c9cdd0;          /* tracks and hover */
+  --surface: #dfe2e4;       /* cards on the paper: the normal grey */
+  --raised: #f1f2f3;        /* inputs: the lightest grey, never pure white */
+  --band: #f1f2f3;          /* tracks and hover */
   --rule: rgba(34, 39, 43, 0.16);
   --rule-strong: rgba(34, 39, 43, 0.3);
   --selected-bg: #2f353a;
@@ -36,10 +36,10 @@
 }
 
 :root[data-theme="dark"] {
-  --surface: #30353a;
-  --raised: #3a4046;
-  --band: #25292d;
-  --rule: rgba(225, 228, 230, 0.12);
+  --surface: #32373c;
+  --raised: #494e52;
+  --band: #565b5f;
+  --rule: rgba(225, 228, 230, 0.14);
   --rule-strong: rgba(225, 228, 230, 0.24);
   --selected-bg: #d5d9dc;
   --selected-text: #22272b;
