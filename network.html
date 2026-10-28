@@ -913,7 +913,7 @@ const App = (() => {
       card: {
         active: card(mix(c.panel, c.active, 0.2), c.text, c.text_dim, c.active),
         normal: card(c.panel, c.text, c.text_dim, c.normal),
-        inactive: card(mix(c.paper, "#000000", 0.3), c.text, c.text_dim, c.inactive),
+        inactive: card(mix(c.paper, "#000000", 0.3), c.text, c.text, c.inactive),
       },
     } : {
       surface: c.normal, raised: c.active, band: c.active, rule: "rgba(34, 39, 43, 0.16)", casing: c.text,
