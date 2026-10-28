@@ -9,7 +9,7 @@ function NoraCanvasMap(view) {
   "use strict";
   const C = App.colors;
   let el = null, canvas = null, ctx = null, width = 0, height = 0, ratio = 1;
-  let highlighted = null, pendingFit = false, land = null, animation = null;
+  let highlighted = null, pendingFit = false, land = null, animation = null, drawnMarks = [];
   const cam = { x: 0.5, y: 0.5, k: 512 }; // centre in Web Mercator units (0..1), pixels per unit
   const MIN_ZOOM = 2, MAX_ZOOM = 12;
 
@@ -152,10 +152,12 @@ function NoraCanvasMap(view) {
       for (const m of marks) {
         if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]));
       }
+      drawnMarks = [];
       for (const m of marks) {
         if (!pipeById[m.id] || App.pipeStyle(m.id).hidden) continue;
         const p = along(m.id, m.along);
         App.drawMarker(ctx, m, p.x, p.y, p.angle, 6.5, detail);
+        if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
       }
     }
   }
@@ -263,6 +265,8 @@ function NoraCanvasMap(view) {
       readout.textContent = `${Math.abs(lat).toFixed(4)}°${lat >= 0 ? "N" : "S"}  ${Math.abs(lon).toFixed(4)}°${lon >= 0 ? "E" : "W"}  ·  zoom ${zoom().toFixed(1)}`;
       const previous = pointers.get(e.pointerId);
       if (!previous) {
+        const mark = drawnMarks.find((d) => Math.hypot(d.x - e.offsetX, d.y - e.offsetY) < 9);
+        if (mark) { canvas.style.cursor = "help"; canvas.title = App.markerTip(mark.m); return; }
         const id = hit(e.offsetX, e.offsetY);
         canvas.style.cursor = id ? "pointer" : "grab";
         canvas.title = id ? App.nameOf(id) : "";

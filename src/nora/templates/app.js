@@ -147,6 +147,15 @@ const App = (() => {
     ctx.restore();
   }
 
+  /* What a marker is, for a mouse-over: the value and when it reaches its next stop. */
+  function markerTip(m) {
+    const when = m.eta && m.to ? `: reaches ${m.to} at ${m.eta}` : m.to ? ` at ${m.to}` : "";
+    if (m.kind === "pig") return `${m.title || "Pig"}${when}`;
+    if (m.kind === "peak") return `Flow change ${m.value} MSm³/d on ${nameOf(m.id)}${when}`;
+    if (m.noDot) return `${QUALITY[m.gas].name} slug on ${nameOf(m.id)}`;
+    return `${m.value} ${QUALITY[m.gas].unit} on ${nameOf(m.id)}${when}`;
+  }
+
   // ------------------------------------------------------------------ alarm levels
   // 0 normal, 1 warning (amber, priority 3), 2 medium (orange, 2), 3 critical (red, 1).
   const LEVEL = ["Normal", "Warning", "Medium", "Critical"];
@@ -606,7 +615,8 @@ const App = (() => {
     if (distance >= last.m + lineMetres(last.pid)) return null;  // at the receiver, waiting for relaunch
     const seg = route.find((s) => distance < s.m + lineMetres(s.pid)) || last;
     const along = (distance - seg.m) / lineMetres(seg.pid);
-    return { pid: seg.pid, along: seg.forward ? along : 1 - along };
+    const runStart = pig.launch + run * every, next = seg.forward ? assets[seg.pid].to : assets[seg.pid].from;
+    return { pid: seg.pid, along: seg.forward ? along : 1 - along, exitAt: runStart + (seg.m + lineMetres(seg.pid)) / pig.speed, next };
   }
   /* Where a peak is now: it keeps travelling downstream, attenuated by its share of
      the gas at each node, and disappears at an exit or when it fades below step_min.
@@ -647,7 +657,8 @@ const App = (() => {
     const pigs = (live.stream && live.stream.pigs) || live.feedPigs || [];
     for (const pig of pigs) {
       const place = pigPlace(pig, live.time);
-      if (place) out.push({ kind: "pig", id: place.pid, along: place.along, label: "", level: 0, title: pig.label });
+      if (place) out.push({ kind: "pig", id: place.pid, along: place.along, label: "", level: 0, title: pig.label,
+        eta: clock(place.exitAt), to: nameOf(place.next) });
     }
     /* Head and tail: a peak is a stretch of gas, not a point. A change in flow spreads
        over the gas that passed in one data step (velocity × step); the band is centred
@@ -1859,7 +1870,7 @@ const App = (() => {
       offline: () => [...whatif.offline],
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
-    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
+    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T,
     // Flow through a node now (MSm³/d) and its pressure (bar), for the views to show.
     reading: (id) => ({ flow: throughput(id, frame().flows), pressure: metric("pressure_bar", id) }),

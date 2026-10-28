@@ -7,6 +7,12 @@
   const view = { ready: false, mounted: false };
   const C = App.colors;
   let map = null, canvas = null, ctx = null, highlighted = null, alarmKey = "";
+  let drawnMarks = []; // where pigs, peaks and slugs were drawn this frame, for mouse-over
+  const markAt = (x, y) => {
+    let best = null, bestD = 9; // px
+    for (const d of drawnMarks) { const dist = Math.hypot(d.x - x, d.y - y); if (dist < bestD) { best = d.m; bestD = dist; } }
+    return best;
+  };
 
   const featureOf = {}; // asset id -> { source, id }
   const ends = {}; // pipeline id -> [[lon, lat], [lon, lat]]
@@ -245,8 +251,16 @@
     map.on("resize", sizeCanvas);
     map.on("render", () => view.ready && view.draw());
     const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12 });
+    // A pig, peak or slug under the pointer wins: its value and when it reaches the next stop.
+    let overMark = false;
+    map.on("mousemove", (e) => {
+      const m = markAt(e.point.x, e.point.y);
+      if (m) { popup.setLngLat(e.lngLat).setText(App.markerTip(m)).addTo(map); map.getCanvas().style.cursor = "help"; overMark = true; }
+      else if (overMark) { popup.remove(); map.getCanvas().style.cursor = ""; overMark = false; }
+    });
     for (const layer of ["nora-node-dots", "nora-nodes", "nora-pipes-hit"]) {
       map.on("mousemove", layer, (e) => {
+        if (markAt(e.point.x, e.point.y)) return;
         map.getCanvas().style.cursor = "pointer";
         const id = e.features[0].properties.asset;
         popup.setLngLat(e.lngLat).setText(App.nameOf(id)).addTo(map);
@@ -360,9 +374,11 @@
     const marks = App.markers().filter((m) => ends[m.id] && !App.pipeStyle(m.id).hidden);
     for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]));
     const zoom = map.getZoom(), detail = zoom >= 6.5 ? 2 : zoom >= 5 ? 1 : 0;
+    drawnMarks = [];
     for (const m of marks) {
       const p = project(m.id, m.along);
       App.drawMarker(ctx, m, p.x, p.y, p.angle, 6.5, detail);
+      if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
     }
   };
 
