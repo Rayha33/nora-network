@@ -1004,8 +1004,8 @@ const App = (() => {
     const value = whatifResult().value;
     chip.replaceChildren(
       h("span", null, value < 0.05 ? "What-if: no gas can be delivered"
-        : `What-if: ${fmt(value, 1)} of ${fmt(base, 1)} MSm³/d deliverable`),
-      h("span", { class: "dim" }, ` · ${n} offline · restore all`));
+        : `What-if: ${fmt(value)} of ${fmt(base)} MSm³/d`),
+      h("span", { class: "dim" }, ` · ${n} offline · Restore all`));
     chip.title = "Restore every asset: the what-if becomes the intact network again";
   }
 
@@ -1034,6 +1034,9 @@ const App = (() => {
       }
     } else if (mode === "load") {
       out.color = d.utilization == null ? COLORS.inactive : COLORS.active;
+      // How full, at a glance: a hairline when empty, thick when running full. Colour
+      // stays for overload only (running full is normal).
+      if (d.utilization != null) out.width = 0.6 + 2.6 * Math.min(1, d.utilization);
       out.level = level(d.utilization, T.load);
       out.label = d.utilization == null ? "" : `${fmt(d.utilization * 100)}%`;
     } else if (mode === "risk") {
@@ -1046,7 +1049,7 @@ const App = (() => {
         const m = Math.abs(whatifResult().pipelines[id] || 0);
         out.color = m < 0.05 ? COLORS.inactive : COLORS.active;
         if (m >= 0.05) out.width = 0.6 + 0.9 * Math.sqrt(m / whatifResult().max);  // same scale as live
-        out.label = fmt(m, 1);
+        out.label = m < 0.05 ? "" : fmt(m, 1);
       }
     }
     if (out.level) out.color = LEVEL_COLOR[out.level];

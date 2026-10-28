@@ -250,6 +250,9 @@
         ctx.textAlign = "center";
         const nameY = y + radius + CIRC.name, pressureY = nameY + CIRC.sub;
         const subY = pressureY + (pressure ? CIRC.sub : 0);
+        // Text under the circle sits on the paper, not in the circle: it takes the
+        // paper's ink. A dark (offline) circle's light ink was unreadable there.
+        const paperInk = { ...look, ink: C.text, dim: C.text_dim };
         ctx.font = NAME_FONT;
         const name = fitText(ctx, d.name, radius * 3);
         let width = ctx.measureText(name).width;
@@ -258,10 +261,10 @@
         if (r != null && Math.abs(r) >= 0.05) {
           const through = App.window4h(id).past.slice(-1)[0] || 0;
           const fast = through > 0 && Math.abs(r) / through >= App.thresholds.step[0];
-          sub = { text: `${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`, font: `${fast ? 600 : 400} 11px Archivo, system-ui, sans-serif`, ink: fast ? look.ink : look.dim };
+          sub = { text: `${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`, font: `${fast ? 600 : 400} 11px Archivo, system-ui, sans-serif`, ink: fast ? paperInk.ink : paperInk.dim };
         } else if (s.sub && !live) {
           ctx.font = SUB_FONT;
-          sub = { text: fitText(ctx, s.sub, CIRC.r * 3), font: SUB_FONT, ink: look.dim };
+          sub = { text: fitText(ctx, s.sub, CIRC.r * 3), font: SUB_FONT, ink: paperInk.dim };
         }
         if (sub) { ctx.font = sub.font; width = Math.max(width, ctx.measureText(sub.text).width); }
         if (pressure) { ctx.font = modelFont(SUB_FONT); width = Math.max(width, ctx.measureText(pressure).width); }
@@ -274,12 +277,12 @@
         ctx.fillStyle = C.paper;
         ctx.fillRect(x - width / 2 - 4, y + radius + 1.5, width + 8, bottom - (y + radius + 1.5));
         ctx.restore();
-        ctx.fillStyle = look.ink;
+        ctx.fillStyle = paperInk.ink;
         ctx.font = NAME_FONT;
         ctx.fillText(name, x, nameY);
         if (pressure) {
           ctx.font = modelFont(SUB_FONT);
-          ctx.fillStyle = look.dim;
+          ctx.fillStyle = paperInk.dim;
           ctx.fillText(pressure, x, pressureY);
         }
         if (sub) {
@@ -287,7 +290,7 @@
           ctx.fillStyle = sub.ink;
           ctx.fillText(sub.text, x, subY);
         }
-        if (live) drawTrend(ctx, id, x - radius, subY + 2, radius * 2, CIRC.trend, look);
+        if (live) drawTrend(ctx, id, x - radius, subY + 2, radius * 2, CIRC.trend, paperInk);
         ctx.restore();
         if (s.level) App.drawBadge(ctx, s.level, x + radius - 3, y - radius + 3, 8);
       },
