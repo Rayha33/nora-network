@@ -103,4 +103,4 @@ peak = "#9fb1c1"
 
 [map]
 style = "https://tiles.openfreemap.org/styles/positron"   # recoloured to the paper greys
-bounds = [[-3.5, 50.2], [12.0, 63.9]]   # west, south / east, north
+bounds = [[-3.5, 50.2], [15.5, 67.4]]   # west, south / east, north: the whole network, Aasta Hansteen to Poland

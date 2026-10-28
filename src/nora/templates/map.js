@@ -15,18 +15,39 @@
   };
 
   const featureOf = {}; // asset id -> { source, id }
-  const ends = {}; // pipeline id -> [[lon, lat], [lon, lat]]
+  const ends = {}; // pipeline id -> its laid route, [[lon, lat], ...] from its `from` node
   for (const f of NORA.geo.nodes.features) featureOf[f.properties.asset] = { source: "nora-nodes", id: f.id };
   for (const f of NORA.geo.pipes.features) {
     featureOf[f.properties.asset] = { source: "nora-pipes", id: f.id };
     ends[f.properties.asset] = f.geometry.coordinates;
+  }
+  /* A point part-way along a pipeline's laid route (0..1 from its first point), in
+     lon/lat, with the segment it falls on: lines follow their real route, not a chord. */
+  const routeLengths = {};
+  function alongRoute(id, t) {
+    const pts = ends[id];
+    if (!routeLengths[id]) {
+      let total = 0;
+      routeLengths[id] = [0];
+      for (let i = 1; i < pts.length; i++) {
+        const k = Math.cos((pts[i][1] * Math.PI) / 180);
+        total += Math.hypot((pts[i][0] - pts[i - 1][0]) * k, pts[i][1] - pts[i - 1][1]);
+        routeLengths[id].push(total);
+      }
+    }
+    const cum = routeLengths[id], d = Math.max(0, Math.min(1, t)) * cum[cum.length - 1];
+    let i = 1;
+    while (i < cum.length - 1 && cum[i] < d) i++;
+    const f = cum[i] > cum[i - 1] ? (d - cum[i - 1]) / (cum[i] - cum[i - 1]) : 0;
+    const a = pts[i - 1], b = pts[i];
+    return { at: [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f], a, b };
   }
   // Midpoints of pipelines, for alarm badges on lines.
   const mids = {
     type: "FeatureCollection",
     features: NORA.geo.pipes.features.map((f) => ({
       type: "Feature", id: f.id, properties: { asset: f.properties.asset, alarm: 0 },
-      geometry: { type: "Point", coordinates: [(f.geometry.coordinates[0][0] + f.geometry.coordinates[1][0]) / 2, (f.geometry.coordinates[0][1] + f.geometry.coordinates[1][1]) / 2] },
+      geometry: { type: "Point", coordinates: alongRoute(f.properties.asset, 0.5).at },
     })),
   };
   // Badges have their own copy of the nodes, so updating them never re-places the names
@@ -197,13 +218,17 @@
 
   view.mount = (el) => {
     if (wantSimple || typeof maplibregl === "undefined" || !hasWebGL()) { canvasFallback(el); return; }
-    const [[w, s], [e, n]] = NORA.config.map.bounds, padLon = (e - w) * 0.6, padLat = (n - s) * 0.6;
+    /* Panning stays near the network. The limit is generous sideways: the network is
+       tall and narrow, so fitting all of it in a wide window shows a lot of longitude,
+       and a tight limit would make MapLibre zoom in and cut off the south instead.
+       Zooming out is capped separately (limitZoom). */
+    const [[w, s], [e, n]] = NORA.config.map.bounds, padLon = Math.max(40, (e - w) * 2), padLat = (n - s) * 0.5;
     try {
       map = new maplibregl.Map({
         container: el, style: NORA.config.map.style, bounds: NORA.config.map.bounds,
         fitBoundsOptions: { padding: padding() }, attributionControl: { compact: true },
         cooperativeGestures: App.embed, dragRotate: false, pitchWithRotate: false, minZoom: 2, maxZoom: 12,
-        maxBounds: [[w - padLon, s - padLat], [e + padLon, n + padLat]],
+        maxBounds: [[w - padLon, s - padLat], [e + padLon, Math.min(85, n + padLat)]],
       });
     } catch { canvasFallback(el); return; } // MapLibre throws when it cannot get a WebGL context
     // WebGL lost and not back within 3 s (a GPU restart): carry on with the canvas map.
@@ -327,8 +352,8 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (App.state.mode !== "live") return;
     const project = (id, along) => {
-      const [a, b] = ends[id], pa = map.project(a), pb = map.project(b);
-      return { x: pa.x + (pb.x - pa.x) * along, y: pa.y + (pb.y - pa.y) * along, angle: Math.atan2(pb.y - pa.y, pb.x - pa.x) };
+      const r = alongRoute(id, along), p = map.project(r.at), pa = map.project(r.a), pb = map.project(r.b);
+      return { x: p.x, y: p.y, angle: Math.atan2(pb.y - pa.y, pb.x - pa.x) };
     };
     if (App.settings().animation && App.live.playing && !App.reduceMotion) {
       /* Simulated flow at the nodes, not on the lines: short solid bands sliding
@@ -344,7 +369,7 @@
           const v = App.live.values[pid], p = NORA.assets[pid];
           if (!v || Math.abs(v) < 0.05 || !p || (p.from !== nid && p.to !== nid)) continue;
           if (App.pipeStyle(pid).hidden) continue;
-          const other = map.project(p.from === nid ? ends[pid][1] : ends[pid][0]);
+          const line = ends[pid], other = map.project(p.from === nid ? line[1] : line[line.length - 2]);
           const dx = other.x - pn.x, dy = other.y - pn.y, len = Math.hypot(dx, dy);
           if (len < 8) continue;
           const ux = dx / len, uy = dy / len;
@@ -412,8 +437,8 @@
     const d = NORA.assets[id];
     if (d.kind === "node") map.easeTo({ center: [d.lon, d.lat], zoom: Math.max(map.getZoom(), 6.5), duration: animate ? duration(600) : 0 });
     else {
-      const [a, b] = ends[id];
-      map.fitBounds([[Math.min(a[0], b[0]), Math.min(a[1], b[1])], [Math.max(a[0], b[0]), Math.max(a[1], b[1])]], { padding: 120, maxZoom: 7, duration: animate ? duration(600) : 0 });
+      const line = ends[id], lons = line.map((p) => p[0]), lats = line.map((p) => p[1]);
+      map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 120, maxZoom: 7, duration: animate ? duration(600) : 0 });
     }
   };
   view.fit = () => view.setUnit(App.route.unit);

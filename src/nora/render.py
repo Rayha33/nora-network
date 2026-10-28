@@ -178,10 +178,39 @@ def coastline(path: Path = COASTLINE) -> dict:
     return {"rings": data["rings"], "source": data.get("source", "")}
 
 
+ROUTES = DATA_DIR / "geo" / "routes.json"
+
+
+def routes(path: Path = ROUTES) -> dict[str, list[list[float]]]:
+    """The laid routes of the pipelines SODIR registers (scripts/build_routes.py), by
+    pipeline id; empty if the file is missing."""
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))["routes"]
+    except FileNotFoundError:
+        return {}
+
+
+def _route_line(route: list[list[float]] | None, start: list[float], end: list[float]) -> list:
+    """The line to draw: the laid route joined exactly to both nodes (the register's
+    line can stop at the coast or at a tee), or straight when there is no route."""
+    if not route:
+        return [start, end]
+    near = lambda a, b: abs(a[0] - b[0]) < 0.005 and abs(a[1] - b[1]) < 0.005  # noqa: E731
+    line = [list(p) for p in route]
+    if not near(line[0], start):
+        line.insert(0, start)
+    if not near(line[-1], end):
+        line.append(end)
+    line[0], line[-1] = start, end
+    return line
+
+
 def map_geojson(net: Network) -> dict[str, dict]:
-    """Nodes and pipelines as GeoJSON at their true coordinates. Feature ids are numbers
-    because MapLibre keys its per-feature styling (feature state) on them."""
+    """Nodes and pipelines as GeoJSON at their true coordinates; pipelines follow their
+    laid route where SODIR registers one. Feature ids are numbers because MapLibre keys
+    its per-feature styling (feature state) on them."""
     where = {node.id: [node.lon, node.lat] for node in net.nodes}
+    laid = routes()
     nodes = [
         {
             "type": "Feature",
@@ -198,7 +227,9 @@ def map_geojson(net: Network) -> dict[str, dict]:
             "properties": {"asset": pipe.id, "onshore": pipe.type == "onshore"},
             "geometry": {
                 "type": "LineString",
-                "coordinates": [where[pipe.from_id], where[pipe.to_id]],
+                "coordinates": _route_line(
+                    laid.get(pipe.id), where[pipe.from_id], where[pipe.to_id]
+                ),
             },
         }
         for i, pipe in enumerate(sorted(net.pipelines, key=lambda p: p.id))
