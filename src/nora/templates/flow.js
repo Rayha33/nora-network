@@ -15,6 +15,9 @@
      values and pressures"), with its name and rate below and a sparkline under that. */
   const CIRC = { r: 30, name: 14, sub: 12, trend: 12, pad: 8 };
   const NAME_FONT = "600 11.5px Archivo, system-ui, sans-serif", SUB_FONT = "11px Archivo, system-ui, sans-serif";
+  /* Right of the timeline's now every reading is the model's: those numbers are set in
+     italics (the player says "Model" too), so a forecast never reads as a measurement. */
+  const modelFont = (font) => { const ts = App.timeState(); return ts && ts.model ? `italic ${font}` : font; };
   const SPACING = { // [stage, rank] in canvas units
     vertical: { compact: [96, 160], comfortable: [124, 178], spacious: [160, 210] },
     horizontal: { compact: [210, 62], comfortable: [250, 72], spacious: [300, 90] },
@@ -186,7 +189,7 @@
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = look.ink;
-    ctx.font = "600 11px Archivo, system-ui, sans-serif";
+    ctx.font = modelFont("600 11px Archivo, system-ui, sans-serif");
     for (const [side, cell] of Object.entries(q)) {
       const [ux, uy] = QUAD[side], both = cell.in && cell.out;
       const labels = [];
@@ -200,7 +203,7 @@
     // Flow faces both incoming and outgoing lines. Pressure stays outside the circle.
     if (day) drawDayBar(ctx, x, y + 1, day, look);
     if (!Object.keys(q).length && total != null) {
-      ctx.font = "600 11px Archivo, system-ui, sans-serif";
+      ctx.font = modelFont("600 11px Archivo, system-ui, sans-serif");
       ctx.fillStyle = look.ink;
       reading(ctx, `${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y + at, look);
     }
@@ -266,7 +269,7 @@
           sub = { text: fitText(ctx, s.sub, CIRC.r * 3), font: SUB_FONT, ink: look.dim };
         }
         if (sub) { ctx.font = sub.font; width = Math.max(width, ctx.measureText(sub.text).width); }
-        if (pressure) { ctx.font = SUB_FONT; width = Math.max(width, ctx.measureText(pressure).width); }
+        if (pressure) { ctx.font = modelFont(SUB_FONT); width = Math.max(width, ctx.measureText(pressure).width); }
         if (live) width = Math.max(width, radius * 2);
         const bottom = live ? subY + 4 + CIRC.trend : (sub ? subY : nameY) + 4;
         ctx.save();
@@ -278,7 +281,7 @@
         ctx.font = NAME_FONT;
         ctx.fillText(name, x, nameY);
         if (pressure) {
-          ctx.font = SUB_FONT;
+          ctx.font = modelFont(SUB_FONT);
           ctx.fillStyle = look.dim;
           ctx.fillText(pressure, x, pressureY);
         }

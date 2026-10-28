@@ -1186,7 +1186,8 @@ const App = (() => {
       : nowLevel ? `${plan.now[1]} now`
       : plan.ahead[0] ? `In ${fmt(plan.ahead[3])} h: ${plan.ahead[1]}`
       : "Plan holds at every exit point";
-    const context = plan ? `Nominated ${fmt(plan.nominated)} MSm³/d, deliverable ${fmt(plan.deliverable)} MSm³/d. Busiest line: ${nameOf(plan.bottleneck)} at ${fmt(plan.maxLoad * 100)}%.` : "";
+    const ts = timeState(), ahead = ts && ts.model ? `Model, ${spanText(ts.ahead)} ahead of now. ` : "";
+    const context = ahead + (plan ? `Nominated ${fmt(plan.nominated)} MSm³/d, deliverable ${fmt(plan.deliverable)} MSm³/d. Busiest line: ${nameOf(plan.bottleneck)} at ${fmt(plan.maxLoad * 100)}%.` : "");
     const units = NORA.units.map((u) => {
       const conds = live.conditions.filter((c) => unitOf[c.id] === u.id);
       return h("button", { type: "button", onclick: () => go({ screen: "unit", unit: u.id }) },
@@ -1467,7 +1468,7 @@ const App = (() => {
       h("h3", null, "How to use it"),
       h("ol", null,
         h("li", null, "Overview answers one question: is the plan holding? Problems are listed with their likely cause and what to do."),
-        h("li", null, "Press ▶ to play the data, drag the timeline, or press Next problem."),
+        h("li", null, "Press ▶ to play the data, drag the timeline, or press Next problem. On synthetic data the tick in the middle of the timeline is now: left of it is history, right of it the model looking ahead: the player says Model, and the Flow and indicator numbers turn italic."),
         h("li", null, "Peaks (circles) and pigs (small triangles) move with the gas; slow the player to watch them cross a line."),
         h("li", null, "Choose a unit, or All units, to see it on the Map or as a Flow: gas moves from the top to the bottom."),
         h("li", null, "Drag the year, top right, to show the network as it was, or will be: planned assets appear at their startup year, shut-down ones disappear from their shutdown year."),
@@ -1581,7 +1582,56 @@ const App = (() => {
     return stream;
   }
   const scrub = $("scrub"), spark = $("spark");
+  /* "Now" in the middle of the timeline (Ray: "the middle of the timeline bar should be
+     real time, while dragging to the right means looking into the future and modelled
+     pressures and flows"). A synthetic stream is re-timed once when it loads, by whole
+     days so its hours of the day and gas days stay true, to put the wall-clock now as
+     near its middle as whole days allow. Left of now is history, right of it the model
+     looking ahead, and the player says which. Recorded real data keeps its own dates:
+     all of it is history. The built page holds no wall-clock time; this runs in the
+     browser. [screen] now_in_middle = false plays synthetic data at its own dates. */
+  const DAY = 86400, NOW_SLACK = 300; // within 5 minutes of the wall clock reads as now
+  const wallClock = () => Date.now() / 1000;
+  function retime(stream) {
+    if (stream.offset != null || !stream.synthetic || C.screen.now_in_middle === false || stream.times.length < 2) return;
+    const middle = (stream.times[0] + stream.times[stream.times.length - 1]) / 2;
+    const offset = Math.round((wallClock() - middle) / DAY) * DAY;
+    stream.offset = offset;
+    stream.times = stream.times.map((t) => t + offset);
+    for (const event of stream.events || []) { event.start += offset; event.end += offset; }
+    for (const pig of stream.pigs || []) pig.launch += offset;
+  }
+  // Where the wall clock falls in a re-timed stream, as a playhead position; else null.
+  function nowPosition(s = live.stream) {
+    if (!s || live.feed || s.offset == null) return null;
+    return (wallClock() - s.times[0]) / s.step;
+  }
+  /* The playhead against the wall clock: seconds ahead of now, and whether what is
+     shown is the model's. Null for recorded data and live feeds. */
+  function timeState() {
+    if (nowPosition() == null || live.time == null) return null;
+    const ahead = live.time - wallClock();
+    return { ahead, model: ahead > NOW_SLACK };
+  }
+  const spanText = (seconds) => {
+    const s = Math.abs(seconds);
+    return s < 3600 ? `${Math.max(1, Math.round(s / 60))} min` : `${Math.round(s / 3600)} h`;
+  };
+  function timeText(ts) {
+    if (!ts) return "";
+    if (Math.abs(ts.ahead) <= NOW_SLACK) return "Now";
+    return ts.model ? `Model · in ${spanText(ts.ahead)}` : `${spanText(ts.ahead)} ago`;
+  }
+  // The chip beside the clock, and a page-wide class so model numbers read as such.
+  function showTime() {
+    const ts = timeState(), when = $("when");
+    when.hidden = !ts;
+    when.textContent = timeText(ts);
+    when.classList.toggle("model", Boolean(ts && ts.model));
+    document.body.classList.toggle("model-time", Boolean(ts && ts.model));
+  }
   function setStream(stream) {
+    retime(stream);
     live.stream = prepare(stream);
     live.frames = stream.frames;
     live.typical = stream.typical;
@@ -1592,7 +1642,10 @@ const App = (() => {
       : speeds.includes(C.screen.speed) ? C.screen.speed : speeds[0];
     $("speed").value = String(live.speed);
     scrub.max = String(Math.max(0, stream.times.length - 1));
-    seek(0);
+    const retimed = stream.offset != null;
+    $("tl-past").textContent = retimed ? "History" : "Replay timeline";
+    $("tl-future").textContent = retimed ? "Model" : "UTC";
+    seek(retimed ? nowPosition() : 0); // a re-timed stream opens at now
     const none = !stream.frames.some((f) => f.plan && (f.plan.now[0] || f.plan.ahead[0]));
     $("next-problem").disabled = none;
     $("next-problem").title = none ? "The plan holds throughout this dataset" : "Jump to the next hour where the plan is at risk";
@@ -1627,6 +1680,7 @@ const App = (() => {
     advanceQuality();
     evaluate();
     if (live.time != null) $("clock").textContent = formatTime(live.time);
+    showTime();
     restyle();
     refreshScreens();
     if (side.id && route.screen === "unit") renderSidebar();
@@ -1644,24 +1698,58 @@ const App = (() => {
     const frames = live.frames, n = frames.length;
     if (n < 2) return;
     const x = (i) => (i / (n - 1)) * width;
+    const nowAt = nowPosition(), mid = height / 2;
+    const split = nowAt == null ? width : Math.max(0, Math.min(width, x(nowAt)));
     ctx.fillStyle = COLORS.dots;
-    ctx.fillRect(0, height / 2 - 3, width, 6);
+    ctx.fillRect(0, mid - 3, split, 6);
+    if (split < width) {
+      // The model's side: the same track, lighter, edged with dashes like the look-ahead in the trends.
+      ctx.globalAlpha = 0.45;
+      ctx.fillRect(split, mid - 3, width - split, 6);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = COLORS.text_dim;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(split, mid - 3.5); ctx.lineTo(width, mid - 3.5);
+      ctx.moveTo(split, mid + 3.5); ctx.lineTo(width, mid + 3.5);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
     frames.forEach((f, i) => {
       const lvl = f.plan ? f.plan.now[0] : 0;
       if (!lvl) return;
       ctx.fillStyle = LEVEL_COLOR[lvl];
-      ctx.fillRect(x(i), height / 2 - 6, Math.max(1.5, width / n), 12);
+      ctx.fillRect(x(i), mid - 6, Math.max(1.5, width / n), 12);
     });
     for (const event of (live.stream && live.stream.events) || []) {
       const a = frames.findIndex((f) => f.t >= event.start), b = frames.findIndex((f) => f.t >= event.end);
       if (a < 0) continue;
       ctx.strokeStyle = COLORS.text;
       ctx.setLineDash(event.planned ? [3, 2] : []);
-      ctx.strokeRect(x(a), height / 2 - 8, Math.max(2, x(b < 0 ? n - 1 : b) - x(a)), 16);
+      ctx.strokeRect(x(a), mid - 8, Math.max(2, x(b < 0 ? n - 1 : b) - x(a)), 16);
     }
     ctx.setLineDash([]);
+    const showNow = nowAt != null && nowAt >= 0 && nowAt <= n - 1;
+    if (showNow) {
+      // Now: a hairline through the track under a small notch, quieter than the playhead.
+      ctx.fillStyle = COLORS.text_dim;
+      ctx.fillRect(split - 0.5, 4, 1, height - 4);
+      ctx.beginPath(); ctx.moveTo(split - 3.5, 0); ctx.lineTo(split + 3.5, 0); ctx.lineTo(split, 4.5); ctx.closePath(); ctx.fill();
+    }
     ctx.fillStyle = COLORS.text;
     ctx.fillRect(x(live.feed ? n - 1 : live.playhead) - 1, 0, 2, height);
+    placeNowLabel(showNow ? split : null, width);
+  }
+  /* "Now" above its tick, unless it would touch the labels at either end: text never
+     sits on text. */
+  function placeNowLabel(at, width) {
+    const label = $("tl-now");
+    if (at == null) { label.hidden = true; return; }
+    label.hidden = false;
+    label.style.left = `${at}px`;
+    const half = label.offsetWidth / 2, gap = 8;
+    label.hidden = at - half < $("tl-past").offsetWidth + gap || at + half > width - $("tl-future").offsetWidth - gap;
   }
   function play() {
     if (!live.stream && !live.feed) return;
@@ -1722,6 +1810,11 @@ const App = (() => {
         live.time = s.times[live.index] + (live.playhead - live.index) * s.step;
         if (now - lastStep > 250) { lastStep = now; step(); }
       }
+    } else if (now - lastStep > 30000) {
+      // Paused, the wall clock still moves: keep "Now" / "3 h ago" and the now tick true.
+      lastStep = now;
+      showTime();
+      drawSpark();
     }
     const view = current();
     if (route.screen === "unit" && view && view.ready) view.draw();
@@ -1737,6 +1830,8 @@ const App = (() => {
     select.replaceChildren(h("option", null, "Connecting to the live feed"));
     select.disabled = true;
     $("speed").parentElement.hidden = true;
+    $("tl-past").textContent = "Live feed";
+    $("tl-future").textContent = "UTC";
     live.feed.addEventListener("meta", (message) => {
       const meta = JSON.parse(message.data);
       live.feedEvents = meta.events || [];
@@ -1904,6 +1999,8 @@ const App = (() => {
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T,
+    // Where the playhead stands against the wall clock ({ahead, model}), or null.
+    timeState,
     // Flow through a node now (MSm³/d) and its pressure (bar), for the views to show.
     reading: (id) => ({ flow: throughput(id, frame().flows), pressure: metric("pressure_bar", id) }),
     dayDelivery, register, restyle, go, start, theme: () => theme,

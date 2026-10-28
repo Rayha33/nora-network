@@ -26535,7 +26535,8 @@
    "network_mode": "live",
    "theme": "light",
    "autoplay": true,
-   "speed": 600
+   "speed": 600,
+   "now_in_middle": true
   },
   "labels": {
    "names": true,
