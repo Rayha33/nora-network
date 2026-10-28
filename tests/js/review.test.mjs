@@ -3,8 +3,8 @@
    DOM stub the repo's own tests use. Findings-only: nothing here fixes anything.
 
    1. Playback head: scrub/seek clamping, "Next problem" landing on a risky frame.
-   2. Live-feed mode (?live=): what happens to the playhead the Flow bar graph
-      samples on (flow.js liveBars), and that start() survives the harness.
+   2. Live-feed mode (?live=): the playhead stays put there, so anything that
+      animates must follow live.clock instead; and start() survives the harness.
    3. Escaping: a hostile asset NAME from the (crowd-edited) payload must never
       reach any innerHTML as raw markup. */
 
@@ -87,7 +87,7 @@ test("playback: Next problem lands on an hour where the plan is at risk", () => 
 
 /* ---------------------------------------------------------------------- feed mode */
 
-test("feed mode (?live=): start() runs, and the playhead the Flow bars sample never moves", () => {
+test("feed mode (?live=): start() runs, and the playhead never moves", () => {
   const nora = loadPayload();
   nora.config.screen.start = "overview"; // keep start() off the view mounts (no vis in the vm)
   const { App, document } = loadAppWith(nora, "?live=http://localhost:8765/stream");
@@ -98,10 +98,9 @@ test("feed mode (?live=): start() runs, and the playhead the Flow bars sample ne
   assert.equal(App.live.stream, null, "feed mode prepares no recorded stream");
   assert.ok(App.live.feed, "an EventSource was connected");
   assert.equal(document.body.classList.add /* no-op, but called */ !== undefined, true);
-  /* flow.js liveBars() samples bar history at Math.floor(App.live.playhead * 10)/10.
-     In feed mode nothing ever advances live.playhead (tick only advances it under
-     `live.stream && !live.feed`), so the Flow circles' bar graph samples exactly
-     once at playhead 0 and then NEVER AGAIN: frozen bars for the whole session. */
+  /* In feed mode nothing advances live.playhead (tick only advances it under
+     `live.stream && !live.feed`), so a view that animated on the playhead would
+     freeze for the whole session: anything moving in feed mode follows live.clock. */
   assert.equal(App.live.playhead, 0, "feed mode: playhead stays 0 forever");
   assert.equal(typeof App.window4h, "function", "window4h exported (flow.js drawTrend uses it)");
 });

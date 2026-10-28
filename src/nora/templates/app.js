@@ -78,7 +78,7 @@ const App = (() => {
      next stop. */
   function markerLabel(ctx, marker, x, y, size, detail) {
     if (!marker.value || (!detail && !marker.level && marker.kind !== "quality")) return;
-    const font = 10.5, gap = 5, lx = x + size * 1.7, ly = y - size * 1.4;
+    const font = 10, gap = 4, lx = x + size * 0.9, ly = y - size * 0.9;
     const parts = [[marker.value, COLORS.text], [marker.eta || "", COLORS.text_dim]];
     if (detail >= 2 && marker.to) parts.push([marker.to, COLORS.text_dim]);
     ctx.save();
@@ -97,20 +97,71 @@ const App = (() => {
       cx += ctx.measureText(text).width + gap;
     }
     ctx.restore();
-    if (marker.level) drawBadge(ctx, marker.level, cx + 2, ly - font * 0.6, Math.max(5, size * 0.8));
+    if (marker.level) drawBadge(ctx, marker.level, cx + 2, ly - font * 0.6, 4.5);
   }
   // A gas quality parcel: a calm-coloured dot; the strongest parcel of a slug is labelled.
   function drawParcel(ctx, marker, x, y, size, detail) {
+    if (marker.noDot) return; // the band shows this stretch; the dot is on the strongest part
     ctx.save();
     ctx.beginPath();
-    ctx.arc(x, y, size * (marker.lead ? 0.85 : 0.6), 0, Math.PI * 2);
+    ctx.arc(x, y, size * (marker.lead ? 0.45 : 0.3), 0, Math.PI * 2);
     ctx.fillStyle = COLORS[QUALITY[marker.gas].color];
     ctx.fill();
-    ctx.lineWidth = Math.max(1, size / 6);
+    ctx.lineWidth = 0.8;
     ctx.strokeStyle = COLORS.casing;
     ctx.stroke();
     ctx.restore();
     if (marker.lead) markerLabel(ctx, marker, x, y, size, detail);
+  }
+
+  /* The stretch of gas a peak covers, from tail (a) to head (b), in screen pixels: an
+     opaque band in the peak's calm colour over the line, with a dark casing so it
+     stands off the paper in both themes, and a crisp edge at the head so the direction
+     of travel reads at a glance. The dot and its label are drawn on top of it. */
+  function drawBand(ctx, marker, a, b, width = 4) {
+    const color = marker.kind === "quality" ? COLORS[QUALITY[marker.gas].color] : COLORS.peak;
+    const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy);
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(len < 1 ? a.x + 0.5 : b.x, len < 1 ? a.y : b.y);
+    ctx.strokeStyle = COLORS.casing;
+    ctx.lineWidth = width + 1.2;
+    ctx.stroke();
+    ctx.strokeStyle = color;
+    if (marker.kind === "peak" && len >= 1) {
+      // Strong head and tail, quieter middle: the moving dot stays distinct.
+      const gradient = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+      gradient.addColorStop(0, `${color}ff`);
+      gradient.addColorStop(0.5, `${color}59`);
+      gradient.addColorStop(1, `${color}ff`);
+      ctx.strokeStyle = gradient;
+    }
+    ctx.lineWidth = width;
+    ctx.stroke();
+    if (len >= 1) { // the head: a short dark bar across the band
+      const nx = -dy / len, ny = dx / len, h = width / 2 + 1;
+      ctx.beginPath();
+      ctx.moveTo(b.x + nx * h, b.y + ny * h);
+      ctx.lineTo(b.x - nx * h, b.y - ny * h);
+      ctx.strokeStyle = COLORS.casing;
+      ctx.lineWidth = 1;
+      ctx.lineCap = "butt";
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /* What a marker is, for a mouse-over: the value and when it reaches its next stop. */
+  function markerTip(m) {
+    const when = m.eta && m.to ? `: reaches ${m.to} at ${m.eta}` : m.to ? ` at ${m.to}` : "";
+    if (m.kind === "pig") return `${m.title || "Pig"}${when}`;
+    if (m.kind === "peak") return `Flow change ${m.value} MSm³/d on ${nameOf(m.id)}${when}`;
+    if (m.noDot) return `${QUALITY[m.gas].name} slug on ${nameOf(m.id)}`;
+    return `${m.value} ${QUALITY[m.gas].unit} on ${nameOf(m.id)}${when}`;
   }
 
   // ------------------------------------------------------------------ alarm levels
@@ -206,14 +257,14 @@ const App = (() => {
     ctx.rotate(angle);
     ctx.beginPath();
     if (marker.kind === "pig") {
-      const s = Math.max(4, size * 0.8);
+      const s = Math.max(2.5, size * 0.5);
       ctx.moveTo(s, 0); ctx.lineTo(-s * 0.8, -s * 0.7); ctx.lineTo(-s * 0.8, s * 0.7); ctx.closePath();
     } else {
-      ctx.arc(0, 0, Math.max(4, size * 0.75), 0, Math.PI * 2);
+      ctx.arc(0, 0, Math.max(2, size * 0.4), 0, Math.PI * 2);
     }
     ctx.fillStyle = marker.kind === "pig" ? COLORS.pig : COLORS.peak;
     ctx.fill();
-    ctx.lineWidth = Math.max(1, size / 6);
+    ctx.lineWidth = 0.8;
     ctx.strokeStyle = COLORS.casing;
     ctx.stroke();
     ctx.restore();
@@ -358,6 +409,24 @@ const App = (() => {
     return (recent[recent.length - 1] - recent[0]) / ((recent.length - 1) * stepHours());
   }
 
+  /* Within-day delivery at an exit point: the gas delivered so far this gas day against
+     what was nominated for the same hours, as a share (0 = on plan, -0.05 = 5 % short).
+     The gas day starts at thresholds.gas_day_start_utc. */
+  function dayDelivery(id) {
+    const start = T.gas_day_start_utc == null ? 5 : T.gas_day_start_utc, now = frame();
+    if (now.t == null || metric("nomination_msm3d", id, now) == null) return null;
+    const dayStart = Math.floor((now.t - start * 3600) / 86400) * 86400 + start * 3600;
+    let actual = 0, nominated = 0;
+    for (let i = live.index; i >= 0 && live.frames[i] && live.frames[i].t >= dayStart; i--) {
+      const f = live.frames[i], nom = metric("nomination_msm3d", id, f), got = throughput(id, f.flows);
+      if (nom == null || got == null) continue;
+      actual += got;
+      nominated += nom;
+    }
+    if (nominated <= 0) return null;
+    const share = (actual - nominated) / nominated;
+    return { share, level: level(Math.abs(share), T.nomination) };
+  }
   // How fast gas through a node is changing, MSm³/d per hour, over the last 2 hours.
   const flowRate = (id) => rate(window4h(id).past);
   /* The 4-hour window shown in each flow-view card: the last 2 hours of actual flow,
@@ -554,7 +623,8 @@ const App = (() => {
     if (distance >= last.m + lineMetres(last.pid)) return null;  // at the receiver, waiting for relaunch
     const seg = route.find((s) => distance < s.m + lineMetres(s.pid)) || last;
     const along = (distance - seg.m) / lineMetres(seg.pid);
-    return { pid: seg.pid, along: seg.forward ? along : 1 - along };
+    const runStart = pig.launch + run * every, next = seg.forward ? assets[seg.pid].to : assets[seg.pid].from;
+    return { pid: seg.pid, along: seg.forward ? along : 1 - along, exitAt: runStart + (seg.m + lineMetres(seg.pid)) / pig.speed, next };
   }
   /* Where a peak is now: it keeps travelling downstream, attenuated by its share of
      the gas at each node, and disappears at an exit or when it fades below step_min.
@@ -595,23 +665,44 @@ const App = (() => {
     const pigs = (live.stream && live.stream.pigs) || live.feedPigs || [];
     for (const pig of pigs) {
       const place = pigPlace(pig, live.time);
-      if (place) out.push({ kind: "pig", id: place.pid, along: place.along, label: "", level: 0, title: pig.label });
+      if (place) out.push({ kind: "pig", id: place.pid, along: place.along, label: "", level: 0, title: pig.label,
+        eta: clock(place.exitAt), to: nameOf(place.next) });
     }
+    /* Head and tail: a peak is a stretch of gas, not a point. A change in flow spreads
+       over the gas that passed in one data step (velocity × step); the band is centred
+       on the dot. `extent` is [tail, head] in the line's 0..1, clipped to the line. */
+    const v = C.pipelines.gas_velocity_mps, stepSeconds = (live.stream && live.stream.step) || 3600;
+    const clip01 = (x) => Math.max(0, Math.min(1, x));
+    const extentOf = (pid, lo, hi, forward) => {
+      const pad = (v * stepSeconds) / 2 / lineMetres(pid);
+      const a = clip01(lo - pad), b = clip01(hi + pad);
+      return forward ? [a, b] : [b, a];
+    };
     for (const peak of live.peaks) {
       const place = peakPlace(peak);
       if (!place) continue;
       const d = assets[place.pid];
       out.push({ kind: "peak", id: place.pid, along: place.along, level: peak.level, rising: place.delta > 0,
         value: `${place.delta > 0 ? "+" : "−"}${fmt(Math.abs(place.delta), 1)}`, eta: clock(place.exitAt),
-        to: nameOf(place.forward ? d.to : d.from) });
+        to: nameOf(place.forward ? d.to : d.from), extent: extentOf(place.pid, place.along, place.along, place.forward) });
     }
-    const leads = new Map(slugs().map((s) => [s.q, s]));
+    /* A slug of H₂S or CO₂ is drawn as one band per line it covers, from its rear parcel
+       to its front parcel; the dot (and the label) sits on its strongest parcel. */
+    const leads = new Map(slugs().map((s) => [s.q, s])), spans = new Map();
     for (const q of live.quality) {
-      const along = q.arrived ? 1 : Math.min(1, (live.time - q.t0) / travelSeconds(q.pid)), s = leads.get(q);
-      out.push({ kind: "quality", gas: q.metric, id: q.pid, along: q.forward ? along : 1 - along, lead: Boolean(s),
-        level: s ? Math.max(s.level, s.exitLevel) : 0,
-        value: s ? `${QUALITY[q.metric].name} ${fmt(q.conc, QUALITY[q.metric].digits)}` : "",
-        eta: s && !q.arrived ? clock(s.next.t) : "", to: s ? nameOf(q.arrived ? q.arrived.node : s.next.node) : "" });
+      const t = q.arrived ? 1 : Math.min(1, (live.time - q.t0) / travelSeconds(q.pid)), at = q.forward ? t : 1 - t;
+      const key = `${q.slug}|${q.pid}`, span = spans.get(key) || { q, lo: at, hi: at, lead: null };
+      span.lo = Math.min(span.lo, at); span.hi = Math.max(span.hi, at);
+      if (leads.has(q)) span.lead = { q, at, s: leads.get(q) };
+      spans.set(key, span);
+    }
+    for (const { q, lo, hi, lead } of spans.values()) {
+      const base = { kind: "quality", gas: q.metric, id: q.pid, extent: extentOf(q.pid, lo, hi, q.forward) };
+      if (!lead) { out.push({ ...base, along: (lo + hi) / 2, lead: false, noDot: true, level: 0, value: "" }); continue; }
+      const { s } = lead;
+      out.push({ ...base, along: lead.at, lead: true, level: Math.max(s.level, s.exitLevel),
+        value: `${QUALITY[q.metric].name} ${fmt(lead.q.conc, QUALITY[q.metric].digits)}`,
+        eta: lead.q.arrived ? "" : clock(s.next.t), to: nameOf(lead.q.arrived ? lead.q.arrived.node : s.next.node) });
     }
     return out.sort((a, b) => Number(Boolean(a.lead)) - Number(Boolean(b.lead)));
   }
@@ -871,7 +962,7 @@ const App = (() => {
     if (settings.lineValues === "on" && !out.label && d.capacity) out.label = fmt(d.capacity);
     return out;
   }
-  /* A node: neutral icon, dark grey when inactive, an alarm badge when abnormal. */
+  /* A node: a circle in its state grey, dark grey when inactive, an alarm badge when abnormal. */
   function nodeStyle(id) {
     const d = assets[id], mode = state.mode;
     const out = { level: 0, inactive: d.status !== "operating", sub: NORA.short[d.type], scale: 1,
@@ -881,11 +972,9 @@ const App = (() => {
       const nom = metric("nomination_msm3d", id, f);
       out.level = levelOf(id);
       if (through != null && through < 0.05) out.inactive = true;
-      const parts = [];
-      if (nom > 0) parts.push(`${fmt(through, 1)} / ${fmt(nom, 1)} nom`);
-      else if (through != null) parts.push(`${fmt(through, 1)} MSm³/d`);
-      if (p != null) parts.push(`${fmt(p)} bar`);
-      out.sub = parts.join("  ") || out.sub;
+      out.flow = nom > 0 ? `${fmt(through, 1)} / ${fmt(nom, 1)}` : through != null ? fmt(through, 1) : "";
+      out.pressure = p != null ? `${fmt(p)} bar` : "";
+      out.sub = "";
     } else if (mode === "load" && d.modelFlow != null) {
       out.sub = `${fmt(d.modelFlow)} MSm³/d`;
     } else if (mode === "risk" && d.type !== "market") {
@@ -957,7 +1046,7 @@ const App = (() => {
     const band = nom ? [nom * (1 - tol[0]), nom * (1 + tol[0])] : null;
     const lvl = levelFor(id, ["nomination", "booking"]);
     return {
-      id, unit: "MSm³/d", lvl, band,
+      id, measure: "Delivery", unit: "MSm³/d", lvl, band,
       bar: rangeBar({ min: 0, max: top, value: actual, target: nom, lvl, band,
         ticks: [...(nom ? [nom * (1 - tol[2]), nom * (1 + tol[2])].map((at) => ({ at, level: 3 })) : []), ...(booked ? [{ at: booked, level: 2 }] : [])] }),
       series: series((f) => throughput(id, f.flows)),
@@ -969,7 +1058,7 @@ const App = (() => {
     const pm = T.pressure_margin, band = [low + pm[0] * span, high - pm[0] * span];
     const lvl = levelFor(id, ["pressure"]);
     return {
-      id, unit: "bar", lvl, band,
+      id, measure: "Pressure", unit: "bar", lvl, band,
       bar: rangeBar({ min: low - 0.1 * span, max: high + 0.1 * span, value: p, lvl, band,
         ticks: [{ at: low, level: 3 }, { at: high, level: 3 }, { at: low + pm[1] * span, level: 2 }, { at: high - pm[1] * span, level: 2 }] }),
       series: series((f) => metric("pressure_bar", id, f)),
@@ -979,7 +1068,7 @@ const App = (() => {
   function qualityIndicator(id, name) {
     const v = metric(name, id), limits = C.quality[name], lvl = level(v, limits);
     return {
-      id, unit: QUALITY[name].unit, lvl, band: [0, limits[0]],
+      id, measure: QUALITY[name].name, unit: QUALITY[name].unit, lvl, band: [0, limits[0]],
       bar: rangeBar({ min: 0, max: limits[2] * 1.5, value: v, lvl, band: [0, limits[0]],
         ticks: limits.map((at, i) => ({ at, level: i + 1 })) }),
       series: series((f) => metric(name, id, f)),
@@ -989,19 +1078,23 @@ const App = (() => {
   function loadIndicator(id) {
     const d = assets[id], v = Math.abs(frame().flows[id] || 0), u = v / d.capacity;
     return {
-      id, unit: "pts", lvl: level(u, T.load), band: [0, T.load[0] * 100],
+      id, measure: "Load", unit: "pts", lvl: level(u, T.load), band: [0, T.load[0] * 100],
       bar: rangeBar({ min: 0, max: 1.1, value: u, lvl: level(u, T.load), band: [0, T.load[0]], ticks: T.load.map((at, i) => ({ at, level: i + 1 })) }),
       series: series((f) => (f.flows[id] == null ? null : (Math.abs(f.flows[id]) / d.capacity) * 100)),
       value: `${fmt(u * 100)}%: ${fmt(v, 1)} of ${fmt(d.capacity)} MSm³/d`,
     };
   }
-  function bank(indicators, empty) {
+  /* A bank of indicators. Across assets (the overview) each row is named after its
+     asset; for one asset (its page or sidebar) after what it measures, so the rows
+     read "Delivery", "Pressure" instead of the asset's name twice. */
+  function bank(indicators, empty, { byMeasure = false } = {}) {
     if (!indicators.length) return h("p", { class: "empty" }, empty);
-    return h("div", { class: "bank" },
-      h("div", { class: "head" }, "Asset"), h("div", { class: "head" }, "Value in its range"),
-      h("div", { class: "head" }, "Trend"), h("div", { class: "head optional" }, "Change"), h("div", { class: "head optional" }, "State"),
+    return h("div", { class: `bank${byMeasure ? " by-measure" : ""}` },
+      h("div", { class: "head" }, byMeasure ? "" : "Asset"), h("div", { class: "head" }, "Value in its range"),
+      h("div", { class: "head" }, "Last 2 h"), h("div", { class: "head optional" }, "Change"), h("div", { class: "head optional" }, "State"),
       ...indicators.flatMap((ind) => [
-        h("div", { class: "name", onclick: () => go({ screen: "asset", asset: ind.id }), title: "Open the asset" }, nameOf(ind.id)),
+        byMeasure ? h("div", { class: "name measure" }, ind.measure || nameOf(ind.id))
+          : h("div", { class: "name", onclick: () => go({ screen: "asset", asset: ind.id }), title: "Open the asset" }, nameOf(ind.id)),
         h("div", null, ind.bar, h("div", { class: "value" }, ind.value, h("span", { class: "rate-inline" }, rateText(rate(ind.series), ind.unit)))),
         trend(ind.series, { band: ind.band, lvl: ind.lvl }),
         h("div", { class: "rate" }, rateText(rate(ind.series), ind.unit)),
@@ -1134,7 +1227,7 @@ const App = (() => {
         : `${NORA.pipelineTypes[d.type]}, ${nameOf(d.from)} to ${nameOf(d.to)}.`),
       h("div", { class: "cols" },
         h("div", { class: "box" }, h("h2", { title: "Flowing in above the asset, out below it" }, "In context"), schematic(id)),
-        h("div", { class: "box" }, h("h2", { title: "Live readings in their ranges, from the data being played" }, "Values"), bank(indicators, "No live readings for this asset in the dataset."),
+        h("div", { class: "box" }, h("h2", { title: "Live readings in their ranges, from the data being played" }, "Values"), bank(indicators, "No live readings for this asset in the dataset.", { byMeasure: true }),
           inSidebar ? null : h("h2", { style: "margin-top:14px" }, "State"),
           conds.length ? alarmList(conds)
             : h("p", { class: "state-quiet" }, "Normal · no alarms right now"),
@@ -1157,7 +1250,7 @@ const App = (() => {
   }
 
   /* The asset sidebar: a calm column that slides in from the right when a field,
-     plant or icon is clicked on the unit screen, and follows the data as it plays. */
+     plant or line is clicked on the unit screen, and follows the data as it plays. */
   const side = { id: null };
   function openSidebar(id) {
     if (!assets[id]) return;
@@ -1193,6 +1286,9 @@ const App = (() => {
         ["Diameter", d.diameter == null ? null : `${fmt(d.diameter)} in`], ["In service since", d.commissioned], ["If it trips", lost], ["Status", d.status]];
     return h("dl", { class: "facts" }, rows.filter((r) => r[1] != null && r[1] !== "").map(([k, v]) => [h("dt", null, k), h("dd", null, v)]));
   }
+  /* Labels in the asset picture: regular weight and never outlined. Set inline, so no
+     stylesheet rule (the global `svg` one strokes shapes) can smudge them into bold. */
+  const TEXT = "stroke:none;font-weight:400;paint-order:normal";
   function schematic(id) {
     const d = assets[id], f = frame();
     const inbound = [], outbound = [];
@@ -1205,30 +1301,54 @@ const App = (() => {
         (toward ? inbound : outbound).push(pid);
       }
     }
-    const W = 360, H = 230, mid = 112;
-    const place = (list, y) => list.map((pid, i) => ({ pid, x: ((i + 1) / (list.length + 1)) * W, y }));
-    let m = "";
-    for (const { pid, x, y } of [...place(inbound, 26), ...place(outbound, 200)]) {
-      const s = pipeStyle(pid), v = f.flows[pid], above = y < mid;
-      const color = s.level ? LEVEL_COLOR[s.level] : v == null || Math.abs(v) < 0.05 ? COLORS.inactive : COLORS.active;
-      const y1 = y + (above ? 8 : -8), y2 = mid + (above ? -20 : 20);
-      if (s.level) m += `<line x1="${x}" y1="${y1}" x2="${W / 2}" y2="${y2}" stroke="${COLORS.casing}" stroke-width="${s.width + 2.4}"/>`;
-      m += `<line x1="${x}" y1="${y1}" x2="${W / 2}" y2="${y2}" stroke="${color}" stroke-width="${Math.max(1.2, s.width)}"/>`;
-      if (s.level) m += `<g transform="translate(${(x + W / 2) / 2 - 8} ${(y1 + y2) / 2 - 8})">${shapeMarkup(s.level)}</g>`;
-      const label = `${nameOf(pid)}${v == null ? "" : `: ${fmt(Math.abs(v), 1)}`}`;
-      m += `<text x="${x}" y="${above ? y : y + 14}" text-anchor="middle">${esc(label.length > 34 ? `${label.slice(0, 33)}…` : label)}</text>`;
-    }
-    if (d.kind === "node") m += `<image href="${NORA.icons[d.type]}" x="${W / 2 - 18}" y="${mid - 18}" width="36" height="36"/>`;
-    else {
-      const s = pipeStyle(id);
-      m += `<text x="${W / 2}" y="40" text-anchor="middle">${esc(nameOf(d.from))}</text><text x="${W / 2}" y="${H - 14}" text-anchor="middle">${esc(nameOf(d.to))}</text>`;
+    if (d.kind === "pipeline") {
+      const W = 420, H = 230, s = pipeStyle(id);
+      let m = `<text x="${W / 2}" y="40" text-anchor="middle" style="${TEXT}">${esc(nameOf(d.from))}</text><text x="${W / 2}" y="${H - 14}" text-anchor="middle" style="${TEXT}">${esc(nameOf(d.to))}</text>`;
       m += `<line x1="${W / 2}" y1="52" x2="${W / 2}" y2="${H - 34}" stroke="${s.level ? COLORS.casing : "none"}" stroke-width="${s.width + 2.4}"/><line x1="${W / 2}" y1="52" x2="${W / 2}" y2="${H - 34}" stroke="${s.level ? LEVEL_COLOR[s.level] : s.color}" stroke-width="${Math.max(1.2, s.width)}"/>`;
+      const lvl = levelOf(id);
+      if (lvl) m += `<g transform="translate(${W / 2 + 12} ${H / 2 - 8})">${shapeMarkup(lvl)}</g>`;
+      return svg(`0 0 ${W} ${H}`, m, "schematic");
     }
+    /* A node: one row per line, gas in above the circle and gas out below it, so labels
+       never meet however many lines there are. Names sit in a column on the left with
+       the flow (MSm³/d) right-aligned beside them; each line fans from its row into the
+       circle, and the node's name sits to the right of the circle, where no line runs. */
+    const W = 420, ROW = 19, R = 22, CX = 300, END = 236, START = 246;
+    const rows = [];
+    let y = 4, m = "";
+    const group = (list, title) => {
+      if (!list.length) return;
+      y += 14;
+      m += `<text x="18" y="${y}" class="dimtext" style="${TEXT};font-size:10.5px">${title}</text>`;
+      for (const pid of list) { y += ROW; rows.push({ pid, y }); }
+    };
+    group(inbound, "Gas in");
+    const mid = y + R + 14;
+    y = mid + R;
+    group(outbound, "Gas out");
+    const H = Math.max(mid + R, y) + 10;
+    for (const { pid, y: ry } of rows) {
+      const s = pipeStyle(pid), v = f.flows[pid];
+      const color = s.level ? LEVEL_COLOR[s.level] : v == null || Math.abs(v) < 0.05 ? COLORS.inactive : COLORS.active;
+      const ly = ry - 4; // the middle of the row's text
+      if (s.level) m += `<line x1="${START}" y1="${ly}" x2="${CX}" y2="${mid}" stroke="${COLORS.casing}" stroke-width="${s.width + 2.4}"/>`;
+      m += `<line x1="${START}" y1="${ly}" x2="${CX}" y2="${mid}" stroke="${color}" stroke-width="${Math.max(1.2, s.width)}"/>`;
+      if (s.level) m += `<g transform="translate(${START - 10} ${ry - 12}) scale(0.9)">${shapeMarkup(s.level)}</g>`;
+      const name = nameOf(pid);
+      m += `<text x="18" y="${ry}" style="${TEXT}">${esc(name.length > 28 ? `${name.slice(0, 27)}…` : name)}</text>`;
+      if (v != null) m += `<text x="${END}" y="${ry}" text-anchor="end" class="dimtext" style="${TEXT}">${esc(fmt(Math.abs(v), 1))}</text>`;
+    }
+    // The node as in the Flow view: flow inside the circle, pressure outside it.
+    const st = nodeStyle(id), look = COLORS.card[st.inactive ? "inactive" : state.mode === "live" ? "active" : "normal"];
+    const flow = throughput(id, f.flows), bar = metric("pressure_bar", id);
+    m += `<circle cx="${CX}" cy="${mid}" r="${R}" fill="${look.fill}" stroke="${st.level ? LEVEL_COLOR[st.level] : look.edge}" stroke-width="${st.level ? 2.5 : 1}"/>`;
+    if (flow != null) m += `<text x="${CX}" y="${mid + 4}" text-anchor="middle" fill="${look.ink}" style="${TEXT};font-weight:500">${esc(fmt(flow, flow < 10 ? 1 : 0))}</text>`;
+    if (bar != null) m += `<text x="${CX + R + 8}" y="${mid + 20}" class="dimtext" style="${TEXT};font-size:11px">${esc(fmt(bar))} bar</text>`;
     const lvl = levelOf(id);
-    if (lvl) m += `<g transform="translate(${W / 2 + 12} ${mid - 30})">${shapeMarkup(lvl)}</g>`;
-    if (d.kind === "node") m += `<text x="${W / 2 + 24}" y="${mid + 4}" font-weight="600">${esc(d.name)}</text>`;
-    if (d.kind === "node" && !inbound.length && !outbound.length) m += `<text x="${W / 2}" y="200" text-anchor="middle" class="dimtext">No connected pipelines</text>`;
-    return svg(`0 0 ${W} ${H}`, m, "schematic");
+    if (lvl) m += `<g transform="translate(${CX + 12} ${mid - R - 10})">${shapeMarkup(lvl)}</g>`;
+    m += `<text x="${CX + R + 8}" y="${mid + 4}" style="${TEXT};font-weight:500">${esc(d.name.length > 13 ? `${d.name.slice(0, 12)}…` : d.name)}</text>`;
+    if (!rows.length) m += `<text x="${CX}" y="${mid + R + 18}" text-anchor="middle" class="dimtext" style="${TEXT}">No connected pipelines</text>`;
+    return svg(`0 0 ${W} ${rows.length ? H : mid + R + 26}`, m, "schematic");
   }
 
   // Level 4: the readings behind the values, newest first, and where they come from.
@@ -1295,6 +1415,9 @@ const App = (() => {
     const unitSelect = $("crumb-unit");
     unitSelect.value = s === "asset" || s === "diag" ? unitOf[route.asset] || "all" : route.unit;
     unitSelect.setAttribute("aria-current", s === "unit" ? "page" : "false");
+    const mapUnit = route.unit === "all" ? null : unitById[route.unit];
+    $("map-kicker").textContent = mapUnit ? "Operating unit" : "All operating units";
+    $("map-unit").textContent = mapUnit ? mapUnit.name : "North Sea gas network";
     const deep = s === "asset" || s === "diag";
     $("sep-asset").hidden = $("crumb-asset").hidden = !deep;
     $("sep-diag").hidden = $("crumb-diag").hidden = s !== "diag";
@@ -1362,15 +1485,13 @@ const App = (() => {
       h("h3", null, "Moving along the lines"),
       h("ul", null,
         h("li", null, svg("0 0 26 14", `<path d="M17 7l-8-4.5v9z" fill="${COLORS.pig}" stroke="${COLORS.casing}"/>`), "Pig: a small triangle creeping along, at its own speed"),
-        h("li", null, svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.peak}" stroke="${COLORS.casing}"/>`), "Peak: a change in flow, moving with the gas"),
+        h("li", null, svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.peak}" stroke="${COLORS.casing}"/>`), "Peak: a change in flow moving with the gas; the band around it is its head and tail"),
         h("li", null, svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.h2s}" stroke="${COLORS.casing}"/>`), "H₂S peak: ppm, next stop and when it gets there"),
         h("li", null, svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.co2}" stroke="${COLORS.casing}"/>`), "CO₂ peak: mol %, next stop and when it gets there")),
       h("h3", null, "Indicators"),
       rangeBar({ min: 0, max: 10, value: 6, band: [3, 7], ticks: [{ at: 1.5, level: 3 }, { at: 8.5, level: 3 }], target: 5 }),
       h("p", { class: "dim", style: "margin:4px 0 0" }, "Light band: normal range. Ticks: alarm limits. Hollow diamond: the target (nomination). Pointer: the value now. Trends show the last hours, dashed where they are heading."),
-      h("p", { class: "dim", style: "margin:6px 0 0" }, "Each box in the Flow view shows the flow and pressure now, and a 4-hour line: the last 2 hours solid, the next 2 hours of nominations dashed."),
-      h("h3", null, "Asset types"),
-      h("ul", null, Object.keys(NORA.icons).map((k) => h("li", null, h("img", { src: NORA.icons[k], alt: "" }), NORA.nodeTypes[k]))));
+      h("p", { class: "dim", style: "margin:6px 0 0" }, "In the Flow view each circle shows incoming (in) and outgoing (out) totals in the quarter facing each connected line (34M is 34 MSm³/d). Circles expand when both directions need separate lines. Pressure (bar) sits below the asset name, outside the circle. At exit points a small bar shows today's delivery against the nominations: the middle line is on plan. Under each name, a 4-hour line: the last 2 hours solid, the next 2 hours of nominations dashed. The sidebar's picture lists the gas coming in above the circle and going out below it."));
   }
   function storedFlag(key) { try { return localStorage.getItem(key); } catch (error) { return "1"; } }
   function openGuide() {
@@ -1696,6 +1817,8 @@ const App = (() => {
   function markTabs() {
     for (const tab of document.querySelectorAll("[data-view]")) tab.setAttribute("aria-selected", String(tab.dataset.view === state.view));
     for (const tab of document.querySelectorAll("[data-mode]")) tab.setAttribute("aria-selected", String(tab.dataset.mode === state.mode));
+    const modeLabels = { live: "Live operations", load: "Capacity load · model", risk: "Outage exposure · model", whatif: "What-if analysis", plain: "Network assets" };
+    $("map-mode-label").textContent = modeLabels[state.mode];
   }
 
   function start() {
@@ -1779,8 +1902,11 @@ const App = (() => {
       offline: () => [...whatif.offline],
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
-    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
-    pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T, register, restyle, go, start, theme: () => theme,
+    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
+    pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T,
+    // Flow through a node now (MSm³/d) and its pressure (bar), for the views to show.
+    reading: (id) => ({ flow: throughput(id, frame().flows), pressure: metric("pressure_bar", id) }),
+    dayDelivery, register, restyle, go, start, theme: () => theme,
     select: (id) => {
       if (!id || !assets[id]) { if (route.screen === "unit" && state.mode !== "whatif") closeSidebar(); return; }
       // In What-if mode a click takes a node offline or brings it back instead.

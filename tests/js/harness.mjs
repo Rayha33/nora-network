@@ -29,6 +29,7 @@ export function loadApp({ search = "" } = {}) {
   const context = vm.createContext(sandbox, { name: "nora-dom" });
   const sources = {
     app: readFileSync(path.join(TEMPLATES, "app.js"), "utf8"),
+    map2d: readFileSync(path.join(TEMPLATES, "map2d.js"), "utf8"),
     map: readFileSync(path.join(TEMPLATES, "map.js"), "utf8"),
     flow: readFileSync(path.join(TEMPLATES, "flow.js"), "utf8"),
   };

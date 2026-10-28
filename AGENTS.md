@@ -38,11 +38,14 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 | `src/nora/render.py` | the app page: one payload for both views, map GeoJSON, the pyvis flow network |
 | `src/nora/templates/app.*` | the app shell: page, styles, shared state, styling rules, alarms, routes of pigs and peaks, gas quality, what-if, player |
 | `src/nora/templates/map.js` | Map view: MapLibre on OpenFreeMap tiles, assets at true coordinates |
+| `src/nora/templates/map2d.js` | the same Map view on a plain 2D canvas, used when the browser has no WebGL (or `?map=simple`) |
 | `src/nora/templates/flow.js` | Flow view: the pyvis network on dotted paper, top to bottom |
 | `src/nora/templates/index.html.j2` | the home page |
 | `src/nora/site.py` | writes the site folder that GitHub Pages serves |
 | `src/nora/cli.py` | the `nora` command |
 | `scripts/fetch_*.py` | download real data (ENTSOG, Energinet, SODIR) into a stream's raw file |
+| `data/geo/coastline.json`, `scripts/build_coastline.py` | the land around the North Sea (Natural Earth, public domain) for the canvas map |
+| `data/geo/routes.json`, `scripts/build_routes.py` | laid pipeline routes from SODIR's register (NLOD), drawn on both maps |
 | `tests/` | pytest; `tests/conftest.py` has a five-node network to test against |
 | `tests/js/` | Node tests that load the real templates (`make test-js`); see its README |
 

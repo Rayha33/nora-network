@@ -22,7 +22,7 @@ DEFAULTS: dict = {
         "network_mode": "live",
         "theme": "light",
         "autoplay": True,
-        "speed": 60,  # default playback: data seconds per real second
+        "speed": 600,  # default playback: data seconds per real second
     },
     "labels": {"names": True, "line_values": "auto"},
     "assets": {"hide": [], "grid_entries": True},
@@ -35,13 +35,14 @@ DEFAULTS: dict = {
         "risk": [0.05, 0.10, 0.15],
         "step": [0.15, 0.25, 0.40],
         "plan_lookahead_hours": 6,
+        "gas_day_start_utc": 5,
     },
-    "pipelines": {"gas_velocity_mps": 8.0, "step_min": 0.25, "peak_max": 2},
+    "pipelines": {"gas_velocity_mps": 8.0, "step_min": 0.10, "peak_max": 5},
     "quality": {"h2s_ppm": [2.5, 3.0, 3.3], "co2_molpct": [2.2, 2.35, 2.5], "follow_from": 0.8},
     "pressure": {
-        "field": [80, 220],
-        "hub": [70, 200],
-        "processing": [60, 180],
+        "field": [100, 175],
+        "hub": [100, 170],
+        "processing": [100, 165],
         "terminal": [55, 85],
         "lng": [60, 90],
         "storage": [50, 150],
@@ -85,7 +86,7 @@ DEFAULTS: dict = {
     },
     "map": {
         "style": "https://tiles.openfreemap.org/styles/positron",
-        "bounds": [[-3.5, 50.2], [12.0, 63.9]],
+        "bounds": [[-3.5, 50.2], [15.5, 67.4]],
     },
 }
 

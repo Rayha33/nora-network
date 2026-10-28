@@ -7,20 +7,47 @@
   const view = { ready: false, mounted: false };
   const C = App.colors;
   let map = null, canvas = null, ctx = null, highlighted = null, alarmKey = "";
+  let drawnMarks = []; // where pigs, peaks and slugs were drawn this frame, for mouse-over
+  const markAt = (x, y) => {
+    let best = null, bestD = 9; // px
+    for (const d of drawnMarks) { const dist = Math.hypot(d.x - x, d.y - y); if (dist < bestD) { best = d.m; bestD = dist; } }
+    return best;
+  };
 
   const featureOf = {}; // asset id -> { source, id }
-  const ends = {}; // pipeline id -> [[lon, lat], [lon, lat]]
+  const ends = {}; // pipeline id -> its laid route, [[lon, lat], ...] from its `from` node
   for (const f of NORA.geo.nodes.features) featureOf[f.properties.asset] = { source: "nora-nodes", id: f.id };
   for (const f of NORA.geo.pipes.features) {
     featureOf[f.properties.asset] = { source: "nora-pipes", id: f.id };
     ends[f.properties.asset] = f.geometry.coordinates;
+  }
+  /* A point part-way along a pipeline's laid route (0..1 from its first point), in
+     lon/lat, with the segment it falls on: lines follow their real route, not a chord. */
+  const routeLengths = {};
+  function alongRoute(id, t) {
+    const pts = ends[id];
+    if (!routeLengths[id]) {
+      let total = 0;
+      routeLengths[id] = [0];
+      for (let i = 1; i < pts.length; i++) {
+        const k = Math.cos((pts[i][1] * Math.PI) / 180);
+        total += Math.hypot((pts[i][0] - pts[i - 1][0]) * k, pts[i][1] - pts[i - 1][1]);
+        routeLengths[id].push(total);
+      }
+    }
+    const cum = routeLengths[id], d = Math.max(0, Math.min(1, t)) * cum[cum.length - 1];
+    let i = 1;
+    while (i < cum.length - 1 && cum[i] < d) i++;
+    const f = cum[i] > cum[i - 1] ? (d - cum[i - 1]) / (cum[i] - cum[i - 1]) : 0;
+    const a = pts[i - 1], b = pts[i];
+    return { at: [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f], a, b };
   }
   // Midpoints of pipelines, for alarm badges on lines.
   const mids = {
     type: "FeatureCollection",
     features: NORA.geo.pipes.features.map((f) => ({
       type: "Feature", id: f.id, properties: { asset: f.properties.asset, alarm: 0 },
-      geometry: { type: "Point", coordinates: [(f.geometry.coordinates[0][0] + f.geometry.coordinates[1][0]) / 2, (f.geometry.coordinates[0][1] + f.geometry.coordinates[1][1]) / 2] },
+      geometry: { type: "Point", coordinates: alongRoute(f.properties.asset, 0.5).at },
     })),
   };
   // Badges have their own copy of the nodes, so updating them never re-places the names
@@ -75,10 +102,7 @@
   async function addLayers() {
     view.ready = false;
     calmBasemap();
-    await Promise.all([
-      ...Object.entries(NORA.icons).map(([kind, uri]) => loadImage(`nora-${kind}`, uri, 48)),
-      ...[1, 2, 3].map((l) => loadImage(`nora-alarm-${l}`, badgeUri(l), 32)),
-    ]);
+    await Promise.all([1, 2, 3].map((l) => loadImage(`nora-alarm-${l}`, badgeUri(l), 32)));
     map.addSource("nora-pipes", { type: "geojson", data: NORA.geo.pipes });
     map.addSource("nora-nodes", { type: "geojson", data: NORA.geo.nodes });
     map.addSource("nora-node-badges", { type: "geojson", data: badgeData });
@@ -98,22 +122,30 @@
     map.addLayer({ id: "nora-pipes", type: "line", source: "nora-pipes", filter: ["!=", ["get", "onshore"], true], layout: { "line-cap": "round" },
       paint: { "line-color": ["to-color", state("color", C.normal)], "line-width": width(1), "line-opacity": opacity } });
     map.addLayer({ id: "nora-pipes-hit", type: "line", source: "nora-pipes", paint: { "line-color": "#000", "line-opacity": 0, "line-width": 14 } });
+    /* Nodes are plain circles in their state grey, as in the Flow view: no icons (Ray,
+       28 Oct). An alarm colours only the outline, and the badge carries the shape and
+       number. Names are a separate text layer that is never reloaded. */
+    const radius = (extra = 0) => ["interpolate", ["linear"], ["zoom"], 3, 3.5 + extra, 6, 5.5 + extra, 9, 8 + extra];
+    const nodeOpacity = ["case", ["boolean", ["feature-state", "hide"], false], 0, ["boolean", ["feature-state", "dim"], false], 0.3, 1];
     map.addLayer({ id: "nora-selected", type: "circle", source: "nora-nodes",
-      paint: { "circle-radius": ["case", ["boolean", ["feature-state", "selected"], false], 17, 0], "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2.5, "circle-stroke-color": C.text } });
+      paint: { "circle-radius": radius(5), "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2, "circle-stroke-color": C.text,
+        "circle-stroke-opacity": ["case", ["boolean", ["feature-state", "selected"], false], 1, 0] } });
+    map.addLayer({ id: "nora-node-dots", type: "circle", source: "nora-nodes",
+      paint: {
+        "circle-radius": radius(), "circle-color": ["to-color", state("fill", C.normal)],
+        "circle-stroke-color": ["to-color", state("edge", C.text_dim)], "circle-stroke-width": state("edgeWidth", 1),
+        "circle-opacity": nodeOpacity, "circle-stroke-opacity": nodeOpacity,
+      } });
     map.addLayer({ id: "nora-nodes", type: "symbol", source: "nora-nodes",
       layout: {
-        "icon-image": ["concat", "nora-", ["get", "type"]], "icon-size": ["interpolate", ["linear"], ["zoom"], 3, 0.55, 6, 0.8, 9, 1],
-        "icon-allow-overlap": true, "icon-ignore-placement": true,
-        "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 11.5, "text-offset": [0, 1.3],
-        "text-anchor": "top", "text-optional": true, "text-max-width": 9,
+        "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 11.5,
+        "text-offset": [0, 0.8], "text-anchor": "top", "text-optional": true, "text-max-width": 9,
       },
       paint: {
-        "icon-opacity": ["case", ["boolean", ["feature-state", "hide"], false], 0, ["boolean", ["feature-state", "dim"], false], 0.3, ["boolean", ["feature-state", "inactive"], false], 0.55, 1],
-        "text-opacity": ["case", ["boolean", ["feature-state", "hide"], false], 0, ["boolean", ["feature-state", "dim"], false], 0.3, 1],
-        "text-color": C.text, "text-halo-color": C.paper, "text-halo-width": 1.5,
+        "text-opacity": nodeOpacity, "text-color": C.text, "text-halo-color": C.paper, "text-halo-width": 2, // no line shows through a name
       } });
     // Alarm badges: shape + number + colour, on nodes and at the middle of lines.
-    for (const [id, source, offset] of [["nora-node-alarms", "nora-node-badges", [22, -22]], ["nora-pipe-alarms", "nora-mids", [0, 0]]]) {
+    for (const [id, source, offset] of [["nora-node-alarms", "nora-node-badges", [12, -12]], ["nora-pipe-alarms", "nora-mids", [0, 0]]]) {
       map.addLayer({ id, type: "symbol", source, filter: [">", ["get", "alarm"], 0],
         layout: { "icon-image": ["concat", "nora-alarm-", ["to-string", ["get", "alarm"]]], "icon-size": 0.85, "icon-offset": offset,
           "icon-allow-overlap": true, "icon-ignore-placement": true, "symbol-sort-key": ["-", 0, ["get", "alarm"]] } });
@@ -155,22 +187,55 @@
     layers: [{ id: "osm-raster", type: "raster", source: "osm" }],
   };
 
+  // Can this browser draw with WebGL? The test context is released at once, since
+  // browsers allow only a handful of live WebGL contexts per page.
+  function hasWebGL() {
+    try {
+      const gl = document.createElement("canvas").getContext("webgl2") || document.createElement("canvas").getContext("webgl");
+      if (!gl) return false;
+      const lose = gl.getExtension("WEBGL_lose_context");
+      if (lose) lose.loseContext();
+      return true;
+    } catch { return false; }
+  }
+  /* No WebGL (hardware acceleration off, an old or locked-down browser, the GPU
+     restarting), no MapLibre (offline), or ?map=simple: draw the same map on a plain
+     canvas instead (map2d.js), with the coastline shipped inside the page. */
+  function canvasFallback(el) {
+    if (map) { try { map.remove(); } catch { /* already gone */ } }
+    map = null; canvas = null; ctx = null;
+    el.replaceChildren();
+    NoraCanvasMap(view);
+    view.mount(el);
+  }
+  const wantSimple = new URLSearchParams(location.search).get("map") === "simple";
+  // Keep the camera on the network: no zooming out far past the whole of it.
+  function limitZoom() {
+    if (!map || !map.getContainer().clientWidth) return;
+    const fit = map.cameraForBounds(NORA.config.map.bounds, { padding: padding() });
+    if (fit && Number.isFinite(fit.zoom)) map.setMinZoom(Math.max(2, fit.zoom - 0.3));
+  }
+
   view.mount = (el) => {
-    if (typeof maplibregl === "undefined") {
-      el.append(Object.assign(document.createElement("p"), { className: "notice", textContent: "The map needs an internet connection. The Flow view works offline." }));
-      return;
-    }
-    // WebGL is what draws the map: say so plainly instead of showing a blank area.
-    const gl = (() => { const c = document.createElement("canvas"); try { return c.getContext("webgl2") || c.getContext("webgl"); } catch { return null; } })();
-    if (!gl) {
-      el.append(Object.assign(document.createElement("p"), { className: "notice", textContent: "This browser has no WebGL, so the map cannot draw. Update the browser or enable hardware acceleration; the Flow view still works." }));
-      return;
-    }
-    map = new maplibregl.Map({
-      container: el, style: NORA.config.map.style, bounds: NORA.config.map.bounds,
-      fitBoundsOptions: { padding: padding() }, attributionControl: { compact: true },
-      cooperativeGestures: App.embed, dragRotate: false, pitchWithRotate: false, minZoom: 2, maxZoom: 12,
-    });
+    if (wantSimple || typeof maplibregl === "undefined" || !hasWebGL()) { canvasFallback(el); return; }
+    /* Panning stays near the network. The limit is generous sideways: the network is
+       tall and narrow, so fitting all of it in a wide window shows a lot of longitude,
+       and a tight limit would make MapLibre zoom in and cut off the south instead.
+       Zooming out is capped separately (limitZoom). */
+    const [[w, s], [e, n]] = NORA.config.map.bounds, padLon = Math.max(40, (e - w) * 2), padLat = (n - s) * 0.5;
+    try {
+      map = new maplibregl.Map({
+        container: el, style: NORA.config.map.style, bounds: NORA.config.map.bounds,
+        fitBoundsOptions: { padding: padding() }, attributionControl: { compact: true },
+        cooperativeGestures: App.embed, dragRotate: false, pitchWithRotate: false, minZoom: 2, maxZoom: 12,
+        maxBounds: [[w - padLon, s - padLat], [e + padLon, Math.min(85, n + padLat)]],
+      });
+    } catch { canvasFallback(el); return; } // MapLibre throws when it cannot get a WebGL context
+    // WebGL lost and not back within 3 s (a GPU restart): carry on with the canvas map.
+    let lostTimer = null;
+    map.getCanvas().addEventListener("webglcontextlost", () => { lostTimer = setTimeout(() => canvasFallback(el), 3000); });
+    map.getCanvas().addEventListener("webglcontextrestored", () => clearTimeout(lostTimer));
+    map.once("load", limitZoom);
     view.map = map;
     map.touchZoomRotate.disableRotation();
     canvas = document.createElement("canvas");
@@ -211,8 +276,16 @@
     map.on("resize", sizeCanvas);
     map.on("render", () => view.ready && view.draw());
     const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12 });
-    for (const layer of ["nora-nodes", "nora-pipes-hit"]) {
+    // A pig, peak or slug under the pointer wins: its value and when it reaches the next stop.
+    let overMark = false;
+    map.on("mousemove", (e) => {
+      const m = markAt(e.point.x, e.point.y);
+      if (m) { popup.setLngLat(e.lngLat).setText(App.markerTip(m)).addTo(map); map.getCanvas().style.cursor = "help"; overMark = true; }
+      else if (overMark) { popup.remove(); map.getCanvas().style.cursor = ""; overMark = false; }
+    });
+    for (const layer of ["nora-node-dots", "nora-nodes", "nora-pipes-hit"]) {
       map.on("mousemove", layer, (e) => {
+        if (markAt(e.point.x, e.point.y)) return;
         map.getCanvas().style.cursor = "pointer";
         const id = e.features[0].properties.asset;
         popup.setLngLat(e.lngLat).setText(App.nameOf(id)).addTo(map);
@@ -221,7 +294,7 @@
     }
     map.on("click", (e) => {
       if (!view.ready) return;
-      const hit = map.queryRenderedFeatures(e.point, { layers: ["nora-nodes", "nora-pipes-hit"] });
+      const hit = map.queryRenderedFeatures(e.point, { layers: ["nora-node-dots", "nora-nodes", "nora-pipes-hit"] });
       if (hit.length) App.select(hit[0].properties.asset);
     });
     // Right-click a node or a pipeline: the same menu everywhere. A plain DOM
@@ -230,7 +303,7 @@
     el.addEventListener("contextmenu", (e) => {
       if (!view.ready) return;
       const rect = map.getCanvas().getBoundingClientRect();
-      const hit = map.queryRenderedFeatures([e.clientX - rect.left, e.clientY - rect.top], { layers: ["nora-nodes", "nora-pipes-hit"] });
+      const hit = map.queryRenderedFeatures([e.clientX - rect.left, e.clientY - rect.top], { layers: ["nora-node-dots", "nora-nodes", "nora-pipes-hit"] });
       if (!hit.length) return;
       e.preventDefault();
       const id = hit[0].properties.asset, d = NORA.assets[id];
@@ -252,7 +325,11 @@
     }
     for (const id of App.nodeIds) {
       const s = App.nodeStyle(id);
-      map.setFeatureState(featureOf[id], { inactive: s.inactive, dim: s.dim, hide: s.hidden });
+      const look = C.card[s.inactive ? "inactive" : App.state.mode === "live" ? "active" : "normal"];
+      map.setFeatureState(featureOf[id], {
+        fill: look.fill, edge: s.level ? App.levelColor[s.level] : C.text_dim, edgeWidth: s.level ? 2.5 : 1,
+        dim: s.dim, hide: s.hidden,
+      });
       if (s.level && !s.hidden) alarms.push(`${id}:${s.level}`);
     }
     // Badges are layout, so they follow the data, not feature state: reload them only
@@ -275,8 +352,8 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (App.state.mode !== "live") return;
     const project = (id, along) => {
-      const [a, b] = ends[id], pa = map.project(a), pb = map.project(b);
-      return { x: pa.x + (pb.x - pa.x) * along, y: pa.y + (pb.y - pa.y) * along, angle: Math.atan2(pb.y - pa.y, pb.x - pa.x) };
+      const r = alongRoute(id, along), p = map.project(r.at), pa = map.project(r.a), pb = map.project(r.b);
+      return { x: p.x, y: p.y, angle: Math.atan2(pb.y - pa.y, pb.x - pa.x) };
     };
     if (App.settings().animation && App.live.playing && !App.reduceMotion) {
       /* Simulated flow at the nodes, not on the lines: short solid bands sliding
@@ -292,7 +369,7 @@
           const v = App.live.values[pid], p = NORA.assets[pid];
           if (!v || Math.abs(v) < 0.05 || !p || (p.from !== nid && p.to !== nid)) continue;
           if (App.pipeStyle(pid).hidden) continue;
-          const other = map.project(p.from === nid ? ends[pid][1] : ends[pid][0]);
+          const line = ends[pid], other = map.project(p.from === nid ? line[1] : line[line.length - 2]);
           const dx = other.x - pn.x, dy = other.y - pn.y, len = Math.hypot(dx, dy);
           if (len < 8) continue;
           const ux = dx / len, uy = dy / len;
@@ -318,11 +395,15 @@
       }
       ctx.globalAlpha = 1;
     }
-    for (const marker of App.markers()) {
-      if (App.pipeStyle(marker.id).hidden) continue;
-      const p = project(marker.id, marker.along);
-      const zoom = map.getZoom();
-      App.drawMarker(ctx, marker, p.x, p.y, p.angle, 6.5, zoom >= 6.5 ? 2 : zoom >= 5 ? 1 : 0);
+    // Peaks as bands from tail to head first, then every marker on top.
+    const marks = App.markers().filter((m) => ends[m.id] && !App.pipeStyle(m.id).hidden);
+    for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]));
+    const zoom = map.getZoom(), detail = zoom >= 6.5 ? 2 : zoom >= 5 ? 1 : 0;
+    drawnMarks = [];
+    for (const m of marks) {
+      const p = project(m.id, m.along);
+      App.drawMarker(ctx, m, p.x, p.y, p.angle, 6.5, detail);
+      if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
     }
   };
 
@@ -356,8 +437,8 @@
     const d = NORA.assets[id];
     if (d.kind === "node") map.easeTo({ center: [d.lon, d.lat], zoom: Math.max(map.getZoom(), 6.5), duration: animate ? duration(600) : 0 });
     else {
-      const [a, b] = ends[id];
-      map.fitBounds([[Math.min(a[0], b[0]), Math.min(a[1], b[1])], [Math.max(a[0], b[0]), Math.max(a[1], b[1])]], { padding: 120, maxZoom: 7, duration: animate ? duration(600) : 0 });
+      const line = ends[id], lons = line.map((p) => p[0]), lats = line.map((p) => p[1]);
+      map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 120, maxZoom: 7, duration: animate ? duration(600) : 0 });
     }
   };
   view.fit = () => view.setUnit(App.route.unit);
@@ -365,6 +446,7 @@
     if (!map) return;
     map.resize();
     sizeCanvas();
+    limitZoom();
     if (pendingFit) view.setUnit(App.route.unit);
   };
   // A new palette: reload the style so the basemap, icons and badges are redrawn in it.
