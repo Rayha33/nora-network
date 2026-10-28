@@ -297,13 +297,10 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 .sidebar .cols { grid-template-columns: 1fr; gap: 0; }
 .sidebar .box { margin: 0; padding: 14px 0 16px; background: none; border: 0; border-radius: 0; border-bottom: 1px solid var(--rule); }
 .sidebar .box:last-of-type { border-bottom: 0; }
-.sidebar .box h2 {
-  margin: 0 0 8px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--text-dim);
-}
+.sidebar .box h2 { margin: 0 0 8px; font-size: 12px; font-weight: 600; color: var(--text-dim); }
 .sidebar .state-quiet { margin: 0; font-size: 12px; color: var(--text-dim); }
 .sidebar .facts { gap: 5px 16px; }
-.sidebar .facts dt { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; }
+.sidebar .facts dt { font-size: 11.5px; }
 .sidebar .facts dd { font-size: 12.5px; }
 /* The sidebar is narrow: values in three columns, the rate inline, nothing outside. */
 .sidebar .bank { grid-template-columns: minmax(80px, 1fr) minmax(110px, 1.6fr) 64px; }
@@ -311,7 +308,9 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 .sidebar .bank .rate, .sidebar .bank .state.optional, .sidebar .bank .head.optional { display: none; }
 .sidebar .bank .rate-inline { display: inline; margin-left: 8px; }
 .sidebar .bank > * { min-width: 0; }
-.sidebar .schematic { max-width: 380px; margin: 0 auto; }
+.sidebar .schematic { max-width: 340px; margin: 0 auto; }
+.bank.by-measure .name { cursor: default; color: var(--text-dim); font-size: 12px; }
+.bank.by-measure .name:hover { text-decoration: none; }
 .sidebar .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 10px; }
 .sidebar .actions button {
   border: 1px solid var(--rule); background: var(--surface); color: var(--text);
@@ -603,6 +602,15 @@ const App = (() => {
       ctx.stroke();
     }
     ctx.restore();
+  }
+
+  /* What a marker is, for a mouse-over: the value and when it reaches its next stop. */
+  function markerTip(m) {
+    const when = m.eta && m.to ? `: reaches ${m.to} at ${m.eta}` : m.to ? ` at ${m.to}` : "";
+    if (m.kind === "pig") return `${m.title || "Pig"}${when}`;
+    if (m.kind === "peak") return `Flow change ${m.value} MSm³/d on ${nameOf(m.id)}${when}`;
+    if (m.noDot) return `${QUALITY[m.gas].name} slug on ${nameOf(m.id)}`;
+    return `${m.value} ${QUALITY[m.gas].unit} on ${nameOf(m.id)}${when}`;
   }
 
   // ------------------------------------------------------------------ alarm levels
@@ -1064,7 +1072,8 @@ const App = (() => {
     if (distance >= last.m + lineMetres(last.pid)) return null;  // at the receiver, waiting for relaunch
     const seg = route.find((s) => distance < s.m + lineMetres(s.pid)) || last;
     const along = (distance - seg.m) / lineMetres(seg.pid);
-    return { pid: seg.pid, along: seg.forward ? along : 1 - along };
+    const runStart = pig.launch + run * every, next = seg.forward ? assets[seg.pid].to : assets[seg.pid].from;
+    return { pid: seg.pid, along: seg.forward ? along : 1 - along, exitAt: runStart + (seg.m + lineMetres(seg.pid)) / pig.speed, next };
   }
   /* Where a peak is now: it keeps travelling downstream, attenuated by its share of
      the gas at each node, and disappears at an exit or when it fades below step_min.
@@ -1105,7 +1114,8 @@ const App = (() => {
     const pigs = (live.stream && live.stream.pigs) || live.feedPigs || [];
     for (const pig of pigs) {
       const place = pigPlace(pig, live.time);
-      if (place) out.push({ kind: "pig", id: place.pid, along: place.along, label: "", level: 0, title: pig.label });
+      if (place) out.push({ kind: "pig", id: place.pid, along: place.along, label: "", level: 0, title: pig.label,
+        eta: clock(place.exitAt), to: nameOf(place.next) });
     }
     /* Head and tail: a peak is a stretch of gas, not a point. A change in flow spreads
        over the gas that passed in one data step (velocity × step); the band is centred
@@ -1487,7 +1497,7 @@ const App = (() => {
     const band = nom ? [nom * (1 - tol[0]), nom * (1 + tol[0])] : null;
     const lvl = levelFor(id, ["nomination", "booking"]);
     return {
-      id, unit: "MSm³/d", lvl, band,
+      id, measure: "Delivery", unit: "MSm³/d", lvl, band,
       bar: rangeBar({ min: 0, max: top, value: actual, target: nom, lvl, band,
         ticks: [...(nom ? [nom * (1 - tol[2]), nom * (1 + tol[2])].map((at) => ({ at, level: 3 })) : []), ...(booked ? [{ at: booked, level: 2 }] : [])] }),
       series: series((f) => throughput(id, f.flows)),
@@ -1499,7 +1509,7 @@ const App = (() => {
     const pm = T.pressure_margin, band = [low + pm[0] * span, high - pm[0] * span];
     const lvl = levelFor(id, ["pressure"]);
     return {
-      id, unit: "bar", lvl, band,
+      id, measure: "Pressure", unit: "bar", lvl, band,
       bar: rangeBar({ min: low - 0.1 * span, max: high + 0.1 * span, value: p, lvl, band,
         ticks: [{ at: low, level: 3 }, { at: high, level: 3 }, { at: low + pm[1] * span, level: 2 }, { at: high - pm[1] * span, level: 2 }] }),
       series: series((f) => metric("pressure_bar", id, f)),
@@ -1509,7 +1519,7 @@ const App = (() => {
   function qualityIndicator(id, name) {
     const v = metric(name, id), limits = C.quality[name], lvl = level(v, limits);
     return {
-      id, unit: QUALITY[name].unit, lvl, band: [0, limits[0]],
+      id, measure: QUALITY[name].name, unit: QUALITY[name].unit, lvl, band: [0, limits[0]],
       bar: rangeBar({ min: 0, max: limits[2] * 1.5, value: v, lvl, band: [0, limits[0]],
         ticks: limits.map((at, i) => ({ at, level: i + 1 })) }),
       series: series((f) => metric(name, id, f)),
@@ -1519,19 +1529,23 @@ const App = (() => {
   function loadIndicator(id) {
     const d = assets[id], v = Math.abs(frame().flows[id] || 0), u = v / d.capacity;
     return {
-      id, unit: "pts", lvl: level(u, T.load), band: [0, T.load[0] * 100],
+      id, measure: "Load", unit: "pts", lvl: level(u, T.load), band: [0, T.load[0] * 100],
       bar: rangeBar({ min: 0, max: 1.1, value: u, lvl: level(u, T.load), band: [0, T.load[0]], ticks: T.load.map((at, i) => ({ at, level: i + 1 })) }),
       series: series((f) => (f.flows[id] == null ? null : (Math.abs(f.flows[id]) / d.capacity) * 100)),
       value: `${fmt(u * 100)}%: ${fmt(v, 1)} of ${fmt(d.capacity)} MSm³/d`,
     };
   }
-  function bank(indicators, empty) {
+  /* A bank of indicators. Across assets (the overview) each row is named after its
+     asset; for one asset (its page or sidebar) after what it measures, so the rows
+     read "Delivery", "Pressure" instead of the asset's name twice. */
+  function bank(indicators, empty, { byMeasure = false } = {}) {
     if (!indicators.length) return h("p", { class: "empty" }, empty);
-    return h("div", { class: "bank" },
-      h("div", { class: "head" }, "Asset"), h("div", { class: "head" }, "Value in its range"),
-      h("div", { class: "head" }, "Trend"), h("div", { class: "head optional" }, "Change"), h("div", { class: "head optional" }, "State"),
+    return h("div", { class: `bank${byMeasure ? " by-measure" : ""}` },
+      h("div", { class: "head" }, byMeasure ? "" : "Asset"), h("div", { class: "head" }, "Value in its range"),
+      h("div", { class: "head" }, "Last 2 h"), h("div", { class: "head optional" }, "Change"), h("div", { class: "head optional" }, "State"),
       ...indicators.flatMap((ind) => [
-        h("div", { class: "name", onclick: () => go({ screen: "asset", asset: ind.id }), title: "Open the asset" }, nameOf(ind.id)),
+        byMeasure ? h("div", { class: "name measure" }, ind.measure || nameOf(ind.id))
+          : h("div", { class: "name", onclick: () => go({ screen: "asset", asset: ind.id }), title: "Open the asset" }, nameOf(ind.id)),
         h("div", null, ind.bar, h("div", { class: "value" }, ind.value, h("span", { class: "rate-inline" }, rateText(rate(ind.series), ind.unit)))),
         trend(ind.series, { band: ind.band, lvl: ind.lvl }),
         h("div", { class: "rate" }, rateText(rate(ind.series), ind.unit)),
@@ -1664,7 +1678,7 @@ const App = (() => {
         : `${NORA.pipelineTypes[d.type]}, ${nameOf(d.from)} to ${nameOf(d.to)}.`),
       h("div", { class: "cols" },
         h("div", { class: "box" }, h("h2", { title: "Flowing in above the asset, out below it" }, "In context"), schematic(id)),
-        h("div", { class: "box" }, h("h2", { title: "Live readings in their ranges, from the data being played" }, "Values"), bank(indicators, "No live readings for this asset in the dataset."),
+        h("div", { class: "box" }, h("h2", { title: "Live readings in their ranges, from the data being played" }, "Values"), bank(indicators, "No live readings for this asset in the dataset.", { byMeasure: true }),
           inSidebar ? null : h("h2", { style: "margin-top:14px" }, "State"),
           conds.length ? alarmList(conds)
             : h("p", { class: "state-quiet" }, "Normal · no alarms right now"),
@@ -1748,7 +1762,13 @@ const App = (() => {
       const label = `${nameOf(pid)}${v == null ? "" : `: ${fmt(Math.abs(v), 1)}`}`;
       m += `<text x="${x}" y="${above ? y : y + 14}" text-anchor="middle">${esc(label.length > 34 ? `${label.slice(0, 33)}…` : label)}</text>`;
     }
-    if (d.kind === "node") m += `<image href="${NORA.icons[d.type]}" x="${W / 2 - 18}" y="${mid - 18}" width="36" height="36"/>`;
+    if (d.kind === "node") { // the node as in the Flow view: a state-grey circle holding flow and pressure
+      const st = nodeStyle(id), look = COLORS.card[st.inactive ? "inactive" : state.mode === "live" ? "active" : "normal"];
+      const flow = throughput(id, f.flows), bar = metric("pressure_bar", id);
+      m += `<circle cx="${W / 2}" cy="${mid}" r="22" fill="${look.fill}" stroke="${st.level ? LEVEL_COLOR[st.level] : look.edge}" stroke-width="${st.level ? 2.5 : 1}"/>`;
+      if (flow != null) m += `<text x="${W / 2}" y="${mid + (bar != null ? -2 : 4)}" text-anchor="middle" font-weight="700" fill="${look.ink}">${esc(fmt(flow, flow < 10 ? 1 : 0))}</text>`;
+      if (bar != null) m += `<text x="${W / 2}" y="${mid + 12}" text-anchor="middle" class="dimtext" style="font-size:9.5px">${esc(fmt(bar))} bar</text>`;
+    }
     else {
       const s = pipeStyle(id);
       m += `<text x="${W / 2}" y="40" text-anchor="middle">${esc(nameOf(d.from))}</text><text x="${W / 2}" y="${H - 14}" text-anchor="middle">${esc(nameOf(d.to))}</text>`;
@@ -1898,9 +1918,7 @@ const App = (() => {
       h("h3", null, "Indicators"),
       rangeBar({ min: 0, max: 10, value: 6, band: [3, 7], ticks: [{ at: 1.5, level: 3 }, { at: 8.5, level: 3 }], target: 5 }),
       h("p", { class: "dim", style: "margin:4px 0 0" }, "Light band: normal range. Ticks: alarm limits. Hollow diamond: the target (nomination). Pointer: the value now. Trends show the last hours, dashed where they are heading."),
-      h("p", { class: "dim", style: "margin:6px 0 0" }, "Each box in the Flow view shows the flow and pressure now, and a 4-hour line: the last 2 hours solid, the next 2 hours of nominations dashed."),
-      h("h3", null, "Asset types"),
-      h("ul", null, Object.keys(NORA.icons).map((k) => h("li", null, h("img", { src: NORA.icons[k], alt: "" }), NORA.nodeTypes[k]))));
+      h("p", { class: "dim", style: "margin:6px 0 0" }, "Each circle shows the gas flowing through it now (MSm³/d) and its pressure (bar). At exit points a small bar shows today's delivery against the nominations: the middle line is on plan. Under each circle, a 4-hour line: the last 2 hours solid, the next 2 hours of nominations dashed."));
   }
   function storedFlag(key) { try { return localStorage.getItem(key); } catch (error) { return "1"; } }
   function openGuide() {
@@ -2309,7 +2327,7 @@ const App = (() => {
       offline: () => [...whatif.offline],
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
-    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
+    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T,
     // Flow through a node now (MSm³/d) and its pressure (bar), for the views to show.
     reading: (id) => ({ flow: throughput(id, frame().flows), pressure: metric("pressure_bar", id) }),
@@ -2338,7 +2356,7 @@ function NoraCanvasMap(view) {
   "use strict";
   const C = App.colors;
   let el = null, canvas = null, ctx = null, width = 0, height = 0, ratio = 1;
-  let highlighted = null, pendingFit = false, land = null, animation = null;
+  let highlighted = null, pendingFit = false, land = null, animation = null, drawnMarks = [];
   const cam = { x: 0.5, y: 0.5, k: 512 }; // centre in Web Mercator units (0..1), pixels per unit
   const MIN_ZOOM = 2, MAX_ZOOM = 12;
 
@@ -2481,10 +2499,12 @@ function NoraCanvasMap(view) {
       for (const m of marks) {
         if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]));
       }
+      drawnMarks = [];
       for (const m of marks) {
         if (!pipeById[m.id] || App.pipeStyle(m.id).hidden) continue;
         const p = along(m.id, m.along);
         App.drawMarker(ctx, m, p.x, p.y, p.angle, 6.5, detail);
+        if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
       }
     }
   }
@@ -2592,6 +2612,8 @@ function NoraCanvasMap(view) {
       readout.textContent = `${Math.abs(lat).toFixed(4)}°${lat >= 0 ? "N" : "S"}  ${Math.abs(lon).toFixed(4)}°${lon >= 0 ? "E" : "W"}  ·  zoom ${zoom().toFixed(1)}`;
       const previous = pointers.get(e.pointerId);
       if (!previous) {
+        const mark = drawnMarks.find((d) => Math.hypot(d.x - e.offsetX, d.y - e.offsetY) < 9);
+        if (mark) { canvas.style.cursor = "help"; canvas.title = App.markerTip(mark.m); return; }
         const id = hit(e.offsetX, e.offsetY);
         canvas.style.cursor = id ? "pointer" : "grab";
         canvas.title = id ? App.nameOf(id) : "";
@@ -2690,6 +2712,12 @@ function NoraCanvasMap(view) {
   const view = { ready: false, mounted: false };
   const C = App.colors;
   let map = null, canvas = null, ctx = null, highlighted = null, alarmKey = "";
+  let drawnMarks = []; // where pigs, peaks and slugs were drawn this frame, for mouse-over
+  const markAt = (x, y) => {
+    let best = null, bestD = 9; // px
+    for (const d of drawnMarks) { const dist = Math.hypot(d.x - x, d.y - y); if (dist < bestD) { best = d.m; bestD = dist; } }
+    return best;
+  };
 
   const featureOf = {}; // asset id -> { source, id }
   const ends = {}; // pipeline id -> [[lon, lat], [lon, lat]]
@@ -2758,10 +2786,7 @@ function NoraCanvasMap(view) {
   async function addLayers() {
     view.ready = false;
     calmBasemap();
-    await Promise.all([
-      ...Object.entries(NORA.icons).map(([kind, uri]) => loadImage(`nora-${kind}`, uri, 48)),
-      ...[1, 2, 3].map((l) => loadImage(`nora-alarm-${l}`, badgeUri(l), 32)),
-    ]);
+    await Promise.all([1, 2, 3].map((l) => loadImage(`nora-alarm-${l}`, badgeUri(l), 32)));
     map.addSource("nora-pipes", { type: "geojson", data: NORA.geo.pipes });
     map.addSource("nora-nodes", { type: "geojson", data: NORA.geo.nodes });
     map.addSource("nora-node-badges", { type: "geojson", data: badgeData });
@@ -2781,22 +2806,30 @@ function NoraCanvasMap(view) {
     map.addLayer({ id: "nora-pipes", type: "line", source: "nora-pipes", filter: ["!=", ["get", "onshore"], true], layout: { "line-cap": "round" },
       paint: { "line-color": ["to-color", state("color", C.normal)], "line-width": width(1), "line-opacity": opacity } });
     map.addLayer({ id: "nora-pipes-hit", type: "line", source: "nora-pipes", paint: { "line-color": "#000", "line-opacity": 0, "line-width": 14 } });
+    /* Nodes are plain circles in their state grey, as in the Flow view: no icons (Ray,
+       28 Oct). An alarm colours only the outline, and the badge carries the shape and
+       number. Names are a separate text layer that is never reloaded. */
+    const radius = (extra = 0) => ["interpolate", ["linear"], ["zoom"], 3, 3.5 + extra, 6, 5.5 + extra, 9, 8 + extra];
+    const nodeOpacity = ["case", ["boolean", ["feature-state", "hide"], false], 0, ["boolean", ["feature-state", "dim"], false], 0.3, 1];
     map.addLayer({ id: "nora-selected", type: "circle", source: "nora-nodes",
-      paint: { "circle-radius": ["case", ["boolean", ["feature-state", "selected"], false], 17, 0], "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2.5, "circle-stroke-color": C.text } });
+      paint: { "circle-radius": radius(5), "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2, "circle-stroke-color": C.text,
+        "circle-stroke-opacity": ["case", ["boolean", ["feature-state", "selected"], false], 1, 0] } });
+    map.addLayer({ id: "nora-node-dots", type: "circle", source: "nora-nodes",
+      paint: {
+        "circle-radius": radius(), "circle-color": ["to-color", state("fill", C.normal)],
+        "circle-stroke-color": ["to-color", state("edge", C.text_dim)], "circle-stroke-width": state("edgeWidth", 1),
+        "circle-opacity": nodeOpacity, "circle-stroke-opacity": nodeOpacity,
+      } });
     map.addLayer({ id: "nora-nodes", type: "symbol", source: "nora-nodes",
       layout: {
-        "icon-image": ["concat", "nora-", ["get", "type"]], "icon-size": ["interpolate", ["linear"], ["zoom"], 3, 0.55, 6, 0.8, 9, 1],
-        "icon-allow-overlap": true, "icon-ignore-placement": true,
-        "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 11.5, "text-offset": [0, 1.3],
-        "text-anchor": "top", "text-optional": true, "text-max-width": 9,
+        "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 11.5,
+        "text-offset": [0, 0.8], "text-anchor": "top", "text-optional": true, "text-max-width": 9,
       },
       paint: {
-        "icon-opacity": ["case", ["boolean", ["feature-state", "hide"], false], 0, ["boolean", ["feature-state", "dim"], false], 0.3, ["boolean", ["feature-state", "inactive"], false], 0.55, 1],
-        "text-opacity": ["case", ["boolean", ["feature-state", "hide"], false], 0, ["boolean", ["feature-state", "dim"], false], 0.3, 1],
-        "text-color": C.text, "text-halo-color": C.paper, "text-halo-width": 1.5,
+        "text-opacity": nodeOpacity, "text-color": C.text, "text-halo-color": C.paper, "text-halo-width": 1.5,
       } });
     // Alarm badges: shape + number + colour, on nodes and at the middle of lines.
-    for (const [id, source, offset] of [["nora-node-alarms", "nora-node-badges", [22, -22]], ["nora-pipe-alarms", "nora-mids", [0, 0]]]) {
+    for (const [id, source, offset] of [["nora-node-alarms", "nora-node-badges", [12, -12]], ["nora-pipe-alarms", "nora-mids", [0, 0]]]) {
       map.addLayer({ id, type: "symbol", source, filter: [">", ["get", "alarm"], 0],
         layout: { "icon-image": ["concat", "nora-alarm-", ["to-string", ["get", "alarm"]]], "icon-size": 0.85, "icon-offset": offset,
           "icon-allow-overlap": true, "icon-ignore-placement": true, "symbol-sort-key": ["-", 0, ["get", "alarm"]] } });
@@ -2923,8 +2956,16 @@ function NoraCanvasMap(view) {
     map.on("resize", sizeCanvas);
     map.on("render", () => view.ready && view.draw());
     const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12 });
-    for (const layer of ["nora-nodes", "nora-pipes-hit"]) {
+    // A pig, peak or slug under the pointer wins: its value and when it reaches the next stop.
+    let overMark = false;
+    map.on("mousemove", (e) => {
+      const m = markAt(e.point.x, e.point.y);
+      if (m) { popup.setLngLat(e.lngLat).setText(App.markerTip(m)).addTo(map); map.getCanvas().style.cursor = "help"; overMark = true; }
+      else if (overMark) { popup.remove(); map.getCanvas().style.cursor = ""; overMark = false; }
+    });
+    for (const layer of ["nora-node-dots", "nora-nodes", "nora-pipes-hit"]) {
       map.on("mousemove", layer, (e) => {
+        if (markAt(e.point.x, e.point.y)) return;
         map.getCanvas().style.cursor = "pointer";
         const id = e.features[0].properties.asset;
         popup.setLngLat(e.lngLat).setText(App.nameOf(id)).addTo(map);
@@ -2933,7 +2974,7 @@ function NoraCanvasMap(view) {
     }
     map.on("click", (e) => {
       if (!view.ready) return;
-      const hit = map.queryRenderedFeatures(e.point, { layers: ["nora-nodes", "nora-pipes-hit"] });
+      const hit = map.queryRenderedFeatures(e.point, { layers: ["nora-node-dots", "nora-nodes", "nora-pipes-hit"] });
       if (hit.length) App.select(hit[0].properties.asset);
     });
     // Right-click a node or a pipeline: the same menu everywhere. A plain DOM
@@ -2942,7 +2983,7 @@ function NoraCanvasMap(view) {
     el.addEventListener("contextmenu", (e) => {
       if (!view.ready) return;
       const rect = map.getCanvas().getBoundingClientRect();
-      const hit = map.queryRenderedFeatures([e.clientX - rect.left, e.clientY - rect.top], { layers: ["nora-nodes", "nora-pipes-hit"] });
+      const hit = map.queryRenderedFeatures([e.clientX - rect.left, e.clientY - rect.top], { layers: ["nora-node-dots", "nora-nodes", "nora-pipes-hit"] });
       if (!hit.length) return;
       e.preventDefault();
       const id = hit[0].properties.asset, d = NORA.assets[id];
@@ -2964,7 +3005,11 @@ function NoraCanvasMap(view) {
     }
     for (const id of App.nodeIds) {
       const s = App.nodeStyle(id);
-      map.setFeatureState(featureOf[id], { inactive: s.inactive, dim: s.dim, hide: s.hidden });
+      const look = C.card[s.inactive ? "inactive" : App.state.mode === "live" ? "active" : "normal"];
+      map.setFeatureState(featureOf[id], {
+        fill: look.fill, edge: s.level ? App.levelColor[s.level] : C.text_dim, edgeWidth: s.level ? 2.5 : 1,
+        dim: s.dim, hide: s.hidden,
+      });
       if (s.level && !s.hidden) alarms.push(`${id}:${s.level}`);
     }
     // Badges are layout, so they follow the data, not feature state: reload them only
@@ -3034,9 +3079,11 @@ function NoraCanvasMap(view) {
     const marks = App.markers().filter((m) => ends[m.id] && !App.pipeStyle(m.id).hidden);
     for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]));
     const zoom = map.getZoom(), detail = zoom >= 6.5 ? 2 : zoom >= 5 ? 1 : 0;
+    drawnMarks = [];
     for (const m of marks) {
       const p = project(m.id, m.along);
       App.drawMarker(ctx, m, p.x, p.y, p.angle, 6.5, detail);
+      if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
     }
   };
 
@@ -3108,7 +3155,7 @@ function NoraCanvasMap(view) {
   /* Circles, not squares: a Flow node is a circle filled by its state grey, holding
      the live numbers (no icon: Ray, 28 Oct, "this is valuable space ... for live flow
      values and pressures"), with its name and rate below and a sparkline under that. */
-  const CIRC = { r: 27, name: 14, sub: 12, trend: 12, pad: 8 };
+  const CIRC = { r: 30, name: 14, sub: 12, trend: 12, pad: 8 };
   const SPACING = { // [stage, rank] in canvas units
     vertical: { compact: [96, 160], comfortable: [124, 178], spacious: [160, 210] },
     horizontal: { compact: [210, 62], comfortable: [250, 72], spacious: [300, 90] },
@@ -3136,7 +3183,9 @@ function NoraCanvasMap(view) {
   }
 
   // The paper: a dot grid in canvas units, so it pans and zooms with the drawing.
+  let framePos = {}; // node positions for this frame (nodes can be dragged)
   function paper(ctx) {
+    framePos = network.getPositions();
     const scale = network.getScale();
     let step = 24;
     while (step * scale < 12) step *= 2;
@@ -3198,7 +3247,7 @@ function NoraCanvasMap(view) {
      the ends the critical one. The pointer is where the day stands; it takes the alarm
      colour only outside the tolerance. */
   function drawDayBar(ctx, x, y, day, look) {
-    const T = App.thresholds.nomination, half = 16, full = T[2] * 1.2;
+    const T = App.thresholds.nomination, half = 11, full = T[2] * 1.2;
     const at = (share) => x + Math.max(-1, Math.min(1, share / full)) * half;
     ctx.save();
     ctx.lineCap = "butt";
@@ -3216,6 +3265,65 @@ function NoraCanvasMap(view) {
     ctx.fillStyle = day.level ? App.levelColor[day.level] : look.ink;
     ctx.fill();
     if (day.level) { ctx.strokeStyle = C.casing; ctx.lineWidth = 1; ctx.stroke(); }
+    ctx.restore();
+  }
+  /* Four quadrants inside each circle, split by a faint +: up-right, down-right,
+     down-left and up-left. The flow of every line leaving the node is written in the
+     quadrant facing that line (lines on the same side are summed), so the two lines a
+     node splits into each get their own number. Directions come from this frame's
+     positions, so the numbers move quadrant when a node is dragged. */
+  const QUAD = { NE: [1, -1], SE: [1, 1], SW: [-1, 1], NW: [-1, -1] };
+  function quadrants(id, positions = framePos) {
+    const here = positions[id], out = {};
+    if (!here) return out;
+    for (const pid of App.pipeIds) {
+      const p = NORA.assets[pid], v = App.live.values[pid];
+      if (!v || Math.abs(v) < 0.05 || (p.from !== id && p.to !== id) || App.pipeStyle(pid).hidden) continue;
+      if ((p.from === id) !== (v > 0)) continue; // gas comes in on this line, not out
+      const other = positions[p.from === id ? p.to : p.from];
+      if (!other) continue;
+      const side = `${other.y - here.y > 0 ? "S" : "N"}${other.x - here.x >= 0 ? "E" : "W"}`;
+      out[side] = (out[side] || 0) + Math.abs(v);
+    }
+    return out;
+  }
+  function drawQuadrants(ctx, x, y, id, look, { pressure, day, total }) {
+    const r = CIRC.r, q = quadrants(id), at = r * 0.42;
+    ctx.save();
+    ctx.globalAlpha = 0.35; // the faint +
+    ctx.strokeStyle = look.edge;
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(x - r * 0.8, y); ctx.lineTo(x + r * 0.8, y);
+    ctx.moveTo(x, y - r * 0.8); ctx.lineTo(x, y + r * 0.8);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = look.ink;
+    ctx.font = "700 9.5px Archivo, system-ui, sans-serif";
+    for (const [side, flow] of Object.entries(q)) {
+      const [ux, uy] = QUAD[side];
+      ctx.fillText(fitText(ctx, `${App.fmt(flow, flow < 10 ? 1 : 0)}M`, r * 0.85), x + ux * at, y + uy * at);
+    }
+    // Pressure: across the top half when both upper quadrants are free (the usual case,
+    // gas arriving from above), else in a free quadrant. The exit day bar runs across
+    // the middle; a node with nothing leaving it (a market) shows its arrival below.
+    if (pressure) {
+      ctx.font = "600 8.5px Archivo, system-ui, sans-serif";
+      ctx.fillStyle = look.dim;
+      if (!q.NE && !q.NW) ctx.fillText(fitText(ctx, pressure, r * 1.5), x, y - at);
+      else {
+        const free = ["SW", "SE", "NW", "NE"].find((side) => !(side in q));
+        if (free) ctx.fillText(fitText(ctx, pressure.replace(" bar", "b"), r * 0.85), x + QUAD[free][0] * at, y + QUAD[free][1] * at);
+      }
+    }
+    if (day) drawDayBar(ctx, x, y + 1, day, look);
+    if (!Object.keys(q).length && total != null) {
+      ctx.font = "700 9.5px Archivo, system-ui, sans-serif";
+      ctx.fillStyle = look.ink;
+      ctx.fillText(`${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y + at);
+    }
     ctx.restore();
   }
   // vis-network custom shape: the circle for one node, name and live numbers below it.
@@ -3247,22 +3355,13 @@ function NoraCanvasMap(view) {
           : App.state.mode === "load" && d.modelFlow != null ? App.fmt(d.modelFlow)
           : App.state.mode === "risk" && d.lost ? `−${App.fmt(d.lost)}` : "";
         const day = live ? App.dayDelivery(id) : null; // exit points: within-day delivery bar
-        if (big) {
-          const pressure = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "";
-          const top = day ? y - 11 : pressure ? y - 8 : y - 3;
+        const pressure = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "";
+        if (live) drawQuadrants(ctx, x, y, id, look, { pressure, day, total: now.flow });
+        else if (big) {
           ctx.fillStyle = look.ink;
-          ctx.font = "700 13px Archivo, system-ui, sans-serif";
-          ctx.fillText(fitText(ctx, big, CIRC.r * 1.7), x, top);
-          ctx.fillStyle = look.dim;
-          ctx.font = "8px Archivo, system-ui, sans-serif";
-          ctx.fillText("MSm³/d", x, top + 10);
-          if (pressure) {
-            ctx.fillStyle = look.ink;
-            ctx.font = "600 9.5px Archivo, system-ui, sans-serif";
-            ctx.fillText(fitText(ctx, pressure, CIRC.r * 1.7), x, day ? y + 8 : y + 15);
-          }
+          ctx.font = "700 12.5px Archivo, system-ui, sans-serif";
+          ctx.fillText(fitText(ctx, big, CIRC.r * 1.6), x, y);
         }
-        if (day) drawDayBar(ctx, x, y + 17, day, look);
         // Name below the circle, then the rate of change (bold when it is fast).
         ctx.textBaseline = "alphabetic";
         ctx.textAlign = "center";
@@ -3399,7 +3498,6 @@ function NoraCanvasMap(view) {
     const scale = network.getScale(), detail = scale >= 0.9 ? 2 : scale >= 0.5 ? 1 : 0;
     ctx.save();
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    drawSplitLabels(ctx, positions, ratio);
     const marks = App.markers().filter((m) => edges.get(m.id) && !App.pipeStyle(m.id).hidden);
     const at = (m, t) => network.canvasToDOM(pointAlong(edges.get(m.id), Math.max(0, Math.min(1, t)), positions));
     for (const m of marks) if (m.extent) App.drawBand(ctx, m, at(m, m.extent[0]), at(m, m.extent[1]));
@@ -3486,57 +3584,8 @@ function NoraCanvasMap(view) {
     network.once("afterDrawing", () => { layout(); view.setUnit(App.route.unit); });
   };
 
-  /* Where a node sends gas into two or more lines, each line gets its own reading just
-     outside the circle: the flow in it (MSm³/d) and its pressure from inlet to outlet
-     (the two end nodes' pressures, bar). Those lines drop the mid-line number. */
-  function splitLines() {
-    const out = new Map(); // pipeline id -> the node it leaves
-    if (App.state.mode !== "live") return out;
-    const by = {};
-    for (const id of App.pipeIds) {
-      const v = App.live.values[id], p = NORA.assets[id];
-      if (!v || Math.abs(v) < 0.05 || App.pipeStyle(id).hidden) continue;
-      const from = v > 0 ? p.from : p.to;
-      (by[from] = by[from] || []).push(id);
-    }
-    for (const [node, ids] of Object.entries(by)) {
-      if (ids.length >= 2 && !App.nodeStyle(node).hidden) for (const id of ids) out.set(id, node);
-    }
-    return out;
-  }
-  function drawSplitLabels(ctx, positions, ratio) {
-    if (network.getScale() < 0.5) return; // unreadable when zoomed far out
-    ctx.save();
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.lineJoin = "round";
-    for (const [id, node] of splitLines()) {
-      const p = NORA.assets[id], other = p.from === node ? p.to : p.from;
-      const a = positions[node], b = positions[other];
-      if (!a || !b) continue;
-      const len = Math.hypot(b.x - a.x, b.y - a.y);
-      if (len < CIRC.r * 4) continue;
-      const t = (CIRC.r + 30) / len, at = network.canvasToDOM({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
-      const flow = Math.abs(App.live.values[id]), pin = App.reading(node).pressure, pout = App.reading(other).pressure;
-      const lines = [[`${App.fmt(flow, flow < 10 ? 1 : 0)} MSm³/d`, "600 10.5px", C.text]];
-      if (pin != null) lines.push([pout != null ? `${App.fmt(pin)} → ${App.fmt(pout)} bar` : `${App.fmt(pin)} bar`, "9.5px", C.text_dim]);
-      lines.forEach(([text, font, color], k) => {
-        const y = at.y + (k - (lines.length - 1) / 2) * 12;
-        ctx.font = `${font} Archivo, system-ui, sans-serif`;
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = C.paper;
-        ctx.strokeText(text, at.x, y);
-        ctx.fillStyle = color;
-        ctx.fillText(text, at.x, y);
-      });
-    }
-    ctx.restore();
-  }
-
   view.restyle = () => {
     if (!view.ready) return;
-    const split = splitLines();
     nodes.update(App.nodeIds.map((id) => {
       const s = App.nodeStyle(id);
       return { id, hidden: s.hidden, title: `${NORA.assets[id].name}${s.sub ? `\n${s.sub}` : ""}` };
@@ -3544,7 +3593,7 @@ function NoraCanvasMap(view) {
     edges.update(App.pipeIds.map((id) => {
       const s = App.pipeStyle(id);
       return {
-        id, hidden: s.hidden, label: split.has(id) ? " " : s.label || " ", width: s.width, dashes: s.dashed ? [5, 5] : false,
+        id, hidden: s.hidden, label: s.label || " ", width: s.width, dashes: s.dashed ? [5, 5] : false,
         color: { color: s.color, highlight: s.color, hover: s.color, inherit: false, opacity: s.dim ? 0.3 : 1 },
         shadow: s.level ? { enabled: true, color: C.casing, size: 3, x: 0, y: 0 } : { enabled: false },
         arrows: { to: { enabled: s.forward, scaleFactor: 0.4 }, from: { enabled: s.backward, scaleFactor: 0.4 } },
@@ -3599,7 +3648,7 @@ function NoraCanvasMap(view) {
     view.setUnit(App.route.unit);
   };
 
-  view.splitLines = splitLines; // for tests: which lines carry their own reading
+  view.quadrants = quadrants; // for tests: which side of a node each outflow is written on
   App.register("flow", view);
 })();
 
