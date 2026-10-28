@@ -114,6 +114,8 @@ test("flow circles: the fitted overview stays simple until labels are readable",
   assert.equal(App.views.flow.detailedFlow(1), true, "full labels appear at 100% zoom");
   assert.equal(App.views.flow.overviewReading(0.24, 62), true, "a total appears when the circle can contain it");
   assert.equal(App.views.flow.overviewReading(0.08, 62), false, "tiny nodes stay clean dots without spilled text");
+  assert.deepEqual(Array.from(App.views.flow.overviewNameLines("Oseberg")), ["Oseberg"], "short node names stay on one line");
+  assert.deepEqual(Array.from(App.views.flow.overviewNameLines("Zeebrugge terminal")), ["Zeebrugge", "terminal"], "long names wrap instead of shrinking");
 });
 
 test("flow circles: live flow (MSm³/d) and pressure (bar) for each node", () => {
