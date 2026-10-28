@@ -175,10 +175,71 @@ test("flow nodes: the fitted overview stays simple until labels are readable", (
   assert.deepEqual(Array.from(App.views.flow.overviewNameLines("Zeebrugge terminal")), ["Zeebrugge", "terminal"], "long names wrap instead of shrinking");
 });
 
+test("flow overview: incoming and outgoing totals are readable inside the square", () => {
+  const loaded = loadApp();
+  const { App, NORA } = loaded;
+  loadFirstHour(App, NORA);
+  App.state.mode = "live";
+  App.live.values = App.live.frames[0].flows;
+  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: stage * 250, y: rank * 72 }]));
+  const labels = [];
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
+      if (key === "fillText") return (text, x, y) => labels.push({ text, x, y, font: target.font });
+      return () => {};
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  const half = 120;
+  const id = App.nodeIds.find((node) => {
+    const lines = App.views.flow.lineReadings(node, pos);
+    return lines.some((line) => line.direction === "in") && lines.some((line) => line.direction === "out");
+  });
+  assert.ok(id, "the fixture has a node with both incoming and outgoing gas");
+  App.views.flow.drawOverviewFlows(ctx, 0, 0, id, App.colors.card.active, { half, total: 50, positions: pos });
+  assert.ok(labels.some((label) => /^IN \d/.test(label.text)), "incoming flow is stated explicitly");
+  assert.ok(labels.some((label) => /^OUT \d/.test(label.text)), "outgoing flow is stated explicitly");
+  assert.ok(labels.every((label) => Math.abs(label.x) <= half && Math.abs(label.y) <= half), "both totals stay inside the square");
+  assert.ok(labels.every((label) => parseFloat(label.font) >= 11), "overview flows meet the readability floor");
+});
+
+test("flow overview: squares retain room for two flow rows when zoomed out", () => {
+  const { App } = loadApp();
+  const half = App.views.flow.overviewSquareHalf(0.27);
+  assert.ok(half * 0.27 >= 32, "the square is at least 64 px wide on screen");
+  assert.equal(App.views.flow.overviewSquareHalf(1), 64, "the established detailed square size is unchanged");
+  assert.equal(App.views.flow.overviewSquareHalf(1.1), 64, "zooming in keeps the detailed size");
+});
+
 test("flow pressures: endpoint labels remain visible when zoomed out", () => {
   const { App } = loadApp();
   assert.equal(App.views.flow.pressureVisibility("live", 0.25), true, "live pressures do not disappear below the detail zoom");
   assert.equal(App.views.flow.pressureVisibility("load", 0.25), false, "non-live modes still have no live pressure labels");
+});
+
+test("flow overview: pressure is a stronger label above the square", () => {
+  const loaded = loadApp();
+  const { App, NORA } = loaded;
+  loadFirstHour(App, NORA);
+  App.state.mode = "live";
+  App.live.values = App.live.frames[0].flows;
+  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: stage * 250, y: rank * 72 }]));
+  const labels = [];
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
+      if (key === "fillText") return (text, x, y) => labels.push({ text, x, y, font: target.font });
+      return () => {};
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  App.views.flow.drawEndpointPressures(ctx, 0, 0, "ttf", App.colors.card.active, { half: 120, positions: pos, placed: [], zoom: 0.27 });
+  assert.equal(labels.length, 1, "one overview pressure, not seven repeated values");
+  assert.ok(labels[0].y < -120, "the pressure is consistently above the square");
+  assert.ok(parseFloat(labels[0].font) >= 12, "the overview pressure is prominent and readable");
 });
 
 test("flow pressures: one value per node in the overview, every line end on zoom in", () => {

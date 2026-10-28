@@ -1,9 +1,9 @@
 /* Flow view (level 2): the whole network as a gas flow overview on dotted paper, top to
    bottom by default (fields at the top, markets at the bottom), with straight lines.
-   vis-network draws the nodes, edges and options pyvis produced; each node is drawn as
-   a square holding one flow value for every connected line (MSm³/d), with pressure
-   outside the square: one value per node in the overview and every line end on zoom in. Rate of change and a 4-hour trend
-   remain where the line readings leave room; the name sits below. Stage and rank come
+   vis-network draws the nodes, edges and options pyvis produced. Detailed squares hold
+   one flow value per connected line; overview squares show readable IN and OUT totals.
+   Pressure sits outside: one strong value above each overview square and every line end
+   on zoom in. Rate of change and a 4-hour trend remain where the line readings leave room. Stage and rank come
    from layout.py (NORA.grid); direction and spacing come from the settings; colours,
    widths and labels come from App.pipeStyle / App.nodeStyle. */
 (() => {
@@ -18,7 +18,10 @@
      square is one size, so the drawing reads as a tidy grid. No icons: space is for numbers. */
   const CIRC = { r: 30, name: 14, sub: 12, trend: 12, pad: 8 };
   const SQUARE = { live: 64, plain: 30, corner: 4 }; // half a side, in canvas units
-  const nodeHalf = () => (App.state.mode === "live" ? SQUARE.live : SQUARE.plain);
+  function overviewSquareHalf(scale) {
+    return scale < 1 ? Math.max(SQUARE.live, 32 / Math.max(0.01, scale)) : SQUARE.live;
+  }
+  const nodeHalf = () => (App.state.mode === "live" ? overviewSquareHalf(network ? network.getScale() : 1) : SQUARE.plain);
   // How far a line runs inside a square before it leaves it, along the unit vector (ux, uy).
   const edgeGap = (half, ux, uy) => half / Math.max(Math.abs(ux), Math.abs(uy), 1e-6);
   function squarePath(ctx, x, y, half) {
@@ -52,7 +55,7 @@
     // needs both in/out labels also gets room from its neighbours.
     framePos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id,
       direction === "vertical" ? { x: rank * baseRankGap, y: stage * baseGap } : { x: stage * baseGap, y: rank * baseRankGap }]));
-    const extra = Math.max(0, nodeHalf() - CIRC.r) * 2; // room for the squares
+    const extra = Math.max(0, (App.state.mode === "live" ? SQUARE.live : SQUARE.plain) - CIRC.r) * 2; // base square room; overview size follows zoom separately
     const rankGap = baseRankGap + extra;
     const across = (Math.max(...ranks) - Math.min(...ranks) + 1) * rankGap;
     const aspect = direction === "vertical" ? el.clientHeight / el.clientWidth : el.clientWidth / el.clientHeight;
@@ -303,6 +306,30 @@
     }
     ctx.restore();
   }
+  /* Zoomed-out semantic detail: keep direction and volume visible without repeating
+     every individual pipeline. Show incoming and outgoing totals on separate rows. */
+  function drawOverviewFlows(ctx, x, y, id, look, { half, total, positions = framePos }) {
+    let incoming = 0, outgoing = 0;
+    for (const line of lineReadings(id, positions)) {
+      if (line.value == null || line.value < 0.05) continue;
+      if (line.direction === "out") outgoing += line.value;
+      else if (line.direction === "in") incoming += line.value;
+    }
+    const labels = [];
+    if (incoming >= 0.05) labels.push({ text: `IN ${App.fmt(incoming, incoming < 10 ? 1 : 0)}M`, ink: look.dim });
+    if (outgoing >= 0.05) labels.push({ text: `OUT ${App.fmt(outgoing, outgoing < 10 ? 1 : 0)}M`, ink: look.ink });
+    if (!labels.length && total != null) labels.push({ text: `${App.fmt(total, total < 10 ? 1 : 0)}M`, ink: look.ink });
+    const scale = network ? network.getScale() : 1, row = 7 / scale;
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = modelFont("600 11px Archivo, system-ui, sans-serif");
+    labels.forEach((label, index) => {
+      ctx.fillStyle = label.ink;
+      reading(ctx, fitText(ctx, label.text, half * 1.7), x, y + (index - (labels.length - 1) / 2) * row * 2, look);
+    });
+    ctx.restore();
+  }
   /* A live square: one flow value per connected line, with the rate and trend retained
      only where they do not compete with a dense stack of required line readings. */
   function drawSquare(ctx, x, y, id, look, { half, now, day }) {
@@ -327,12 +354,12 @@
   /* Pressure belongs to a pipeline end, not to the middle of the node. Show one clear
      value per node in the overview and every line end in the detailed view, just beyond
      the square. A node without a measurement says so rather than borrowing a neighbour's. */
-  function drawEndpointPressures(ctx, x, y, id, look, { half, positions = framePos, placed = network ? pressurePlacements : [] }) {
-    const scale = network ? network.getScale() : 1, boxes = [];
+  function drawEndpointPressures(ctx, x, y, id, look, { half, positions = framePos, placed = network ? pressurePlacements : [], zoom = network ? network.getScale() : 1 }) {
+    const scale = zoom, overview = !detailedFlow(scale), boxes = [];
     const readings = pressureReadings(id, positions, scale), now = App.reading(id);
     const text = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "– bar";
     ctx.save();
-    ctx.font = modelFont(SUB_FONT);
+    ctx.font = modelFont(overview ? "600 12px Archivo, system-ui, sans-serif" : SUB_FONT);
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     const width = ctx.measureText(text).width;
@@ -340,17 +367,22 @@
       const gap = edgeGap(half, line.ux, line.uy);
       const projectedHalf = (Math.abs(line.ux) * width / 2 + Math.abs(line.uy) * 8) / scale;
       let px, py, box;
-      // Keep the label on its own pipeline, moving it outward until it is clear of
-      // the pressures already placed at this node. Never drop or overprint a value.
+      // Detailed labels stay on their own pipeline; overview labels move straight up.
+      // Either way, move outward until clear. Never drop or overprint a value.
       for (let attempt = 0; ; attempt++) {
-        const distance = gap + projectedHalf + (5 + attempt * 18) / scale;
-        px = x + line.ux * distance;
-        py = y + line.uy * distance;
+        if (overview) {
+          px = x;
+          py = y - half - (13 + attempt * 18) / scale; // consistently above, never inside
+        } else {
+          const distance = gap + projectedHalf + (5 + attempt * 18) / scale;
+          px = x + line.ux * distance;
+          py = y + line.uy * distance;
+        }
         box = [px - width / (2 * scale) - 2 / scale, py - 8 / scale,
           px + width / (2 * scale) + 2 / scale, py + 8 / scale];
         if (!placed.some((other) => box[0] < other[2] && box[2] > other[0] && box[1] < other[3] && box[3] > other[1])) break;
       }
-      ctx.fillStyle = look.dim;
+      ctx.fillStyle = overview ? look.ink : look.dim;
       reading(ctx, text, px, py, { ...look, fill: C.paper });
       boxes.push(box);
       placed.push(box);
@@ -389,10 +421,8 @@
           : App.state.mode === "load" && d.modelFlow != null ? App.fmt(d.modelFlow)
           : App.state.mode === "risk" && d.lost ? `−${App.fmt(d.lost)}` : "";
         let pressureBoxes = [];
-        if (live && overviewReading(scale, half)) {
-          ctx.fillStyle = look.ink;
-          ctx.font = modelFont("600 13px Archivo, system-ui, sans-serif");
-          reading(ctx, big, x, y, look); // zoomed out: one readable total when the square can hold it
+        if (live && !detailed) {
+          drawOverviewFlows(ctx, x, y, id, look, { half, total: now.flow });
         } else if (live && detailed) {
           drawSquare(ctx, x, y, id, look, { half, now, day: App.dayDelivery(id) });
         } else if (big) {
@@ -792,7 +822,7 @@
     const positions = Object.values(network.getPositions());
     if (!positions.length || !el.clientWidth) return 0;
     const xs = positions.map((p) => p.x), ys = positions.map((p) => p.y);
-    const margin = nodeHalf() * 6;
+    const margin = (App.state.mode === "live" ? SQUARE.live : SQUARE.plain) * 6;
     const w = Math.max(...xs) - Math.min(...xs) + margin, h = Math.max(...ys) - Math.min(...ys) + margin;
     return Math.min(el.clientWidth / w, el.clientHeight / h) * 0.8;
   }
@@ -831,6 +861,7 @@
   view.circleRadius = circleRadius; // half a square's side
   view.drawSquare = drawSquare;
   view.drawQuadrants = drawQuadrants;
+  view.drawOverviewFlows = drawOverviewFlows;
   view.drawEndpointPressures = drawEndpointPressures;
   view.drawDayBar = drawDayBar;
   view.pointAlong = pointAlong;
@@ -839,6 +870,7 @@
   view.detailedFlow = detailedFlow;
   view.pressureVisibility = pressureVisibility;
   view.pressureReadings = pressureReadings;
+  view.overviewSquareHalf = overviewSquareHalf;
   view.overviewReading = overviewReading;
   view.overviewNameLines = overviewNameLines;
   view.stubDistance = stubDistance;
