@@ -554,6 +554,22 @@ const App = (() => {
     return { past, future, tol: T.nomination[0] };
   }
 
+  // Six hourly nominations beginning at the displayed hour. Live frames carry their
+  // forecast in `ahead`; recorded streams use their following hourly frames.
+  function nominationWindow(id) {
+    return cached("nom6", id, () => {
+      const current = frame(), out = [];
+      for (let k = 0; k < 6; k++) {
+        const future = live.frames[live.index + k];
+        const value = k === 0 ? metric("nomination_msm3d", id, current)
+          : live.feed ? (((current.ahead || {}).nomination_msm3d || {})[id] || [])[k - 1]
+          : metric("nomination_msm3d", id, future || {});
+        out.push({ t: future && future.t != null ? future.t : current.t + k * 3600, value: value ?? null });
+      }
+      return out;
+    });
+  }
+
   // ------------------------------------------------------------------ conditions
   /* Everything abnormal right now, as {level, id, kind, text}. The views, the alarm
      counts, the overview and the asset screens all read this one list. */
@@ -1342,6 +1358,25 @@ const App = (() => {
         h("div", { class: "box" }, h("h2", null, "Units"), h("div", { class: "units" }, units)))));
   }
 
+  function nominationHistogram(id) {
+    const readings = nominationWindow(id);
+    if (!readings.some((reading) => reading.value != null)) return null;
+    const W = 360, H = 116, baseline = 88, slot = W / 6;
+    const peak = Math.max(1, ...readings.map((reading) => reading.value || 0));
+    const text = "stroke:none;font-weight:400;font-size:11px;font-family:Archivo,system-ui,sans-serif";
+    let body = `<line x1="0" y1="${baseline}" x2="${W}" y2="${baseline}" stroke="${COLORS.border}" stroke-width="1"/>`;
+    readings.forEach((reading, index) => {
+      const center = slot * (index + 0.5), hour = String(new Date(reading.t * 1000).getUTCHours()).padStart(2, "0");
+      if (reading.value != null) {
+        const height = Math.max(1, (reading.value / peak) * 56), y = baseline - height;
+        body += `<rect class="nomination-bar" x="${center - 15}" y="${y}" width="30" height="${height}" rx="2" fill="${COLORS.active}" opacity="${index === 0 ? 1 : 0.72}"/>`;
+        body += `<text x="${center}" y="${Math.max(11, y - 4)}" text-anchor="middle" fill="${COLORS.text_dim}" style="${text}">${esc(fmt(reading.value, reading.value < 10 ? 1 : 0))}</text>`;
+      }
+      body += `<text x="${center}" y="106" text-anchor="middle" fill="${COLORS.text_dim}" style="${text}">${hour}</text>`;
+    });
+    return svg(`0 0 ${W} ${H}`, body, "nomination-histogram");
+  }
+
   // Level 3: what flows in (top), the asset, what flows out (bottom), and its values.
   function assetDetail(id, inSidebar = false) {
     const d = assets[id];
@@ -1362,6 +1397,7 @@ const App = (() => {
       h("div", { class: "cols" },
         h("div", { class: "box" }, h("h2", { title: "Flowing in above the asset, out below it" }, "In context"), schematic(id)),
         h("div", { class: "box" }, h("h2", { title: "Live readings in their ranges, from the data being played" }, "Values"), bank(indicators, "No live readings for this asset in the dataset.", { byMeasure: true }),
+          exitPoints.includes(id) ? h("div", { class: "nomination-outlook" }, h("h2", { style: "margin-top:14px" }, "Next 6 hours · MSm³/d"), nominationHistogram(id)) : null,
           inSidebar ? null : h("h2", { style: "margin-top:14px" }, "State"),
           conds.length ? alarmList(conds)
             : h("p", { class: "state-quiet" }, "Normal · no alarms right now"),
@@ -2241,7 +2277,7 @@ const App = (() => {
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
-    pipeStyle, pipeMapName, visibleRange, nodeStyle, markers, window4h, flowRate, thresholds: T,
+    pipeStyle, pipeMapName, visibleRange, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
     timeState,
     // The display profile (desk, wall or compact) and the one UI scale (1 = 100 %).
