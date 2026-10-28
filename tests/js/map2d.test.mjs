@@ -240,6 +240,10 @@ test("flow circles: animated overlays stay outside enlarged nodes", () => {
     assert.ok(Math.hypot(point.x - pos[node].x, point.y - pos[node].y) > radius, "route markers stop beyond the circle");
   }
   assert.ok(App.views.flow.stubDistance(edge.from, 0, 1, pos) > App.views.flow.circleRadius(edge.from, pos), "animated flow strokes start outside the circle");
+  const spaced = { own: { x: 0, y: 0 }, neighbour: { x: 300, y: 0 } };
+  assert.equal(App.views.flow.stubClear({ x: 72, y: 0 }, { x: 80, y: 0 }, spaced, 1), true, "a stroke with clear space is drawn");
+  const crowded = { own: { x: 0, y: 0 }, neighbour: { x: 100, y: 0 } };
+  assert.equal(App.views.flow.stubClear({ x: 72, y: 0 }, { x: 80, y: 0 }, crowded, 1), false, "a stroke stops rather than entering a neighbouring node");
   App.settings().animation = true;
   App.live.playing = true;
   App.reduceMotion = false;
