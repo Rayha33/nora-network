@@ -142,3 +142,24 @@ test("flow: the hit test measures circles and lines in screen pixels at any zoom
   assert.equal(flow.hitTest({ x: 5, y: 0 }, positions, toDOM, scale), from, "a click in the circle is the node");
   assert.equal(flow.hitTest({ x: 150, y: 80 }, positions, toDOM, scale), null, "empty paper is nothing");
 });
+
+/* Ray, 28 Oct: "still performs bad, with a lot of stutter". The player restyles four
+   times a second, and vis-network re-read every node and line it was handed (about
+   28 ms, changed or not). Now a step hands it only looks that changed: a new value on
+   a line is drawn by the overlay, and widths move in quarter pixels. */
+test("flow: replaying the data hands vis-network only what changed", () => {
+  const { App } = loadApp();
+  App.state.mode = "live";
+  const flow = App.views.flow, pid = App.pipeIds[0];
+  App.live.maxAbs = 100;
+  App.live.values = { [pid]: 20 };
+  const first = flow.changes();
+  assert.equal(first.nodes.length, App.nodeIds.length, "the first time, everything");
+  assert.equal(first.lines.length, App.pipeIds.length);
+  App.live.values = { [pid]: 20.3 }; // the next step: a new value, the same quarter-pixel width
+  const next = flow.changes();
+  assert.equal(next.nodes.length, 0, "no node is re-sent");
+  assert.equal(next.lines.length, 0, "no line is re-sent for a new value");
+  App.live.values = { [pid]: 0 }; // the line stops: its look changes
+  assert.deepEqual(Array.from(flow.changes().lines, (line) => line.id), [pid], "only that line");
+});
