@@ -604,6 +604,15 @@ const App = (() => {
     ctx.restore();
   }
 
+  /* What a marker is, for a mouse-over: the value and when it reaches its next stop. */
+  function markerTip(m) {
+    const when = m.eta && m.to ? `: reaches ${m.to} at ${m.eta}` : m.to ? ` at ${m.to}` : "";
+    if (m.kind === "pig") return `${m.title || "Pig"}${when}`;
+    if (m.kind === "peak") return `Flow change ${m.value} MSm³/d on ${nameOf(m.id)}${when}`;
+    if (m.noDot) return `${QUALITY[m.gas].name} slug on ${nameOf(m.id)}`;
+    return `${m.value} ${QUALITY[m.gas].unit} on ${nameOf(m.id)}${when}`;
+  }
+
   // ------------------------------------------------------------------ alarm levels
   // 0 normal, 1 warning (amber, priority 3), 2 medium (orange, 2), 3 critical (red, 1).
   const LEVEL = ["Normal", "Warning", "Medium", "Critical"];
@@ -1063,7 +1072,8 @@ const App = (() => {
     if (distance >= last.m + lineMetres(last.pid)) return null;  // at the receiver, waiting for relaunch
     const seg = route.find((s) => distance < s.m + lineMetres(s.pid)) || last;
     const along = (distance - seg.m) / lineMetres(seg.pid);
-    return { pid: seg.pid, along: seg.forward ? along : 1 - along };
+    const runStart = pig.launch + run * every, next = seg.forward ? assets[seg.pid].to : assets[seg.pid].from;
+    return { pid: seg.pid, along: seg.forward ? along : 1 - along, exitAt: runStart + (seg.m + lineMetres(seg.pid)) / pig.speed, next };
   }
   /* Where a peak is now: it keeps travelling downstream, attenuated by its share of
      the gas at each node, and disappears at an exit or when it fades below step_min.
@@ -1104,7 +1114,8 @@ const App = (() => {
     const pigs = (live.stream && live.stream.pigs) || live.feedPigs || [];
     for (const pig of pigs) {
       const place = pigPlace(pig, live.time);
-      if (place) out.push({ kind: "pig", id: place.pid, along: place.along, label: "", level: 0, title: pig.label });
+      if (place) out.push({ kind: "pig", id: place.pid, along: place.along, label: "", level: 0, title: pig.label,
+        eta: clock(place.exitAt), to: nameOf(place.next) });
     }
     /* Head and tail: a peak is a stretch of gas, not a point. A change in flow spreads
        over the gas that passed in one data step (velocity × step); the band is centred
@@ -2316,7 +2327,7 @@ const App = (() => {
       offline: () => [...whatif.offline],
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
-    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
+    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T,
     // Flow through a node now (MSm³/d) and its pressure (bar), for the views to show.
     reading: (id) => ({ flow: throughput(id, frame().flows), pressure: metric("pressure_bar", id) }),
@@ -2345,7 +2356,7 @@ function NoraCanvasMap(view) {
   "use strict";
   const C = App.colors;
   let el = null, canvas = null, ctx = null, width = 0, height = 0, ratio = 1;
-  let highlighted = null, pendingFit = false, land = null, animation = null;
+  let highlighted = null, pendingFit = false, land = null, animation = null, drawnMarks = [];
   const cam = { x: 0.5, y: 0.5, k: 512 }; // centre in Web Mercator units (0..1), pixels per unit
   const MIN_ZOOM = 2, MAX_ZOOM = 12;
 
@@ -2488,10 +2499,12 @@ function NoraCanvasMap(view) {
       for (const m of marks) {
         if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]));
       }
+      drawnMarks = [];
       for (const m of marks) {
         if (!pipeById[m.id] || App.pipeStyle(m.id).hidden) continue;
         const p = along(m.id, m.along);
         App.drawMarker(ctx, m, p.x, p.y, p.angle, 6.5, detail);
+        if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
       }
     }
   }
@@ -2599,6 +2612,8 @@ function NoraCanvasMap(view) {
       readout.textContent = `${Math.abs(lat).toFixed(4)}°${lat >= 0 ? "N" : "S"}  ${Math.abs(lon).toFixed(4)}°${lon >= 0 ? "E" : "W"}  ·  zoom ${zoom().toFixed(1)}`;
       const previous = pointers.get(e.pointerId);
       if (!previous) {
+        const mark = drawnMarks.find((d) => Math.hypot(d.x - e.offsetX, d.y - e.offsetY) < 9);
+        if (mark) { canvas.style.cursor = "help"; canvas.title = App.markerTip(mark.m); return; }
         const id = hit(e.offsetX, e.offsetY);
         canvas.style.cursor = id ? "pointer" : "grab";
         canvas.title = id ? App.nameOf(id) : "";
@@ -2697,6 +2712,12 @@ function NoraCanvasMap(view) {
   const view = { ready: false, mounted: false };
   const C = App.colors;
   let map = null, canvas = null, ctx = null, highlighted = null, alarmKey = "";
+  let drawnMarks = []; // where pigs, peaks and slugs were drawn this frame, for mouse-over
+  const markAt = (x, y) => {
+    let best = null, bestD = 9; // px
+    for (const d of drawnMarks) { const dist = Math.hypot(d.x - x, d.y - y); if (dist < bestD) { best = d.m; bestD = dist; } }
+    return best;
+  };
 
   const featureOf = {}; // asset id -> { source, id }
   const ends = {}; // pipeline id -> [[lon, lat], [lon, lat]]
@@ -2935,8 +2956,16 @@ function NoraCanvasMap(view) {
     map.on("resize", sizeCanvas);
     map.on("render", () => view.ready && view.draw());
     const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12 });
+    // A pig, peak or slug under the pointer wins: its value and when it reaches the next stop.
+    let overMark = false;
+    map.on("mousemove", (e) => {
+      const m = markAt(e.point.x, e.point.y);
+      if (m) { popup.setLngLat(e.lngLat).setText(App.markerTip(m)).addTo(map); map.getCanvas().style.cursor = "help"; overMark = true; }
+      else if (overMark) { popup.remove(); map.getCanvas().style.cursor = ""; overMark = false; }
+    });
     for (const layer of ["nora-node-dots", "nora-nodes", "nora-pipes-hit"]) {
       map.on("mousemove", layer, (e) => {
+        if (markAt(e.point.x, e.point.y)) return;
         map.getCanvas().style.cursor = "pointer";
         const id = e.features[0].properties.asset;
         popup.setLngLat(e.lngLat).setText(App.nameOf(id)).addTo(map);
@@ -3050,9 +3079,11 @@ function NoraCanvasMap(view) {
     const marks = App.markers().filter((m) => ends[m.id] && !App.pipeStyle(m.id).hidden);
     for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]));
     const zoom = map.getZoom(), detail = zoom >= 6.5 ? 2 : zoom >= 5 ? 1 : 0;
+    drawnMarks = [];
     for (const m of marks) {
       const p = project(m.id, m.along);
       App.drawMarker(ctx, m, p.x, p.y, p.angle, 6.5, detail);
+      if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
     }
   };
 
