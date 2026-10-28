@@ -57,6 +57,10 @@ function NoraCanvasMap(view) {
     }
     return { ...pts[0], angle: 0 };
   }
+  function bandPath(id, extent) {
+    const steps = Math.max(4, Math.ceil(Math.abs(extent[1] - extent[0]) * 32));
+    return Array.from({ length: steps + 1 }, (_, i) => along(id, extent[0] + (extent[1] - extent[0]) * (i / steps)));
+  }
   // Line widths follow map.js: hairlines when zoomed out, a little more weight closer in.
   function lineWidth(w) {
     const z = zoom(), k = z <= 3 ? 0.45 : z <= 6 ? 0.45 + ((z - 3) / 3) * 0.25 : Math.min(1.1, 0.7 + ((z - 6) / 3) * 0.4);
@@ -150,7 +154,7 @@ function NoraCanvasMap(view) {
     if (live) {
       const z = zoom(), detail = z >= 6.5 ? 2 : z >= 5 ? 1 : 0, marks = App.markers();
       for (const m of marks) {
-        if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]));
+        if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]), 4, bandPath(m.id, m.extent));
       }
       drawnMarks = [];
       for (const m of marks) {

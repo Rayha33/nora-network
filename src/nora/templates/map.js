@@ -355,6 +355,10 @@
       const r = alongRoute(id, along), p = map.project(r.at), pa = map.project(r.a), pb = map.project(r.b);
       return { x: p.x, y: p.y, angle: Math.atan2(pb.y - pa.y, pb.x - pa.x) };
     };
+    const projectBand = (id, extent) => {
+      const steps = Math.max(4, Math.ceil(Math.abs(extent[1] - extent[0]) * 32));
+      return Array.from({ length: steps + 1 }, (_, i) => project(id, extent[0] + (extent[1] - extent[0]) * (i / steps)));
+    };
     if (App.settings().animation && App.live.playing && !App.reduceMotion) {
       /* Simulated flow at the nodes, not on the lines: short solid bands sliding
          INTO the icon where gas arrives and OUT of it where gas leaves, scaled by
@@ -397,7 +401,7 @@
     }
     // Peaks as bands from tail to head first, then every marker on top.
     const marks = App.markers().filter((m) => ends[m.id] && !App.pipeStyle(m.id).hidden);
-    for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]));
+    for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]), 4, projectBand(m.id, m.extent));
     const zoom = map.getZoom(), detail = zoom >= 6.5 ? 2 : zoom >= 5 ? 1 : 0;
     drawnMarks = [];
     for (const m of marks) {
