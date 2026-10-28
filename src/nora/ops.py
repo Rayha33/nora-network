@@ -25,8 +25,8 @@ from dataclasses import dataclass
 
 import networkx as nx
 
-from .analysis import SINK, SOURCE, shortest_max_flow
-from .data import Network
+from .analysis import OUT, SINK, SOURCE, shortest_max_flow
+from .data import SUPPLY_TYPES, Network
 from .graph import build_graph
 from .stream import Stream, apply_events
 
@@ -65,7 +65,19 @@ def _plan_graph(graph: nx.DiGraph, exits: dict[str, float]) -> nx.DiGraph:
             continue
         if attrs["type"] in ("field", "storage") and attrs.get("capacity_msm3d"):
             flows.add_edge(SOURCE, node, capacity=attrs["capacity_msm3d"])
+        elif (
+            attrs["type"] not in SUPPLY_TYPES and attrs.get("capacity_msm3d") and node not in exits
+        ):
+            # A gas plant's processing capacity limits what passes it, as in the
+            # max-flow model (analysis.flow_graph): its lines leave from an out-node.
+            out = node + OUT
+            for _, target, edge in list(flows.out_edges(node, data=True)):
+                flows.add_edge(out, target, **edge)
+            flows.remove_edges_from(list(flows.out_edges(node)))
+            flows.add_edge(node, out, capacity=attrs["capacity_msm3d"])
     for node, rate in exits.items():
+        # An exit point an event took out is not in `graph`: it is still added, with
+        # nothing reaching it, so its whole nomination shows as short.
         flows.add_edge(node, SINK, capacity=rate)
     return flows
 
@@ -73,8 +85,12 @@ def _plan_graph(graph: nx.DiGraph, exits: dict[str, float]) -> nx.DiGraph:
 def check_plan(
     graph: nx.DiGraph, nominations: dict[str, float], thresholds: dict, names: dict[str, str]
 ) -> PlanCheck:
-    """Can `graph` (events applied) deliver `nominations` {exit node: MSm3/d}?"""
-    wanted = {node: rate for node, rate in nominations.items() if rate > 0 and node in graph}
+    """Can `graph` (events applied) deliver `nominations` {exit node: MSm3/d}?
+
+    Every nomination counts, also at an exit point an event took out of `graph`: it
+    can take no gas, so it falls short by all of it (dropping it read "Plan holds"
+    during a terminal trip)."""
+    wanted = {node: rate for node, rate in nominations.items() if rate > 0}
     nominated = sum(wanted.values())
     if not wanted:
         return PlanCheck(0, "No nominations", None, 0.0, 0.0, 0.0, None)
@@ -122,12 +138,15 @@ def advise(
     missing = check.nominated - check.deliverable
     cause = None
     for event in events:
+        kind = "planned work" if event.planned else "unplanned event"
+        if event.asset == short_exit:  # the exit point itself is out
+            cause = f"{event.label} ({kind}) at {names.get(short_exit, short_exit)} itself"
+            break
         upstream = event.asset if event.asset in base else None
         if upstream is None:  # a pipeline: start from where it leaves
             ends = [u for u, _, a in base.edges(data=True) if a["pipeline"] == event.asset]
             upstream = ends[0] if ends else None
         if upstream and short_exit in base and nx.has_path(base, upstream, short_exit):
-            kind = "planned work" if event.planned else "unplanned event"
             cause = f"{event.label} ({kind}) is upstream of {names.get(short_exit, short_exit)}"
             break
     wanted = {n: r for n, r in nominations.items() if r > 0 and n in graph}

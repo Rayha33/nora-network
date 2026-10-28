@@ -53,6 +53,8 @@ RECEIVING_COUNTRIES = {
     "Belgium": "ztp",
     "Great Britain": "nbp",
 }
+# The UK gas day starts at 05:00 UK time; National Gas's tables run over one gas day.
+GAS_DAY_START_MINUTES = 5 * 60
 # Cloudflare in front of gassco.eu rejects anything that does not look like a browser.
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
@@ -208,7 +210,14 @@ class NationalGasInterconnector(Connector):
                         if re.fullmatch(r"\d{2}:\d{2}", time) and isinstance(value, (int, float))
                     ]
                     if readings:
-                        return float(sorted(readings)[-1][1])
+                        # The table runs over a UK gas day, 05:00 to 05:00: after
+                        # midnight "00:02" is newer than "23:58", so order by the
+                        # minutes since 05:00, not by the text of the time.
+                        def in_gas_day(reading):
+                            hours, minutes = map(int, reading[0].split(":"))
+                            return (hours * 60 + minutes - GAS_DAY_START_MINUTES) % 1440
+
+                        return float(max(readings, key=in_gas_day)[1])
             raise ValueError(f"National Gas: missing {label} reading")
 
         published = data.get("publishedDate")
