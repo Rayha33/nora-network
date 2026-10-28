@@ -132,6 +132,14 @@ const App = (() => {
     ctx.lineWidth = width + 1.2;
     ctx.stroke();
     ctx.strokeStyle = color;
+    if (marker.kind === "peak" && len >= 1) {
+      // Strong head and tail, quieter middle: the moving dot stays distinct.
+      const gradient = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+      gradient.addColorStop(0, `${color}ff`);
+      gradient.addColorStop(0.5, `${color}59`);
+      gradient.addColorStop(1, `${color}ff`);
+      ctx.strokeStyle = gradient;
+    }
     ctx.lineWidth = width;
     ctx.stroke();
     if (len >= 1) { // the head: a short dark bar across the band
