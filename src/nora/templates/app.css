@@ -294,7 +294,8 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 .sidebar .facts dt { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; }
 .sidebar .facts dd { font-size: 12.5px; }
 /* The sidebar is narrow: values in three columns, the rate inline, nothing outside. */
-.sidebar .bank { grid-template-columns: minmax(80px, 1fr) minmax(110px, 1.6fr) 70px; }
+.sidebar .bank { grid-template-columns: minmax(80px, 1fr) minmax(110px, 1.6fr) 64px; }
+.sidebar .bank .trend { width: 64px; }
 .sidebar .bank .rate, .sidebar .bank .state.optional, .sidebar .bank .head.optional { display: none; }
 .sidebar .bank .rate-inline { display: inline; margin-left: 8px; }
 .sidebar .bank > * { min-width: 0; }
