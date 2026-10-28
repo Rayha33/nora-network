@@ -311,7 +311,7 @@
     el.append(readout);
     const showCoord = (lngLat) => {
       const lng = ((lngLat.lng + 180) % 360 + 360) % 360 - 180;
-      readout.textContent = `${Math.abs(lngLat.lat).toFixed(5)}°${lngLat.lat >= 0 ? "N" : "S"}  ${Math.abs(lng).toFixed(5)}°${lng >= 0 ? "E" : "W"}  ·  zoom ${map.getZoom().toFixed(1)}`;
+      readout.textContent = App.positionText(lng, lngLat.lat); // water depth instead of the zoom (Ray)
     };
     map.on("mousemove", (e) => showCoord(e.lngLat));
     map.on("move", () => showCoord(map.getCenter()));

@@ -74,6 +74,47 @@ const App = (() => {
   }
   const assets = NORA.assets;
   const nameOf = (id) => (assets[id] || {}).name || id;
+
+  /* Water depth under the map (NORA.depth: EMODnet's seabed model, built by
+     scripts/build_bathymetry.py): a zlib-packed grid of whole metres, inflated once in
+     the background. depthAt(lon, lat) blends the sea points around a position; it is
+     null on land, outside the grid, or before the grid is ready. */
+  const depthGrid = { values: null, ready: Promise.resolve() };
+  if (NORA.depth && typeof DecompressionStream !== "undefined") {
+    const packed = Uint8Array.from(atob(NORA.depth.data), (c) => c.charCodeAt(0));
+    depthGrid.ready = new Response(new Blob([packed]).stream().pipeThrough(new DecompressionStream("deflate")))
+      .arrayBuffer()
+      .then((buffer) => {
+        // each row is stored as differences from the point to its west: add them up
+        const steps = new Int16Array(buffer), values = new Uint16Array(steps.length), width = NORA.depth.width;
+        for (let i = 0; i < steps.length; i++) values[i] = (i % width ? values[i - 1] : 0) + steps[i];
+        depthGrid.values = values;
+      })
+      .catch(() => { /* no depth: the readout shows the position only */ });
+  }
+  function depthAt(lon, lat) {
+    const g = NORA.depth, v = depthGrid.values;
+    if (!g || !v) return null;
+    const x = (lon - g.west) / g.step - 0.5, y = (g.north - lat) / g.step - 0.5; // grid points sit at cell centres
+    const i = Math.floor(x), j = Math.floor(y);
+    if (i < 0 || j < 0 || i >= g.width - 1 || j >= g.height - 1) return null;
+    if (!v[Math.round(y) * g.width + Math.round(x)]) return null; // the nearest point is land
+    let sum = 0, weight = 0;
+    for (const [di, dj] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+      const d = v[(j + dj) * g.width + i + di];
+      if (!d) continue;
+      const w = (di ? x - i : 1 - (x - i)) * (dj ? y - j : 1 - (y - j));
+      sum += d * w;
+      weight += w;
+    }
+    return weight ? Math.round(sum / weight) : null;
+  }
+  /* A position as the control room writes it: always °N and °E (west is a negative
+     east), then the water depth there: "61.90055°N  4.25673°E  ·  WD 58 m". */
+  function positionText(lon, lat, digits = 5) {
+    const depth = depthAt(lon, lat);
+    return `${lat.toFixed(digits)}°N  ${lon.toFixed(digits)}°E${depth != null ? `  ·  WD ${fmt(depth)} m` : ""}`;
+  }
   // Dates likewise: one cached Intl.DateTimeFormat per set of options.
   const DATE_FORMATS = new Map();
   const timeFormat = (epoch, opts) => {
@@ -1557,11 +1598,13 @@ const App = (() => {
   function facts(id) {
     const d = assets[id];
     const lost = d.lost ? `${fmt(d.lost)} MSm³/d (${fmt(d.share * 100, 1)}%)` : "Nothing lost";
-    const position = d.lat != null ? `${Math.abs(d.lat).toFixed(4)}°${d.lat >= 0 ? "N" : "S"}, ${Math.abs(d.lon).toFixed(4)}°${d.lon >= 0 ? "E" : "W"}` : null;
+    const position = d.lat != null ? `${d.lat.toFixed(4)}°N, ${d.lon.toFixed(4)}°E` : null; // always N and E (Ray)
+    const depth = d.lat != null ? depthAt(d.lon, d.lat) : null;
     const rows = d.kind === "node"
       ? [["Operator", d.operator], ["Capacity", d.capacity == null ? null : `${fmt(d.capacity)} MSm³/d`], ["If it trips", lost],
         ["Pressure window", C.pressure[d.type] ? `${C.pressure[d.type][0]}–${C.pressure[d.type][1]} bar` : null], ["Status", d.status],
-        ["Position", h("a", { href: `https://www.google.com/maps?q=${d.lat},${d.lon}`, target: "_blank", rel: "noopener", title: "Open this exact location in Google Maps" }, position)]]
+        ["Position", h("a", { href: `https://www.google.com/maps?q=${d.lat},${d.lon}`, target: "_blank", rel: "noopener", title: "Open this exact location in Google Maps" }, position)],
+        ["Water depth", depth != null ? `${fmt(depth)} m (EMODnet seabed model)` : null]]
       : [["Capacity", d.capacity == null ? "Not modelled" : `${fmt(d.capacity)} MSm³/d`], ["Length", `${fmt(d.km)} km`],
         ["Diameter", d.diameter == null ? null : `${fmt(d.diameter)} in`], ["In service since", d.commissioned], ["If it trips", lost], ["Status", d.status]];
     return h("dl", { class: "facts" }, rows.filter((r) => r[1] != null && r[1] !== "").map(([k, v]) => [h("dt", null, k), h("dd", null, v)]));
@@ -2406,6 +2449,8 @@ const App = (() => {
       go({ screen: "asset", asset: id });
     },
     sidebar: { open: (id) => openSidebar(id), close: closeSidebar, id: () => side.id, marker: () => side.marker },
+    depth: { at: depthAt, ready: () => depthGrid.ready }, // water depth (m) under a position
+    positionText,
     selectMarker: openMarker, // a click on a pig or a peak, from any view
     feed: { frame: receiveFrame, trouble: feedTrouble }, // the live feed's handlers, for tests
     menu: { open: openMenu, close: closeMenu, for: menuFor },

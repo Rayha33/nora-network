@@ -3,7 +3,7 @@ pipeline register) and join their nodes exactly; lines without a route stay stra
 
 import math
 
-from nora.render import _route_line, map_geojson, routes
+from nora.render import _route_line, bathymetry, map_geojson, routes
 
 
 def km(a, b):
@@ -44,3 +44,15 @@ def test_draupner_platforms_sit_on_their_bridge(north_sea):
     """Draupner S and E are bridge-linked: SODIR puts them about 120 m apart."""
     where = {n.id: (n.lon, n.lat) for n in north_sea.nodes}
     assert km(where["draupner_s"], where["draupner_e"]) < 1
+
+
+def test_water_depth_grid_is_shipped_and_optional(tmp_path):
+    """The map's readout shows the water depth (EMODnet): the grid covers the map's
+    bounds, and without the file the page simply shows no depth."""
+    grid = bathymetry()
+    assert grid is not None, "data/geo/bathymetry.json is in the repository"
+    covers = grid["width"] * grid["step"] >= 19 and grid["height"] * grid["step"] >= 17
+    assert covers, "it covers the map"
+    assert "EMODnet" in grid["source"], "with its credit"
+    assert "CC BY 4.0" in grid["source"], "and its licence"
+    assert bathymetry(tmp_path / "missing.json") is None

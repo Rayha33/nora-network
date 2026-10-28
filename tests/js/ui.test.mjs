@@ -118,12 +118,14 @@ test("overview: an hour without nominations says so, never 'null'", () => {
   assert.doesNotMatch(text, /null|Plan holds/);
 });
 
-test("asset facts: a position west of Greenwich reads °W", () => {
+/* Ray, 28 Oct: "stick to N and E": positions always read °N and °E, west of Greenwich
+   as a negative east. */
+test("asset facts: positions stick to N and E, west as a negative east", () => {
   const { App, document } = loadApp();
   App.go({ screen: "asset", asset: "teesside" });
   const text = document.getElementById("screen-asset").textContent;
-  assert.match(text, /\d\.\d{4}°W/);
-  assert.doesNotMatch(text, /-\d+\.\d{4}°E/);
+  assert.match(text, /\d\.\d{4}°N, -1\.\d{4}°E/);
+  assert.doesNotMatch(text, /°W|°S/);
 });
 
 /* Review finding: the Flow right-click subtracted a circle's radius in canvas units

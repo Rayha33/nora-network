@@ -178,6 +178,18 @@ def coastline(path: Path = COASTLINE) -> dict:
     return {"rings": data["rings"], "source": data.get("source", "")}
 
 
+BATHYMETRY = DATA_DIR / "geo" / "bathymetry.json"
+
+
+def bathymetry(path: Path = BATHYMETRY) -> dict | None:
+    """The water depth under the map (scripts/build_bathymetry.py, EMODnet), for the
+    position readout; None if the file is missing (the readout then shows no depth)."""
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None
+
+
 ROUTES = DATA_DIR / "geo" / "routes.json"
 
 
@@ -286,6 +298,7 @@ def page_payload(
         "assets": assets_payload(net, analysis),
         "geo": map_geojson(net),
         "land": coastline(),
+        "depth": bathymetry(),
         "grid": flow_grid(net),
         "units": units,
         "iconSets": {
