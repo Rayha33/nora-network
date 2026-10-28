@@ -285,13 +285,10 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 .sidebar .cols { grid-template-columns: 1fr; gap: 0; }
 .sidebar .box { margin: 0; padding: 14px 0 16px; background: none; border: 0; border-radius: 0; border-bottom: 1px solid var(--rule); }
 .sidebar .box:last-of-type { border-bottom: 0; }
-.sidebar .box h2 {
-  margin: 0 0 8px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--text-dim);
-}
+.sidebar .box h2 { margin: 0 0 8px; font-size: 12px; font-weight: 600; color: var(--text-dim); }
 .sidebar .state-quiet { margin: 0; font-size: 12px; color: var(--text-dim); }
 .sidebar .facts { gap: 5px 16px; }
-.sidebar .facts dt { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; }
+.sidebar .facts dt { font-size: 11.5px; }
 .sidebar .facts dd { font-size: 12.5px; }
 /* The sidebar is narrow: values in three columns, the rate inline, nothing outside. */
 .sidebar .bank { grid-template-columns: minmax(80px, 1fr) minmax(110px, 1.6fr) 64px; }
@@ -299,7 +296,9 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 .sidebar .bank .rate, .sidebar .bank .state.optional, .sidebar .bank .head.optional { display: none; }
 .sidebar .bank .rate-inline { display: inline; margin-left: 8px; }
 .sidebar .bank > * { min-width: 0; }
-.sidebar .schematic { max-width: 380px; margin: 0 auto; }
+.sidebar .schematic { max-width: 340px; margin: 0 auto; }
+.bank.by-measure .name { cursor: default; color: var(--text-dim); font-size: 12px; }
+.bank.by-measure .name:hover { text-decoration: none; }
 .sidebar .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 10px; }
 .sidebar .actions button {
   border: 1px solid var(--rule); background: var(--surface); color: var(--text);

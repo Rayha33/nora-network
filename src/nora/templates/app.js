@@ -1029,7 +1029,7 @@ const App = (() => {
     const band = nom ? [nom * (1 - tol[0]), nom * (1 + tol[0])] : null;
     const lvl = levelFor(id, ["nomination", "booking"]);
     return {
-      id, unit: "MSm³/d", lvl, band,
+      id, measure: "Delivery", unit: "MSm³/d", lvl, band,
       bar: rangeBar({ min: 0, max: top, value: actual, target: nom, lvl, band,
         ticks: [...(nom ? [nom * (1 - tol[2]), nom * (1 + tol[2])].map((at) => ({ at, level: 3 })) : []), ...(booked ? [{ at: booked, level: 2 }] : [])] }),
       series: series((f) => throughput(id, f.flows)),
@@ -1041,7 +1041,7 @@ const App = (() => {
     const pm = T.pressure_margin, band = [low + pm[0] * span, high - pm[0] * span];
     const lvl = levelFor(id, ["pressure"]);
     return {
-      id, unit: "bar", lvl, band,
+      id, measure: "Pressure", unit: "bar", lvl, band,
       bar: rangeBar({ min: low - 0.1 * span, max: high + 0.1 * span, value: p, lvl, band,
         ticks: [{ at: low, level: 3 }, { at: high, level: 3 }, { at: low + pm[1] * span, level: 2 }, { at: high - pm[1] * span, level: 2 }] }),
       series: series((f) => metric("pressure_bar", id, f)),
@@ -1051,7 +1051,7 @@ const App = (() => {
   function qualityIndicator(id, name) {
     const v = metric(name, id), limits = C.quality[name], lvl = level(v, limits);
     return {
-      id, unit: QUALITY[name].unit, lvl, band: [0, limits[0]],
+      id, measure: QUALITY[name].name, unit: QUALITY[name].unit, lvl, band: [0, limits[0]],
       bar: rangeBar({ min: 0, max: limits[2] * 1.5, value: v, lvl, band: [0, limits[0]],
         ticks: limits.map((at, i) => ({ at, level: i + 1 })) }),
       series: series((f) => metric(name, id, f)),
@@ -1061,19 +1061,23 @@ const App = (() => {
   function loadIndicator(id) {
     const d = assets[id], v = Math.abs(frame().flows[id] || 0), u = v / d.capacity;
     return {
-      id, unit: "pts", lvl: level(u, T.load), band: [0, T.load[0] * 100],
+      id, measure: "Load", unit: "pts", lvl: level(u, T.load), band: [0, T.load[0] * 100],
       bar: rangeBar({ min: 0, max: 1.1, value: u, lvl: level(u, T.load), band: [0, T.load[0]], ticks: T.load.map((at, i) => ({ at, level: i + 1 })) }),
       series: series((f) => (f.flows[id] == null ? null : (Math.abs(f.flows[id]) / d.capacity) * 100)),
       value: `${fmt(u * 100)}%: ${fmt(v, 1)} of ${fmt(d.capacity)} MSm³/d`,
     };
   }
-  function bank(indicators, empty) {
+  /* A bank of indicators. Across assets (the overview) each row is named after its
+     asset; for one asset (its page or sidebar) after what it measures, so the rows
+     read "Delivery", "Pressure" instead of the asset's name twice. */
+  function bank(indicators, empty, { byMeasure = false } = {}) {
     if (!indicators.length) return h("p", { class: "empty" }, empty);
-    return h("div", { class: "bank" },
-      h("div", { class: "head" }, "Asset"), h("div", { class: "head" }, "Value in its range"),
-      h("div", { class: "head" }, "Trend"), h("div", { class: "head optional" }, "Change"), h("div", { class: "head optional" }, "State"),
+    return h("div", { class: `bank${byMeasure ? " by-measure" : ""}` },
+      h("div", { class: "head" }, byMeasure ? "" : "Asset"), h("div", { class: "head" }, "Value in its range"),
+      h("div", { class: "head" }, "Last 2 h"), h("div", { class: "head optional" }, "Change"), h("div", { class: "head optional" }, "State"),
       ...indicators.flatMap((ind) => [
-        h("div", { class: "name", onclick: () => go({ screen: "asset", asset: ind.id }), title: "Open the asset" }, nameOf(ind.id)),
+        byMeasure ? h("div", { class: "name measure" }, ind.measure || nameOf(ind.id))
+          : h("div", { class: "name", onclick: () => go({ screen: "asset", asset: ind.id }), title: "Open the asset" }, nameOf(ind.id)),
         h("div", null, ind.bar, h("div", { class: "value" }, ind.value, h("span", { class: "rate-inline" }, rateText(rate(ind.series), ind.unit)))),
         trend(ind.series, { band: ind.band, lvl: ind.lvl }),
         h("div", { class: "rate" }, rateText(rate(ind.series), ind.unit)),
@@ -1206,7 +1210,7 @@ const App = (() => {
         : `${NORA.pipelineTypes[d.type]}, ${nameOf(d.from)} to ${nameOf(d.to)}.`),
       h("div", { class: "cols" },
         h("div", { class: "box" }, h("h2", { title: "Flowing in above the asset, out below it" }, "In context"), schematic(id)),
-        h("div", { class: "box" }, h("h2", { title: "Live readings in their ranges, from the data being played" }, "Values"), bank(indicators, "No live readings for this asset in the dataset."),
+        h("div", { class: "box" }, h("h2", { title: "Live readings in their ranges, from the data being played" }, "Values"), bank(indicators, "No live readings for this asset in the dataset.", { byMeasure: true }),
           inSidebar ? null : h("h2", { style: "margin-top:14px" }, "State"),
           conds.length ? alarmList(conds)
             : h("p", { class: "state-quiet" }, "Normal · no alarms right now"),

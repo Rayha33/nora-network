@@ -41,7 +41,9 @@
   }
 
   // The paper: a dot grid in canvas units, so it pans and zooms with the drawing.
+  let framePos = {}; // node positions for this frame (nodes can be dragged)
   function paper(ctx) {
+    framePos = network.getPositions();
     const scale = network.getScale();
     let step = 24;
     while (step * scale < 12) step *= 2;
@@ -123,6 +125,45 @@
     if (day.level) { ctx.strokeStyle = C.casing; ctx.lineWidth = 1; ctx.stroke(); }
     ctx.restore();
   }
+  /* The way gas runs through a node: the direction of its busiest line, from where the
+     gas comes in towards where it goes out, measured from this frame's positions so it
+     turns with the line when the node is dragged. Radians on the canvas; null if idle. */
+  function flowAngle(id) {
+    const here = framePos[id];
+    if (!here) return null;
+    let best = null, most = 0.05;
+    for (const pid of App.pipeIds) {
+      const p = NORA.assets[pid], v = App.live.values[pid];
+      if (!v || (p.from !== id && p.to !== id) || Math.abs(v) <= most || App.pipeStyle(pid).hidden) continue;
+      const other = framePos[p.from === id ? p.to : p.from];
+      if (!other) continue;
+      const outward = (p.from === id) === (v > 0); // gas leaves this node along the line
+      best = outward ? Math.atan2(other.y - here.y, other.x - here.x) : Math.atan2(here.y - other.y, here.x - other.x);
+      most = Math.abs(v);
+    }
+    return best;
+  }
+  // The flow inside the circle, short ("34M"), along the line with a small arrow.
+  function drawFlowAlong(ctx, x, y, text, angle, look) {
+    let a = angle == null ? 0 : angle, back = false;
+    if (a > Math.PI / 2 || a < -Math.PI / 2) { a += Math.PI; back = true; } // keep the text upright
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(a);
+    ctx.font = "700 12.5px Archivo, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const w = ctx.measureText(text).width, arrow = angle == null ? 0 : 7;
+    ctx.fillStyle = look.ink;
+    ctx.fillText(text, back ? arrow / 2 : -arrow / 2, 0);
+    if (arrow) { // the direction of travel: a small chevron at the downstream end
+      const tip = back ? -(w + arrow) / 2 - 1 : (w + arrow) / 2 + 1, d = back ? -1 : 1;
+      ctx.beginPath();
+      ctx.moveTo(tip - d * 3.5, -3); ctx.lineTo(tip, 0); ctx.lineTo(tip - d * 3.5, 3);
+      ctx.strokeStyle = look.dim; ctx.lineWidth = 1.2; ctx.stroke();
+    }
+    ctx.restore();
+  }
   // vis-network custom shape: the circle for one node, name and live numbers below it.
   function card(id) {
     return ({ ctx, x, y, state: { selected, hover } }) => ({
@@ -152,20 +193,18 @@
           : App.state.mode === "load" && d.modelFlow != null ? App.fmt(d.modelFlow)
           : App.state.mode === "risk" && d.lost ? `−${App.fmt(d.lost)}` : "";
         const day = live ? App.dayDelivery(id) : null; // exit points: within-day delivery bar
-        if (big) {
-          const pressure = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "";
-          const top = day ? y - 11 : pressure ? y - 8 : y - 3;
-          ctx.fillStyle = look.ink;
-          ctx.font = "700 13px Archivo, system-ui, sans-serif";
-          ctx.fillText(fitText(ctx, big, CIRC.r * 1.7), x, top);
+        const pressure = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "";
+        if (pressure) { // pressure on top, level
           ctx.fillStyle = look.dim;
-          ctx.font = "8px Archivo, system-ui, sans-serif";
-          ctx.fillText("MSm³/d", x, top + 10);
-          if (pressure) {
-            ctx.fillStyle = look.ink;
-            ctx.font = "600 9.5px Archivo, system-ui, sans-serif";
-            ctx.fillText(fitText(ctx, pressure, CIRC.r * 1.7), x, day ? y + 8 : y + 15);
-          }
+          ctx.font = "600 9px Archivo, system-ui, sans-serif";
+          ctx.fillText(fitText(ctx, pressure, CIRC.r * 1.4), x, y - 15);
+        }
+        // Flow in the middle, short ("34M" for 34 MSm³/d), running along its line.
+        if (live && big !== "–") drawFlowAlong(ctx, x, y, `${big}M`, flowAngle(id), look);
+        else if (big) {
+          ctx.fillStyle = look.ink;
+          ctx.font = "700 12.5px Archivo, system-ui, sans-serif";
+          ctx.fillText(fitText(ctx, big, CIRC.r * 1.6), x, y);
         }
         if (day) drawDayBar(ctx, x, y + 17, day, look);
         // Name below the circle, then the rate of change (bold when it is fast).
