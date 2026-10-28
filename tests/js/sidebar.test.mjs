@@ -89,3 +89,29 @@ test("sidebar: the asset picture's labels are never outlined or bold", () => {
     }
   }
 });
+
+/* Ray, 28 Oct: "cant even read the text". With several lines in or out, the labels of
+   the asset picture were spread across one row and ran into each other. Now every line
+   has its own row: no two names share a row, and every line starts right of the text. */
+test("sidebar: the asset picture gives every line its own row, clear of the lines", () => {
+  const loaded = loadApp();
+  assertHealthy(assert, loaded);
+  const { App, document } = loaded;
+  App.go({ screen: "unit", unit: "all" });
+  for (const id of ["ttf", "sleipner", "draupner_s", "karsto"]) {
+    App.select(id);
+    const markup = [];
+    const walk = (node) => {
+      if (!node || typeof node !== "object") return;
+      if (node._innerHTML) markup.push(node._innerHTML);
+      for (const child of node.children || []) walk(child);
+    };
+    walk(document.getElementById("side-body"));
+    const svg = markup.join("");
+    const names = [...svg.matchAll(/<text x="18" y="([\d.]+)"(?![^>]*dimtext)/g)].map((m) => Number(m[1]));
+    assert.ok(names.length >= 3, `${id}: one row per line (${names.length})`);
+    const ys = [...names].sort((a, b) => a - b);
+    for (let i = 1; i < ys.length; i++) assert.ok(ys[i] - ys[i - 1] >= 18, `${id}: rows ${ys[i - 1]} and ${ys[i]} do not overlap`);
+    for (const m of svg.matchAll(/<line x1="([\d.]+)"/g)) assert.ok(Number(m[1]) >= 240, `${id}: a line starts right of the names`);
+  }
+});

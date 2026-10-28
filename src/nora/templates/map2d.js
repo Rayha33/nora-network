@@ -138,7 +138,7 @@ function NoraCanvasMap(view) {
       const text = App.nameOf(b.id), w = ctx.measureText(text).width + 4, box = [b.x - w / 2, b.y, b.x + w / 2, b.y + 13];
       if (placed.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) continue;
       placed.push(box);
-      ctx.lineWidth = 3; ctx.strokeStyle = C.paper; ctx.strokeText(text, b.x, b.y);
+      ctx.lineWidth = 4; ctx.strokeStyle = C.paper; ctx.strokeText(text, b.x, b.y); // no line shows through a name
       ctx.fillStyle = C.text; ctx.fillText(text, b.x, b.y);
     }
     // Alarm badges on lines, at their middle.

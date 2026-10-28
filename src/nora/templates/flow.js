@@ -14,6 +14,7 @@
      the live numbers (no icon: Ray, 28 Oct, "this is valuable space ... for live flow
      values and pressures"), with its name and rate below and a sparkline under that. */
   const CIRC = { r: 30, name: 14, sub: 12, trend: 12, pad: 8 };
+  const NAME_FONT = "600 11.5px Archivo, system-ui, sans-serif", SUB_FONT = "10px Archivo, system-ui, sans-serif";
   const SPACING = { // [stage, rank] in canvas units
     vertical: { compact: [96, 160], comfortable: [124, 178], spacious: [160, 210] },
     horizontal: { compact: [210, 62], comfortable: [250, 72], spacious: [300, 90] },
@@ -220,26 +221,42 @@
           ctx.font = "700 12.5px Archivo, system-ui, sans-serif";
           ctx.fillText(fitText(ctx, big, CIRC.r * 1.6), x, y);
         }
-        // Name below the circle, then the rate of change (bold when it is fast).
+        // Name below the circle, then the rate of change (bold when it is fast) and the
+        // trend, on a paper backing: lines leave a node downwards, and no line may run
+        // through its text (Ray, 28 Oct).
         ctx.textBaseline = "alphabetic";
         ctx.textAlign = "center";
-        let nameY = y + CIRC.r + CIRC.name;
-        ctx.fillStyle = look.ink;
-        ctx.font = "600 11.5px Archivo, system-ui, sans-serif";
-        ctx.fillText(fitText(ctx, d.name, CIRC.r * 3), x, nameY);
+        const nameY = y + CIRC.r + CIRC.name, subY = nameY + CIRC.sub;
+        ctx.font = NAME_FONT;
+        const name = fitText(ctx, d.name, CIRC.r * 3);
+        let width = ctx.measureText(name).width;
         const r = live ? App.flowRate(id) : null;
+        let sub = null;
         if (r != null && Math.abs(r) >= 0.05) {
           const through = App.window4h(id).past.slice(-1)[0] || 0;
           const fast = through > 0 && Math.abs(r) / through >= App.thresholds.step[0];
-          ctx.font = `${fast ? 700 : 400} 10px Archivo, system-ui, sans-serif`;
-          ctx.fillStyle = fast ? look.ink : look.dim;
-          ctx.fillText(`${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`, x, nameY + CIRC.sub);
+          sub = { text: `${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`, font: `${fast ? 700 : 400} 10px Archivo, system-ui, sans-serif`, ink: fast ? look.ink : look.dim };
         } else if (s.sub && !live) {
-          ctx.fillStyle = look.dim;
-          ctx.font = "10px Archivo, system-ui, sans-serif";
-          ctx.fillText(fitText(ctx, s.sub, CIRC.r * 3), x, nameY + CIRC.sub);
+          ctx.font = SUB_FONT;
+          sub = { text: fitText(ctx, s.sub, CIRC.r * 3), font: SUB_FONT, ink: look.dim };
         }
-        if (live) drawTrend(ctx, id, x - CIRC.r, nameY + CIRC.sub + 2, CIRC.r * 2, CIRC.trend, look);
+        if (sub) { ctx.font = sub.font; width = Math.max(width, ctx.measureText(sub.text).width); }
+        if (live) width = Math.max(width, CIRC.r * 2);
+        const bottom = live ? subY + 4 + CIRC.trend : (sub ? subY : nameY) + 4;
+        ctx.save();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = C.paper;
+        ctx.fillRect(x - width / 2 - 4, y + CIRC.r + 1.5, width + 8, bottom - (y + CIRC.r + 1.5));
+        ctx.restore();
+        ctx.fillStyle = look.ink;
+        ctx.font = NAME_FONT;
+        ctx.fillText(name, x, nameY);
+        if (sub) {
+          ctx.font = sub.font;
+          ctx.fillStyle = sub.ink;
+          ctx.fillText(sub.text, x, subY);
+        }
+        if (live) drawTrend(ctx, id, x - CIRC.r, subY + 2, CIRC.r * 2, CIRC.trend, look);
         ctx.restore();
         if (s.level) App.drawBadge(ctx, s.level, x + CIRC.r - 3, y - CIRC.r + 3, 8);
       },
@@ -446,7 +463,10 @@
     if (!view.ready) return;
     nodes.update(App.nodeIds.map((id) => {
       const s = App.nodeStyle(id);
-      return { id, hidden: s.hidden, title: `${NORA.assets[id].name}${s.sub ? `\n${s.sub}` : ""}` };
+      const details = App.state.mode === "live"
+        ? [s.flow ? `${s.flow} MSm³/d` : "", s.pressure].filter(Boolean).join("\n")
+        : s.sub;
+      return { id, hidden: s.hidden, title: `${NORA.assets[id].name}${details ? `\n${details}` : ""}` };
     }));
     edges.update(App.pipeIds.map((id) => {
       const s = App.pipeStyle(id);
@@ -507,5 +527,6 @@
   };
 
   view.quadrants = quadrants; // for tests: which side of a node each outflow is written on
+  view.card = card; // for tests: the renderer of one node
   App.register("flow", view);
 })();

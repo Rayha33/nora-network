@@ -61,19 +61,18 @@ lng = [60, 90]
 storage = [50, 150]
 market = [45, 80]
 
-# The control-room palette: calm grey paper. Colour is reserved for abnormal conditions
-# and alarms, so when something goes wrong it stands out at once. Never pure white:
-# "active" is the lightest grey.
+# The control-room palette: cool neutral surfaces with crisp contrast. Colour is
+# reserved for abnormal conditions and alarms, so problems stand out at once.
 [colors]
-paper = "#c6c9cc"        # the background
-dots = "#b4b8bc"         # the paper's dot grid
-water = "#b4b8bc"        # sea on the map, a step darker than land
-panel = "#d4d7d9"        # panels and controls, a step lighter than the paper
-inactive = "#6b7177"     # dark grey: closed, offline or no flow
-normal = "#dfe2e4"       # light grey: normal state
-active = "#f1f2f3"       # lightest grey: open, flowing, active
-text = "#22272b"
-text_dim = "#50575d"
+paper = "#eef1f3"        # the background
+dots = "#d8dee2"         # the paper's dot grid
+water = "#dce5e8"        # sea on the map, a step darker than land
+panel = "#f8fafb"        # panels and controls, a step lighter than the paper
+inactive = "#6b7680"     # dark grey: closed, offline or no flow
+normal = "#c6d0d6"       # mid grey: normal state
+active = "#f4f7f8"       # lightest grey: open, flowing, active
+text = "#18242c"
+text_dim = "#586771"
 warning = "#ffbf00"      # amber: warning (priority 3)
 medium = "#ff7a1a"       # orange: medium-priority alarm (priority 2)
 critical = "#e5322d"     # red: critical alarm (priority 1)
@@ -84,15 +83,15 @@ peak = "#5f6d7a"          # neutral grey-blue: a change in flow moving with the 
 
 # The same roles on dark grey paper, for the dark theme.
 [colors_dark]
-paper = "#2a2e32"
-dots = "#363b40"
-water = "#212528"
-panel = "#32373c"
-inactive = "#4c5258"
-normal = "#8c949b"
-active = "#d5d9dc"
-text = "#e1e4e6"
-text_dim = "#9aa1a7"
+paper = "#11181d"
+dots = "#243139"
+water = "#0c1318"
+panel = "#182229"
+inactive = "#53616b"
+normal = "#7d8d97"
+active = "#d5dfe4"
+text = "#e1e9ed"
+text_dim = "#9aaab4"
 warning = "#ffbf00"
 medium = "#ff7a1a"
 critical = "#ff4d47"

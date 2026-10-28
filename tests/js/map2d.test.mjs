@@ -132,3 +132,35 @@ function loadFirstHour(App, nora) {
   App.live.index = 0;
   App.live.time = stream.times[0];
 }
+
+/* Ray, 28 Oct: "the line shouldn't go over the text". Lines leave a Flow node
+   downwards, straight through where its name is written, so the name, rate and trend
+   sit on a paper backing drawn before the text, at full opacity. */
+test("flow circles: no line runs through a node's name", () => {
+  const loaded = loadApp();
+  const { App, NORA } = loaded;
+  loadFirstHour(App, loaded.NORA);
+  App.state.mode = "live";
+  const calls = [];
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "measureText") return (t) => ({ width: String(t).length * 6 });
+      return (...args) => calls.push({ op: key, args, fill: target.fillStyle, alpha: target.globalAlpha });
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  for (const id of ["kvitebjorn", "sleipner"]) {
+    calls.length = 0;
+    App.views.flow.card(id)({ ctx, x: 0, y: 0, state: { selected: false, hover: false } }).drawNode();
+    const name = calls.findIndex((c) => c.op === "fillText" && c.args[0] === NORA.assets[id].name);
+    assert.ok(name >= 0, `${id}: the name is written below the circle`);
+    const [, nx, ny] = calls[name].args;
+    const backing = calls.slice(0, name).find((c) => c.op === "fillRect" && c.fill === App.colors.paper);
+    assert.ok(backing, `${id}: a paper backing is drawn before the name`);
+    assert.equal(backing.alpha, 1, `${id}: and it is opaque`);
+    const [bx, by, bw, bh] = backing.args, width = String(calls[name].args[0]).length * 6;
+    assert.ok(bx <= nx - width / 2 && bx + bw >= nx + width / 2, `${id}: it covers the name's width`);
+    assert.ok(by <= ny - 10 && by + bh >= ny + 3, `${id}: and its height, descenders too`);
+  }
+});

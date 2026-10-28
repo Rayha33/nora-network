@@ -142,7 +142,7 @@
         "text-offset": [0, 0.8], "text-anchor": "top", "text-optional": true, "text-max-width": 9,
       },
       paint: {
-        "text-opacity": nodeOpacity, "text-color": C.text, "text-halo-color": C.paper, "text-halo-width": 1.5,
+        "text-opacity": nodeOpacity, "text-color": C.text, "text-halo-color": C.paper, "text-halo-width": 2, // no line shows through a name
       } });
     // Alarm badges: shape + number + colour, on nodes and at the middle of lines.
     for (const [id, source, offset] of [["nora-node-alarms", "nora-node-badges", [12, -12]], ["nora-pipe-alarms", "nora-mids", [0, 0]]]) {

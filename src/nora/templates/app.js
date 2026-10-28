@@ -964,11 +964,9 @@ const App = (() => {
       const nom = metric("nomination_msm3d", id, f);
       out.level = levelOf(id);
       if (through != null && through < 0.05) out.inactive = true;
-      const parts = [];
-      if (nom > 0) parts.push(`${fmt(through, 1)} / ${fmt(nom, 1)} nom`);
-      else if (through != null) parts.push(`${fmt(through, 1)} MSm³/d`);
-      if (p != null) parts.push(`${fmt(p)} bar`);
-      out.sub = parts.join("  ") || out.sub;
+      out.flow = nom > 0 ? `${fmt(through, 1)} / ${fmt(nom, 1)}` : through != null ? fmt(through, 1) : "";
+      out.pressure = p != null ? `${fmt(p)} bar` : "";
+      out.sub = "";
     } else if (mode === "load" && d.modelFlow != null) {
       out.sub = `${fmt(d.modelFlow)} MSm³/d`;
     } else if (mode === "risk" && d.type !== "market") {
@@ -1295,36 +1293,54 @@ const App = (() => {
         (toward ? inbound : outbound).push(pid);
       }
     }
-    const W = 360, H = 230, mid = 112;
-    const place = (list, y) => list.map((pid, i) => ({ pid, x: ((i + 1) / (list.length + 1)) * W, y }));
-    let m = "";
-    for (const { pid, x, y } of [...place(inbound, 26), ...place(outbound, 200)]) {
-      const s = pipeStyle(pid), v = f.flows[pid], above = y < mid;
-      const color = s.level ? LEVEL_COLOR[s.level] : v == null || Math.abs(v) < 0.05 ? COLORS.inactive : COLORS.active;
-      const y1 = y + (above ? 8 : -8), y2 = mid + (above ? -20 : 20);
-      if (s.level) m += `<line x1="${x}" y1="${y1}" x2="${W / 2}" y2="${y2}" stroke="${COLORS.casing}" stroke-width="${s.width + 2.4}"/>`;
-      m += `<line x1="${x}" y1="${y1}" x2="${W / 2}" y2="${y2}" stroke="${color}" stroke-width="${Math.max(1.2, s.width)}"/>`;
-      if (s.level) m += `<g transform="translate(${(x + W / 2) / 2 - 8} ${(y1 + y2) / 2 - 8})">${shapeMarkup(s.level)}</g>`;
-      const label = `${nameOf(pid)}${v == null ? "" : `: ${fmt(Math.abs(v), 1)}`}`;
-      m += `<text x="${x}" y="${above ? y : y + 14}" text-anchor="middle" style="${TEXT}">${esc(label.length > 34 ? `${label.slice(0, 33)}…` : label)}</text>`;
-    }
-    if (d.kind === "node") { // the node as in the Flow view: a state-grey circle holding flow and pressure
-      const st = nodeStyle(id), look = COLORS.card[st.inactive ? "inactive" : state.mode === "live" ? "active" : "normal"];
-      const flow = throughput(id, f.flows), bar = metric("pressure_bar", id);
-      m += `<circle cx="${W / 2}" cy="${mid}" r="22" fill="${look.fill}" stroke="${st.level ? LEVEL_COLOR[st.level] : look.edge}" stroke-width="${st.level ? 2.5 : 1}"/>`;
-      if (flow != null) m += `<text x="${W / 2}" y="${mid + (bar != null ? -2 : 4)}" text-anchor="middle" fill="${look.ink}" style="${TEXT};font-weight:600">${esc(fmt(flow, flow < 10 ? 1 : 0))}</text>`;
-      if (bar != null) m += `<text x="${W / 2}" y="${mid + 12}" text-anchor="middle" class="dimtext" style="${TEXT};font-size:9.5px">${esc(fmt(bar))} bar</text>`;
-    }
-    else {
-      const s = pipeStyle(id);
-      m += `<text x="${W / 2}" y="40" text-anchor="middle" style="${TEXT}">${esc(nameOf(d.from))}</text><text x="${W / 2}" y="${H - 14}" text-anchor="middle" style="${TEXT}">${esc(nameOf(d.to))}</text>`;
+    if (d.kind === "pipeline") {
+      const W = 420, H = 230, s = pipeStyle(id);
+      let m = `<text x="${W / 2}" y="40" text-anchor="middle" style="${TEXT}">${esc(nameOf(d.from))}</text><text x="${W / 2}" y="${H - 14}" text-anchor="middle" style="${TEXT}">${esc(nameOf(d.to))}</text>`;
       m += `<line x1="${W / 2}" y1="52" x2="${W / 2}" y2="${H - 34}" stroke="${s.level ? COLORS.casing : "none"}" stroke-width="${s.width + 2.4}"/><line x1="${W / 2}" y1="52" x2="${W / 2}" y2="${H - 34}" stroke="${s.level ? LEVEL_COLOR[s.level] : s.color}" stroke-width="${Math.max(1.2, s.width)}"/>`;
+      const lvl = levelOf(id);
+      if (lvl) m += `<g transform="translate(${W / 2 + 12} ${H / 2 - 8})">${shapeMarkup(lvl)}</g>`;
+      return svg(`0 0 ${W} ${H}`, m, "schematic");
     }
+    /* A node: one row per line, gas in above the circle and gas out below it, so labels
+       never meet however many lines there are. Names sit in a column on the left with
+       the flow (MSm³/d) right-aligned beside them; each line fans from its row into the
+       circle, and the node's name sits to the right of the circle, where no line runs. */
+    const W = 420, ROW = 19, R = 22, CX = 300, END = 236, START = 246;
+    const rows = [];
+    let y = 4, m = "";
+    const group = (list, title) => {
+      if (!list.length) return;
+      y += 14;
+      m += `<text x="18" y="${y}" class="dimtext" style="${TEXT};font-size:10.5px">${title}</text>`;
+      for (const pid of list) { y += ROW; rows.push({ pid, y }); }
+    };
+    group(inbound, "Gas in");
+    const mid = y + R + 14;
+    y = mid + R;
+    group(outbound, "Gas out");
+    const H = Math.max(mid + R, y) + 10;
+    for (const { pid, y: ry } of rows) {
+      const s = pipeStyle(pid), v = f.flows[pid];
+      const color = s.level ? LEVEL_COLOR[s.level] : v == null || Math.abs(v) < 0.05 ? COLORS.inactive : COLORS.active;
+      const ly = ry - 4; // the middle of the row's text
+      if (s.level) m += `<line x1="${START}" y1="${ly}" x2="${CX}" y2="${mid}" stroke="${COLORS.casing}" stroke-width="${s.width + 2.4}"/>`;
+      m += `<line x1="${START}" y1="${ly}" x2="${CX}" y2="${mid}" stroke="${color}" stroke-width="${Math.max(1.2, s.width)}"/>`;
+      if (s.level) m += `<g transform="translate(0 ${ry - 12}) scale(0.9)">${shapeMarkup(s.level)}</g>`;
+      const name = nameOf(pid);
+      m += `<text x="18" y="${ry}" style="${TEXT}">${esc(name.length > 28 ? `${name.slice(0, 27)}…` : name)}</text>`;
+      if (v != null) m += `<text x="${END}" y="${ry}" text-anchor="end" class="dimtext" style="${TEXT}">${esc(fmt(Math.abs(v), 1))}</text>`;
+    }
+    // The node as in the Flow view: a state-grey circle holding flow and pressure.
+    const st = nodeStyle(id), look = COLORS.card[st.inactive ? "inactive" : state.mode === "live" ? "active" : "normal"];
+    const flow = throughput(id, f.flows), bar = metric("pressure_bar", id);
+    m += `<circle cx="${CX}" cy="${mid}" r="${R}" fill="${look.fill}" stroke="${st.level ? LEVEL_COLOR[st.level] : look.edge}" stroke-width="${st.level ? 2.5 : 1}"/>`;
+    if (flow != null) m += `<text x="${CX}" y="${mid + (bar != null ? -2 : 4)}" text-anchor="middle" fill="${look.ink}" style="${TEXT};font-weight:500">${esc(fmt(flow, flow < 10 ? 1 : 0))}</text>`;
+    if (bar != null) m += `<text x="${CX}" y="${mid + 12}" text-anchor="middle" class="dimtext" style="${TEXT};font-size:9.5px">${esc(fmt(bar))} bar</text>`;
     const lvl = levelOf(id);
-    if (lvl) m += `<g transform="translate(${W / 2 + 12} ${mid - 30})">${shapeMarkup(lvl)}</g>`;
-    if (d.kind === "node") m += `<text x="${W / 2 + 30}" y="${mid + 4}" style="${TEXT};font-weight:500">${esc(d.name)}</text>`;
-    if (d.kind === "node" && !inbound.length && !outbound.length) m += `<text x="${W / 2}" y="200" text-anchor="middle" class="dimtext" style="${TEXT}">No connected pipelines</text>`;
-    return svg(`0 0 ${W} ${H}`, m, "schematic");
+    if (lvl) m += `<g transform="translate(${CX + 12} ${mid - R - 10})">${shapeMarkup(lvl)}</g>`;
+    m += `<text x="${CX + R + 8}" y="${mid + 4}" style="${TEXT};font-weight:500">${esc(d.name.length > 13 ? `${d.name.slice(0, 12)}…` : d.name)}</text>`;
+    if (!rows.length) m += `<text x="${CX}" y="${mid + R + 18}" text-anchor="middle" class="dimtext" style="${TEXT}">No connected pipelines</text>`;
+    return svg(`0 0 ${W} ${rows.length ? H : mid + R + 26}`, m, "schematic");
   }
 
   // Level 4: the readings behind the values, newest first, and where they come from.
@@ -1391,6 +1407,9 @@ const App = (() => {
     const unitSelect = $("crumb-unit");
     unitSelect.value = s === "asset" || s === "diag" ? unitOf[route.asset] || "all" : route.unit;
     unitSelect.setAttribute("aria-current", s === "unit" ? "page" : "false");
+    const mapUnit = route.unit === "all" ? null : unitById[route.unit];
+    $("map-kicker").textContent = mapUnit ? "Operating unit" : "All operating units";
+    $("map-unit").textContent = mapUnit ? mapUnit.name : "North Sea gas network";
     const deep = s === "asset" || s === "diag";
     $("sep-asset").hidden = $("crumb-asset").hidden = !deep;
     $("sep-diag").hidden = $("crumb-diag").hidden = s !== "diag";
@@ -1790,6 +1809,8 @@ const App = (() => {
   function markTabs() {
     for (const tab of document.querySelectorAll("[data-view]")) tab.setAttribute("aria-selected", String(tab.dataset.view === state.view));
     for (const tab of document.querySelectorAll("[data-mode]")) tab.setAttribute("aria-selected", String(tab.dataset.mode === state.mode));
+    const modeLabels = { live: "Live operations", load: "Capacity load · model", risk: "Outage exposure · model", whatif: "What-if analysis", plain: "Network assets" };
+    $("map-mode-label").textContent = modeLabels[state.mode];
   }
 
   function start() {
