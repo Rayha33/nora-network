@@ -103,7 +103,14 @@
     view.ready = false;
     calmBasemap();
     await Promise.all([1, 2, 3].map((l) => loadImage(`nora-alarm-${l}`, badgeUri(l), 32)));
-    map.addSource("nora-pipes", { type: "geojson", data: NORA.geo.pipes });
+    const pipeGeo = {
+      ...NORA.geo.pipes,
+      features: NORA.geo.pipes.features.map((feature) => ({
+        ...feature,
+        properties: { ...feature.properties, map_name: App.pipeMapName(feature.properties.asset) },
+      })),
+    };
+    map.addSource("nora-pipes", { type: "geojson", data: pipeGeo });
     map.addSource("nora-nodes", { type: "geojson", data: NORA.geo.nodes });
     map.addSource("nora-node-badges", { type: "geojson", data: badgeData });
     map.addSource("nora-mids", { type: "geojson", data: mids });
@@ -121,6 +128,12 @@
       paint: { "line-color": ["to-color", state("color", C.inactive)], "line-width": width(0.8), "line-dasharray": [2, 2], "line-opacity": opacity } });
     map.addLayer({ id: "nora-pipes", type: "line", source: "nora-pipes", filter: ["!=", ["get", "onshore"], true], layout: { "line-cap": "round" },
       paint: { "line-color": ["to-color", state("color", C.normal)], "line-width": width(1), "line-opacity": opacity } });
+    map.addLayer({ id: "nora-pipe-names", type: "symbol", source: "nora-pipes", filter: ["!=", ["get", "map_name"], ""],
+      layout: {
+        "symbol-placement": "line", "text-field": ["get", "map_name"], "text-font": ["Noto Sans Regular"],
+        "text-size": 11.5, "text-optional": true, "text-keep-upright": true, "text-max-width": 12, "text-padding": 4,
+      },
+      paint: { "text-opacity": opacity, "text-color": C.text, "text-halo-color": C.paper, "text-halo-width": 2 } });
     map.addLayer({ id: "nora-pipes-hit", type: "line", source: "nora-pipes", paint: { "line-color": "#000", "line-opacity": 0, "line-width": 14 } });
     /* Nodes are plain circles in their state grey, as in the Flow view: no icons (Ray,
        28 Oct). An alarm colours only the outline, and the badge carries the shape and
@@ -175,6 +188,7 @@
       "nora-pipes-hit": { paint: { "line-width": 14 * k } },
       "nora-selected": { paint: { "circle-radius": radius(5), "circle-stroke-width": 2 * k } },
       "nora-node-dots": { paint: { "circle-radius": radius(), "circle-stroke-width": ["*", k, state("edgeWidth", 1)] } },
+      "nora-pipe-names": { layout: { "text-size": 11.5 * k }, paint: { "text-halo-width": 2 * k } },
       "nora-nodes": { layout: { "text-size": 11.5 * k }, paint: { "text-halo-width": 2 * k } },
       "nora-node-alarms": { layout: { "icon-size": 0.85 * k } },
       "nora-pipe-alarms": { layout: { "icon-size": 0.85 * k } },
@@ -466,6 +480,7 @@
   view.applySettings = () => {
     if (!view.ready) return;
     map.setLayoutProperty("nora-nodes", "text-field", App.settings().names ? ["get", "name"] : "");
+    map.setLayoutProperty("nora-pipe-names", "visibility", App.settings().names ? "visible" : "none");
     scaleLayers();
   };
 

@@ -148,6 +148,21 @@ function NoraCanvasMap(view) {
       ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(text, b.x, b.y); // no line shows through a name
       ctx.fillStyle = C.text; ctx.fillText(text, b.x, b.y);
     }
+    // Major pipeline names use the same collision map as node names.
+    if (names) {
+      ctx.textBaseline = "middle";
+      for (const p of pipes) {
+        const s = App.pipeStyle(p.id), text = App.pipeMapName(p.id);
+        if (!text || s.hidden || s.dim) continue;
+        const m = along(p.id, 0.5), y = m.y - 9 * u;
+        const w = ctx.measureText(text).width + 4 * u, box = [m.x - w / 2, y - 8 * u, m.x + w / 2, y + 8 * u];
+        if (placed.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) continue;
+        placed.push(box);
+        ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(text, m.x, y);
+        ctx.fillStyle = C.text; ctx.fillText(text, m.x, y);
+      }
+      ctx.textBaseline = "top";
+    }
     // Alarm badges on lines, at their middle.
     for (const p of pipes) {
       const s = App.pipeStyle(p.id);
