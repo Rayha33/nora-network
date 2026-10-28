@@ -27,6 +27,11 @@ Dutch and Danish gas to Europe's markets.
   dataset with one command; `nora live` serves it as a real Server-Sent Events feed.
 - **One-file sharing.** `network.html` is a single file you can email or host anywhere;
   the flow overview even works offline. The whole site is static and rebuilt on every merge.
+- **Any screen in a control room.** One page fits a video wall, an operator desk and a
+  tablet. It picks a display profile and one UI scale from the window: large and dark
+  on a wall, with the pointer hidden when idle. Settings, Display can change both, and
+  so can the link: `?display=wall|desk|compact`, `?scale=150`, and `?rotate=60` to cycle
+  Overview, Map and Flow on an unattended screen.
 
 ## Quick start
 

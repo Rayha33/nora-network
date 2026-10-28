@@ -61,12 +61,13 @@ function NoraCanvasMap(view) {
     const steps = Math.max(4, Math.ceil(Math.abs(extent[1] - extent[0]) * 32));
     return Array.from({ length: steps + 1 }, (_, i) => along(id, extent[0] + (extent[1] - extent[0]) * (i / steps)));
   }
-  // Line widths follow map.js: hairlines when zoomed out, a little more weight closer in.
+  /* Line widths follow map.js: hairlines when zoomed out, a little more weight closer in.
+     Every size in screen pixels follows the one UI scale (App.uiScale, issue #59). */
   function lineWidth(w) {
     const z = zoom(), k = z <= 3 ? 0.45 : z <= 6 ? 0.45 + ((z - 3) / 3) * 0.25 : Math.min(1.1, 0.7 + ((z - 6) / 3) * 0.4);
-    return Math.max(0.6, w * k);
+    return Math.max(0.6, w * k) * App.uiScale();
   }
-  const nodeRadius = () => Math.max(3.5, Math.min(9, 2 + zoom() * 0.9));
+  const nodeRadius = () => Math.max(3.5, Math.min(9, 2 + zoom() * 0.9)) * App.uiScale();
 
   function size() {
     ratio = window.devicePixelRatio || 1;
@@ -89,7 +90,7 @@ function NoraCanvasMap(view) {
     ctx.fillStyle = C.paper;
     ctx.fill(land);
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    const live = App.state.mode === "live";
+    const live = App.state.mode === "live", u = App.uiScale();
     // Pipelines: casing under any line in alarm, so colour never stands alone.
     ctx.lineCap = "round";
     for (const p of pipes) {
@@ -99,7 +100,7 @@ function NoraCanvasMap(view) {
       const trace = () => { ctx.beginPath(); pts.forEach((q, i) => (i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y))); };
       ctx.globalAlpha = s.dim ? 0.3 : 1;
       const w = lineWidth(s.width) * (p.onshore ? 0.8 : 1);
-      if (s.level) { trace(); ctx.setLineDash([]); ctx.strokeStyle = C.casing; ctx.lineWidth = w + 1.6; ctx.stroke(); }
+      if (s.level) { trace(); ctx.setLineDash([]); ctx.strokeStyle = C.casing; ctx.lineWidth = w + 1.6 * u; ctx.stroke(); }
       trace();
       ctx.setLineDash(p.onshore || s.dashed ? [2 * w + 1, 2 * w + 1] : []);
       ctx.strokeStyle = s.color;
@@ -121,41 +122,41 @@ function NoraCanvasMap(view) {
       ctx.arc(q.x, q.y, r, 0, Math.PI * 2);
       ctx.fillStyle = look.fill;
       ctx.fill();
-      ctx.lineWidth = s.level ? 2.5 : 1;
+      ctx.lineWidth = (s.level ? 2.5 : 1) * u;
       ctx.strokeStyle = s.level ? App.levelColor[s.level] : C.text_dim;
       ctx.stroke();
       if (n.id === highlighted) {
-        ctx.beginPath(); ctx.arc(q.x, q.y, r + 5, 0, Math.PI * 2);
-        ctx.lineWidth = 2; ctx.strokeStyle = C.text; ctx.stroke();
+        ctx.beginPath(); ctx.arc(q.x, q.y, r + 5 * u, 0, Math.PI * 2);
+        ctx.lineWidth = 2 * u; ctx.strokeStyle = C.text; ctx.stroke();
       }
       ctx.globalAlpha = 1;
-      if (s.level) App.drawBadge(ctx, s.level, q.x + r + 1, q.y - r - 10, 7);
-      dots.push([q.x - r - 1, q.y - r - 1, q.x + r + 1, q.y + r + 1]);
-      if (names && !s.dim) boxes.push({ id: n.id, x: q.x, y: q.y + r + 3, level: s.level });
+      if (s.level) App.drawBadge(ctx, s.level, q.x + r + u, q.y - r - 10 * u, 7 * u);
+      dots.push([q.x - r - u, q.y - r - u, q.x + r + u, q.y + r + u]);
+      if (names && !s.dim) boxes.push({ id: n.id, x: q.x, y: q.y + r + 3 * u, level: s.level });
     }
     // Labels: alarms first, then the rest; a name that would cover another is skipped.
-    ctx.font = "11.5px Archivo, system-ui, sans-serif";
+    ctx.font = `${11.5 * u}px Archivo, system-ui, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
     ctx.lineJoin = "round";
     const placed = [];
     for (const b of boxes.sort((a, c) => c.level - a.level)) {
-      const text = App.nameOf(b.id), w = ctx.measureText(text).width + 4, box = [b.x - w / 2, b.y, b.x + w / 2, b.y + 13];
+      const text = App.nameOf(b.id), w = ctx.measureText(text).width + 4 * u, box = [b.x - w / 2, b.y, b.x + w / 2, b.y + 13 * u];
       if (placed.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) continue;
       placed.push(box);
-      ctx.lineWidth = 4; ctx.strokeStyle = C.paper; ctx.strokeText(text, b.x, b.y); // no line shows through a name
+      ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(text, b.x, b.y); // no line shows through a name
       ctx.fillStyle = C.text; ctx.fillText(text, b.x, b.y);
     }
     // Alarm badges on lines, at their middle.
     for (const p of pipes) {
       const s = App.pipeStyle(p.id);
-      if (s.level && !s.hidden) { const m = along(p.id, 0.5); App.drawBadge(ctx, s.level, m.x + 8, m.y - 7, 7); }
+      if (s.level && !s.hidden) { const m = along(p.id, 0.5); App.drawBadge(ctx, s.level, m.x + 8 * u, m.y - 7 * u, 7 * u); }
     }
     // Pigs, peaks and gas quality: bands first, then the markers on top.
     if (live) {
       const z = zoom(), detail = z >= 6.5 ? 2 : z >= 5 ? 1 : 0, marks = App.markers();
       for (const m of marks) {
-        if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]), 4, bandPath(m.id, m.extent));
+        if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]), 4 * u, bandPath(m.id, m.extent));
       }
       drawnMarks = [];
       const taken = [...placed, ...dots]; // marker labels keep clear of names and dots
@@ -210,7 +211,7 @@ function NoraCanvasMap(view) {
 
   // ------------------------------------------------------------------ hit testing
   function hit(sx, sy) {
-    const r = nodeRadius() + 5;
+    const r = nodeRadius() + 5 * App.uiScale();
     let best = null, bestD = Infinity;
     for (const n of nodes) {
       if (App.nodeStyle(n.id).hidden) continue;
@@ -271,7 +272,7 @@ function NoraCanvasMap(view) {
       readout.textContent = `${Math.abs(lat).toFixed(4)}°${lat >= 0 ? "N" : "S"}  ${Math.abs(lon).toFixed(4)}°${lon >= 0 ? "E" : "W"}  ·  zoom ${zoom().toFixed(1)}`;
       const previous = pointers.get(e.pointerId);
       if (!previous) {
-        const mark = drawnMarks.find((d) => Math.hypot(d.x - e.offsetX, d.y - e.offsetY) < 9);
+        const mark = drawnMarks.find((d) => Math.hypot(d.x - e.offsetX, d.y - e.offsetY) < 9 * App.uiScale());
         if (mark) { canvas.style.cursor = "help"; canvas.title = App.markerTip(mark.m); return; }
         const id = hit(e.offsetX, e.offsetY);
         canvas.style.cursor = id ? "pointer" : "grab";

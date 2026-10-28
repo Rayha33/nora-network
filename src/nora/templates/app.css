@@ -32,6 +32,7 @@
   --ctl-font: 12.5px;
   --bar-h: 112px;
   --player-h: 76px;
+  --ui-scale: 1;            /* set by app.js from the display profile, the window or Settings */
   color-scheme: light;
 }
 
@@ -72,9 +73,15 @@ a { color: var(--text); text-underline-offset: 3px; }
   background-size: 22px 22px;
 }
 
-/* Application frame */
-.stage { position: fixed; inset: var(--bar-h) 0 0; }
-.has-player .stage { bottom: var(--player-h); }
+/* Application frame. One UI scale (issue #59): the chrome is zoomed by --ui-scale, so
+   type, controls, lines and icons grow together on a video wall. The views under
+   .stage are not zoomed (maps and canvases keep their own pixels); they draw at
+   App.uiScale() themselves. Sizes below stay in unzoomed px; anything sized in vw
+   inside zoomed chrome divides by the scale. */
+.bar, .player, .sidebar, .pop, .screen, .map-context, .map-note, .map2d-zoom, .ctx-menu { zoom: var(--ui-scale); }
+.stage { position: fixed; inset: calc(var(--bar-h) * var(--ui-scale)) 0 0; }
+.has-player .stage { bottom: calc(var(--player-h) * var(--ui-scale)); }
+body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer when idle */
 .view, .screen { position: absolute; inset: 0; }
 .screen { overflow: auto; }
 .dots-layer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
@@ -210,12 +217,12 @@ a { color: var(--text); text-underline-offset: 3px; }
 .ctx-menu .rule { border-top: 1px solid var(--rule); margin: 5px 0; }
 
 /* Content screens */
-.screen-body { max-width: 1480px; margin: 0 auto; padding: 28px 28px 48px; }
+.screen-body { padding: 28px 28px 48px; } /* fluid: big screens get more columns, not margins */
 .screen h1 { font-size: 24px; line-height: 1.2; margin: 0 0 5px; font-weight: 600; letter-spacing: -0.025em; }
 .screen h2 { font-size: 13px; line-height: 1.35; margin: 0 0 12px; font-weight: 600; color: var(--text-dim); }
 .screen .sub { color: var(--text-dim); margin: 0 0 24px; }
-.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; }
-.box { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 20px; box-shadow: var(--shadow-sm); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 16px; }
+.box { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 20px; box-shadow: var(--shadow-sm); container-type: inline-size; }
 .box.wide { grid-column: 1 / -1; }
 .banner { display: flex; align-items: center; gap: 14px; padding: 20px 22px; margin-bottom: 16px; }
 .banner .big { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -0.015em; }
@@ -238,6 +245,14 @@ a { color: var(--text); text-underline-offset: 3px; }
 .bank .state { font-size: 12px; white-space: nowrap; }
 .bank .value { font-size: 11px; color: var(--text-dim); }
 .bank .rate-inline { display: none; }
+/* A box too narrow for five columns shows the sidebar's three: the rate moves inline. */
+@container (max-width: 560px) {
+  .bank { grid-template-columns: minmax(80px, 1fr) minmax(110px, 1.6fr) 70px; }
+  .bank .rate, .bank .state.optional, .bank .head.optional { display: none; }
+  .bank .rate-inline { display: inline; margin-left: 8px; }
+  .bank > * { min-width: 0; }
+  .bank .trend { width: 70px; }
+}
 .empty { color: var(--text-dim); margin: 0; }
 .range { width: 100%; height: 28px; display: block; overflow: visible; }
 .trend { width: 92px; height: 28px; display: block; overflow: visible; }
@@ -263,6 +278,10 @@ table.data th, table.data td { text-align: right; padding: 8px; border-bottom: 1
 table.data th:first-child, table.data td:first-child { text-align: left; }
 table.data th { color: var(--text-dim); font-size: 11.5px; font-weight: 500; position: sticky; top: 0; background: var(--surface); }
 table.data tbody tr:hover { background: var(--band); }
+/* The gas-quality table holds sentences ("Kollsnes, 2.9 ppm, in 3 h"): they wrap, so the
+   table fits its box at any width; only the value stays on one line. */
+table.data.quality th, table.data.quality td { white-space: normal; }
+table.data.quality td:nth-child(2) { white-space: nowrap; }
 .facts { display: grid; grid-template-columns: minmax(90px, auto) 1fr; gap: 8px 18px; margin: 0; }
 .facts dt { color: var(--text-dim); }
 .facts dd { margin: 0; }
@@ -361,7 +380,7 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 /* Asset sidebar: slides in from the right when a field, plant or line is clicked.
    It mirrors the asset page (schematic, values, facts) in one calm column. */
 .sidebar {
-  position: fixed; top: var(--bar-h); right: 0; bottom: 0; width: min(460px, 96vw); z-index: 25;
+  position: fixed; top: var(--bar-h); right: 0; bottom: 0; width: min(460px, calc(96vw / var(--ui-scale))); z-index: 25;
   display: flex; flex-direction: column; background: var(--panel);
   border-left: 1px solid var(--rule); box-shadow: -18px 0 50px rgba(18, 30, 38, 0.16);
   transform: translateX(calc(100% + 50px)); visibility: hidden;
@@ -437,7 +456,7 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
   .bank .rate, .bank .state.optional, .bank .head.optional { display: none; }
   .bank .rate-inline { display: inline; margin-left: 8px; }
   .trend { width: 70px; }
-  .pop { right: 12px; width: min(360px, calc(100vw - 24px)); }
+  .pop { right: 12px; width: min(360px, calc((100vw - 24px) / var(--ui-scale))); }
   .map-context { top: 14px; left: 14px; padding: 13px 15px; }
   .map-context h1 { font-size: 18px; }
   .coord-readout { display: none; }
@@ -468,7 +487,7 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
   .next { grid-column: 2; grid-row: 1; padding: 0 9px; }
   .now select { font-size: 11px; }
   .player .speed { display: none; }
-  .sidebar { width: 100vw; }
+  .sidebar { width: calc(100vw / var(--ui-scale)); }
   .box { padding: 16px; }
   .banner { padding: 17px; }
   .banner .big { font-size: 17px; }

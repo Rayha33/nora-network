@@ -323,9 +323,10 @@
   function drawRowNames(ctx, positions) {
     const ratio = (network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
     const scale = network.getScale();
+    const u = App.uiScale(); // screen-pixel text follows the one UI scale (issue #59)
     ctx.save();
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    ctx.font = "600 11px Archivo, system-ui, sans-serif";
+    ctx.font = `600 ${11 * u}px Archivo, system-ui, sans-serif`;
     ctx.textBaseline = "middle";
     for (const row of ROWS) {
       const p = positions[row.id];
@@ -333,21 +334,21 @@
       const dom = network.canvasToDOM(p);
       const width = ctx.measureText(row.name).width;
       const [x, y] = direction === "vertical"
-        ? [10, dom.y - circleRadius(row.id) * scale - 12]
-        : [dom.x - width / 2, 12];
+        ? [10 * u, dom.y - circleRadius(row.id) * scale - 12 * u]
+        : [dom.x - width / 2, 12 * u];
       if (y < 0 || y > el.clientHeight || x > el.clientWidth) continue;
       ctx.globalAlpha = 0.85;
       ctx.fillStyle = C.paper;
-      ctx.fillRect(x - 4, y - 8, width + 8, 16);
+      ctx.fillRect(x - 4 * u, y - 8 * u, width + 8 * u, 16 * u);
       ctx.globalAlpha = 1;
       ctx.fillStyle = C.text_dim;
       ctx.textAlign = "left";
       ctx.fillText(row.name, x, y);
     }
     ctx.fillStyle = C.text_dim;
-    ctx.font = "11px Archivo, system-ui, sans-serif";
+    ctx.font = `${11 * u}px Archivo, system-ui, sans-serif`;
     ctx.textAlign = "right";
-    ctx.fillText(direction === "vertical" ? "Gas flows from top to bottom ↓" : "Gas flows from left to right →", el.clientWidth - 10, el.clientHeight - 12);
+    ctx.fillText(direction === "vertical" ? "Gas flows from top to bottom ↓" : "Gas flows from left to right →", el.clientWidth - 10 * u, el.clientHeight - 12 * u);
     ctx.restore();
   }
 
@@ -425,7 +426,7 @@
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     const marks = App.markers().filter((m) => edges.get(m.id) && !App.pipeStyle(m.id).hidden);
     const at = (m, t) => network.canvasToDOM(pointAlong(edges.get(m.id), Math.max(0, Math.min(1, t)), positions));
-    for (const m of marks) if (m.extent) App.drawBand(ctx, m, at(m, m.extent[0]), at(m, m.extent[1]));
+    for (const m of marks) if (m.extent) App.drawBand(ctx, m, at(m, m.extent[0]), at(m, m.extent[1]), 4 * App.uiScale());
     const taken = marks.length ? nodeBoxes(positions, scale) : [];
     for (const m of marks) {
       const p = pointAlong(edges.get(m.id), Math.max(0, Math.min(1, m.along)), positions);
