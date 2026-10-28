@@ -773,7 +773,16 @@ const App = (() => {
     ctx.globalAlpha = 1;
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
-    for (const point of points.slice(1)) ctx.lineTo(point.x, point.y);
+    if (points.length === 2) ctx.lineTo(points[1].x, points[1].y);
+    else {
+      // A continuous snake-like body: bend through the route samples instead of
+      // drawing a straight chord or a sequence of visibly kinked segments.
+      for (let i = 1; i < points.length - 1; i++) {
+        const point = points[i], next = points[i + 1];
+        ctx.quadraticCurveTo(point.x, point.y, (point.x + next.x) / 2, (point.y + next.y) / 2);
+      }
+      ctx.lineTo(head.x, head.y);
+    }
     if (len < 1) ctx.lineTo(a.x + 0.5, a.y);
     ctx.strokeStyle = COLORS.casing;
     ctx.lineWidth = width + 1.2;
