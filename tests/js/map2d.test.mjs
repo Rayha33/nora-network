@@ -262,9 +262,11 @@ test("flow circles: a mixed quadrant renders separate numeric readings without p
     App.live.values[pid] = ((p.from === id) === outgoing ? 1 : -1) * 5;
   }
   const labels = [];
+  let quadrantStrokes = 0;
   const ctx = new Proxy({
     measureText: (t) => ({ width: String(t).length * 6 }),
     fillText: (text, x, y) => labels.push({ text, x, y }),
+    stroke: () => { quadrantStrokes++; },
   }, {
     get: (target, key) => key in target ? target[key] : () => {},
     set(target, key, value) { target[key] = value; return true; },
@@ -274,6 +276,7 @@ test("flow circles: a mixed quadrant renders separate numeric readings without p
   const outgoing = labels.find((label) => label !== incoming && /^\d/.test(label.text) && label.x === incoming?.x && Math.abs(label.y - incoming.y) === 14);
   assert.ok(incoming && outgoing, `both directions are numeric readings on separate lines: ${JSON.stringify(labels)}`);
   assert.ok(labels.every((label) => !/^(in|out)\s/.test(label.text)), "position alone communicates direction");
+  assert.equal(quadrantStrokes, 0, "no quadrant divider lines are drawn inside the node");
   assert.notEqual(incoming.y, outgoing.y, "the two readings have their own lines");
 });
 
