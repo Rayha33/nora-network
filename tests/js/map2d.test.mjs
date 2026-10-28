@@ -58,18 +58,19 @@ test("peaks: a band from tail to head around the dot, ahead in the direction of 
 
 test("peaks: the band and head follow every bend in the pipeline path", () => {
   const { App } = loadApp();
-  const lines = [];
+  const lines = [], curves = [];
   const ctx = new Proxy({}, {
     get(target, key) {
       if (key in target) return target[key];
       if (key === "createLinearGradient") return () => ({ addColorStop: () => {} });
       if (key === "lineTo") return (x, y) => lines.push([x, y]);
+      if (key === "quadraticCurveTo") return (cx, cy, x, y) => curves.push([cx, cy, x, y]);
       return () => {};
     },
     set(target, key, value) { target[key] = value; return true; },
   });
   App.drawBand(ctx, { kind: "peak" }, { x: 0, y: 0 }, { x: 100, y: 100 }, 8, [{ x: 0, y: 0 }, { x: 50, y: 60 }, { x: 100, y: 100 }]);
-  assert.ok(lines.some(([x, y]) => x === 50 && y === 60), "the casing and band pass through the pipeline bend");
+  assert.ok(curves.some(([cx, cy]) => cx === 50 && cy === 60), "the flexible body curves through the pipeline bend");
 });
 
 test("peaks: opaque ends taper to a quieter centre behind the dot", () => {
