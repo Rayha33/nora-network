@@ -175,6 +175,12 @@ test("flow nodes: the fitted overview stays simple until labels are readable", (
   assert.deepEqual(Array.from(App.views.flow.overviewNameLines("Zeebrugge terminal")), ["Zeebrugge", "terminal"], "long names wrap instead of shrinking");
 });
 
+test("flow pressures: endpoint labels remain visible when zoomed out", () => {
+  const { App } = loadApp();
+  assert.equal(App.views.flow.pressureVisibility("live", 0.25), true, "live pressures do not disappear below the detail zoom");
+  assert.equal(App.views.flow.pressureVisibility("load", 0.25), false, "non-live modes still have no live pressure labels");
+});
+
 test("flow nodes: live flow (MSm³/d) and pressure (bar) for each node", () => {
   const loaded = loadApp();
   const { App } = loaded;
