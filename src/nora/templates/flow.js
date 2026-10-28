@@ -1,33 +1,24 @@
 /* Flow view (level 2): the whole network as a gas flow overview on dotted paper, top to
    bottom by default (fields at the top, markets at the bottom), with straight lines.
    vis-network draws the nodes, edges and options pyvis produced; each node is drawn as
-   a card: icon, name, value, and a 4-hour trend (the last 2 hours of flow, solid, and
-   the next 2 hours of nominations, dashed). Stage and rank come from layout.py
+   a circle holding its live flow (MSm³/d) and pressure (bar), with its name, rate of
+   change and a 4-hour trend below (the last 2 hours of flow, solid, and the next 2
+   hours of nominations, dashed). Stage and rank come from layout.py
    (NORA.grid); direction and spacing from the settings; colours, widths and labels from
    App.pipeStyle / App.nodeStyle. Alarm badges, pigs and peaks are drawn on top. */
 (() => {
   "use strict";
   const view = { ready: false, mounted: false };
   const C = App.colors; // updated in place when the theme switches
-  /* Circles, not squares: a Flow node is a circle filled by its state grey, the
-     asset icon inside, its name (and live rate) below, and a sparkline under
-     that when there is data. Ray, 27 Oct: "circles to show the nodes not squares". */
-  const CIRC = { r: 23, name: 14, sub: 12, trend: 12, pad: 8 };
+  /* Circles, not squares: a Flow node is a circle filled by its state grey, holding
+     the live numbers (no icon: Ray, 28 Oct, "this is valuable space ... for live flow
+     values and pressures"), with its name and rate below and a sparkline under that. */
+  const CIRC = { r: 27, name: 14, sub: 12, trend: 12, pad: 8 };
   const SPACING = { // [stage, rank] in canvas units
     vertical: { compact: [96, 160], comfortable: [124, 178], spacious: [160, 210] },
     horizontal: { compact: [210, 62], comfortable: [250, 72], spacious: [300, 90] },
   };
   let network = null, el = null, direction = "vertical";
-  const images = {};
-
-  function loadIcons() {
-    for (const [kind, uri] of Object.entries(NORA.icons)) {
-      const image = new Image();
-      image.onload = () => network && network.redraw();
-      image.src = uri;
-      images[kind] = image;
-    }
-  }
   function chooseDirection() {
     const wanted = App.settings().direction;
     if (wanted !== "auto") return wanted;
@@ -107,42 +98,31 @@
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(nowX, y - 1); ctx.lineTo(nowX, y + h + 1); ctx.stroke();
   }
-  /* The live bar graph inside each circle: one ring buffer of recent throughput
-     per node, sampled as the playhead moves (ten samples per frame), drawn as
-     small bars that grow and shrink with the simulated flow. Older bars are
-     paler, the newest is full ink; a node with no flow shows a flat line. */
-  const BARS = { n: 6, w: 4, gap: 2, maxH: CIRC.r * 1.1 };
-  const barHist = {}, barAt = {};
-  function liveBars(id) {
-    const at = Math.floor((App.live.playhead || 0) * 10) / 10; // sample 10x per frame
-    if (barAt[id] === at) return barHist[id];
-    barAt[id] = at;
-    const past = App.window4h(id).past.filter((v) => v != null);
-    const last = past.length ? past[past.length - 1] : 0;
-    const r = App.flowRate(id) || 0;
-    const v = Math.max(0, last + r * (at - Math.floor(at))); // live: latest frame plus its trend
-    const h = barHist[id] = barHist[id] || [];
-    h.push(v);
-    if (h.length > BARS.n) h.shift();
-    return h;
-  }
-  function drawLiveBars(ctx, id, x, y, look) {
-    const h = liveBars(id), max = Math.max(1, ...h);
+  /* Within-day delivery at an exit point, without words: the middle line is the plan
+     (delivered = nominated so far today), the lines either side the warning tolerance,
+     the ends the critical one. The pointer is where the day stands; it takes the alarm
+     colour only outside the tolerance. */
+  function drawDayBar(ctx, x, y, day, look) {
+    const T = App.thresholds.nomination, half = 16, full = T[2] * 1.2;
+    const at = (share) => x + Math.max(-1, Math.min(1, share / full)) * half;
     ctx.save();
-    ctx.beginPath(); ctx.arc(x, y, CIRC.r - 4, 0, Math.PI * 2); ctx.clip();
-    let bx = x - (BARS.n * BARS.w + (BARS.n - 1) * BARS.gap) / 2;
-    const base = y + CIRC.r - 9;
-    ctx.fillStyle = look.ink;
-    for (let i = 0; i < BARS.n; i++) {
-      const bh = Math.max(1.5, (h[i] / max) * BARS.maxH);
-      ctx.globalAlpha = 0.3 + 0.7 * ((i + 1) / BARS.n);
-      ctx.fillRect(bx, base - bh, BARS.w, bh);
-      bx += BARS.w + BARS.gap;
+    ctx.lineCap = "butt";
+    ctx.strokeStyle = look.dim;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x - half, y); ctx.lineTo(x + half, y); ctx.stroke(); // the track
+    ctx.strokeStyle = look.ink;
+    for (const [share, h] of [[-T[0], 3], [T[0], 3], [0, 5]]) { // tolerance lines, plan line
+      ctx.lineWidth = share ? 1 : 1.6;
+      ctx.beginPath(); ctx.moveTo(at(share), y - h); ctx.lineTo(at(share), y + h); ctx.stroke();
     }
+    const px = at(day.share);
+    ctx.beginPath(); // the pointer: a small triangle on the track
+    ctx.moveTo(px, y - 1.5); ctx.lineTo(px - 3.5, y - 7); ctx.lineTo(px + 3.5, y - 7); ctx.closePath();
+    ctx.fillStyle = day.level ? App.levelColor[day.level] : look.ink;
+    ctx.fill();
+    if (day.level) { ctx.strokeStyle = C.casing; ctx.lineWidth = 1; ctx.stroke(); }
     ctx.restore();
-    ctx.globalAlpha = 1;
   }
-
   // vis-network custom shape: the circle for one node, name and live numbers below it.
   function card(id) {
     return ({ ctx, x, y, state: { selected, hover } }) => ({
@@ -164,11 +144,30 @@
           ctx.strokeStyle = selected || hover ? look.ink : look.edge;
           ctx.stroke();
         }
-        if (live) drawLiveBars(ctx, id, x, y, look); // the bar graph: live simulated flow in the circle
-        else {
-          const icon = images[d.type];
-          if (icon && icon.complete) ctx.drawImage(icon, x - CIRC.r / 2, y - CIRC.r / 2, CIRC.r, CIRC.r);
+        // Inside the circle: flow now (MSm³/d), and pressure (bar) when it is measured.
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const now = live ? App.reading(id) : null;
+        const big = live ? (now.flow == null ? "–" : App.fmt(now.flow, now.flow < 10 ? 1 : 0))
+          : App.state.mode === "load" && d.modelFlow != null ? App.fmt(d.modelFlow)
+          : App.state.mode === "risk" && d.lost ? `−${App.fmt(d.lost)}` : "";
+        const day = live ? App.dayDelivery(id) : null; // exit points: within-day delivery bar
+        if (big) {
+          const pressure = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "";
+          const top = day ? y - 11 : pressure ? y - 8 : y - 3;
+          ctx.fillStyle = look.ink;
+          ctx.font = "700 13px Archivo, system-ui, sans-serif";
+          ctx.fillText(fitText(ctx, big, CIRC.r * 1.7), x, top);
+          ctx.fillStyle = look.dim;
+          ctx.font = "8px Archivo, system-ui, sans-serif";
+          ctx.fillText("MSm³/d", x, top + 10);
+          if (pressure) {
+            ctx.fillStyle = look.ink;
+            ctx.font = "600 9.5px Archivo, system-ui, sans-serif";
+            ctx.fillText(fitText(ctx, pressure, CIRC.r * 1.7), x, day ? y + 8 : y + 15);
+          }
         }
+        if (day) drawDayBar(ctx, x, y + 17, day, look);
         // Name below the circle, then the rate of change (bold when it is fast).
         ctx.textBaseline = "alphabetic";
         ctx.textAlign = "center";
@@ -183,7 +182,7 @@
           ctx.font = `${fast ? 700 : 400} 10px Archivo, system-ui, sans-serif`;
           ctx.fillStyle = fast ? look.ink : look.dim;
           ctx.fillText(`${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`, x, nameY + CIRC.sub);
-        } else if (s.sub) {
+        } else if (s.sub && !live) {
           ctx.fillStyle = look.dim;
           ctx.font = "10px Archivo, system-ui, sans-serif";
           ctx.fillText(fitText(ctx, s.sub, CIRC.r * 3), x, nameY + CIRC.sub);
@@ -305,12 +304,14 @@
     const scale = network.getScale(), detail = scale >= 0.9 ? 2 : scale >= 0.5 ? 1 : 0;
     ctx.save();
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    for (const marker of App.markers()) {
-      const e = edges.get(marker.id);
-      if (!e || App.pipeStyle(marker.id).hidden) continue;
-      const p = pointAlong(e, Math.max(0, Math.min(1, marker.along)), positions);
+    drawSplitLabels(ctx, positions, ratio);
+    const marks = App.markers().filter((m) => edges.get(m.id) && !App.pipeStyle(m.id).hidden);
+    const at = (m, t) => network.canvasToDOM(pointAlong(edges.get(m.id), Math.max(0, Math.min(1, t)), positions));
+    for (const m of marks) if (m.extent) App.drawBand(ctx, m, at(m, m.extent[0]), at(m, m.extent[1]));
+    for (const m of marks) {
+      const p = pointAlong(edges.get(m.id), Math.max(0, Math.min(1, m.along)), positions);
       const dom = network.canvasToDOM(p);
-      App.drawMarker(ctx, marker, dom.x, dom.y, p.angle, 6.5, detail);
+      App.drawMarker(ctx, m, dom.x, dom.y, p.angle, 6.5, detail);
     }
     ctx.restore();
   }
@@ -320,7 +321,11 @@
     el.style.background = C.paper;
     network = new vis.Network(container, { nodes, edges }, flowOptions);
     view.network = network;
-    loadIcons();
+    // No zooming out far past the whole network: it would only shrink it to a speck.
+    network.on("zoom", () => {
+      const min = minScale();
+      if (network.getScale() < min) network.moveTo({ scale: min, animation: false });
+    });
     if (App.embed) network.setOptions({ interaction: { zoomView: false } });
     nodes.update(App.nodeIds.map((id) => ({ id, shape: "custom", ctxRenderer: card(id), label: "" })));
     network.on("beforeDrawing", paper);
@@ -386,8 +391,57 @@
     network.once("afterDrawing", () => { layout(); view.setUnit(App.route.unit); });
   };
 
+  /* Where a node sends gas into two or more lines, each line gets its own reading just
+     outside the circle: the flow in it (MSm³/d) and its pressure from inlet to outlet
+     (the two end nodes' pressures, bar). Those lines drop the mid-line number. */
+  function splitLines() {
+    const out = new Map(); // pipeline id -> the node it leaves
+    if (App.state.mode !== "live") return out;
+    const by = {};
+    for (const id of App.pipeIds) {
+      const v = App.live.values[id], p = NORA.assets[id];
+      if (!v || Math.abs(v) < 0.05 || App.pipeStyle(id).hidden) continue;
+      const from = v > 0 ? p.from : p.to;
+      (by[from] = by[from] || []).push(id);
+    }
+    for (const [node, ids] of Object.entries(by)) {
+      if (ids.length >= 2 && !App.nodeStyle(node).hidden) for (const id of ids) out.set(id, node);
+    }
+    return out;
+  }
+  function drawSplitLabels(ctx, positions, ratio) {
+    if (network.getScale() < 0.5) return; // unreadable when zoomed far out
+    ctx.save();
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineJoin = "round";
+    for (const [id, node] of splitLines()) {
+      const p = NORA.assets[id], other = p.from === node ? p.to : p.from;
+      const a = positions[node], b = positions[other];
+      if (!a || !b) continue;
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      if (len < CIRC.r * 4) continue;
+      const t = (CIRC.r + 30) / len, at = network.canvasToDOM({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+      const flow = Math.abs(App.live.values[id]), pin = App.reading(node).pressure, pout = App.reading(other).pressure;
+      const lines = [[`${App.fmt(flow, flow < 10 ? 1 : 0)} MSm³/d`, "600 10.5px", C.text]];
+      if (pin != null) lines.push([pout != null ? `${App.fmt(pin)} → ${App.fmt(pout)} bar` : `${App.fmt(pin)} bar`, "9.5px", C.text_dim]);
+      lines.forEach(([text, font, color], k) => {
+        const y = at.y + (k - (lines.length - 1) / 2) * 12;
+        ctx.font = `${font} Archivo, system-ui, sans-serif`;
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = C.paper;
+        ctx.strokeText(text, at.x, y);
+        ctx.fillStyle = color;
+        ctx.fillText(text, at.x, y);
+      });
+    }
+    ctx.restore();
+  }
+
   view.restyle = () => {
     if (!view.ready) return;
+    const split = splitLines();
     nodes.update(App.nodeIds.map((id) => {
       const s = App.nodeStyle(id);
       return { id, hidden: s.hidden, title: `${NORA.assets[id].name}${s.sub ? `\n${s.sub}` : ""}` };
@@ -395,7 +449,7 @@
     edges.update(App.pipeIds.map((id) => {
       const s = App.pipeStyle(id);
       return {
-        id, hidden: s.hidden, label: s.label || " ", width: s.width, dashes: s.dashed ? [5, 5] : false,
+        id, hidden: s.hidden, label: split.has(id) ? " " : s.label || " ", width: s.width, dashes: s.dashed ? [5, 5] : false,
         color: { color: s.color, highlight: s.color, hover: s.color, inherit: false, opacity: s.dim ? 0.3 : 1 },
         shadow: s.level ? { enabled: true, color: C.casing, size: 3, x: 0, y: 0 } : { enabled: false },
         arrows: { to: { enabled: s.forward, scaleFactor: 0.4 }, from: { enabled: s.backward, scaleFactor: 0.4 } },
@@ -410,10 +464,17 @@
   view.theme = () => {
     if (!view.ready) return;
     el.style.background = C.paper;
-    loadIcons();
     view.restyle();
   };
 
+  // The scale at which the whole network fits the window, less a little margin.
+  function minScale() {
+    const positions = Object.values(network.getPositions());
+    if (!positions.length || !el.clientWidth) return 0;
+    const xs = positions.map((p) => p.x), ys = positions.map((p) => p.y);
+    const w = Math.max(...xs) - Math.min(...xs) + CIRC.r * 6, h = Math.max(...ys) - Math.min(...ys) + CIRC.r * 6;
+    return Math.min(el.clientWidth / w, el.clientHeight / h) * 0.8;
+  }
   view.setUnit = (unit) => {
     if (!view.ready) return;
     const members = unit === "all" ? null : App.units[unit].nodes.filter((id) => !App.nodeStyle(id).hidden);
@@ -443,5 +504,6 @@
     view.setUnit(App.route.unit);
   };
 
+  view.splitLines = splitLines; // for tests: which lines carry their own reading
   App.register("flow", view);
 })();

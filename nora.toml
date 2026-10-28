@@ -9,7 +9,7 @@ network_view = "map"        # map or flow
 network_mode = "live"       # live, load, risk or plain
 theme = "light"             # light, dark or auto (follows the device); the button switches
 autoplay = true             # start playing the data when the page opens (?autoplay=0 to stop)
-speed = 60                  # default playback: data seconds per real second (1 min/s)
+speed = 600                 # default playback: data seconds per real second (10 min/s: a peak crosses a line in about a minute)
 
 [labels]
 names = true
@@ -33,13 +33,14 @@ pressure_margin = [0.10, 0.05, 0.0]   # distance to a pressure limit, as a share
 risk = [0.05, 0.10, 0.15]             # share of deliverable gas lost if one asset trips
 step = [0.15, 0.25, 0.40]             # flow change within an hour, as a share of capacity
 plan_lookahead_hours = 6              # how far ahead the plan check looks
+gas_day_start_utc = 5                 # the gas day runs 05:00-05:00 UTC (06:00 CET)
 
 # Moving markers along the lines: peaks (sudden flow changes) travel with the gas,
 # pigs at their own speed.
 [pipelines]
 gas_velocity_mps = 8.0     # how fast a change in flow travels down a pipeline
-step_min = 0.25            # smallest flow change (share of capacity) shown as a peak
-peak_max = 2               # peaks visible at once; the strongest are kept
+step_min = 0.10            # smallest flow change (share of capacity) shown as a peak
+peak_max = 5               # peaks visible at once; the strongest are kept
 
 # Gas quality: H2S and CO2 peaks are followed with the gas from the field to the exit
 # point, diluted where other gas joins. Limits are [warning, medium, critical]; the
@@ -52,9 +53,9 @@ follow_from = 0.8          # follow a peak once a field's reading reaches 80% of
 # Operating pressure windows (bar) by asset type. Illustrative values for the model;
 # replace them with real limits per asset when they are known.
 [pressure]
-field = [80, 220]
-hub = [70, 200]
-processing = [60, 180]
+field = [100, 175]        # offshore lines typically run at 120-160 bar
+hub = [100, 170]
+processing = [100, 165]
 terminal = [55, 85]
 lng = [60, 90]
 storage = [50, 150]

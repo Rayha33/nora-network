@@ -155,22 +155,51 @@
     layers: [{ id: "osm-raster", type: "raster", source: "osm" }],
   };
 
+  // Can this browser draw with WebGL? The test context is released at once, since
+  // browsers allow only a handful of live WebGL contexts per page.
+  function hasWebGL() {
+    try {
+      const gl = document.createElement("canvas").getContext("webgl2") || document.createElement("canvas").getContext("webgl");
+      if (!gl) return false;
+      const lose = gl.getExtension("WEBGL_lose_context");
+      if (lose) lose.loseContext();
+      return true;
+    } catch { return false; }
+  }
+  /* No WebGL (hardware acceleration off, an old or locked-down browser, the GPU
+     restarting), no MapLibre (offline), or ?map=simple: draw the same map on a plain
+     canvas instead (map2d.js), with the coastline shipped inside the page. */
+  function canvasFallback(el) {
+    if (map) { try { map.remove(); } catch { /* already gone */ } }
+    map = null; canvas = null; ctx = null;
+    el.replaceChildren();
+    NoraCanvasMap(view);
+    view.mount(el);
+  }
+  const wantSimple = new URLSearchParams(location.search).get("map") === "simple";
+  // Keep the camera on the network: no zooming out far past the whole of it.
+  function limitZoom() {
+    if (!map || !map.getContainer().clientWidth) return;
+    const fit = map.cameraForBounds(NORA.config.map.bounds, { padding: padding() });
+    if (fit && Number.isFinite(fit.zoom)) map.setMinZoom(Math.max(2, fit.zoom - 0.3));
+  }
+
   view.mount = (el) => {
-    if (typeof maplibregl === "undefined") {
-      el.append(Object.assign(document.createElement("p"), { className: "notice", textContent: "The map needs an internet connection. The Flow view works offline." }));
-      return;
-    }
-    // WebGL is what draws the map: say so plainly instead of showing a blank area.
-    const gl = (() => { const c = document.createElement("canvas"); try { return c.getContext("webgl2") || c.getContext("webgl"); } catch { return null; } })();
-    if (!gl) {
-      el.append(Object.assign(document.createElement("p"), { className: "notice", textContent: "This browser has no WebGL, so the map cannot draw. Update the browser or enable hardware acceleration; the Flow view still works." }));
-      return;
-    }
-    map = new maplibregl.Map({
-      container: el, style: NORA.config.map.style, bounds: NORA.config.map.bounds,
-      fitBoundsOptions: { padding: padding() }, attributionControl: { compact: true },
-      cooperativeGestures: App.embed, dragRotate: false, pitchWithRotate: false, minZoom: 2, maxZoom: 12,
-    });
+    if (wantSimple || typeof maplibregl === "undefined" || !hasWebGL()) { canvasFallback(el); return; }
+    const [[w, s], [e, n]] = NORA.config.map.bounds, padLon = (e - w) * 0.6, padLat = (n - s) * 0.6;
+    try {
+      map = new maplibregl.Map({
+        container: el, style: NORA.config.map.style, bounds: NORA.config.map.bounds,
+        fitBoundsOptions: { padding: padding() }, attributionControl: { compact: true },
+        cooperativeGestures: App.embed, dragRotate: false, pitchWithRotate: false, minZoom: 2, maxZoom: 12,
+        maxBounds: [[w - padLon, s - padLat], [e + padLon, n + padLat]],
+      });
+    } catch { canvasFallback(el); return; } // MapLibre throws when it cannot get a WebGL context
+    // WebGL lost and not back within 3 s (a GPU restart): carry on with the canvas map.
+    let lostTimer = null;
+    map.getCanvas().addEventListener("webglcontextlost", () => { lostTimer = setTimeout(() => canvasFallback(el), 3000); });
+    map.getCanvas().addEventListener("webglcontextrestored", () => clearTimeout(lostTimer));
+    map.once("load", limitZoom);
     view.map = map;
     map.touchZoomRotate.disableRotation();
     canvas = document.createElement("canvas");
@@ -318,11 +347,13 @@
       }
       ctx.globalAlpha = 1;
     }
-    for (const marker of App.markers()) {
-      if (App.pipeStyle(marker.id).hidden) continue;
-      const p = project(marker.id, marker.along);
-      const zoom = map.getZoom();
-      App.drawMarker(ctx, marker, p.x, p.y, p.angle, 6.5, zoom >= 6.5 ? 2 : zoom >= 5 ? 1 : 0);
+    // Peaks as bands from tail to head first, then every marker on top.
+    const marks = App.markers().filter((m) => ends[m.id] && !App.pipeStyle(m.id).hidden);
+    for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]));
+    const zoom = map.getZoom(), detail = zoom >= 6.5 ? 2 : zoom >= 5 ? 1 : 0;
+    for (const m of marks) {
+      const p = project(m.id, m.along);
+      App.drawMarker(ctx, m, p.x, p.y, p.angle, 6.5, detail);
     }
   };
 
@@ -365,6 +396,7 @@
     if (!map) return;
     map.resize();
     sizeCanvas();
+    limitZoom();
     if (pendingFit) view.setUnit(App.route.unit);
   };
   // A new palette: reload the style so the basemap, icons and badges are redrawn in it.
