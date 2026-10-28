@@ -47,3 +47,49 @@ test("player space is reserved only when the player exists", () => {
   assert.match(css, /\.has-player\s+\.sidebar\s*\{[^}]*bottom:\s*var\(--player-h\)/s);
   assert.match(css, /\.has-player\s+\.pop\s*\{[^}]*var\(--player-h\)/s);
 });
+
+/* Load mode on a calm network looked like Plain: every line one grey width. The width
+   now shows how full each line is, so the full ones stand out without any colour. */
+test("load mode: a fuller line is drawn thicker", () => {
+  const { App, NORA } = loadApp();
+  App.state.mode = "load";
+  const lines = App.pipeIds.filter((id) => NORA.assets[id].utilization != null);
+  const full = lines.find((id) => NORA.assets[id].utilization >= 0.95);
+  const light = lines.find((id) => NORA.assets[id].utilization <= 0.5);
+  assert.ok(full && light, "the model has full and lightly used lines");
+  assert.ok(App.pipeStyle(full).width > App.pipeStyle(light).width + 1, "full lines are clearly thicker");
+  assert.equal(App.pipeStyle(full).level, 0, "running full is normal: no alarm colour");
+});
+
+/* Ray: "white text on white background makes it unreadable". An offline node's circle
+   is dark, so its inside ink is light; the name under it sits on the paper and must
+   take the paper's ink, or it vanishes. */
+test("flow: an offline node's name is written in the paper's ink", () => {
+  const { App, NORA } = loadApp();
+  App.state.mode = "whatif";
+  App.whatif.toggle("kollsnes");
+  const calls = [];
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "measureText") return (t) => ({ width: String(t).length * 6 });
+      return (...args) => calls.push({ op: key, args, fill: target.fillStyle });
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  App.views.flow.card("kollsnes")({ ctx, x: 0, y: 0, state: { selected: false, hover: false } }).drawNode();
+  const name = calls.find((c) => c.op === "fillText" && c.args[0] === NORA.assets.kollsnes.name);
+  assert.ok(App.nodeStyle("kollsnes").inactive, "the node is offline");
+  assert.equal(name.fill, App.colors.text, "its name is in the paper's ink");
+});
+
+test("what-if: no 0.0 on dead lines, and the chip never cuts twice", () => {
+  const { App, NORA, document } = loadApp();
+  App.state.mode = "whatif";
+  App.whatif.toggle("kollsnes");
+  for (const id of App.pipeIds) assert.notEqual(App.pipeStyle(id).label, "0.0", `${id} carries no 0.0`);
+  App.go({ screen: "unit", unit: "all" });
+  const chip = document.getElementById("plan-chip");
+  const text = (chip.children || []).map((c) => c.textContent).join("");
+  assert.match(text, /^What-if: [\d.,]+ of [\d.,]+ MSm³\/d · 1 offline · Restore all$/, text);
+});

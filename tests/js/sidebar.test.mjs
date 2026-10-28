@@ -161,3 +161,40 @@ test("sidebar: a row alarm badge sits beside its own pipeline", () => {
   assert.ok(badge, "the levelled row has a badge");
   assert.ok(Math.abs(Number(badge[1]) - 236) <= 10, "the badge is beside the line start, not the page margin");
 });
+
+/* A pipeline's picture was a bare line between its two ends. It now shows the flow
+   beside the line, an arrowhead for its direction, and the pigs and peaks in it now,
+   each at its place with its value and ETA: what is in this line, at a glance. */
+test("sidebar: a pipeline's picture shows its flow, direction and the pig in it", () => {
+  const loaded = loadApp();
+  assertHealthy(assert, loaded);
+  const { App, NORA, document } = loaded;
+  const stream = NORA.streams.find((s) => s.pigs && s.pigs.length);
+  App.live.stream = stream;
+  const flows = {};
+  stream.assets.forEach((id, j) => { flows[id] = stream.values[0][j]; });
+  App.live.frames = [{ t: stream.times[0], flows, metrics: stream.metrics || {}, plan: null }];
+  App.live.index = 0;
+  const pig = stream.pigs[0];
+  const t = pig.launch + 3600;
+  const place = App.routes.pigPlace(pig, t);
+  assert.ok(place, "the pig is under way an hour after launch");
+  App.live.time = t;
+  App.state.mode = "live";
+  App.go({ screen: "unit", unit: "all" });
+  App.select(place.pid);
+  const markup = [];
+  const walk = (node) => {
+    if (!node || typeof node !== "object") return;
+    if (node._innerHTML) markup.push(node._innerHTML);
+    for (const child of node.children || []) walk(child);
+  };
+  walk(document.getElementById("side-body"));
+  const svg = markup.join("");
+  assert.ok(svg.includes(`fill="${App.colors.pig}"`), "the pig is drawn in the line");
+  assert.ok(svg.includes(pig.label.slice(0, 20)), "with its name");
+  if (Math.abs(flows[place.pid] || 0) >= 0.05) {
+    assert.match(svg, /MSm³\/d<\/text>/, "the flow sits beside the line");
+    assert.match(svg, /<path d="M[\d.]+ [\d.-]+L[\d.]+ [\d.-]+L[\d.]+ [\d.-]+" fill="none"/, "and an arrowhead shows its direction");
+  }
+});
