@@ -22,7 +22,7 @@ DEFAULTS: dict = {
         "network_mode": "live",
         "theme": "light",
         "autoplay": True,
-        "speed": 60,  # default playback: data seconds per real second
+        "speed": 600,  # default playback: data seconds per real second
     },
     "labels": {"names": True, "line_values": "auto"},
     "assets": {"hide": [], "grid_entries": True},
@@ -37,7 +37,7 @@ DEFAULTS: dict = {
         "plan_lookahead_hours": 6,
         "gas_day_start_utc": 5,
     },
-    "pipelines": {"gas_velocity_mps": 8.0, "step_min": 0.25, "peak_max": 2},
+    "pipelines": {"gas_velocity_mps": 8.0, "step_min": 0.10, "peak_max": 5},
     "quality": {"h2s_ppm": [2.5, 3.0, 3.3], "co2_molpct": [2.2, 2.35, 2.5], "follow_from": 0.8},
     "pressure": {
         "field": [100, 175],

@@ -23751,7 +23751,7 @@
    "network_mode": "live",
    "theme": "light",
    "autoplay": true,
-   "speed": 60
+   "speed": 600
   },
   "labels": {
    "names": true,
@@ -23802,8 +23802,8 @@
   },
   "pipelines": {
    "gas_velocity_mps": 8.0,
-   "step_min": 0.25,
-   "peak_max": 2
+   "step_min": 0.1,
+   "peak_max": 5
   },
   "quality": {
    "h2s_ppm": [
