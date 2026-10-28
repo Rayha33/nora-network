@@ -65,25 +65,36 @@ test("flow circles: live flow (MSm³/d) and pressure (bar) for each node", () =>
   assert.ok(readings.some((r) => r.pressure > 0), "and a pressure where it is measured");
 });
 
-test("flow: where a node splits into two or more flowing lines, each line gets its own reading", () => {
+test("flow circles: each outgoing line's flow sits in the quadrant facing that line", () => {
   const loaded = loadApp();
-  const { App } = loaded;
-  loadFirstHour(App, loaded.NORA);
+  const { App, NORA } = loaded;
+  loadFirstHour(App, NORA);
   App.state.mode = "live";
   App.live.values = App.live.frames[0].flows;
-  const split = App.views.flow.splitLines();
-  assert.ok(split.size >= 2, "some nodes send gas into several lines");
-  const perNode = {};
-  for (const [pid, node] of split) {
-    const p = App.pipeIds.includes(pid) && loaded.NORA.assets[pid];
-    assert.ok(p && (p.from === node || p.to === node), "the line leaves that node");
-    const v = App.live.values[pid];
-    assert.equal(v > 0 ? p.from : p.to, node, "and the gas flows out of it, not in");
-    perNode[node] = (perNode[node] || 0) + 1;
+  // Positions as the Flow view lays them out: stages top to bottom, ranks left to right.
+  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 178, y: stage * 124 }]));
+  let checked = 0;
+  for (const id of App.nodeIds) {
+    const q = App.views.flow.quadrants(id, pos);
+    let out = 0;
+    for (const pid of App.pipeIds) {
+      const p = NORA.assets[pid], v = App.live.values[pid];
+      if (!v || Math.abs(v) < 0.05 || App.pipeStyle(pid).hidden) continue;
+      if ((p.from === id && v > 0) || (p.to === id && v < 0)) out += Math.abs(v);
+    }
+    const shown = Object.values(q).reduce((a, b) => a + b, 0);
+    assert.ok(Math.abs(shown - out) < 1e-6, `${id}: every outgoing flow is written once`);
+    for (const side of Object.keys(q)) assert.ok(["NE", "SE", "SW", "NW"].includes(side), "four quadrants");
+    if (Object.keys(q).length) checked++;
   }
-  for (const count of Object.values(perNode)) assert.ok(count >= 2, "only nodes with two or more lines out");
-  App.state.mode = "load";
-  assert.equal(App.views.flow.splitLines().size, 0, "live readings only in Live mode");
+  assert.ok(checked > 10, "many nodes send gas out");
+  // Drag a node to the other side of its outgoing line's far end: the number moves quadrant.
+  const id = App.nodeIds.find((n) => Object.keys(App.views.flow.quadrants(n, pos)).length === 1);
+  const [side] = Object.keys(App.views.flow.quadrants(id, pos));
+  const [sx, sy] = [side[1] === "E" ? 1 : -1, side[0] === "S" ? 1 : -1];
+  const flipped = { ...pos, [id]: { x: pos[id].x + sx * 9000, y: pos[id].y + sy * 9000 } };
+  const [after] = Object.keys(App.views.flow.quadrants(id, flipped));
+  assert.equal(after, `${side[0] === "S" ? "N" : "S"}${side[1] === "E" ? "W" : "E"}`, "dragged past it, the flow faces the line again");
 });
 
 test("exit circles: within-day delivery against the nominations, as a share", () => {

@@ -147,6 +147,15 @@ const App = (() => {
     ctx.restore();
   }
 
+  /* What a marker is, for a mouse-over: the value and when it reaches its next stop. */
+  function markerTip(m) {
+    const when = m.eta && m.to ? `: reaches ${m.to} at ${m.eta}` : m.to ? ` at ${m.to}` : "";
+    if (m.kind === "pig") return `${m.title || "Pig"}${when}`;
+    if (m.kind === "peak") return `Flow change ${m.value} MSm³/d on ${nameOf(m.id)}${when}`;
+    if (m.noDot) return `${QUALITY[m.gas].name} slug on ${nameOf(m.id)}`;
+    return `${m.value} ${QUALITY[m.gas].unit} on ${nameOf(m.id)}${when}`;
+  }
+
   // ------------------------------------------------------------------ alarm levels
   // 0 normal, 1 warning (amber, priority 3), 2 medium (orange, 2), 3 critical (red, 1).
   const LEVEL = ["Normal", "Warning", "Medium", "Critical"];
@@ -606,7 +615,8 @@ const App = (() => {
     if (distance >= last.m + lineMetres(last.pid)) return null;  // at the receiver, waiting for relaunch
     const seg = route.find((s) => distance < s.m + lineMetres(s.pid)) || last;
     const along = (distance - seg.m) / lineMetres(seg.pid);
-    return { pid: seg.pid, along: seg.forward ? along : 1 - along };
+    const runStart = pig.launch + run * every, next = seg.forward ? assets[seg.pid].to : assets[seg.pid].from;
+    return { pid: seg.pid, along: seg.forward ? along : 1 - along, exitAt: runStart + (seg.m + lineMetres(seg.pid)) / pig.speed, next };
   }
   /* Where a peak is now: it keeps travelling downstream, attenuated by its share of
      the gas at each node, and disappears at an exit or when it fades below step_min.
@@ -647,7 +657,8 @@ const App = (() => {
     const pigs = (live.stream && live.stream.pigs) || live.feedPigs || [];
     for (const pig of pigs) {
       const place = pigPlace(pig, live.time);
-      if (place) out.push({ kind: "pig", id: place.pid, along: place.along, label: "", level: 0, title: pig.label });
+      if (place) out.push({ kind: "pig", id: place.pid, along: place.along, label: "", level: 0, title: pig.label,
+        eta: clock(place.exitAt), to: nameOf(place.next) });
     }
     /* Head and tail: a peak is a stretch of gas, not a point. A change in flow spreads
        over the gas that passed in one data step (velocity × step); the band is centred
@@ -1029,7 +1040,7 @@ const App = (() => {
     const band = nom ? [nom * (1 - tol[0]), nom * (1 + tol[0])] : null;
     const lvl = levelFor(id, ["nomination", "booking"]);
     return {
-      id, unit: "MSm³/d", lvl, band,
+      id, measure: "Delivery", unit: "MSm³/d", lvl, band,
       bar: rangeBar({ min: 0, max: top, value: actual, target: nom, lvl, band,
         ticks: [...(nom ? [nom * (1 - tol[2]), nom * (1 + tol[2])].map((at) => ({ at, level: 3 })) : []), ...(booked ? [{ at: booked, level: 2 }] : [])] }),
       series: series((f) => throughput(id, f.flows)),
@@ -1041,7 +1052,7 @@ const App = (() => {
     const pm = T.pressure_margin, band = [low + pm[0] * span, high - pm[0] * span];
     const lvl = levelFor(id, ["pressure"]);
     return {
-      id, unit: "bar", lvl, band,
+      id, measure: "Pressure", unit: "bar", lvl, band,
       bar: rangeBar({ min: low - 0.1 * span, max: high + 0.1 * span, value: p, lvl, band,
         ticks: [{ at: low, level: 3 }, { at: high, level: 3 }, { at: low + pm[1] * span, level: 2 }, { at: high - pm[1] * span, level: 2 }] }),
       series: series((f) => metric("pressure_bar", id, f)),
@@ -1051,7 +1062,7 @@ const App = (() => {
   function qualityIndicator(id, name) {
     const v = metric(name, id), limits = C.quality[name], lvl = level(v, limits);
     return {
-      id, unit: QUALITY[name].unit, lvl, band: [0, limits[0]],
+      id, measure: QUALITY[name].name, unit: QUALITY[name].unit, lvl, band: [0, limits[0]],
       bar: rangeBar({ min: 0, max: limits[2] * 1.5, value: v, lvl, band: [0, limits[0]],
         ticks: limits.map((at, i) => ({ at, level: i + 1 })) }),
       series: series((f) => metric(name, id, f)),
@@ -1061,19 +1072,23 @@ const App = (() => {
   function loadIndicator(id) {
     const d = assets[id], v = Math.abs(frame().flows[id] || 0), u = v / d.capacity;
     return {
-      id, unit: "pts", lvl: level(u, T.load), band: [0, T.load[0] * 100],
+      id, measure: "Load", unit: "pts", lvl: level(u, T.load), band: [0, T.load[0] * 100],
       bar: rangeBar({ min: 0, max: 1.1, value: u, lvl: level(u, T.load), band: [0, T.load[0]], ticks: T.load.map((at, i) => ({ at, level: i + 1 })) }),
       series: series((f) => (f.flows[id] == null ? null : (Math.abs(f.flows[id]) / d.capacity) * 100)),
       value: `${fmt(u * 100)}%: ${fmt(v, 1)} of ${fmt(d.capacity)} MSm³/d`,
     };
   }
-  function bank(indicators, empty) {
+  /* A bank of indicators. Across assets (the overview) each row is named after its
+     asset; for one asset (its page or sidebar) after what it measures, so the rows
+     read "Delivery", "Pressure" instead of the asset's name twice. */
+  function bank(indicators, empty, { byMeasure = false } = {}) {
     if (!indicators.length) return h("p", { class: "empty" }, empty);
-    return h("div", { class: "bank" },
-      h("div", { class: "head" }, "Asset"), h("div", { class: "head" }, "Value in its range"),
-      h("div", { class: "head" }, "Trend"), h("div", { class: "head optional" }, "Change"), h("div", { class: "head optional" }, "State"),
+    return h("div", { class: `bank${byMeasure ? " by-measure" : ""}` },
+      h("div", { class: "head" }, byMeasure ? "" : "Asset"), h("div", { class: "head" }, "Value in its range"),
+      h("div", { class: "head" }, "Last 2 h"), h("div", { class: "head optional" }, "Change"), h("div", { class: "head optional" }, "State"),
       ...indicators.flatMap((ind) => [
-        h("div", { class: "name", onclick: () => go({ screen: "asset", asset: ind.id }), title: "Open the asset" }, nameOf(ind.id)),
+        byMeasure ? h("div", { class: "name measure" }, ind.measure || nameOf(ind.id))
+          : h("div", { class: "name", onclick: () => go({ screen: "asset", asset: ind.id }), title: "Open the asset" }, nameOf(ind.id)),
         h("div", null, ind.bar, h("div", { class: "value" }, ind.value, h("span", { class: "rate-inline" }, rateText(rate(ind.series), ind.unit)))),
         trend(ind.series, { band: ind.band, lvl: ind.lvl }),
         h("div", { class: "rate" }, rateText(rate(ind.series), ind.unit)),
@@ -1206,7 +1221,7 @@ const App = (() => {
         : `${NORA.pipelineTypes[d.type]}, ${nameOf(d.from)} to ${nameOf(d.to)}.`),
       h("div", { class: "cols" },
         h("div", { class: "box" }, h("h2", { title: "Flowing in above the asset, out below it" }, "In context"), schematic(id)),
-        h("div", { class: "box" }, h("h2", { title: "Live readings in their ranges, from the data being played" }, "Values"), bank(indicators, "No live readings for this asset in the dataset."),
+        h("div", { class: "box" }, h("h2", { title: "Live readings in their ranges, from the data being played" }, "Values"), bank(indicators, "No live readings for this asset in the dataset.", { byMeasure: true }),
           inSidebar ? null : h("h2", { style: "margin-top:14px" }, "State"),
           conds.length ? alarmList(conds)
             : h("p", { class: "state-quiet" }, "Normal · no alarms right now"),
@@ -1290,7 +1305,13 @@ const App = (() => {
       const label = `${nameOf(pid)}${v == null ? "" : `: ${fmt(Math.abs(v), 1)}`}`;
       m += `<text x="${x}" y="${above ? y : y + 14}" text-anchor="middle">${esc(label.length > 34 ? `${label.slice(0, 33)}…` : label)}</text>`;
     }
-    if (d.kind === "node") m += `<image href="${NORA.icons[d.type]}" x="${W / 2 - 18}" y="${mid - 18}" width="36" height="36"/>`;
+    if (d.kind === "node") { // the node as in the Flow view: a state-grey circle holding flow and pressure
+      const st = nodeStyle(id), look = COLORS.card[st.inactive ? "inactive" : state.mode === "live" ? "active" : "normal"];
+      const flow = throughput(id, f.flows), bar = metric("pressure_bar", id);
+      m += `<circle cx="${W / 2}" cy="${mid}" r="22" fill="${look.fill}" stroke="${st.level ? LEVEL_COLOR[st.level] : look.edge}" stroke-width="${st.level ? 2.5 : 1}"/>`;
+      if (flow != null) m += `<text x="${W / 2}" y="${mid + (bar != null ? -2 : 4)}" text-anchor="middle" font-weight="700" fill="${look.ink}">${esc(fmt(flow, flow < 10 ? 1 : 0))}</text>`;
+      if (bar != null) m += `<text x="${W / 2}" y="${mid + 12}" text-anchor="middle" class="dimtext" style="font-size:9.5px">${esc(fmt(bar))} bar</text>`;
+    }
     else {
       const s = pipeStyle(id);
       m += `<text x="${W / 2}" y="40" text-anchor="middle">${esc(nameOf(d.from))}</text><text x="${W / 2}" y="${H - 14}" text-anchor="middle">${esc(nameOf(d.to))}</text>`;
@@ -1440,9 +1461,7 @@ const App = (() => {
       h("h3", null, "Indicators"),
       rangeBar({ min: 0, max: 10, value: 6, band: [3, 7], ticks: [{ at: 1.5, level: 3 }, { at: 8.5, level: 3 }], target: 5 }),
       h("p", { class: "dim", style: "margin:4px 0 0" }, "Light band: normal range. Ticks: alarm limits. Hollow diamond: the target (nomination). Pointer: the value now. Trends show the last hours, dashed where they are heading."),
-      h("p", { class: "dim", style: "margin:6px 0 0" }, "Each box in the Flow view shows the flow and pressure now, and a 4-hour line: the last 2 hours solid, the next 2 hours of nominations dashed."),
-      h("h3", null, "Asset types"),
-      h("ul", null, Object.keys(NORA.icons).map((k) => h("li", null, h("img", { src: NORA.icons[k], alt: "" }), NORA.nodeTypes[k]))));
+      h("p", { class: "dim", style: "margin:6px 0 0" }, "Each circle shows the gas flowing through it now (MSm³/d) and its pressure (bar). At exit points a small bar shows today's delivery against the nominations: the middle line is on plan. Under each circle, a 4-hour line: the last 2 hours solid, the next 2 hours of nominations dashed."));
   }
   function storedFlag(key) { try { return localStorage.getItem(key); } catch (error) { return "1"; } }
   function openGuide() {
@@ -1851,7 +1870,7 @@ const App = (() => {
       offline: () => [...whatif.offline],
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
-    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
+    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T,
     // Flow through a node now (MSm³/d) and its pressure (bar), for the views to show.
     reading: (id) => ({ flow: throughput(id, frame().flows), pressure: metric("pressure_bar", id) }),
