@@ -50,6 +50,25 @@ test("sidebar: opens with the asset, closes on demand, and hides off-screen", ()
   assert.equal($("asset-side").getAttribute("aria-hidden"), "true", "and hides it again");
 });
 
+test("sidebar: a primary click on the background closes it, but clicks inside do not", () => {
+  const { App, document } = loadApp();
+  const id = App.nodeIds[0];
+  App.sidebar.open(id);
+  const listeners = document._listeners.pointerdown;
+  assert.ok(listeners && listeners.length, "the app listens for background dismissal");
+  const fire = (button, inside) => {
+    const target = { closest: (selector) => (inside && selector === "#asset-side" ? document.getElementById("asset-side") : null) };
+    for (const listener of listeners) listener({ button, target });
+  };
+  fire(0, true);
+  assert.equal(App.sidebar.id(), id, "a click inside the panel keeps it open");
+  fire(2, false);
+  assert.equal(App.sidebar.id(), id, "a secondary click is not a background dismissal");
+  fire(0, false);
+  assert.equal(App.sidebar.id(), null, "a primary click anywhere outside closes the panel");
+  assert.equal(document.getElementById("asset-side").getAttribute("aria-hidden"), "true");
+});
+
 test("sidebar: pipelines open too, and staying on the unit keeps it open", () => {
   const loaded = loadApp();
   assertHealthy(assert, loaded);
