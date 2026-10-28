@@ -382,6 +382,9 @@ div.vis-tooltip {
   border: 1px solid var(--rule); border-radius: 7px; box-shadow: var(--shadow-lg); padding: 7px 10px; white-space: pre-line;
 }
 
+/* The Flow view's moving layer (flow.js): pigs, peaks and flow stubs over the network. */
+.flow-marks { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+
 /* The map drawn without WebGL (map2d.js). */
 canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch-action: none; }
 .map-note.quiet { position: absolute; left: 14px; top: auto; bottom: 14px; transform: none; box-shadow: none; z-index: 2; font-size: 11px; color: var(--text-dim);
@@ -743,6 +746,23 @@ const App = (() => {
     if (!DATE_FORMATS.has(key)) DATE_FORMATS.set(key, new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", ...opts }));
     return DATE_FORMATS.get(key).format(new Date(epoch * 1000));
   };
+  /* One frame's cache. While a view draws a frame the state cannot change, yet the Flow
+     view asks for the same line style ~1,900 times a frame and the same node readings
+     several times each. Between App.frame.begin() and end() (the views wrap each draw),
+     styles and readings are computed once per asset; outside a frame nothing is cached,
+     so anything that changes state and then reads it straight away sees the new state. */
+  const frameCache = { on: false, maps: {} };
+  const frameApi = {
+    begin() { frameCache.on = true; frameCache.maps = {}; },
+    end() { frameCache.on = false; frameCache.maps = {}; },
+    run(draw) { if (frameCache.on) return draw(); frameApi.begin(); try { return draw(); } finally { frameApi.end(); } },
+  };
+  function cached(kind, key, compute) {
+    if (!frameCache.on) return compute();
+    const map = frameCache.maps[kind] || (frameCache.maps[kind] = new Map());
+    if (!map.has(key)) map.set(key, compute());
+    return map.get(key);
+  }
   const formatTime = (t) => timeFormat(t, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + " UTC";
   const shortTime = (t) => timeFormat(t, { weekday: "short", hour: "2-digit", minute: "2-digit" });
 
@@ -1161,7 +1181,8 @@ const App = (() => {
   /* Within-day delivery at an exit point: the gas delivered so far this gas day against
      what was nominated for the same hours, as a share (0 = on plan, -0.05 = 5 % short).
      The gas day starts at thresholds.gas_day_start_utc. */
-  function dayDelivery(id) {
+  const dayDelivery = (id) => cached("day", id, () => dayDeliveryNow(id));
+  function dayDeliveryNow(id) {
     const start = T.gas_day_start_utc == null ? 5 : T.gas_day_start_utc, now = frame();
     if (now.t == null || metric("nomination_msm3d", id, now) == null) return null;
     const dayStart = Math.floor((now.t - start * 3600) / 86400) * 86400 + start * 3600;
@@ -1181,7 +1202,8 @@ const App = (() => {
   /* The 4-hour window shown in each flow-view card: the last 2 hours of actual flow,
      and the next 2 hours of what shippers have nominated (from the recorded data, or
      the `ahead` block of a live-feed frame). */
-  function window4h(id) {
+  function window4h(id) { return cached("w4h", id, () => window4hNow(id)); }
+  function window4hNow(id) {
     const n = Math.max(1, Math.round(2 / stepHours()));
     const past = [];
     for (let i = live.index - n; i <= live.index; i++) past.push(live.frames[i] ? throughput(id, live.frames[i].flows) : null);
@@ -1674,7 +1696,8 @@ const App = (() => {
   // ------------------------------------------------------------------ styling rules (both views)
   /* A pipeline: grey by state (dark grey without flow, lightest grey flowing); colour
      only for an abnormal condition. */
-  function pipeStyle(id) {
+  function pipeStyle(id) { return cached("pipe", id, () => pipeStyleNow(id)); }
+  function pipeStyleNow(id) {
     const d = assets[id], mode = state.mode, onshore = d.type === "onshore";
     const out = {
       color: COLORS.normal, width: d.capacity ? 0.6 + 0.9 * Math.sqrt(d.capacity / maxCapacity) : 0.6,
@@ -1720,7 +1743,8 @@ const App = (() => {
     return out;
   }
   /* A node: a circle in its state grey, dark grey when inactive, an alarm badge when abnormal. */
-  function nodeStyle(id) {
+  function nodeStyle(id) { return cached("node", id, () => nodeStyleNow(id)); }
+  function nodeStyleNow(id) {
     const d = assets[id], mode = state.mode;
     const out = { level: 0, inactive: d.status !== "operating", sub: NORA.short[d.type], scale: 1,
       hidden: !visible(id), dim: route.unit !== "all" && unitOf[id] !== route.unit };
@@ -2582,6 +2606,7 @@ const App = (() => {
 
   let lastTick = 0, lastStep = 0;
   function tick(now) {
+    frameApi.end(); // a draw that threw must not leave the cache on
     const dt = lastTick ? Math.min(0.25, (now - lastTick) / 1000) : 0;
     lastTick = now;
     if (live.playing) {
@@ -2830,7 +2855,8 @@ const App = (() => {
     display: () => display.profile,
     uiScale: () => display.scale,
     // Flow through a node now (MSm³/d) and its pressure (bar), for the views to show.
-    reading: (id) => ({ flow: throughput(id, frame().flows), pressure: metric("pressure_bar", id) }),
+    reading: (id) => cached("reading", id, () => ({ flow: throughput(id, frame().flows), pressure: metric("pressure_bar", id) })),
+    frame: frameApi, cached,
     dayDelivery, register, restyle, go, start, theme: () => theme,
     select: (id) => {
       if (!id || !assets[id]) { if (route.screen === "unit" && state.mode !== "whatif") closeSidebar(); return; }
@@ -2926,7 +2952,8 @@ function NoraCanvasMap(view) {
     canvas.style.height = `${height}px`;
   }
 
-  function redraw() {
+  function redraw() { App.frame.run(redrawNow); }
+  function redrawNow() {
     if (!ctx || !width) return;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.fillStyle = C.water;
@@ -3589,7 +3616,8 @@ function NoraCanvasMap(view) {
   };
 
   // Pigs and peaks (and, if switched on, faint flow dots) on a canvas over the map.
-  view.draw = () => {
+  view.draw = () => App.frame.run(drawNow);
+  function drawNow() {
     if (!ctx) return;
     sizeCanvas();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -3654,7 +3682,7 @@ function NoraCanvasMap(view) {
       App.drawMarker(ctx, m, p.x, p.y, p.angle, m.kind === "pig" ? 8.5 : 6.5, detail, taken);
       if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
     }
-  };
+  }
 
   /* Screen boxes of the node dots and their names, where MapLibre puts them (under the
      dot, wrapped at 9 em), so the labels of pigs and peaks keep clear of them. */
@@ -3787,6 +3815,7 @@ function NoraCanvasMap(view) {
   // The paper: a dot grid in canvas units, so it pans and zooms with the drawing.
   let framePos = {}; // node positions for this frame (nodes can be dragged)
   function paper(ctx) {
+    App.frame.begin(); // ends after the overlay: one cache for the whole vis frame
     framePos = network.getPositions();
     drawnBoxes = {}; // refilled as the nodes are drawn
     const scale = network.getScale();
@@ -3869,10 +3898,23 @@ function NoraCanvasMap(view) {
      sharing a direction are summed. Positions come from the current frame, so dragging
      a node also moves the readings. */
   const QUAD = { NE: [1, -1], SE: [1, 1], SW: [-1, 1], NW: [-1, -1] };
+  // The lines at each node, once: the quadrants look only at a node's own lines.
+  const linesAt = {};
+  for (const pid of App.pipeIds) {
+    const p = NORA.assets[pid];
+    for (const end of [p.from, p.to]) (linesAt[end] = linesAt[end] || []).push(pid);
+  }
+  /* Asked for several times per node per frame (circle size, readings, line ends):
+     within one frame each node and set of positions is worked out once. */
   function flowQuadrants(id, positions = framePos) {
+    const byId = App.cached("quadrants", positions, () => new Map());
+    if (!byId.has(id)) byId.set(id, flowQuadrantsNow(id, positions));
+    return byId.get(id);
+  }
+  function flowQuadrantsNow(id, positions) {
     const here = positions[id], out = {};
     if (!here) return out;
-    for (const pid of App.pipeIds) {
+    for (const pid of linesAt[id] || []) {
       const p = NORA.assets[pid], v = App.live.values[pid];
       if (!v || Math.abs(v) < 0.05 || (p.from !== id && p.to !== id) || App.pipeStyle(pid).hidden) continue;
       const other = positions[p.from === id ? p.to : p.from];
@@ -4074,73 +4116,104 @@ function NoraCanvasMap(view) {
     return true;
   }
   function overlay(ctx) {
+    try { overlayNow(ctx); } finally { App.frame.end(); }
+  }
+  function overlayNow(ctx) {
     const positions = network.getPositions();
     drawDirection(ctx);
     for (const id of App.pipeIds) {
       const s = App.pipeStyle(id), e = edges.get(id);
       if (s.level && !s.hidden && e) { const m = pointAlong(e, 0.5, positions); App.drawBadge(ctx, s.level, m.x + 12, m.y, 7); }
     }
-    if (App.state.mode !== "live") return;
-    // At low zoom a stub outside its own node can cross a neighbour. Keep the fitted
-    // overview calm; these decorative strokes only appear once the drawing has room.
-    if (animateStubs(network.getScale())) {
-      /* Simulated flow at the nodes, not on the lines (same as the Map view):
-         short solid bands sliding into the icon where gas arrives and out of it
-         where gas leaves, scaled by how much the line carries. */
+    drawMarks(); // the moving layer follows every redraw: a pan, a zoom, a dragged node
+  }
+
+  /* Moving things (the flow stubs, pigs, peaks and gas quality) live on their own canvas
+     over the network. They move every frame; the network itself (70 circles full of
+     text) only changes when the data steps or the view moves, and vis redraws it then.
+     So the circles are drawn a few times a second, not sixty (Ray, 28 Oct: "the
+     application is extremely slow"). */
+  let marks = null, marksCtx = null;
+  function drawMarks() {
+    if (!marksCtx || !network) return;
+    App.frame.run(() => {
+      const ratio = window.devicePixelRatio || 1, w = el.clientWidth, h = el.clientHeight;
+      if (marks.width !== Math.round(w * ratio) || marks.height !== Math.round(h * ratio)) {
+        marks.width = Math.round(w * ratio);
+        marks.height = Math.round(h * ratio);
+        marks.style.width = `${w}px`;
+        marks.style.height = `${h}px`;
+      }
+      const ctx = marksCtx;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, marks.width, marks.height);
+      if (App.state.mode !== "live") return;
       const scale = network.getScale();
-      ctx.lineCap = "round";
-      ctx.strokeStyle = C.active;
-      for (const nid of App.nodeIds) {
-        const pn = positions[nid];
-        if (!pn) continue;
-        for (const pid of App.pipeIds) {
-          const v = App.live.values[pid], p = NORA.assets[pid], e = edges.get(pid);
-          if (!v || Math.abs(v) < 0.05 || !p || !e || (p.from !== nid && p.to !== nid)) continue;
-          if (App.pipeStyle(pid).hidden) continue;
-          const on = positions[p.from === nid ? p.to : p.from];
-          if (!on) continue;
-          const dx = on.x - pn.x, dy = on.y - pn.y, len = Math.hypot(dx, dy);
-          if (len < 8) continue;
-          const ux = dx / len, uy = dy / len;
-          // The stub shrinks with short lines and with zoom, like on the Map.
-          const stubScreen = Math.min(26, len * scale * 0.4);
-          const stub = stubScreen / scale, band = Math.max(3, Math.min(8, stubScreen * 0.5)) / scale;
-          const inflow = (p.to === nid) === (v > 0);
-          const share = Math.min(1, Math.abs(v) / (p.capacity || 30));
-          ctx.lineWidth = (1.6 + share * 2.2) / scale;
-          for (let k = 0; k < 2; k++) {
-            const t = (App.live.clock * 0.45 + k / 2) % 1;
-            const d = stubDistance(nid, inflow ? (stub - band) * (1 - t) + band : (stub - band) * t + band, scale, positions);
-            ctx.globalAlpha = 0.25 + (inflow ? t : 1 - t) * 0.55;
-            const cx = pn.x + ux * d, cy = pn.y + uy * d;
-            const x1 = cx - ux * band / 2, y1 = cy - uy * band / 2;
-            const x2 = cx + ux * band / 2, y2 = cy + uy * band / 2;
-            if (!stubClear({ x: x1, y: y1 }, { x: x2, y: y2 }, positions, scale)) continue;
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.stroke();
-          }
+      // At low zoom a stub outside its own node can cross a neighbour. Keep the fitted
+      // overview calm; these decorative strokes only appear once the drawing has room.
+      if (animateStubs(scale)) {
+        const o = network.canvasToDOM({ x: 0, y: 0 }); // the network's own coordinates
+        ctx.setTransform(ratio * scale, 0, 0, ratio * scale, ratio * o.x, ratio * o.y);
+        drawStubs(ctx, framePos, scale);
+      }
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      drawMoving(ctx, framePos, scale);
+    });
+  }
+  /* Simulated flow at the nodes, not on the lines (same as the Map view): short solid
+     bands sliding into the icon where gas arrives and out of it where gas leaves, scaled
+     by how much the line carries. Drawn in the network's coordinates. */
+  function drawStubs(ctx, positions, scale) {
+    ctx.lineCap = "round";
+    ctx.strokeStyle = C.active;
+    for (const nid of App.nodeIds) {
+      const pn = positions[nid];
+      if (!pn) continue;
+      for (const pid of linesAt[nid] || []) {
+        const v = App.live.values[pid], p = NORA.assets[pid], e = edges.get(pid);
+        if (!v || Math.abs(v) < 0.05 || !p || !e || (p.from !== nid && p.to !== nid)) continue;
+        if (App.pipeStyle(pid).hidden) continue;
+        const on = positions[p.from === nid ? p.to : p.from];
+        if (!on) continue;
+        const dx = on.x - pn.x, dy = on.y - pn.y, len = Math.hypot(dx, dy);
+        if (len < 8) continue;
+        const ux = dx / len, uy = dy / len;
+        // The stub shrinks with short lines and with zoom, like on the Map.
+        const stubScreen = Math.min(26, len * scale * 0.4);
+        const stub = stubScreen / scale, band = Math.max(3, Math.min(8, stubScreen * 0.5)) / scale;
+        const inflow = (p.to === nid) === (v > 0);
+        const share = Math.min(1, Math.abs(v) / (p.capacity || 30));
+        ctx.lineWidth = (1.6 + share * 2.2) / scale;
+        for (let k = 0; k < 2; k++) {
+          const t = (App.live.clock * 0.45 + k / 2) % 1;
+          const d = stubDistance(nid, inflow ? (stub - band) * (1 - t) + band : (stub - band) * t + band, scale, positions);
+          ctx.globalAlpha = 0.25 + (inflow ? t : 1 - t) * 0.55;
+          const cx = pn.x + ux * d, cy = pn.y + uy * d;
+          const x1 = cx - ux * band / 2, y1 = cy - uy * band / 2;
+          const x2 = cx + ux * band / 2, y2 = cy + uy * band / 2;
+          if (!stubClear({ x: x1, y: y1 }, { x: x2, y: y2 }, positions, scale)) continue; // never across a circle
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
         }
       }
-      ctx.globalAlpha = 1;
     }
-    // Pigs, peaks and gas-quality slugs in screen pixels, so they stay visible (and the
-    // same size as on the map) however far the drawing is zoomed out.
-    const ratio = (network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
-    const scale = network.getScale(), detail = scale >= 0.9 ? 2 : scale >= 0.5 ? 1 : 0;
-    ctx.save();
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    const marks = App.markers().filter((m) => edges.get(m.id) && !App.pipeStyle(m.id).hidden);
+    ctx.globalAlpha = 1;
+  }
+  // Pigs, peaks and gas-quality slugs in screen pixels, so they stay visible (and the
+  // same size as on the map) however far the drawing is zoomed out.
+  function drawMoving(ctx, positions, scale) {
+    const detail = scale >= 0.9 ? 2 : scale >= 0.5 ? 1 : 0;
+    const marksNow = App.markers().filter((m) => edges.get(m.id) && !App.pipeStyle(m.id).hidden);
     const at = (m, t) => network.canvasToDOM(pointAlong(edges.get(m.id), Math.max(0, Math.min(1, t)), positions));
-    for (const m of marks) if (m.extent) App.drawBand(ctx, m, at(m, m.extent[0]), at(m, m.extent[1]), 3.2 * App.uiScale());
-    const taken = marks.length ? nodeBoxes() : [];
-    for (const m of marks) {
+    for (const m of marksNow) if (m.extent) App.drawBand(ctx, m, at(m, m.extent[0]), at(m, m.extent[1]), 3.2 * App.uiScale());
+    const taken = marksNow.length ? nodeBoxes() : []; // labels keep clear of the circles' text
+    for (const m of marksNow) {
       const p = pointAlong(edges.get(m.id), Math.max(0, Math.min(1, m.along)), positions);
       const dom = network.canvasToDOM(p);
       App.drawMarker(ctx, m, dom.x, dom.y, p.angle, m.kind === "pig" ? 8.5 : 6.5, detail, taken);
     }
-    ctx.restore();
   }
 
   /* Screen boxes of every circle drawn this frame with the name, pressure, rate and
@@ -4159,6 +4232,11 @@ function NoraCanvasMap(view) {
     el.style.background = C.paper;
     network = new vis.Network(container, { nodes, edges }, flowOptions);
     view.network = network;
+    marks = document.createElement("canvas"); // the moving layer, above the network
+    marks.className = "flow-marks";
+    marks.setAttribute("aria-hidden", "true");
+    container.append(marks);
+    marksCtx = marks.getContext("2d");
     // No zooming out far past the whole network: it would only shrink it to a speck.
     network.on("zoom", () => {
       const min = minScale();
@@ -4251,7 +4329,8 @@ function NoraCanvasMap(view) {
     network.redraw();
   };
 
-  view.draw = () => { if (App.state.mode === "live" && App.live.playing) network.redraw(); };
+  // Every frame while playing: only the moving layer. The circles follow each data step.
+  view.draw = () => { if (App.state.mode === "live" && App.live.playing) drawMarks(); };
   view.applySettings = () => { if (view.ready) { layout(); view.restyle(); view.setUnit(App.route.unit); } };
   view.theme = () => {
     if (!view.ready) return;
