@@ -355,7 +355,7 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 .map2d-zoom button { width: 28px; height: 28px; border: 1px solid var(--rule); border-radius: var(--r);
   background: var(--raised); color: var(--text); font-size: 16px; line-height: 1; cursor: pointer; }
 
-/* Asset sidebar: slides in from the right when a field, plant or icon is clicked.
+/* Asset sidebar: slides in from the right when a field, plant or line is clicked.
    It mirrors the asset page (schematic, values, facts) in one calm column. */
 .sidebar {
   position: fixed; top: var(--bar-h); right: 0; bottom: var(--player-h); width: min(460px, 96vw); z-index: 25;
@@ -1581,7 +1581,7 @@ const App = (() => {
     if (settings.lineValues === "on" && !out.label && d.capacity) out.label = fmt(d.capacity);
     return out;
   }
-  /* A node: neutral icon, dark grey when inactive, an alarm badge when abnormal. */
+  /* A node: a circle in its state grey, dark grey when inactive, an alarm badge when abnormal. */
   function nodeStyle(id) {
     const d = assets[id], mode = state.mode;
     const out = { level: 0, inactive: d.status !== "operating", sub: NORA.short[d.type], scale: 1,
@@ -1869,7 +1869,7 @@ const App = (() => {
   }
 
   /* The asset sidebar: a calm column that slides in from the right when a field,
-     plant or icon is clicked on the unit screen, and follows the data as it plays. */
+     plant or line is clicked on the unit screen, and follows the data as it plays. */
   const side = { id: null };
   function openSidebar(id) {
     if (!assets[id]) return;
@@ -2104,13 +2104,13 @@ const App = (() => {
       h("h3", null, "Moving along the lines"),
       h("ul", null,
         h("li", null, svg("0 0 26 14", `<path d="M17 7l-8-4.5v9z" fill="${COLORS.pig}" stroke="${COLORS.casing}"/>`), "Pig: a small triangle creeping along, at its own speed"),
-        h("li", null, svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.peak}" stroke="${COLORS.casing}"/>`), "Peak: a change in flow, moving with the gas"),
+        h("li", null, svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.peak}" stroke="${COLORS.casing}"/>`), "Peak: a change in flow moving with the gas; the band around it is its head and tail"),
         h("li", null, svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.h2s}" stroke="${COLORS.casing}"/>`), "H₂S peak: ppm, next stop and when it gets there"),
         h("li", null, svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.co2}" stroke="${COLORS.casing}"/>`), "CO₂ peak: mol %, next stop and when it gets there")),
       h("h3", null, "Indicators"),
       rangeBar({ min: 0, max: 10, value: 6, band: [3, 7], ticks: [{ at: 1.5, level: 3 }, { at: 8.5, level: 3 }], target: 5 }),
       h("p", { class: "dim", style: "margin:4px 0 0" }, "Light band: normal range. Ticks: alarm limits. Hollow diamond: the target (nomination). Pointer: the value now. Trends show the last hours, dashed where they are heading."),
-      h("p", { class: "dim", style: "margin:6px 0 0" }, "Each circle shows the gas flowing through it now (MSm³/d) and its pressure (bar). At exit points a small bar shows today's delivery against the nominations: the middle line is on plan. Under each circle, a 4-hour line: the last 2 hours solid, the next 2 hours of nominations dashed."));
+      h("p", { class: "dim", style: "margin:6px 0 0" }, "In the Flow view each circle shows, in the quarter facing each line that leaves it, the gas going out on that line (34M is 34 MSm³/d), and its pressure (bar). At exit points a small bar shows today's delivery against the nominations: the middle line is on plan. Under each name, a 4-hour line: the last 2 hours solid, the next 2 hours of nominations dashed. The sidebar's picture lists the gas coming in above the circle and going out below it."));
   }
   function storedFlag(key) { try { return localStorage.getItem(key); } catch (error) { return "1"; } }
   function openGuide() {
