@@ -1029,8 +1029,8 @@ const App = (() => {
   }
 
   // ------------------------------------------------------------------ styling rules (both views)
-  /* A pipeline: grey by state (dark grey without flow, lightest grey flowing); colour
-     only for an abnormal condition. */
+  /* A pipeline always stays in the state grey palette. Alarms use a badge, shape and
+     value beside the line; colouring the whole route would overwhelm the control room. */
   function pipeStyle(id) { return cached("pipe", id, () => pipeStyleNow(id)); }
   function pipeStyleNow(id) {
     const d = assets[id], mode = state.mode, onshore = d.type === "onshore";
@@ -1054,8 +1054,8 @@ const App = (() => {
       }
     } else if (mode === "load") {
       out.color = d.utilization == null ? COLORS.inactive : COLORS.active;
-      // How full, at a glance: a hairline when empty, thick when running full. Colour
-      // stays for overload only (running full is normal).
+      // How full, at a glance: a hairline when empty, thick when running full.
+      // Overload gets a badge; the route itself stays grey.
       if (d.utilization != null) out.width = 0.6 + 2.6 * Math.min(1, d.utilization);
       out.level = level(d.utilization, T.load);
       out.label = d.utilization == null ? "" : `${fmt(d.utilization * 100)}%`;
@@ -1072,7 +1072,6 @@ const App = (() => {
         out.label = m < 0.05 ? "" : fmt(m, 1);
       }
     }
-    if (out.level) out.color = LEVEL_COLOR[out.level];
     if (settings.lineValues === "off" || (settings.lineValues === "auto" && mode === "plain")) out.label = "";
     if (settings.lineValues === "on" && !out.label && d.capacity) out.label = fmt(d.capacity);
     return out;
