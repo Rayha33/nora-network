@@ -592,7 +592,8 @@
         font: { color: C.text_dim, background: C.paper },
       };
     }));
-    network.redraw();
+    // DataSet updates already request one coalesced redraw on the next animation frame.
+    // A second synchronous redraw here doubled the whole-network layout/paint cost.
   };
 
   // Every frame while playing: only the moving layer. The circles follow each data step.
