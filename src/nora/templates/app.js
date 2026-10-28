@@ -1595,40 +1595,36 @@ const App = (() => {
   // ------------------------------------------------------------------ key and settings
   function buildKey() {
     const sample = (color, w, dash = "") => svg("0 0 26 14", `<line x1="1" y1="7" x2="25" y2="7" stroke="${COLORS.text}" stroke-width="${w + 2}"${dash}/><line x1="1" y1="7" x2="25" y2="7" stroke="${color}" stroke-width="${w}"${dash}/>`);
+    const item = (icon, text) => h("li", null, icon, h("span", null, text));
+    const section = (title, wide, ...children) => h("section", { class: `key-section${wide ? " key-wide" : ""}` }, h("h3", null, title), ...children);
+    const timeline = svg("0 0 280 58", `<path d="M9 9l7 5-7 5z" fill="${COLORS.text}"/><line x1="28" y1="28" x2="268" y2="28" stroke="${COLORS.text_dim}"/><line x1="148" y1="17" x2="148" y2="39" stroke="${COLORS.text}" stroke-width="2"/><circle cx="148" cy="28" r="4" fill="${COLORS.text}"/><g fill="${COLORS.text_dim}" font-size="11" font-family="Archivo, sans-serif"><text x="28" y="49">← History</text><text x="148" y="49" text-anchor="middle" fill="${COLORS.text}">Now</text><text x="268" y="49" text-anchor="end">Model →</text></g>`);
+    const flow = svg("0 0 280 96", `<line x1="12" y1="34" x2="94" y2="34" stroke="${COLORS.text_dim}"/><line x1="166" y1="34" x2="268" y2="34" stroke="${COLORS.text_dim}"/><path d="M82 30l10 4-10 4zM188 30l10 4-10 4z" fill="${COLORS.text_dim}"/><circle cx="130" cy="34" r="35" fill="${COLORS.card.active.fill}" stroke="${COLORS.card.active.edge}"/><g fill="${COLORS.card.active.ink}" font-size="11" font-family="Archivo, sans-serif" text-anchor="middle"><text x="113" y="31">in 34M</text><text x="147" y="43">out 30M</text><text x="130" y="80" fill="${COLORS.text}">Asset · 82 bar</text></g>`);
+    const exit = svg("0 0 280 30", `<line x1="65" y1="14" x2="215" y2="14" stroke="${COLORS.text_dim}"/><line x1="105" y1="7" x2="105" y2="21" stroke="${COLORS.text_dim}"/><line x1="175" y1="7" x2="175" y2="21" stroke="${COLORS.text_dim}"/><line x1="145" y1="4" x2="145" y2="24" stroke="${COLORS.text}" stroke-width="3"/><g fill="${COLORS.text_dim}" font-size="11" font-family="Archivo, sans-serif"><text x="65" y="28">min</text><text x="140" y="28" fill="${COLORS.text}">now</text><text x="202" y="28">max</text></g>`);
     $("key").replaceChildren(
       h("button", { type: "button", class: "text close", onclick: closeGuide }, "Close"),
-      h("h3", null, "What this shows"),
-      h("p", null, "The gas network under the North Sea: fields that produce gas, the pipelines that carry it, and the exit points where it is delivered to the UK and the Continent. ",
-        "The data is played back like a recording; the dataset's name at the bottom says whether it is synthetic."),
-      h("h3", null, "How to use it"),
-      h("ol", null,
-        h("li", null, "Overview answers one question: is the plan holding? Problems are listed with their likely cause and what to do."),
-        h("li", null, "Press ▶ to play the data, drag the timeline, or press Next problem. On synthetic data the tick in the middle of the timeline is now: left of it is history, right of it the model looking ahead: the player says Model, and the Flow and indicator numbers turn italic."),
-        h("li", null, "Peaks (circles) and pigs (small triangles) move with the gas; slow the player to watch them cross a line."),
-        h("li", null, "Choose a unit, or All units, to see it on the Map or as a Flow: gas moves from the top to the bottom."),
-        h("li", null, "Drag the year, top right, to show the network as it was, or will be: planned assets appear at their startup year, shut-down ones disappear from their shutdown year."),
-        h("li", null, "Choose What-if, then click assets to take them offline: the pipeline loads and the deliverable gas update. Click the chip in the header to restore them all."),
-        h("li", null, "Click any asset or line for its detail. Diagnostics shows the numbers behind it."),
-        h("li", null, "Settings, Display: choose the screen (operator desk, video wall: large, dark, the pointer hides; or tablet) and the size of everything. New window opens this screen again for another monitor.")),
-      h("h3", null, "Grey means all is well"),
-      h("p", { class: "dim" }, "Colour appears only when something needs attention, always with a shape and a number as well:"),
-      h("ul", null, [3, 2, 1].map((l) => h("li", null, badge(l), h("span", { class: "dim" }, ["", "pre-warning", "medium priority", "act now"][l])))),
-      h("h3", null, "Shades of grey"),
-      h("ul", null,
-        h("li", null, sample(COLORS.active, 3), "Open, flowing, active"),
-        h("li", null, sample(COLORS.normal, 3), "Normal state"),
-        h("li", null, sample(COLORS.inactive, 3), "Closed, no flow, inactive"),
-        h("li", null, sample(COLORS.inactive, 1.5, ' stroke-dasharray="3 3"'), "No reading, or a notional grid entry")),
-      h("h3", null, "Moving along the lines"),
-      h("ul", null,
-        h("li", null, svg("0 0 26 14", `<path d="M17 7l-8-4.5v9z" fill="${COLORS.pig}" stroke="${COLORS.casing}"/>`), "Pig: a small triangle creeping along, at its own speed"),
-        h("li", null, svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.peak}" stroke="${COLORS.casing}"/>`), "Peak: a change in flow moving with the gas; the band around it is its head and tail"),
-        h("li", null, svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.h2s}" stroke="${COLORS.casing}"/>`), "H₂S peak: ppm, next stop and when it gets there"),
-        h("li", null, svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.co2}" stroke="${COLORS.casing}"/>`), "CO₂ peak: mol %, next stop and when it gets there")),
-      h("h3", null, "Indicators"),
-      rangeBar({ min: 0, max: 10, value: 6, band: [3, 7], ticks: [{ at: 1.5, level: 3 }, { at: 8.5, level: 3 }], target: 5 }),
-      h("p", { class: "dim", style: "margin:4px 0 0" }, "Light band: normal range. Ticks: alarm limits. Hollow diamond: the target (nomination). Pointer: the value now. Trends show the last hours, dashed where they are heading."),
-      h("p", { class: "dim", style: "margin:6px 0 0" }, "In the Flow view each circle shows incoming (in) and outgoing (out) totals in the quarter facing each connected line (34M is 34 MSm³/d). Circles expand when both directions need separate lines. Pressure (bar) sits below the asset name, outside the circle. At exit points a small bar shows today's delivery against the nominations: the middle line is on plan. Under each name, a 4-hour line: the last 2 hours solid, the next 2 hours of nominations dashed. The sidebar's picture lists the gas coming in above the circle and going out below it."));
+      h("div", { class: "key-grid" },
+        section("Controls", true, timeline,
+          h("ul", { class: "key-notes" },
+            item(h("span", null, "▶"), "Play / scrub"),
+            item(h("span", null, "◎"), "Next problem"),
+            item(h("span", null, "↗"), "Click for details"),
+            item(h("span", null, "⌁"), "What-if: click offline"),
+            item(h("span", null, "↔"), "Year: past / future"))),
+        section("Moving", false, h("ul", null,
+          item(svg("0 0 26 14", `<path d="M17 7l-8-4.5v9z" fill="${COLORS.pig}" stroke="${COLORS.casing}"/>`), "Pig"),
+          item(svg("0 0 26 14", `<line x1="3" y1="7" x2="23" y2="7" stroke="${COLORS.peak}" stroke-width="4"/><circle cx="13" cy="7" r="5" fill="${COLORS.peak}" stroke="${COLORS.casing}"/>`), "Peak"),
+          item(svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.h2s}" stroke="${COLORS.casing}"/>`), "H₂S · ppm"),
+          item(svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.co2}" stroke="${COLORS.casing}"/>`), "CO₂ · mol %"))),
+        section("Status", false, h("ul", null,
+          ...[3, 2, 1].map((l) => item(badge(l), ["", "Watch", "Medium", "Act now"][l])),
+          item(sample(COLORS.active, 3), "Active"),
+          item(sample(COLORS.normal, 3), "Normal"),
+          item(sample(COLORS.inactive, 3), "Inactive"),
+          item(sample(COLORS.inactive, 1.5, ' stroke-dasharray="3 3"'), "No data"))),
+        section("Flow", true, flow, h("p", { class: "key-caption" }, "in / out · MSm³/d"), exit, h("p", { class: "key-caption" }, "Exit delivery")),
+        section("Indicators", true, rangeBar({ min: 0, max: 10, value: 6, band: [3, 7], ticks: [{ at: 1.5, level: 3 }, { at: 8.5, level: 3 }], target: 5 }),
+          h("p", { class: "key-caption" }, "Band: normal · ◇ target · pointer: now"),
+          h("p", { class: "key-caption" }, "Solid: history · dashed: model"))));
   }
   function storedFlag(key) { try { return localStorage.getItem(key); } catch (error) { return "1"; } }
   function openGuide() {
