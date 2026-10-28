@@ -125,6 +125,19 @@ test("flow circles: live flow (MSm³/d) and pressure (bar) for each node", () =>
   assert.ok(readings.some((r) => r.pressure > 0), "and a pressure where it is measured");
 });
 
+test("pipelines: alarms never recolor the whole route", () => {
+  const loaded = loadApp();
+  const { App } = loaded;
+  loadFirstHour(App, loaded.NORA);
+  App.live.values = App.live.frames[0].flows;
+  const pid = App.pipeIds.find((id) => Math.abs(App.live.values[id] || 0) >= 0.05);
+  App.live.levelOf[pid] = 3;
+  const style = App.pipeStyle(pid);
+  assert.equal(style.level, 3, "the pipeline still carries its alarm badge");
+  assert.equal(style.color, App.colors.active, "the whole pipeline stays in the active gray palette");
+  assert.notEqual(style.color, App.levelColor[3], "critical red is not used for the route");
+});
+
 test("flow circles: each outgoing line's flow sits in the quadrant facing that line", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;
