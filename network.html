@@ -1752,6 +1752,9 @@ const App = (() => {
         ["Diameter", d.diameter == null ? null : `${fmt(d.diameter)} in`], ["In service since", d.commissioned], ["If it trips", lost], ["Status", d.status]];
     return h("dl", { class: "facts" }, rows.filter((r) => r[1] != null && r[1] !== "").map(([k, v]) => [h("dt", null, k), h("dd", null, v)]));
   }
+  /* Labels in the asset picture: regular weight and never outlined. Set inline, so no
+     stylesheet rule (the global `svg` one strokes shapes) can smudge them into bold. */
+  const TEXT = "stroke:none;font-weight:400;paint-order:normal";
   function schematic(id) {
     const d = assets[id], f = frame();
     const inbound = [], outbound = [];
@@ -1775,24 +1778,24 @@ const App = (() => {
       m += `<line x1="${x}" y1="${y1}" x2="${W / 2}" y2="${y2}" stroke="${color}" stroke-width="${Math.max(1.2, s.width)}"/>`;
       if (s.level) m += `<g transform="translate(${(x + W / 2) / 2 - 8} ${(y1 + y2) / 2 - 8})">${shapeMarkup(s.level)}</g>`;
       const label = `${nameOf(pid)}${v == null ? "" : `: ${fmt(Math.abs(v), 1)}`}`;
-      m += `<text x="${x}" y="${above ? y : y + 14}" text-anchor="middle">${esc(label.length > 34 ? `${label.slice(0, 33)}…` : label)}</text>`;
+      m += `<text x="${x}" y="${above ? y : y + 14}" text-anchor="middle" style="${TEXT}">${esc(label.length > 34 ? `${label.slice(0, 33)}…` : label)}</text>`;
     }
     if (d.kind === "node") { // the node as in the Flow view: a state-grey circle holding flow and pressure
       const st = nodeStyle(id), look = COLORS.card[st.inactive ? "inactive" : state.mode === "live" ? "active" : "normal"];
       const flow = throughput(id, f.flows), bar = metric("pressure_bar", id);
       m += `<circle cx="${W / 2}" cy="${mid}" r="22" fill="${look.fill}" stroke="${st.level ? LEVEL_COLOR[st.level] : look.edge}" stroke-width="${st.level ? 2.5 : 1}"/>`;
-      if (flow != null) m += `<text x="${W / 2}" y="${mid + (bar != null ? -2 : 4)}" text-anchor="middle" font-weight="700" fill="${look.ink}">${esc(fmt(flow, flow < 10 ? 1 : 0))}</text>`;
-      if (bar != null) m += `<text x="${W / 2}" y="${mid + 12}" text-anchor="middle" class="dimtext" style="font-size:9.5px">${esc(fmt(bar))} bar</text>`;
+      if (flow != null) m += `<text x="${W / 2}" y="${mid + (bar != null ? -2 : 4)}" text-anchor="middle" fill="${look.ink}" style="${TEXT};font-weight:600">${esc(fmt(flow, flow < 10 ? 1 : 0))}</text>`;
+      if (bar != null) m += `<text x="${W / 2}" y="${mid + 12}" text-anchor="middle" class="dimtext" style="${TEXT};font-size:9.5px">${esc(fmt(bar))} bar</text>`;
     }
     else {
       const s = pipeStyle(id);
-      m += `<text x="${W / 2}" y="40" text-anchor="middle">${esc(nameOf(d.from))}</text><text x="${W / 2}" y="${H - 14}" text-anchor="middle">${esc(nameOf(d.to))}</text>`;
+      m += `<text x="${W / 2}" y="40" text-anchor="middle" style="${TEXT}">${esc(nameOf(d.from))}</text><text x="${W / 2}" y="${H - 14}" text-anchor="middle" style="${TEXT}">${esc(nameOf(d.to))}</text>`;
       m += `<line x1="${W / 2}" y1="52" x2="${W / 2}" y2="${H - 34}" stroke="${s.level ? COLORS.casing : "none"}" stroke-width="${s.width + 2.4}"/><line x1="${W / 2}" y1="52" x2="${W / 2}" y2="${H - 34}" stroke="${s.level ? LEVEL_COLOR[s.level] : s.color}" stroke-width="${Math.max(1.2, s.width)}"/>`;
     }
     const lvl = levelOf(id);
     if (lvl) m += `<g transform="translate(${W / 2 + 12} ${mid - 30})">${shapeMarkup(lvl)}</g>`;
-    if (d.kind === "node") m += `<text x="${W / 2 + 24}" y="${mid + 4}" font-weight="600">${esc(d.name)}</text>`;
-    if (d.kind === "node" && !inbound.length && !outbound.length) m += `<text x="${W / 2}" y="200" text-anchor="middle" class="dimtext">No connected pipelines</text>`;
+    if (d.kind === "node") m += `<text x="${W / 2 + 30}" y="${mid + 4}" style="${TEXT};font-weight:500">${esc(d.name)}</text>`;
+    if (d.kind === "node" && !inbound.length && !outbound.length) m += `<text x="${W / 2}" y="200" text-anchor="middle" class="dimtext" style="${TEXT}">No connected pipelines</text>`;
     return svg(`0 0 ${W} ${H}`, m, "schematic");
   }
 
