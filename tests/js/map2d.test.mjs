@@ -93,6 +93,47 @@ test("peaks: band sampling includes route vertices between head and tail", () =>
     "a raw route vertex is converted into the same node-trimmed coordinates as the marker");
 });
 
+test("peaks: pipeline names are drawn after the moving bands", () => {
+  const operations = [];
+  const Path2D = class { moveTo() {} lineTo() {} closePath() {} };
+  const loaded = loadApp({ globals: { Path2D } });
+  const { App, document, NORA } = loaded;
+  const context = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
+      if (key === "createLinearGradient") return () => ({ addColorStop() {} });
+      if (key === "fillText" || key === "strokeText") return (text) => operations.push({ op: key, text });
+      return () => {};
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  const create = document.createElement;
+  document.createElement = (tag) => {
+    const node = create(tag);
+    if (String(tag).toLowerCase() === "canvas") node.getContext = (type) => (type === "2d" ? context : null);
+    return node;
+  };
+  const el = document.getElementById("view-map");
+  el.clientWidth = 1000;
+  el.clientHeight = 700;
+  document.getElementById("speed").options = [{ value: "60" }];
+  document.getElementById("stream-select")._listeners.change[0]({ target: { value: NORA.streams[0].name } });
+  App.state.view = "map";
+  App.state.mode = "live";
+  App.go({ screen: "unit", unit: "all" });
+  const view = App.views.map;
+  assert.equal(view.canvasMap, true);
+  const drawBand = App.drawBand;
+  App.drawBand = (...args) => { operations.push({ op: "band" }); drawBand(...args); };
+  operations.length = 0;
+  view.restyle();
+  const band = operations.findIndex((op) => op.op === "band");
+  const pipelineName = operations.findIndex((op) => op.op === "fillText" && App.pipeIds.some((id) => App.pipeMapName(id) === op.text));
+  assert.ok(band >= 0, "a moving band is drawn");
+  assert.ok(pipelineName > band, "the pipeline name is drawn on top of the band");
+});
+
 test("peaks: opaque ends taper to a quieter centre behind the dot", () => {
   const { App } = loadApp();
   const stops = [];

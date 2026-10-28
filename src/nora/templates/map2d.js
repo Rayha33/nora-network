@@ -158,7 +158,9 @@ function NoraCanvasMap(view) {
       ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(text, b.x, b.y); // no line shows through a name
       ctx.fillStyle = C.text; ctx.fillText(text, b.x, b.y);
     }
-    // Major pipeline names use the same collision map as node names.
+    // Major pipeline names use the same collision map as node names. Reserve their boxes
+    // now, but paint them after the moving bands so a peak never crosses out the text.
+    const pipeLabels = [];
     if (names) {
       ctx.textBaseline = "middle";
       for (const p of pipes) {
@@ -168,8 +170,7 @@ function NoraCanvasMap(view) {
         const w = ctx.measureText(text).width + 4 * u, box = [m.x - w / 2, y - 8 * u, m.x + w / 2, y + 8 * u];
         if (placed.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) continue;
         placed.push(box);
-        ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(text, m.x, y);
-        ctx.fillStyle = C.text; ctx.fillText(text, m.x, y);
+        pipeLabels.push({ text, x: m.x, y });
       }
       ctx.textBaseline = "top";
     }
@@ -178,20 +179,24 @@ function NoraCanvasMap(view) {
       const s = App.pipeStyle(p.id);
       if (s.level && !s.hidden) { const m = along(p.id, 0.5); App.drawBadge(ctx, s.level, m.x + 8 * u, m.y - 7 * u, 7 * u); }
     }
-    // Pigs, peaks and gas quality: bands first, then the markers on top.
-    if (live) {
-      const z = zoom(), detail = z >= 6.5 ? 2 : z >= 5 ? 1 : 0, marks = App.markers();
-      for (const m of marks) {
-        if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]), 3.2 * u, bandPath(m.id, m.extent));
-      }
-      drawnMarks = [];
-      const taken = [...placed, ...dots]; // marker labels keep clear of names and dots
-      for (const m of marks) {
-        if (!pipeById[m.id] || App.pipeStyle(m.id).hidden) continue;
-        const p = along(m.id, m.along);
-        App.drawMarker(ctx, m, p.x, p.y, p.angle, m.kind === "pig" ? 10 : 6.5, detail, taken);
-        if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
-      }
+    // Pigs, peaks and gas quality: bands first, then the pipeline names and markers.
+    const z = zoom(), detail = z >= 6.5 ? 2 : z >= 5 ? 1 : 0, marks = live ? App.markers() : [];
+    for (const m of marks) {
+      if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]), 3.2 * u, bandPath(m.id, m.extent));
+    }
+    ctx.textBaseline = "middle";
+    for (const label of pipeLabels) {
+      ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(label.text, label.x, label.y);
+      ctx.fillStyle = C.text; ctx.fillText(label.text, label.x, label.y);
+    }
+    ctx.textBaseline = "top";
+    drawnMarks = [];
+    const taken = [...placed, ...dots]; // marker labels keep clear of names and dots
+    for (const m of marks) {
+      if (!pipeById[m.id] || App.pipeStyle(m.id).hidden) continue;
+      const p = along(m.id, m.along);
+      App.drawMarker(ctx, m, p.x, p.y, p.angle, m.kind === "pig" ? 10 : 6.5, detail, taken);
+      if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
     }
   }
 
