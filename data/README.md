@@ -81,3 +81,17 @@ Time series that the chart replays as live data. See [streams/README.md](streams
 when a browser has no WebGL. It comes from Natural Earth's 1:10m land polygons (public
 domain, https://www.naturalearthdata.com), clipped to the network's area and simplified
 by `scripts/build_coastline.py`. Rebuild it with `python scripts/build_coastline.py`.
+
+## Pipeline routes and positions
+
+`geo/routes.json` holds the laid routes of the Norwegian pipelines, so the map draws
+each line where it runs, not straight from end to end. It comes from the Norwegian
+Offshore Directorate's pipeline register (https://factpages.sodir.no/downloads/csv/pipLine.zip,
+licence NLOD, credit "Norwegian Offshore Directorate") and is built by
+`scripts/build_routes.py`, which also lists which SODIR segments make up each NORA
+pipeline. Lines outside the register (UK, Dutch, Danish systems) are drawn straight.
+
+Positions of Norwegian platforms, subsea tees and landing terminals follow SODIR's
+facility register (fclPoint): the Draupner S and E riser platforms, for example, are
+bridge-linked about 120 m apart. A node far from the route it sits on is in the wrong
+place, and `tests/test_geo.py` checks for it.

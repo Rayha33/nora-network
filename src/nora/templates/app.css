@@ -66,37 +66,52 @@ svg .fill { fill: currentColor; stroke: none; }
 }
 .maplibregl-ctrl-scale { background: var(--paper) !important; color: var(--text-dim) !important; border-color: var(--text-dim) !important; }
 
+/* The top bar: every control is one height (--ctl) and one text size, so the row reads
+   as one consistent strip whichever page or mode is showing. */
 .bar {
+  --ctl: 30px; --ctl-font: 12.5px;
   position: fixed; top: 0; left: 0; right: 0; height: 44px; z-index: 10;
   display: flex; align-items: center; gap: 8px; padding: 0 10px;
   background: var(--panel); border-bottom: 1px solid var(--rule);
 }
+.bar > * { flex-shrink: 0; }
+.bar .crumbs { flex-shrink: 1; }
 .brand { font-weight: 700; font-stretch: 125%; letter-spacing: 0.06em; color: inherit; text-decoration: none; margin-right: 4px; }
 .crumbs { display: flex; align-items: center; gap: 2px; min-width: 0; }
 .crumbs button, .crumbs select {
-  border: 0; background: transparent; padding: 4px 6px; border-radius: var(--r); cursor: pointer;
+  height: var(--ctl); box-sizing: border-box; border: 0; background: transparent; padding: 0 8px;
+  border-radius: var(--r); cursor: pointer; font-size: var(--ctl-font); line-height: var(--ctl);
   color: var(--text-dim); white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis;
 }
 .crumbs .level { font-size: 10.5px; color: var(--text-dim); margin-right: 3px; }
 .crumbs button[aria-current="page"], .crumbs select[aria-current="page"] { color: var(--text); font-weight: 600; }
 .crumbs .sep { color: var(--text-dim); padding: 0 1px; }
 .crumbs button:disabled { cursor: default; opacity: 0.5; }
-.seg { display: flex; gap: 1px; padding: 2px; background: var(--paper); border-radius: var(--r); }
-.seg button { border: 0; background: transparent; padding: 3px 9px; border-radius: 3px; cursor: pointer; color: var(--text-dim); white-space: nowrap; } /* one line: the bar never changes height */
+.seg {
+  display: flex; align-items: stretch; gap: 2px; height: var(--ctl, 30px); box-sizing: border-box; padding: 3px;
+  background: var(--paper); border-radius: var(--r);
+}
+/* one line, one size: the bar never changes height, every tab is the same box */
+.seg button {
+  display: flex; align-items: center; justify-content: center; min-width: 52px; box-sizing: border-box;
+  border: 0; background: transparent; padding: 0 10px; border-radius: 3px; cursor: pointer;
+  font-size: var(--ctl-font, 12.5px); line-height: 1; color: var(--text-dim); white-space: nowrap;
+}
+.seg button:hover { color: var(--text); }
 .seg button[aria-selected="true"] { background: var(--raised); color: var(--text); box-shadow: 0 0 0 1px var(--rule); }
 .spacer { flex: 1; }
 /* Timeline: a year track beside the modes; the readout counts assets appearing
    (+) and disappearing (−) in the chosen year, driven by the status years */
-.year { display: flex; align-items: center; gap: 6px; }
+.year { display: flex; align-items: center; gap: 6px; height: var(--ctl, 30px); }
 .year input { width: 130px; margin: 0; accent-color: var(--active); cursor: ew-resize; transition: accent-color 0.15s; }
-.year output { font: 600 12px/1 Archivo, system-ui, sans-serif; color: var(--text); min-width: 5.5em; }
+.year output { font: 600 var(--ctl-font, 12.5px)/1 Archivo, system-ui, sans-serif; color: var(--text); min-width: 5.5em; }
 .year output .dim { color: var(--text-dim); font-weight: 400; }
 .icon {
-  display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 0;
+  display: grid; place-items: center; width: var(--ctl, 30px); height: var(--ctl, 30px); padding: 0; border: 0;
   border-radius: var(--r); background: transparent; color: var(--text); cursor: pointer;
 }
 .icon:hover, .icon[aria-expanded="true"] { background: var(--paper); }
-.search { display: flex; align-items: center; height: 30px; padding: 0 6px; border-radius: var(--r); cursor: pointer; }
+.search { display: flex; align-items: center; height: var(--ctl, 30px); padding: 0 8px; border-radius: var(--r); cursor: pointer; font-size: var(--ctl-font, 12.5px); }
 .search input { width: 0; padding: 0; border: 0; background: transparent; outline: none; transition: width 0.15s; }
 .search:focus-within { background: var(--paper); }
 .search:focus-within input, .search input:not(:placeholder-shown) { width: 140px; margin-left: 6px; }
@@ -116,11 +131,11 @@ svg .fill { fill: currentColor; stroke: none; }
 
 /* Plan status: grey when the plan holds; an alarm badge and text when it does not */
 .plan-chip {
-  display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 0;
+  display: flex; align-items: center; gap: 6px; height: var(--ctl, 30px); padding: 0 10px; border: 0; font-size: var(--ctl-font, 12.5px);
   border-radius: var(--r); background: var(--paper); cursor: pointer; white-space: nowrap; max-width: 420px;
 }
 .plan-chip span { overflow: hidden; text-overflow: ellipsis; }
-.alarm-counts { display: flex; gap: 8px; align-items: center; padding: 0 4px; }
+.alarm-counts { display: flex; gap: 8px; align-items: center; height: var(--ctl, 30px); padding: 0 4px; font-size: var(--ctl-font, 12.5px); }
 .alarm-counts span { display: flex; align-items: center; gap: 3px; font-weight: 600; }
 
 /* Alarm badges: shape + number + colour, with a dark outline (never colour alone) */

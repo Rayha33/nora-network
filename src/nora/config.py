@@ -86,7 +86,7 @@ DEFAULTS: dict = {
     },
     "map": {
         "style": "https://tiles.openfreemap.org/styles/positron",
-        "bounds": [[-3.5, 50.2], [12.0, 63.9]],
+        "bounds": [[-3.5, 50.2], [15.5, 67.4]],
     },
 }
 
