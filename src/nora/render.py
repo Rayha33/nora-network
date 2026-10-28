@@ -84,7 +84,7 @@ FLOW_OPTIONS = {
         "arrowStrikethrough": False,
         "hoverWidth": 0.6,
         "selectionWidth": 1.2,
-        "font": {"face": FONT, "size": 10, "align": "horizontal", "strokeWidth": 0},
+        "font": {"face": FONT, "size": 11, "align": "horizontal", "strokeWidth": 0},
     },
 }  # fmt: skip
 
