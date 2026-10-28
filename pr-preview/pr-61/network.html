@@ -123,7 +123,7 @@ a { color: var(--text); text-underline-offset: 3px; }
 .crumbs button:hover, .crumbs select:hover { background: var(--band); color: var(--text); }
 .crumbs .level {
   display: inline-grid; place-items: center; width: 17px; height: 17px; margin-right: 6px;
-  border: 1px solid var(--rule-strong); border-radius: 4px; font: 600 9px/1 var(--mono);
+  border: 1px solid var(--rule-strong); border-radius: 4px; font: 600 11px/1 var(--mono);
 }
 .crumbs button[aria-current="page"], .crumbs select[aria-current="page"] { color: var(--text); font-weight: 600; }
 .crumbs .sep { color: var(--text-dim); opacity: 0.55; }
@@ -282,10 +282,11 @@ table.data tbody tr:hover { background: var(--band); }
 /* Guide and settings are consistent floating sheets. */
 .pop {
   position: fixed; top: calc(var(--bar-h) + 12px); right: 16px; z-index: 30; width: 360px;
-  max-height: calc(100% - var(--bar-h) - var(--player-h) - 28px); overflow: auto;
+  max-height: calc(100% - var(--bar-h) - 28px); overflow: auto;
   background: var(--panel); border: 1px solid var(--rule); border-radius: 12px; padding: 20px;
   box-shadow: var(--shadow-lg);
 }
+.has-player .pop { max-height: calc(100% - var(--bar-h) - var(--player-h) - 28px); }
 .pop h3 { margin: 22px 0 8px; font-size: 12.5px; color: var(--text-dim); font-weight: 600; }
 .pop h3:first-of-type, .pop h3:first-child { margin-top: 0; }
 .pop p { line-height: 1.55; }
@@ -362,13 +363,14 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 /* Asset sidebar: slides in from the right when a field, plant or line is clicked.
    It mirrors the asset page (schematic, values, facts) in one calm column. */
 .sidebar {
-  position: fixed; top: var(--bar-h); right: 0; bottom: var(--player-h); width: min(460px, 96vw); z-index: 25;
+  position: fixed; top: var(--bar-h); right: 0; bottom: 0; width: min(460px, 96vw); z-index: 25;
   display: flex; flex-direction: column; background: var(--panel);
   border-left: 1px solid var(--rule); box-shadow: -18px 0 50px rgba(18, 30, 38, 0.16);
   transform: translateX(calc(100% + 50px)); visibility: hidden;
   transition: transform 260ms cubic-bezier(0.2, 0.7, 0.2, 1), visibility 260ms;
 }
 .sidebar.open { transform: none; visibility: visible; }
+.has-player .sidebar { bottom: var(--player-h); }
 .sidebar > header { display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--rule); flex: 0 0 auto; }
 .sidebar > header .head-text { flex: 1; min-width: 0; }
 .sidebar > header h2 { margin: 0; font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -0.02em; }
@@ -1956,17 +1958,17 @@ const App = (() => {
       const ly = ry - 4; // the middle of the row's text
       if (s.level) m += `<line x1="${START}" y1="${ly}" x2="${CX}" y2="${mid}" stroke="${COLORS.casing}" stroke-width="${s.width + 2.4}"/>`;
       m += `<line x1="${START}" y1="${ly}" x2="${CX}" y2="${mid}" stroke="${color}" stroke-width="${Math.max(1.2, s.width)}"/>`;
-      if (s.level) m += `<g transform="translate(0 ${ry - 12}) scale(0.9)">${shapeMarkup(s.level)}</g>`;
+      if (s.level) m += `<g transform="translate(${START - 10} ${ry - 12}) scale(0.9)">${shapeMarkup(s.level)}</g>`;
       const name = nameOf(pid);
       m += `<text x="18" y="${ry}" style="${TEXT}">${esc(name.length > 28 ? `${name.slice(0, 27)}…` : name)}</text>`;
       if (v != null) m += `<text x="${END}" y="${ry}" text-anchor="end" class="dimtext" style="${TEXT}">${esc(fmt(Math.abs(v), 1))}</text>`;
     }
-    // The node as in the Flow view: a state-grey circle holding flow and pressure.
+    // The node as in the Flow view: flow inside the circle, pressure outside it.
     const st = nodeStyle(id), look = COLORS.card[st.inactive ? "inactive" : state.mode === "live" ? "active" : "normal"];
     const flow = throughput(id, f.flows), bar = metric("pressure_bar", id);
     m += `<circle cx="${CX}" cy="${mid}" r="${R}" fill="${look.fill}" stroke="${st.level ? LEVEL_COLOR[st.level] : look.edge}" stroke-width="${st.level ? 2.5 : 1}"/>`;
-    if (flow != null) m += `<text x="${CX}" y="${mid + (bar != null ? -2 : 4)}" text-anchor="middle" fill="${look.ink}" style="${TEXT};font-weight:500">${esc(fmt(flow, flow < 10 ? 1 : 0))}</text>`;
-    if (bar != null) m += `<text x="${CX}" y="${mid + 12}" text-anchor="middle" class="dimtext" style="${TEXT};font-size:9.5px">${esc(fmt(bar))} bar</text>`;
+    if (flow != null) m += `<text x="${CX}" y="${mid + 4}" text-anchor="middle" fill="${look.ink}" style="${TEXT};font-weight:500">${esc(fmt(flow, flow < 10 ? 1 : 0))}</text>`;
+    if (bar != null) m += `<text x="${CX + R + 8}" y="${mid + 20}" class="dimtext" style="${TEXT};font-size:11px">${esc(fmt(bar))} bar</text>`;
     const lvl = levelOf(id);
     if (lvl) m += `<g transform="translate(${CX + 12} ${mid - R - 10})">${shapeMarkup(lvl)}</g>`;
     m += `<text x="${CX + R + 8}" y="${mid + 4}" style="${TEXT};font-weight:500">${esc(d.name.length > 13 ? `${d.name.slice(0, 12)}…` : d.name)}</text>`;
@@ -2114,7 +2116,7 @@ const App = (() => {
       h("h3", null, "Indicators"),
       rangeBar({ min: 0, max: 10, value: 6, band: [3, 7], ticks: [{ at: 1.5, level: 3 }, { at: 8.5, level: 3 }], target: 5 }),
       h("p", { class: "dim", style: "margin:4px 0 0" }, "Light band: normal range. Ticks: alarm limits. Hollow diamond: the target (nomination). Pointer: the value now. Trends show the last hours, dashed where they are heading."),
-      h("p", { class: "dim", style: "margin:6px 0 0" }, "In the Flow view each circle shows, in the quarter facing each line that leaves it, the gas going out on that line (34M is 34 MSm³/d), and its pressure (bar). At exit points a small bar shows today's delivery against the nominations: the middle line is on plan. Under each name, a 4-hour line: the last 2 hours solid, the next 2 hours of nominations dashed. The sidebar's picture lists the gas coming in above the circle and going out below it."));
+      h("p", { class: "dim", style: "margin:6px 0 0" }, "In the Flow view each circle shows, in the quarter facing each line that leaves it, the gas going out on that line (34M is 34 MSm³/d). Pressure (bar) sits below the asset name, outside the circle. At exit points a small bar shows today's delivery against the nominations: the middle line is on plan. Under each name, a 4-hour line: the last 2 hours solid, the next 2 hours of nominations dashed. The sidebar's picture lists the gas coming in above the circle and going out below it."));
   }
   function storedFlag(key) { try { return localStorage.getItem(key); } catch (error) { return "1"; } }
   function openGuide() {
@@ -3379,7 +3381,7 @@ function NoraCanvasMap(view) {
      the live numbers (no icon: Ray, 28 Oct, "this is valuable space ... for live flow
      values and pressures"), with its name and rate below and a sparkline under that. */
   const CIRC = { r: 30, name: 14, sub: 12, trend: 12, pad: 8 };
-  const NAME_FONT = "600 11.5px Archivo, system-ui, sans-serif", SUB_FONT = "10px Archivo, system-ui, sans-serif";
+  const NAME_FONT = "600 11.5px Archivo, system-ui, sans-serif", SUB_FONT = "11px Archivo, system-ui, sans-serif";
   const SPACING = { // [stage, rank] in canvas units
     vertical: { compact: [96, 160], comfortable: [124, 178], spacious: [160, 210] },
     horizontal: { compact: [210, 62], comfortable: [250, 72], spacious: [300, 90] },
@@ -3517,11 +3519,11 @@ function NoraCanvasMap(view) {
     const w = ctx.measureText(text).width;
     ctx.save();
     ctx.fillStyle = look.fill;
-    ctx.fillRect(x - w / 2 - 1.5, y - 5.5, w + 3, 11);
+    ctx.fillRect(x - w / 2 - 1.5, y - 6.5, w + 3, 13);
     ctx.restore();
     ctx.fillText(text, x, y);
   }
-  function drawQuadrants(ctx, x, y, id, look, { pressure, day, total }) {
+  function drawQuadrants(ctx, x, y, id, look, { day, total }) {
     const r = CIRC.r, q = quadrants(id), at = r * 0.42;
     ctx.save();
     ctx.globalAlpha = 0.35; // the faint +
@@ -3535,26 +3537,16 @@ function NoraCanvasMap(view) {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = look.ink;
-    ctx.font = "600 9.5px Archivo, system-ui, sans-serif";
+    ctx.font = "600 11px Archivo, system-ui, sans-serif";
     for (const [side, flow] of Object.entries(q)) {
       const [ux, uy] = QUAD[side];
       reading(ctx, fitText(ctx, `${App.fmt(flow, flow < 10 ? 1 : 0)}M`, r * 0.85), x + ux * at, y + uy * at, look);
     }
-    // Pressure: across the top half when both upper quadrants are free (the usual case,
-    // gas arriving from above), else in a free quadrant. The exit day bar runs across
-    // the middle; a node with nothing leaving it (a market) shows its arrival below.
-    if (pressure) {
-      ctx.font = "600 8.5px Archivo, system-ui, sans-serif";
-      ctx.fillStyle = look.dim;
-      if (!q.NE && !q.NW) reading(ctx, fitText(ctx, pressure, r * 1.5), x, y - at, look);
-      else {
-        const free = ["SW", "SE", "NW", "NE"].find((side) => !(side in q));
-        if (free) reading(ctx, fitText(ctx, pressure.replace(" bar", "b"), r * 0.85), x + QUAD[free][0] * at, y + QUAD[free][1] * at, look);
-      }
-    }
+    // Flow remains in the quadrants facing its outgoing lines. Pressure is written
+    // outside the circle with the asset name, where it has room to stay readable.
     if (day) drawDayBar(ctx, x, y + 1, day, look);
     if (!Object.keys(q).length && total != null) {
-      ctx.font = "600 9.5px Archivo, system-ui, sans-serif";
+      ctx.font = "600 11px Archivo, system-ui, sans-serif";
       ctx.fillStyle = look.ink;
       reading(ctx, `${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y + at, look);
     }
@@ -3581,7 +3573,7 @@ function NoraCanvasMap(view) {
           ctx.strokeStyle = selected || hover ? look.ink : look.edge;
           ctx.stroke();
         }
-        // Inside the circle: flow now (MSm³/d), and pressure (bar) when it is measured.
+        // Inside the circle: flow now (MSm³/d). Pressure sits outside, below the name.
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         const now = live ? App.reading(id) : null;
@@ -3590,7 +3582,7 @@ function NoraCanvasMap(view) {
           : App.state.mode === "risk" && d.lost ? `−${App.fmt(d.lost)}` : "";
         const day = live ? App.dayDelivery(id) : null; // exit points: within-day delivery bar
         const pressure = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "";
-        if (live) drawQuadrants(ctx, x, y, id, look, { pressure, day, total: now.flow });
+        if (live) drawQuadrants(ctx, x, y, id, look, { day, total: now.flow });
         else if (big) {
           ctx.fillStyle = look.ink;
           ctx.font = "600 12.5px Archivo, system-ui, sans-serif";
@@ -3601,7 +3593,8 @@ function NoraCanvasMap(view) {
         // through its text (Ray, 28 Oct).
         ctx.textBaseline = "alphabetic";
         ctx.textAlign = "center";
-        const nameY = y + CIRC.r + CIRC.name, subY = nameY + CIRC.sub;
+        const nameY = y + CIRC.r + CIRC.name, pressureY = nameY + CIRC.sub;
+        const subY = pressureY + (pressure ? CIRC.sub : 0);
         ctx.font = NAME_FONT;
         const name = fitText(ctx, d.name, CIRC.r * 3);
         let width = ctx.measureText(name).width;
@@ -3610,12 +3603,13 @@ function NoraCanvasMap(view) {
         if (r != null && Math.abs(r) >= 0.05) {
           const through = App.window4h(id).past.slice(-1)[0] || 0;
           const fast = through > 0 && Math.abs(r) / through >= App.thresholds.step[0];
-          sub = { text: `${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`, font: `${fast ? 600 : 400} 10px Archivo, system-ui, sans-serif`, ink: fast ? look.ink : look.dim };
+          sub = { text: `${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`, font: `${fast ? 600 : 400} 11px Archivo, system-ui, sans-serif`, ink: fast ? look.ink : look.dim };
         } else if (s.sub && !live) {
           ctx.font = SUB_FONT;
           sub = { text: fitText(ctx, s.sub, CIRC.r * 3), font: SUB_FONT, ink: look.dim };
         }
         if (sub) { ctx.font = sub.font; width = Math.max(width, ctx.measureText(sub.text).width); }
+        if (pressure) { ctx.font = SUB_FONT; width = Math.max(width, ctx.measureText(pressure).width); }
         if (live) width = Math.max(width, CIRC.r * 2);
         const bottom = live ? subY + 4 + CIRC.trend : (sub ? subY : nameY) + 4;
         ctx.save();
@@ -3626,6 +3620,11 @@ function NoraCanvasMap(view) {
         ctx.fillStyle = look.ink;
         ctx.font = NAME_FONT;
         ctx.fillText(name, x, nameY);
+        if (pressure) {
+          ctx.font = SUB_FONT;
+          ctx.fillStyle = look.dim;
+          ctx.fillText(pressure, x, pressureY);
+        }
         if (sub) {
           ctx.font = sub.font;
           ctx.fillStyle = sub.ink;
@@ -3635,7 +3634,7 @@ function NoraCanvasMap(view) {
         ctx.restore();
         if (s.level) App.drawBadge(ctx, s.level, x + CIRC.r - 3, y - CIRC.r + 3, 8);
       },
-      nodeDimensions: { width: CIRC.r * 2, height: CIRC.r * 2 + CIRC.name + CIRC.sub + CIRC.trend + 4 },
+      nodeDimensions: { width: CIRC.r * 2, height: CIRC.r * 2 + CIRC.name + CIRC.sub * 2 + CIRC.trend + 4 },
     });
   }
 
