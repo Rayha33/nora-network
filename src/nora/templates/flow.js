@@ -359,13 +359,13 @@
     const readings = pressureReadings(id, positions, scale), now = App.reading(id);
     const text = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "– bar";
     ctx.save();
-    ctx.font = modelFont(overview ? "600 12px Archivo, system-ui, sans-serif" : SUB_FONT);
+    ctx.font = modelFont(overview ? "600 12px Archivo, system-ui, sans-serif" : "600 13px Archivo, system-ui, sans-serif");
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const width = ctx.measureText(text).width;
+    const width = ctx.measureText(text).width, textHalf = overview ? 8 : 9;
     for (const line of readings) {
       const gap = edgeGap(half, line.ux, line.uy);
-      const projectedHalf = (Math.abs(line.ux) * width / 2 + Math.abs(line.uy) * 8) / scale;
+      const projectedHalf = (Math.abs(line.ux) * width / 2 + Math.abs(line.uy) * textHalf) / scale;
       let px, py, box;
       // Detailed labels stay on their own pipeline; overview labels move straight up.
       // Either way, move outward until clear. Never drop or overprint a value.
@@ -378,11 +378,11 @@
           px = x + line.ux * distance;
           py = y + line.uy * distance;
         }
-        box = [px - width / (2 * scale) - 2 / scale, py - 8 / scale,
-          px + width / (2 * scale) + 2 / scale, py + 8 / scale];
+        box = [px - width / (2 * scale) - 2 / scale, py - textHalf / scale,
+          px + width / (2 * scale) + 2 / scale, py + textHalf / scale];
         if (!placed.some((other) => box[0] < other[2] && box[2] > other[0] && box[1] < other[3] && box[3] > other[1])) break;
       }
-      ctx.fillStyle = overview ? look.ink : look.dim;
+      ctx.fillStyle = look.ink;
       reading(ctx, text, px, py, { ...look, fill: C.paper });
       boxes.push(box);
       placed.push(box);
