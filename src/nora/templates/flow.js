@@ -14,7 +14,7 @@
      the live numbers (no icon: Ray, 28 Oct, "this is valuable space ... for live flow
      values and pressures"), with its name and rate below and a sparkline under that. */
   const CIRC = { r: 30, name: 14, sub: 12, trend: 12, pad: 8 };
-  const NAME_FONT = "600 11.5px Archivo, system-ui, sans-serif", SUB_FONT = "10px Archivo, system-ui, sans-serif";
+  const NAME_FONT = "600 11.5px Archivo, system-ui, sans-serif", SUB_FONT = "11px Archivo, system-ui, sans-serif";
   const SPACING = { // [stage, rank] in canvas units
     vertical: { compact: [96, 160], comfortable: [124, 178], spacious: [160, 210] },
     horizontal: { compact: [210, 62], comfortable: [250, 72], spacious: [300, 90] },
@@ -152,11 +152,11 @@
     const w = ctx.measureText(text).width;
     ctx.save();
     ctx.fillStyle = look.fill;
-    ctx.fillRect(x - w / 2 - 1.5, y - 5.5, w + 3, 11);
+    ctx.fillRect(x - w / 2 - 1.5, y - 6.5, w + 3, 13);
     ctx.restore();
     ctx.fillText(text, x, y);
   }
-  function drawQuadrants(ctx, x, y, id, look, { pressure, day, total }) {
+  function drawQuadrants(ctx, x, y, id, look, { day, total }) {
     const r = CIRC.r, q = quadrants(id), at = r * 0.42;
     ctx.save();
     ctx.globalAlpha = 0.35; // the faint +
@@ -170,26 +170,16 @@
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = look.ink;
-    ctx.font = "600 9.5px Archivo, system-ui, sans-serif";
+    ctx.font = "600 11px Archivo, system-ui, sans-serif";
     for (const [side, flow] of Object.entries(q)) {
       const [ux, uy] = QUAD[side];
       reading(ctx, fitText(ctx, `${App.fmt(flow, flow < 10 ? 1 : 0)}M`, r * 0.85), x + ux * at, y + uy * at, look);
     }
-    // Pressure: across the top half when both upper quadrants are free (the usual case,
-    // gas arriving from above), else in a free quadrant. The exit day bar runs across
-    // the middle; a node with nothing leaving it (a market) shows its arrival below.
-    if (pressure) {
-      ctx.font = "600 8.5px Archivo, system-ui, sans-serif";
-      ctx.fillStyle = look.dim;
-      if (!q.NE && !q.NW) reading(ctx, fitText(ctx, pressure, r * 1.5), x, y - at, look);
-      else {
-        const free = ["SW", "SE", "NW", "NE"].find((side) => !(side in q));
-        if (free) reading(ctx, fitText(ctx, pressure.replace(" bar", "b"), r * 0.85), x + QUAD[free][0] * at, y + QUAD[free][1] * at, look);
-      }
-    }
+    // Flow remains in the quadrants facing its outgoing lines. Pressure is written
+    // outside the circle with the asset name, where it has room to stay readable.
     if (day) drawDayBar(ctx, x, y + 1, day, look);
     if (!Object.keys(q).length && total != null) {
-      ctx.font = "600 9.5px Archivo, system-ui, sans-serif";
+      ctx.font = "600 11px Archivo, system-ui, sans-serif";
       ctx.fillStyle = look.ink;
       reading(ctx, `${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y + at, look);
     }
@@ -216,7 +206,7 @@
           ctx.strokeStyle = selected || hover ? look.ink : look.edge;
           ctx.stroke();
         }
-        // Inside the circle: flow now (MSm³/d), and pressure (bar) when it is measured.
+        // Inside the circle: flow now (MSm³/d). Pressure sits outside, below the name.
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         const now = live ? App.reading(id) : null;
@@ -225,7 +215,7 @@
           : App.state.mode === "risk" && d.lost ? `−${App.fmt(d.lost)}` : "";
         const day = live ? App.dayDelivery(id) : null; // exit points: within-day delivery bar
         const pressure = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "";
-        if (live) drawQuadrants(ctx, x, y, id, look, { pressure, day, total: now.flow });
+        if (live) drawQuadrants(ctx, x, y, id, look, { day, total: now.flow });
         else if (big) {
           ctx.fillStyle = look.ink;
           ctx.font = "600 12.5px Archivo, system-ui, sans-serif";
@@ -236,7 +226,8 @@
         // through its text (Ray, 28 Oct).
         ctx.textBaseline = "alphabetic";
         ctx.textAlign = "center";
-        const nameY = y + CIRC.r + CIRC.name, subY = nameY + CIRC.sub;
+        const nameY = y + CIRC.r + CIRC.name, pressureY = nameY + CIRC.sub;
+        const subY = pressureY + (pressure ? CIRC.sub : 0);
         ctx.font = NAME_FONT;
         const name = fitText(ctx, d.name, CIRC.r * 3);
         let width = ctx.measureText(name).width;
@@ -245,12 +236,13 @@
         if (r != null && Math.abs(r) >= 0.05) {
           const through = App.window4h(id).past.slice(-1)[0] || 0;
           const fast = through > 0 && Math.abs(r) / through >= App.thresholds.step[0];
-          sub = { text: `${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`, font: `${fast ? 600 : 400} 10px Archivo, system-ui, sans-serif`, ink: fast ? look.ink : look.dim };
+          sub = { text: `${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`, font: `${fast ? 600 : 400} 11px Archivo, system-ui, sans-serif`, ink: fast ? look.ink : look.dim };
         } else if (s.sub && !live) {
           ctx.font = SUB_FONT;
           sub = { text: fitText(ctx, s.sub, CIRC.r * 3), font: SUB_FONT, ink: look.dim };
         }
         if (sub) { ctx.font = sub.font; width = Math.max(width, ctx.measureText(sub.text).width); }
+        if (pressure) { ctx.font = SUB_FONT; width = Math.max(width, ctx.measureText(pressure).width); }
         if (live) width = Math.max(width, CIRC.r * 2);
         const bottom = live ? subY + 4 + CIRC.trend : (sub ? subY : nameY) + 4;
         ctx.save();
@@ -261,6 +253,11 @@
         ctx.fillStyle = look.ink;
         ctx.font = NAME_FONT;
         ctx.fillText(name, x, nameY);
+        if (pressure) {
+          ctx.font = SUB_FONT;
+          ctx.fillStyle = look.dim;
+          ctx.fillText(pressure, x, pressureY);
+        }
         if (sub) {
           ctx.font = sub.font;
           ctx.fillStyle = sub.ink;
@@ -270,7 +267,7 @@
         ctx.restore();
         if (s.level) App.drawBadge(ctx, s.level, x + CIRC.r - 3, y - CIRC.r + 3, 8);
       },
-      nodeDimensions: { width: CIRC.r * 2, height: CIRC.r * 2 + CIRC.name + CIRC.sub + CIRC.trend + 4 },
+      nodeDimensions: { width: CIRC.r * 2, height: CIRC.r * 2 + CIRC.name + CIRC.sub * 2 + CIRC.trend + 4 },
     });
   }
 

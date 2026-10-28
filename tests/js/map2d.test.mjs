@@ -133,6 +133,51 @@ function loadFirstHour(App, nora) {
   App.live.time = stream.times[0];
 }
 
+test("flow circles: pressure is outside while flow stays inside", () => {
+  const loaded = loadApp();
+  const { App } = loaded;
+  loadFirstHour(App, loaded.NORA);
+  App.state.mode = "live";
+  const id = App.nodeIds.find((node) => App.reading(node).pressure != null);
+  const calls = [];
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "measureText") return (t) => ({ width: String(t).length * 6 });
+      return (...args) => calls.push({ op: key, args, font: target.font });
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  App.views.flow.card(id)({ ctx, x: 0, y: 0, state: { selected: false, hover: false } }).drawNode();
+  const pressure = `${App.fmt(App.reading(id).pressure)} bar`;
+  const label = calls.find((c) => c.op === "fillText" && c.args[0] === pressure);
+  assert.ok(label, "the measured pressure is written");
+  assert.ok(label.args[2] > 30, "pressure sits below the circle, not inside it");
+  const flows = calls.filter((c) => c.op === "fillText" && /M$/.test(c.args[0]));
+  assert.ok(flows.length > 0, "flow readings are present");
+  for (const flow of flows) assert.ok(Math.abs(flow.args[2]) <= 30, "flow remains inside the circle");
+});
+
+test("flow circles: every reading is at least 11 px", () => {
+  const loaded = loadApp();
+  const { App } = loaded;
+  loadFirstHour(App, loaded.NORA);
+  App.state.mode = "live";
+  const id = App.nodeIds.find((node) => App.reading(node).pressure != null);
+  const fonts = [];
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "measureText") return (t) => ({ width: String(t).length * 6 });
+      return (...args) => { if (key === "fillText") fonts.push(target.font); };
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  App.views.flow.card(id)({ ctx, x: 0, y: 0, state: { selected: false, hover: false } }).drawNode();
+  assert.ok(fonts.length > 0, "the circle has readings");
+  for (const font of fonts) assert.ok(parseFloat(font) >= 11, `readable label: ${font}`);
+});
+
 /* Ray, 28 Oct: "the line shouldn't go over the text". Lines leave a Flow node
    downwards, straight through where its name is written, so the name, rate and trend
    sit on a paper backing drawn before the text, at full opacity. */

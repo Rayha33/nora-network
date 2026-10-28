@@ -1325,17 +1325,17 @@ const App = (() => {
       const ly = ry - 4; // the middle of the row's text
       if (s.level) m += `<line x1="${START}" y1="${ly}" x2="${CX}" y2="${mid}" stroke="${COLORS.casing}" stroke-width="${s.width + 2.4}"/>`;
       m += `<line x1="${START}" y1="${ly}" x2="${CX}" y2="${mid}" stroke="${color}" stroke-width="${Math.max(1.2, s.width)}"/>`;
-      if (s.level) m += `<g transform="translate(0 ${ry - 12}) scale(0.9)">${shapeMarkup(s.level)}</g>`;
+      if (s.level) m += `<g transform="translate(${START - 10} ${ry - 12}) scale(0.9)">${shapeMarkup(s.level)}</g>`;
       const name = nameOf(pid);
       m += `<text x="18" y="${ry}" style="${TEXT}">${esc(name.length > 28 ? `${name.slice(0, 27)}…` : name)}</text>`;
       if (v != null) m += `<text x="${END}" y="${ry}" text-anchor="end" class="dimtext" style="${TEXT}">${esc(fmt(Math.abs(v), 1))}</text>`;
     }
-    // The node as in the Flow view: a state-grey circle holding flow and pressure.
+    // The node as in the Flow view: flow inside the circle, pressure outside it.
     const st = nodeStyle(id), look = COLORS.card[st.inactive ? "inactive" : state.mode === "live" ? "active" : "normal"];
     const flow = throughput(id, f.flows), bar = metric("pressure_bar", id);
     m += `<circle cx="${CX}" cy="${mid}" r="${R}" fill="${look.fill}" stroke="${st.level ? LEVEL_COLOR[st.level] : look.edge}" stroke-width="${st.level ? 2.5 : 1}"/>`;
-    if (flow != null) m += `<text x="${CX}" y="${mid + (bar != null ? -2 : 4)}" text-anchor="middle" fill="${look.ink}" style="${TEXT};font-weight:500">${esc(fmt(flow, flow < 10 ? 1 : 0))}</text>`;
-    if (bar != null) m += `<text x="${CX}" y="${mid + 12}" text-anchor="middle" class="dimtext" style="${TEXT};font-size:9.5px">${esc(fmt(bar))} bar</text>`;
+    if (flow != null) m += `<text x="${CX}" y="${mid + 4}" text-anchor="middle" fill="${look.ink}" style="${TEXT};font-weight:500">${esc(fmt(flow, flow < 10 ? 1 : 0))}</text>`;
+    if (bar != null) m += `<text x="${CX + R + 8}" y="${mid + 20}" class="dimtext" style="${TEXT};font-size:11px">${esc(fmt(bar))} bar</text>`;
     const lvl = levelOf(id);
     if (lvl) m += `<g transform="translate(${CX + 12} ${mid - R - 10})">${shapeMarkup(lvl)}</g>`;
     m += `<text x="${CX + R + 8}" y="${mid + 4}" style="${TEXT};font-weight:500">${esc(d.name.length > 13 ? `${d.name.slice(0, 12)}…` : d.name)}</text>`;
@@ -1483,7 +1483,7 @@ const App = (() => {
       h("h3", null, "Indicators"),
       rangeBar({ min: 0, max: 10, value: 6, band: [3, 7], ticks: [{ at: 1.5, level: 3 }, { at: 8.5, level: 3 }], target: 5 }),
       h("p", { class: "dim", style: "margin:4px 0 0" }, "Light band: normal range. Ticks: alarm limits. Hollow diamond: the target (nomination). Pointer: the value now. Trends show the last hours, dashed where they are heading."),
-      h("p", { class: "dim", style: "margin:6px 0 0" }, "In the Flow view each circle shows, in the quarter facing each line that leaves it, the gas going out on that line (34M is 34 MSm³/d), and its pressure (bar). At exit points a small bar shows today's delivery against the nominations: the middle line is on plan. Under each name, a 4-hour line: the last 2 hours solid, the next 2 hours of nominations dashed. The sidebar's picture lists the gas coming in above the circle and going out below it."));
+      h("p", { class: "dim", style: "margin:6px 0 0" }, "In the Flow view each circle shows, in the quarter facing each line that leaves it, the gas going out on that line (34M is 34 MSm³/d). Pressure (bar) sits below the asset name, outside the circle. At exit points a small bar shows today's delivery against the nominations: the middle line is on plan. Under each name, a 4-hour line: the last 2 hours solid, the next 2 hours of nominations dashed. The sidebar's picture lists the gas coming in above the circle and going out below it."));
   }
   function storedFlag(key) { try { return localStorage.getItem(key); } catch (error) { return "1"; } }
   function openGuide() {

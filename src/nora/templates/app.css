@@ -111,7 +111,7 @@ a { color: var(--text); text-underline-offset: 3px; }
 .crumbs button:hover, .crumbs select:hover { background: var(--band); color: var(--text); }
 .crumbs .level {
   display: inline-grid; place-items: center; width: 17px; height: 17px; margin-right: 6px;
-  border: 1px solid var(--rule-strong); border-radius: 4px; font: 600 9px/1 var(--mono);
+  border: 1px solid var(--rule-strong); border-radius: 4px; font: 600 11px/1 var(--mono);
 }
 .crumbs button[aria-current="page"], .crumbs select[aria-current="page"] { color: var(--text); font-weight: 600; }
 .crumbs .sep { color: var(--text-dim); opacity: 0.55; }
@@ -270,10 +270,11 @@ table.data tbody tr:hover { background: var(--band); }
 /* Guide and settings are consistent floating sheets. */
 .pop {
   position: fixed; top: calc(var(--bar-h) + 12px); right: 16px; z-index: 30; width: 360px;
-  max-height: calc(100% - var(--bar-h) - var(--player-h) - 28px); overflow: auto;
+  max-height: calc(100% - var(--bar-h) - 28px); overflow: auto;
   background: var(--panel); border: 1px solid var(--rule); border-radius: 12px; padding: 20px;
   box-shadow: var(--shadow-lg);
 }
+.has-player .pop { max-height: calc(100% - var(--bar-h) - var(--player-h) - 28px); }
 .pop h3 { margin: 22px 0 8px; font-size: 12.5px; color: var(--text-dim); font-weight: 600; }
 .pop h3:first-of-type, .pop h3:first-child { margin-top: 0; }
 .pop p { line-height: 1.55; }
@@ -350,13 +351,14 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 /* Asset sidebar: slides in from the right when a field, plant or line is clicked.
    It mirrors the asset page (schematic, values, facts) in one calm column. */
 .sidebar {
-  position: fixed; top: var(--bar-h); right: 0; bottom: var(--player-h); width: min(460px, 96vw); z-index: 25;
+  position: fixed; top: var(--bar-h); right: 0; bottom: 0; width: min(460px, 96vw); z-index: 25;
   display: flex; flex-direction: column; background: var(--panel);
   border-left: 1px solid var(--rule); box-shadow: -18px 0 50px rgba(18, 30, 38, 0.16);
   transform: translateX(calc(100% + 50px)); visibility: hidden;
   transition: transform 260ms cubic-bezier(0.2, 0.7, 0.2, 1), visibility 260ms;
 }
 .sidebar.open { transform: none; visibility: visible; }
+.has-player .sidebar { bottom: var(--player-h); }
 .sidebar > header { display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--rule); flex: 0 0 auto; }
 .sidebar > header .head-text { flex: 1; min-width: 0; }
 .sidebar > header h2 { margin: 0; font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -0.02em; }
