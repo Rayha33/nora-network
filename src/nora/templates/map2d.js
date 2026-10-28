@@ -201,6 +201,7 @@ function NoraCanvasMap(view) {
   }
   function zoomAt(sx, sy, factor) {
     const k = Math.max(minK(), Math.min(512 * 2 ** MAX_ZOOM, cam.k * factor));
+    if (k === cam.k) return; // at a zoom limit, do not recenter or slide the camera
     const [mx, my] = toMerc(sx, sy);
     cam.k = k;
     cam.x = mx - (sx - width / 2) / k;
@@ -360,5 +361,7 @@ function NoraCanvasMap(view) {
   view.theme = () => redraw(); // App.colors is updated in place
   view.map = null; // no MapLibre map behind this view
   view.canvasMap = true;
+  view.zoomAt = zoomAt; // for tests: zoom-limit gestures must not move the camera
+  view.camera = () => ({ ...cam });
   return view;
 }
