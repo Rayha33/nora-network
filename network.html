@@ -1706,6 +1706,12 @@ const App = (() => {
   }
 
   // ------------------------------------------------------------------ styling rules (both views)
+  // The visible portion of a pipeline between its two node circles. A marker reaching
+  // 0 or 1 stops at the circle edge; the next pipeline resumes beyond the other side.
+  function visibleRange(length, gapA, gapB = gapA) {
+    if (!(length > 0)) return [0, 1];
+    return [Math.min(0.45, gapA / length), Math.max(0.55, 1 - gapB / length)];
+  }
   // Major named routes on the Map only. Split physical pipelines share one short name;
   // feeders, short links and notional grid entries stay quiet.
   function pipeMapName(id) {
@@ -2911,7 +2917,7 @@ const App = (() => {
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
-    pipeStyle, pipeMapName, nodeStyle, markers, window4h, flowRate, thresholds: T,
+    pipeStyle, pipeMapName, visibleRange, nodeStyle, markers, window4h, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
     timeState,
     // The display profile (desk, wall or compact) and the one UI scale (1 = 100 %).
@@ -2984,7 +2990,8 @@ function NoraCanvasMap(view) {
     const pts = pipeById[id].line.map(([lon, lat]) => toScreen(lon, lat));
     const lengths = pts.slice(1).map((p, i) => Math.hypot(p.x - pts[i].x, p.y - pts[i].y));
     const total = lengths.reduce((a, b) => a + b, 0) || 1;
-    let d = Math.max(0, Math.min(1, t)) * total;
+    const [start, end] = App.visibleRange(total, nodeRadius() + 8 * App.uiScale());
+    let d = (start + (end - start) * Math.max(0, Math.min(1, t))) * total;
     for (let i = 0; i < lengths.length; i++) {
       if (d <= lengths[i] || i === lengths.length - 1) {
         const f = lengths[i] ? Math.min(1, d / lengths[i]) : 0, a = pts[i], b = pts[i + 1];
@@ -3720,8 +3727,20 @@ function NoraCanvasMap(view) {
     sizeCanvas();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (App.state.mode !== "live") return;
+    const visibleRanges = {};
+    const visibleAlong = (id, along) => {
+      if (!visibleRanges[id]) {
+        const points = ends[id].map((lonlat) => map.project(lonlat));
+        const total = points.slice(1).reduce((sum, point, index) => sum + Math.hypot(point.x - points[index].x, point.y - points[index].y), 0) || 1;
+        const z = map.getZoom(), k = App.uiScale();
+        const radius = (z <= 3 ? 3.5 : z <= 6 ? 3.5 + ((z - 3) / 3) * 2 : z <= 9 ? 5.5 + ((z - 6) / 3) * 2.5 : 8) * k;
+        visibleRanges[id] = App.visibleRange(total, radius + 8 * k);
+      }
+      const [start, end] = visibleRanges[id];
+      return start + (end - start) * Math.max(0, Math.min(1, along));
+    };
     const project = (id, along) => {
-      const r = alongRoute(id, along), p = map.project(r.at), pa = map.project(r.a), pb = map.project(r.b);
+      const r = alongRoute(id, visibleAlong(id, along)), p = map.project(r.at), pa = map.project(r.a), pb = map.project(r.b);
       return { x: p.x, y: p.y, angle: Math.atan2(pb.y - pa.y, pb.x - pa.x) };
     };
     const projectBand = (id, extent) => {
@@ -4248,8 +4267,7 @@ function NoraCanvasMap(view) {
     // Route markers use the visible line segment, not the centres hidden by the
     // enlarged circles. Keep a small gap so neither a dot nor a peak band enters a node.
     const screenScale = network ? network.getScale() : 1;
-    const gapA = circleRadius(edge.from, positions) + 8 / screenScale, gapB = circleRadius(edge.to, positions) + 8 / screenScale;
-    const start = Math.min(0.45, gapA / len), end = Math.max(0.55, 1 - gapB / len);
+    const [start, end] = App.visibleRange(len, circleRadius(edge.from, positions) + 8 / screenScale, circleRadius(edge.to, positions) + 8 / screenScale);
     const t = start + (end - start) * along;
     return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, angle: Math.atan2(b.y - a.y, b.x - a.x) };
   }
