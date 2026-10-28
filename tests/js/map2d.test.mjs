@@ -270,6 +270,35 @@ test("exit circles: within-day delivery against the nominations, as a share", ()
   assert.equal(App.dayDelivery(exit).share, 0, "only this gas day counts");
 });
 
+test("exit circles: gray target bounds and one prominent current-delivery line", () => {
+  const { App } = loadApp();
+  const strokes = [];
+  let path = [];
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "beginPath") return () => { path = []; };
+      if (key === "moveTo") return (x, y) => path.push([x, y]);
+      if (key === "lineTo") return (x, y) => path.push([x, y]);
+      if (key === "stroke") return () => strokes.push({ path, color: target.strokeStyle, width: target.lineWidth });
+      return () => {};
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  const look = { dim: "gray", ink: "black" };
+  App.views.flow.drawDayBar(ctx, 100, 50, { share: 0.02, level: 0 }, look);
+  const vertical = strokes.filter((s) => s.path.length === 2 && s.path[0][0] === s.path[1][0]);
+  assert.equal(vertical.length, 3, "minimum, maximum and current are the three vertical markers");
+  const tolerance = App.thresholds.nomination[0];
+  const half = 11, full = App.thresholds.nomination[2] * 1.2;
+  const positions = vertical.map((s) => s.path[0][0]).sort((a, b) => a - b);
+  const expected = [100 - tolerance / full * half, 100 + 0.02 / full * half, 100 + tolerance / full * half].sort((a, b) => a - b);
+  positions.forEach((x, i) => assert.ok(Math.abs(x - expected[i]) < 1e-9));
+  assert.equal(vertical.filter((s) => s.color === "gray").length, 2, "the target bounds are gray");
+  const current = vertical.find((s) => s.color === "black");
+  assert.ok(current && current.width > Math.max(...vertical.filter((s) => s.color === "gray").map((s) => s.width)), "the current line is more prominent");
+});
+
 /* One real hour of the first stream with pressures, the way `start()` loads it. */
 function loadFirstHour(App, nora) {
   const stream = nora.streams.find((s) => s.metrics && s.metrics.pressure_bar) || nora.streams[0];

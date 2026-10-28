@@ -112,10 +112,9 @@
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(nowX, y - 1); ctx.lineTo(nowX, y + h + 1); ctx.stroke();
   }
-  /* Within-day delivery at an exit point, without words: the middle line is the plan
-     (delivered = nominated so far today), the lines either side the warning tolerance,
-     the ends the critical one. The pointer is where the day stands; it takes the alarm
-     colour only outside the tolerance. */
+  /* Three lines: the minimum and maximum end-of-day target bounds in gray, and the
+     current delivery position in a stronger line. The current line takes the alarm
+     colour only outside the target bounds. */
   function drawDayBar(ctx, x, y, day, look) {
     const T = App.thresholds.nomination, half = 11, full = T[2] * 1.2;
     const at = (share) => x + Math.max(-1, Math.min(1, share / full)) * half;
@@ -124,17 +123,12 @@
     ctx.strokeStyle = look.dim;
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x - half, y); ctx.lineTo(x + half, y); ctx.stroke(); // the track
-    ctx.strokeStyle = look.ink;
-    for (const [share, h] of [[-T[0], 3], [T[0], 3], [0, 5]]) { // tolerance lines, plan line
-      ctx.lineWidth = share ? 1 : 1.6;
-      ctx.beginPath(); ctx.moveTo(at(share), y - h); ctx.lineTo(at(share), y + h); ctx.stroke();
+    for (const share of [-T[0], T[0]]) {
+      ctx.beginPath(); ctx.moveTo(at(share), y - 4); ctx.lineTo(at(share), y + 4); ctx.stroke();
     }
-    const px = at(day.share);
-    ctx.beginPath(); // the pointer: a small triangle on the track
-    ctx.moveTo(px, y - 1.5); ctx.lineTo(px - 3.5, y - 7); ctx.lineTo(px + 3.5, y - 7); ctx.closePath();
-    ctx.fillStyle = day.level ? App.levelColor[day.level] : look.ink;
-    ctx.fill();
-    if (day.level) { ctx.strokeStyle = C.casing; ctx.lineWidth = 1; ctx.stroke(); }
+    ctx.strokeStyle = day.level ? App.levelColor[day.level] : look.ink;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(at(day.share), y - 6); ctx.lineTo(at(day.share), y + 6); ctx.stroke();
     ctx.restore();
   }
   /* Four quadrants inside each circle. Every visible line contributes to the side
@@ -610,6 +604,7 @@
   view.flowQuadrants = flowQuadrants;
   view.circleRadius = circleRadius;
   view.drawQuadrants = drawQuadrants;
+  view.drawDayBar = drawDayBar;
   view.pointAlong = pointAlong;
   view.animateStubs = animateStubs;
   view.stubDistance = stubDistance;
