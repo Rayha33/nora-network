@@ -1705,6 +1705,15 @@ const App = (() => {
   }
 
   // ------------------------------------------------------------------ styling rules (both views)
+  // Major named routes on the Map only. Split physical pipelines share one short name;
+  // feeders, short links and notional grid entries stay quiet.
+  function pipeMapName(id) {
+    const d = assets[id];
+    if (!d || (!["trunk", "export", "interconnector"].includes(d.type) && id !== "ogt")) return "";
+    if (id.startsWith("europipe_2")) return "Europipe II";
+    if (id.startsWith("langeled_")) return "Langeled";
+    return d.name;
+  }
   /* A pipeline always stays in the state grey palette. Alarms use a badge, shape and
      value beside the line; colouring the whole route would overwhelm the control room. */
   function pipeStyle(id) { return cached("pipe", id, () => pipeStyleNow(id)); }
@@ -2854,7 +2863,7 @@ const App = (() => {
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
-    pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T,
+    pipeStyle, pipeMapName, nodeStyle, markers, window4h, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
     timeState,
     // The display profile (desk, wall or compact) and the one UI scale (1 = 100 %).
@@ -3026,6 +3035,21 @@ function NoraCanvasMap(view) {
       placed.push(box);
       ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(text, b.x, b.y); // no line shows through a name
       ctx.fillStyle = C.text; ctx.fillText(text, b.x, b.y);
+    }
+    // Major pipeline names use the same collision map as node names.
+    if (names) {
+      ctx.textBaseline = "middle";
+      for (const p of pipes) {
+        const s = App.pipeStyle(p.id), text = App.pipeMapName(p.id);
+        if (!text || s.hidden || s.dim) continue;
+        const m = along(p.id, 0.5), y = m.y - 9 * u;
+        const w = ctx.measureText(text).width + 4 * u, box = [m.x - w / 2, y - 8 * u, m.x + w / 2, y + 8 * u];
+        if (placed.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) continue;
+        placed.push(box);
+        ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(text, m.x, y);
+        ctx.fillStyle = C.text; ctx.fillText(text, m.x, y);
+      }
+      ctx.textBaseline = "top";
     }
     // Alarm badges on lines, at their middle.
     for (const p of pipes) {
@@ -3351,7 +3375,14 @@ function NoraCanvasMap(view) {
     view.ready = false;
     calmBasemap();
     await Promise.all([1, 2, 3].map((l) => loadImage(`nora-alarm-${l}`, badgeUri(l), 32)));
-    map.addSource("nora-pipes", { type: "geojson", data: NORA.geo.pipes });
+    const pipeGeo = {
+      ...NORA.geo.pipes,
+      features: NORA.geo.pipes.features.map((feature) => ({
+        ...feature,
+        properties: { ...feature.properties, map_name: App.pipeMapName(feature.properties.asset) },
+      })),
+    };
+    map.addSource("nora-pipes", { type: "geojson", data: pipeGeo });
     map.addSource("nora-nodes", { type: "geojson", data: NORA.geo.nodes });
     map.addSource("nora-node-badges", { type: "geojson", data: badgeData });
     map.addSource("nora-mids", { type: "geojson", data: mids });
@@ -3369,6 +3400,12 @@ function NoraCanvasMap(view) {
       paint: { "line-color": ["to-color", state("color", C.inactive)], "line-width": width(0.8), "line-dasharray": [2, 2], "line-opacity": opacity } });
     map.addLayer({ id: "nora-pipes", type: "line", source: "nora-pipes", filter: ["!=", ["get", "onshore"], true], layout: { "line-cap": "round" },
       paint: { "line-color": ["to-color", state("color", C.normal)], "line-width": width(1), "line-opacity": opacity } });
+    map.addLayer({ id: "nora-pipe-names", type: "symbol", source: "nora-pipes", filter: ["!=", ["get", "map_name"], ""],
+      layout: {
+        "symbol-placement": "line", "text-field": ["get", "map_name"], "text-font": ["Noto Sans Regular"],
+        "text-size": 11.5, "text-optional": true, "text-keep-upright": true, "text-max-width": 12, "text-padding": 4,
+      },
+      paint: { "text-opacity": opacity, "text-color": C.text, "text-halo-color": C.paper, "text-halo-width": 2 } });
     map.addLayer({ id: "nora-pipes-hit", type: "line", source: "nora-pipes", paint: { "line-color": "#000", "line-opacity": 0, "line-width": 14 } });
     /* Nodes are plain circles in their state grey, as in the Flow view: no icons (Ray,
        28 Oct). An alarm colours only the outline, and the badge carries the shape and
@@ -3423,6 +3460,7 @@ function NoraCanvasMap(view) {
       "nora-pipes-hit": { paint: { "line-width": 14 * k } },
       "nora-selected": { paint: { "circle-radius": radius(5), "circle-stroke-width": 2 * k } },
       "nora-node-dots": { paint: { "circle-radius": radius(), "circle-stroke-width": ["*", k, state("edgeWidth", 1)] } },
+      "nora-pipe-names": { layout: { "text-size": 11.5 * k }, paint: { "text-halo-width": 2 * k } },
       "nora-nodes": { layout: { "text-size": 11.5 * k }, paint: { "text-halo-width": 2 * k } },
       "nora-node-alarms": { layout: { "icon-size": 0.85 * k } },
       "nora-pipe-alarms": { layout: { "icon-size": 0.85 * k } },
@@ -3714,6 +3752,7 @@ function NoraCanvasMap(view) {
   view.applySettings = () => {
     if (!view.ready) return;
     map.setLayoutProperty("nora-nodes", "text-field", App.settings().names ? ["get", "name"] : "");
+    map.setLayoutProperty("nora-pipe-names", "visibility", App.settings().names ? "visible" : "none");
     scaleLayers();
   };
 
