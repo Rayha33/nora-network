@@ -1,7 +1,7 @@
 {
  "offline": [],
- "assets": 70,
- "pipelines": 49,
+ "assets": 71,
+ "pipelines": 50,
  "countries": [
   "BE",
   "DE",
@@ -14,14 +14,14 @@
  ],
  "node_types": {
   "field": 27,
-  "hub": 7,
+  "hub": 8,
   "lng": 6,
   "market": 8,
   "processing": 4,
   "storage": 7,
   "terminal": 11
  },
- "pipeline_km": 12736,
+ "pipeline_km": 12726,
  "supply_capacity": 943.2,
  "deliverable": 901.2,
  "delivered": {
@@ -84,6 +84,7 @@
   "europipe_2_south": 61.0,
   "bergermeer_ttf": 57.0,
   "sage": 16.0,
+  "cats_north": 0.0,
   "cats": 15.0,
   "culzean_cats": 15.0,
   "den_helder_ttf": 13.0,
@@ -188,6 +189,7 @@
   "flags": 1.0,
   "sage": 0.5333,
   "culzean_cats": 1.0,
+  "cats_north": 0.0,
   "cats": 0.3125,
   "seal": 0.4286,
   "sns_bacton": 1.0,
@@ -579,8 +581,8 @@
   },
   {
    "kind": "node",
-   "id": "cats_riser",
-   "name": "CATS Riser Platform",
+   "id": "cats_t5",
+   "name": "CATS T5 (Stella tie-in)",
    "lost": 15.0,
    "share": 0.0166
   },
@@ -615,14 +617,14 @@
   {
    "kind": "pipeline",
    "id": "cats",
-   "name": "CATS",
+   "name": "CATS (T5 - Teesside)",
    "lost": 15.0,
    "share": 0.0166
   },
   {
    "kind": "pipeline",
    "id": "culzean_cats",
-   "name": "Culzean - CATS",
+   "name": "Culzean - CATS T5",
    "lost": 15.0,
    "share": 0.0166
   },
@@ -796,6 +798,13 @@
   },
   {
    "kind": "node",
+   "id": "cats_riser",
+   "name": "CATS Riser Platform",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
    "id": "f3fb",
    "name": "F3-FB",
    "lost": 0.0,
@@ -861,6 +870,13 @@
    "kind": "pipeline",
    "id": "bbl",
    "name": "BBL",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "cats_north",
+   "name": "CATS (riser - T5)",
    "lost": 0.0,
    "share": 0.0
   },
@@ -957,7 +973,7 @@
   }
  ],
  "sourced": {
-  "rows": 144,
-  "total": 144
+  "rows": 146,
+  "total": 146
  }
 }

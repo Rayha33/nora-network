@@ -84,6 +84,16 @@
    "id": "cats_riser"
   },
   {
+   "name": "CATS T5 (Stella tie-in)",
+   "type": "hub",
+   "country": "GB",
+   "lat": 57.029375,
+   "lon": 1.203222,
+   "capacity_msm3d": null,
+   "status": "operating",
+   "id": "cats_t5"
+  },
+  {
    "name": "Culzean",
    "type": "field",
    "country": "GB",
@@ -813,24 +823,34 @@
    "target": "st_fergus"
   },
   {
-   "pipeline": "cats",
-   "name": "CATS",
+   "pipeline": "cats_north",
+   "name": "CATS (riser - T5)",
    "type": "export",
    "from_id": "cats_riser",
-   "length_km": 404.0,
+   "length_km": 89.5,
    "capacity": 48.0,
    "source": "cats_riser",
+   "target": "cats_t5"
+  },
+  {
+   "pipeline": "cats",
+   "name": "CATS (T5 - Teesside)",
+   "type": "export",
+   "from_id": "cats_t5",
+   "length_km": 315.0,
+   "capacity": 48.0,
+   "source": "cats_t5",
    "target": "teesside"
   },
   {
    "pipeline": "culzean_cats",
-   "name": "Culzean - CATS",
+   "name": "Culzean - CATS T5",
    "type": "feeder",
    "from_id": "culzean",
-   "length_km": 62.433403273733134,
+   "length_km": 52.0,
    "capacity": 15.0,
    "source": "culzean",
-   "target": "cats_riser"
+   "target": "cats_t5"
   },
   {
    "pipeline": "den_helder_ttf",
