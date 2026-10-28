@@ -1398,11 +1398,30 @@ const App = (() => {
       }
     }
     if (d.kind === "pipeline") {
-      const W = 420, H = 230, s = pipeStyle(id);
-      let m = `<text x="${W / 2}" y="40" text-anchor="middle" style="${TEXT}">${esc(nameOf(d.from))}</text><text x="${W / 2}" y="${H - 14}" text-anchor="middle" style="${TEXT}">${esc(nameOf(d.to))}</text>`;
-      m += `<line x1="${W / 2}" y1="52" x2="${W / 2}" y2="${H - 34}" stroke="${s.level ? COLORS.casing : "none"}" stroke-width="${s.width + 2.4}"/><line x1="${W / 2}" y1="52" x2="${W / 2}" y2="${H - 34}" stroke="${s.level ? LEVEL_COLOR[s.level] : s.color}" stroke-width="${Math.max(1.2, s.width)}"/>`;
+      /* A pipeline: its two ends, the flow beside the line with an arrowhead for its
+         direction, and the pigs and peaks in it now, each at its place with its value
+         and ETA: what is in this line, at a glance. */
+      const W = 420, H = 230, s = pipeStyle(id), x = W / 2, top = 52, bottom = H - 34;
+      const v = f.flows[id], dir = v < 0 ? -1 : 1;
+      let m = `<text x="${x}" y="40" text-anchor="middle" style="${TEXT}">${esc(nameOf(d.from))}</text><text x="${x}" y="${H - 14}" text-anchor="middle" style="${TEXT}">${esc(nameOf(d.to))}</text>`;
+      m += `<line x1="${x}" y1="${top}" x2="${x}" y2="${bottom}" stroke="${s.level ? COLORS.casing : "none"}" stroke-width="${s.width + 2.4}"/><line x1="${x}" y1="${top}" x2="${x}" y2="${bottom}" stroke="${s.level ? LEVEL_COLOR[s.level] : s.color}" stroke-width="${Math.max(1.2, s.width)}"/>`;
+      if (v != null && Math.abs(v) >= 0.05) {
+        const tip = dir > 0 ? bottom : top;
+        m += `<path d="M${x - 5} ${tip - dir * 9}L${x} ${tip}L${x + 5} ${tip - dir * 9}" fill="none" stroke="${COLORS.text}" stroke-width="1.4" stroke-linejoin="round"/>`;
+        m += `<text x="${x - 14}" y="${(top + bottom) / 2 + 4}" text-anchor="end" class="dimtext" style="${TEXT}">${esc(fmt(Math.abs(v), 1))} MSm³/d</text>`;
+      }
       const lvl = levelOf(id);
-      if (lvl) m += `<g transform="translate(${W / 2 + 12} ${H / 2 - 8})">${shapeMarkup(lvl)}</g>`;
+      if (lvl) m += `<g transform="translate(${x - 30} ${(top + bottom) / 2 + 10})">${shapeMarkup(lvl)}</g>`;
+      let below = -Infinity; // labels on the right, one row each
+      for (const k of markers().filter((k) => k.id === id && !k.noDot).sort((a, b) => a.along - b.along)) {
+        const y = top + Math.max(0, Math.min(1, k.along)) * (bottom - top);
+        if (k.kind === "pig") m += `<path d="M${x - 4.5} ${y - dir * 4}L${x + 4.5} ${y - dir * 4}L${x} ${y + dir * 5}Z" fill="${COLORS.pig}" stroke="${COLORS.casing}" stroke-width="0.8"/>`;
+        else m += `<circle cx="${x}" cy="${y}" r="4" fill="${k.kind === "quality" ? COLORS[QUALITY[k.gas].color] : COLORS.peak}" stroke="${COLORS.casing}" stroke-width="0.8"/>`;
+        const what = k.kind === "pig" ? k.title || "Pig" : k.value;
+        const ly = Math.max(y + 4, below + 15);
+        below = ly;
+        m += `<text x="${x + 14}" y="${ly}" style="${TEXT}">${esc(what.length > 30 ? `${what.slice(0, 29)}…` : what)}${k.eta ? `<tspan class="dimtext" dx="6">${esc(k.eta)}</tspan>` : ""}</text>`;
+      }
       return svg(`0 0 ${W} ${H}`, m, "schematic");
     }
     /* A node: one row per line, gas in above the circle and gas out below it, so labels
