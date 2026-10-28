@@ -164,7 +164,7 @@ function NoraCanvasMap(view) {
       for (const m of marks) {
         if (!pipeById[m.id] || App.pipeStyle(m.id).hidden) continue;
         const p = along(m.id, m.along);
-        App.drawMarker(ctx, m, p.x, p.y, p.angle, m.kind === "pig" ? 8.5 : 6.5, detail, taken);
+        App.drawMarker(ctx, m, p.x, p.y, p.angle, m.kind === "pig" ? 10 : 6.5, detail, taken);
         if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
       }
     }
