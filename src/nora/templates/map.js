@@ -435,7 +435,7 @@
     drawnMarks = [];
     for (const m of marks) {
       const p = project(m.id, m.along);
-      App.drawMarker(ctx, m, p.x, p.y, p.angle, 6.5, detail);
+      App.drawMarker(ctx, m, p.x, p.y, p.angle, m.kind === "pig" ? 8.5 : 6.5, detail);
       if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
     }
   };
