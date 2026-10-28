@@ -2938,13 +2938,17 @@ function NoraCanvasMap(view) {
 
   view.mount = (el) => {
     if (wantSimple || typeof maplibregl === "undefined" || !hasWebGL()) { canvasFallback(el); return; }
-    const [[w, s], [e, n]] = NORA.config.map.bounds, padLon = (e - w) * 0.6, padLat = (n - s) * 0.6;
+    /* Panning stays near the network. The limit is generous sideways: the network is
+       tall and narrow, so fitting all of it in a wide window shows a lot of longitude,
+       and a tight limit would make MapLibre zoom in and cut off the south instead.
+       Zooming out is capped separately (limitZoom). */
+    const [[w, s], [e, n]] = NORA.config.map.bounds, padLon = Math.max(40, (e - w) * 2), padLat = (n - s) * 0.5;
     try {
       map = new maplibregl.Map({
         container: el, style: NORA.config.map.style, bounds: NORA.config.map.bounds,
         fitBoundsOptions: { padding: padding() }, attributionControl: { compact: true },
         cooperativeGestures: App.embed, dragRotate: false, pitchWithRotate: false, minZoom: 2, maxZoom: 12,
-        maxBounds: [[w - padLon, s - padLat], [e + padLon, n + padLat]],
+        maxBounds: [[w - padLon, s - padLat], [e + padLon, Math.min(85, n + padLat)]],
       });
     } catch { canvasFallback(el); return; } // MapLibre throws when it cannot get a WebGL context
     // WebGL lost and not back within 3 s (a GPU restart): carry on with the canvas map.
