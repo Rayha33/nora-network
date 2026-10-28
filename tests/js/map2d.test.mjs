@@ -56,6 +56,26 @@ test("peaks: a band from tail to head around the dot, ahead in the direction of 
   assert.equal(typeof App.drawBand, "function", "views draw the band with App.drawBand");
 });
 
+test("peaks: opaque ends taper to a quieter centre behind the dot", () => {
+  const { App } = loadApp();
+  const stops = [];
+  const gradient = { addColorStop: (offset, color) => stops.push({ offset, color }) };
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "createLinearGradient") return () => gradient;
+      return () => {};
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  App.drawBand(ctx, { kind: "peak" }, { x: 0, y: 0 }, { x: 100, y: 0 });
+  assert.ok(stops.length >= 3, "the band has end and centre opacity stops");
+  const alpha = (stop) => parseInt(stop.color.slice(-2), 16);
+  assert.equal(alpha(stops[0]), 255, "the tail is fully opaque");
+  assert.equal(alpha(stops.at(-1)), 255, "the head is fully opaque");
+  assert.ok(alpha(stops[Math.floor(stops.length / 2)]) < 128, "the centre lets the dot stand out");
+});
+
 test("flow circles: live flow (MSm³/d) and pressure (bar) for each node", () => {
   const loaded = loadApp();
   const { App } = loaded;
