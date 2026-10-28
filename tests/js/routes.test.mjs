@@ -105,3 +105,18 @@ function loadFirstHour(App, nora) {
   App.live.index = 0;
   App.live.time = stream.times[0];
 }
+
+/* Ray: "a few peaks and pigs going through different pipelines". Across the showcase
+   week a few pigs are under way at once, not one on every line (it was about 20). */
+test("routes: the showcase week has a few pigs under way, not one on every line", () => {
+  const loaded = loadApp();
+  const { App } = loaded;
+  loadFirstHour(App, loaded.NORA);
+  const stream = App.live.stream, t0 = stream.times[0], t1 = stream.times[stream.times.length - 1];
+  const counts = [];
+  for (let t = t0 + 24 * HOUR; t <= t1; t += 3 * HOUR) counts.push(stream.pigs.filter((p) => App.routes.pigPlace(p, t)).length);
+  const mean = counts.reduce((a, b) => a + b, 0) / counts.length;
+  assert.ok(mean >= 2 && mean <= 6, `${mean.toFixed(1)} pigs under way on average`);
+  assert.ok(Math.max(...counts) <= 8, `at most ${Math.max(...counts)} at once`);
+  assert.ok(Math.min(...counts) >= 1, "and there is always one to watch");
+});

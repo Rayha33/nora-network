@@ -26750,210 +26750,210 @@
      "pipeline": "langeled_south",
      "launch": 1792371600,
      "speed": 4.5,
-     "every": 129600
+     "every": 388800
     },
     {
      "label": "Inspection pig, Europipe I",
      "pipeline": "europipe_1",
      "launch": 1792378800,
      "speed": 4.0,
-     "every": 151200
+     "every": 453600
     },
     {
      "label": "Cleaning pig, Statpipe (rich gas)",
      "pipeline": "statpipe_rich",
      "launch": 1792368000,
      "speed": 4.0,
-     "every": 86400
+     "every": 259200
     },
     {
      "label": "Cleaning pig, Vesterled",
      "pipeline": "vesterled",
      "launch": 1792389600,
      "speed": 5.0,
-     "every": 86400
+     "every": 259200
     },
     {
      "label": "Cleaning pig, IUK",
      "pipeline": "iuk",
      "launch": 1792375200,
      "speed": 4.5,
-     "every": 64800
+     "every": 194400
     },
     {
      "label": "Inspection pig, NOGAT",
      "pipeline": "nogat",
      "launch": 1792396800,
      "speed": 4.0,
-     "every": 72000
+     "every": 216000
     },
     {
      "label": "Pig on \u00c5sgard Transport",
      "pipeline": "asgard_transport",
      "launch": 1792368000,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on Baltic Pipe (Denmark - Poland)",
      "pipeline": "baltic_pipe_east",
-     "launch": 1792375200,
+     "launch": 1792418400,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on Baltic Pipe (North Sea leg)",
      "pipeline": "baltic_pipe_ns",
-     "launch": 1792382400,
+     "launch": 1792468800,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on BBL",
      "pipeline": "bbl",
-     "launch": 1792389600,
+     "launch": 1792519200,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on CATS",
      "pipeline": "cats",
-     "launch": 1792396800,
+     "launch": 1792569600,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on Europipe II (K\u00e5rst\u00f8 - Baltic tie-in)",
      "pipeline": "europipe_2_north",
-     "launch": 1792404000,
+     "launch": 1792620000,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on Europipe II (Baltic tie-in - Dornum)",
      "pipeline": "europipe_2_south",
-     "launch": 1792411200,
+     "launch": 1792670400,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on FLAGS",
      "pipeline": "flags",
-     "launch": 1792418400,
+     "launch": 1792720800,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on Franpipe",
      "pipeline": "franpipe",
-     "launch": 1792425600,
+     "launch": 1792771200,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on Haltenpipe",
      "pipeline": "haltenpipe",
-     "launch": 1792432800,
+     "launch": 1792821600,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on Langeled (north)",
      "pipeline": "langeled_north",
-     "launch": 1792440000,
+     "launch": 1792872000,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on NGT",
      "pipeline": "ngt",
-     "launch": 1792447200,
+     "launch": 1792922400,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on Norpipe Gas",
      "pipeline": "norpipe",
-     "launch": 1792454400,
+     "launch": 1792972800,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on Polarled",
      "pipeline": "polarled",
-     "launch": 1792461600,
+     "launch": 1793023200,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on SAGE",
      "pipeline": "sage",
-     "launch": 1792468800,
+     "launch": 1793073600,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on SEAL",
      "pipeline": "seal",
-     "launch": 1792476000,
+     "launch": 1793124000,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on Statpipe (dry gas)",
      "pipeline": "statpipe_dry",
-     "launch": 1792483200,
+     "launch": 1793174400,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on Statpipe (Draupner - Ekofisk)",
      "pipeline": "statpipe_ekofisk",
-     "launch": 1792490400,
+     "launch": 1793224800,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on Statpipe (Heimdal leg)",
      "pipeline": "statpipe_heimdal",
-     "launch": 1792497600,
+     "launch": 1793275200,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on Tyra - Nybro",
      "pipeline": "tyra_nybro",
-     "launch": 1792504800,
+     "launch": 1793325600,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on WGT",
      "pipeline": "wgt",
-     "launch": 1792512000,
+     "launch": 1793376000,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on Zeepipe I",
      "pipeline": "zeepipe_1",
-     "launch": 1792519200,
+     "launch": 1793426400,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on Zeepipe IIA",
      "pipeline": "zeepipe_2a",
-     "launch": 1792526400,
+     "launch": 1793476800,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     },
     {
      "label": "Pig on Zeepipe IIB",
      "pipeline": "zeepipe_2b",
-     "launch": 1792533600,
+     "launch": 1793527200,
      "speed": 4.0,
-     "every": 172800
+     "every": 1209600
     }
    ],
    "times": [
