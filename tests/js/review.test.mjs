@@ -1,0 +1,154 @@
+/* Review probe tests (deep review of main @ 32a4b47): verify suspected bugs against
+   the REAL templates (src/nora/templates/{app,map,flow}.js), driven through the same
+   DOM stub the repo's own tests use. Findings-only: nothing here fixes anything.
+
+   1. Playback head: scrub/seek clamping, "Next problem" landing on a risky frame.
+   2. Live-feed mode (?live=): what happens to the playhead the Flow bar graph
+      samples on (flow.js liveBars), and that start() survives the harness.
+   3. Escaping: a hostile asset NAME from the (crowd-edited) payload must never
+      reach any innerHTML as raw markup. */
+
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import vm from "node:vm";
+
+import { loadApp, loadPayload, assertHealthy } from "./harness.mjs";
+import { makeDom, makeSandbox } from "./stub.mjs";
+
+const TEMPLATES = new URL("../../src/nora/templates/", import.meta.url);
+
+/* Like harness.loadApp, but with a caller-mutated payload (the XSS probe needs a
+   hostile asset name in the real payload shape). */
+function loadAppWith(nora, search = "") {
+  const document = makeDom();
+  const sandbox = makeSandbox({ nora, document, search });
+  const context = vm.createContext(sandbox, { name: "nora-dom" });
+  for (const name of ["app.js", "map.js", "flow.js"]) {
+    vm.runInContext(readFileSync(new URL(name, TEMPLATES), "utf8"), context, { filename: name });
+  }
+  return { App: vm.runInContext("App", context), NORA: nora, document };
+}
+
+/* ---------------------------------------------------------------- playback head */
+
+test("playback: scrub clamps to the data, and the values track the frame", () => {
+  const loaded = loadApp();
+  assertHealthy(assert, loaded);
+  const { App, document, NORA } = loaded;
+  // setStream reads $("speed").options; the stub has none until we arm it.
+  document.getElementById("speed").options = [{ value: "60" }];
+  // Load a stream through the REAL change listener, as the browser would.
+  document.getElementById("stream-select")._listeners.change[0](
+    { target: { value: NORA.streams[0].name } });
+  const s = App.live.stream;
+  assert.ok(s && s.frames.length > 1, "a recorded stream is prepared");
+  assert.equal(App.live.index, 0, "starts at the first frame");
+
+  // Seek past the end through the real scrub input listener. The handler closes
+  // over the element itself (not event.target), so set .value as a drag would.
+  const scrub = document.getElementById("scrub");
+  scrub.value = String(s.times.length + 50);
+  scrub._listeners.input[0]({ target: { value: scrub.value } });
+  assert.equal(App.live.index, s.times.length - 1, "seek past the end clamps to the last frame");
+  assert.equal(App.live.playhead, s.times.length - 1, "playhead clamped too");
+  assert.equal(App.live.time, s.times[s.times.length - 1], "time is the last timestamp");
+  assert.deepEqual(App.live.values, s.frames[s.times.length - 1].flows,
+    "values at a whole playhead are exactly the frame's flows");
+
+  scrub.value = "-7";
+  scrub._listeners.input[0]({ target: { value: scrub.value } });
+  assert.equal(App.live.index, 0, "a negative seek clamps to frame 0");
+});
+
+test("playback: Next problem lands on an hour where the plan is at risk", () => {
+  const loaded = loadApp();
+  assertHealthy(assert, loaded);
+  const { App, document, NORA } = loaded;
+  document.getElementById("speed").options = [{ value: "60" }];
+  document.getElementById("stream-select")._listeners.change[0](
+    { target: { value: NORA.streams[0].name } });
+  const s = App.live.stream;
+
+  // A risky hour: the plan's now- or ahead-level is raised. Use a real one if the
+  // fixture has it, otherwise plant one (as a scripted event would).
+  let risky = s.frames.findIndex((f) => f.plan && (f.plan.now[0] || f.plan.ahead[0]));
+  if (risky < 0) {
+    risky = Math.min(10, s.frames.length - 1);
+    s.frames[risky].plan = { now: [2, "Plant trip at the terminal", "plan"],
+      ahead: [0, "", null, 1], nominated: 1, deliverable: 1, maxLoad: 1, bottleneck: "x" };
+  }
+  const next = document.getElementById("next-problem");
+  assert.equal(next.disabled, false, "Next problem is enabled while a risky hour exists");
+  next._listeners.click[0](); // the real click handler: pause, seek, maybe go()
+  assert.equal(App.live.index, risky, "the playhead is ON the risky hour");
+  assert.equal(App.live.playing, false, "and the player is paused");
+});
+
+/* ---------------------------------------------------------------------- feed mode */
+
+test("feed mode (?live=): start() runs, and the playhead the Flow bars sample never moves", () => {
+  const nora = loadPayload();
+  nora.config.screen.start = "overview"; // keep start() off the view mounts (no vis in the vm)
+  const { App, document } = loadAppWith(nora, "?live=http://localhost:8765/stream");
+  assertHealthy(assert, { App, NORA: nora });
+  // connectFeed hides the speed CONTROL: $("speed").parentElement.hidden = true
+  document.getElementById("speed").parentElement = { hidden: false };
+  App.start(); // must not throw, even though no stream was prepared
+  assert.equal(App.live.stream, null, "feed mode prepares no recorded stream");
+  assert.ok(App.live.feed, "an EventSource was connected");
+  assert.equal(document.body.classList.add /* no-op, but called */ !== undefined, true);
+  /* flow.js liveBars() samples bar history at Math.floor(App.live.playhead * 10)/10.
+     In feed mode nothing ever advances live.playhead (tick only advances it under
+     `live.stream && !live.feed`), so the Flow circles' bar graph samples exactly
+     once at playhead 0 and then NEVER AGAIN: frozen bars for the whole session. */
+  assert.equal(App.live.playhead, 0, "feed mode: playhead stays 0 forever");
+  assert.equal(typeof App.window4h, "function", "window4h exported (flow.js drawTrend uses it)");
+});
+
+/* ------------------------------------------------------------------------ escaping */
+
+test("escaping: a hostile asset name never reaches innerHTML as markup", () => {
+  const nora = loadPayload();
+  const nodeId = Object.keys(nora.assets).find((id) => nora.assets[id].kind === "node");
+  const pipeId = Object.keys(nora.assets).find((id) => nora.assets[id].kind === "pipeline");
+  assert.ok(nodeId && pipeId, "the payload has nodes and pipelines");
+  const hostile = '<img src=x onerror="globalThis.__pwned=1"><script>alert(1)</script>';
+  nora.assets[nodeId].name = hostile;
+  nora.assets[pipeId].name = hostile;
+  if (nora.streams[0] && nora.streams[0].events) {
+    nora.streams[0].events[0] = { ...nora.streams[0].events[0], label: hostile };
+  }
+  const { App, document } = loadAppWith(nora);
+
+  // The shared esc() covers every char that could break out of a text context
+  // (the entity markup itself may contain "&" as "&#38;" — compare exactly).
+  const entity = hostile.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+  assert.equal(App.esc(hostile), entity, "esc() entity-encodes & < > \" '");
+
+  // Render the asset page (schematic builds svg.innerHTML with esc()'d names).
+  App.go({ screen: "asset", asset: nodeId });
+  const raw = [];
+  const escd = [];
+  (function walk(node) {
+    if (!node || typeof node !== "object") return;
+    if (node._innerHTML !== undefined) {
+      if (/<(img|script)\b/i.test(node._innerHTML)) raw.push(node._innerHTML);
+      if (node._innerHTML.includes("&#60;img")) escd.push(node._innerHTML);
+    }
+    for (const child of node.children || []) walk(child);
+  })(document.getElementById("screen-asset"));
+  assert.deepEqual(raw, [], "no innerHTML in the asset page contains raw <img/<script markup");
+  assert.ok(escd.length > 0, "the hostile name DOES flow through, but esc()'d (&#60;img)");
+
+  // The overview carries stream event labels as alarm text: plain text nodes.
+  App.go({ screen: "overview" });
+  let rawOverview = "";
+  (function walk(node) {
+    if (!node || typeof node !== "object") return;
+    if (node._innerHTML !== undefined && /<(img|script)\b/i.test(node._innerHTML)) rawOverview += node._innerHTML;
+    for (const child of node.children || []) walk(child);
+  })(document.getElementById("screen-overview"));
+  assert.equal(rawOverview, "", "no raw markup on the overview either");
+  assert.equal(globalThis.__pwned, undefined, "no code from the hostile name ever ran");
+});

@@ -114,7 +114,11 @@
   const BARS = { n: 6, w: 4, gap: 2, maxH: CIRC.r * 1.1 };
   const barHist = {}, barAt = {};
   function liveBars(id) {
-    const at = Math.floor((App.live.playhead || 0) * 10) / 10; // sample 10x per frame
+    /* Feed mode never moves live.playhead (tick only advances it for a recorded
+       stream); sample on the wall clock there instead, so the bars keep moving
+       with each live frame. Ten samples per unit either way. */
+    const clock = App.live.feed ? App.live.clock : App.live.playhead;
+    const at = Math.floor((clock || 0) * 10) / 10; // sample 10x per frame
     if (barAt[id] === at) return barHist[id];
     barAt[id] = at;
     const past = App.window4h(id).past.filter((v) => v != null);
@@ -127,14 +131,14 @@
     return h;
   }
   function drawLiveBars(ctx, id, x, y, look) {
-    const h = liveBars(id), max = Math.max(1, ...h);
+    const h = liveBars(id), max = Math.max(1, ...h.filter((v) => v != null));
     ctx.save();
     ctx.beginPath(); ctx.arc(x, y, CIRC.r - 4, 0, Math.PI * 2); ctx.clip();
     let bx = x - (BARS.n * BARS.w + (BARS.n - 1) * BARS.gap) / 2;
     const base = y + CIRC.r - 9;
     ctx.fillStyle = look.ink;
     for (let i = 0; i < BARS.n; i++) {
-      const bh = Math.max(1.5, (h[i] / max) * BARS.maxH);
+      const bh = Math.max(1.5, ((h[i] || 0) / max) * BARS.maxH); // warmup: untaken slots are 0
       ctx.globalAlpha = 0.3 + 0.7 * ((i + 1) / BARS.n);
       ctx.fillRect(bx, base - bh, BARS.w, bh);
       bx += BARS.w + BARS.gap;

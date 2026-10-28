@@ -138,3 +138,72 @@ def test_cli_offers_the_source_flag():
 
 def test_sources_registry_only_contains_ready_connectors():
     assert set(SOURCES) == {"gassco"}
+
+
+def test_a_nan_from_a_polled_source_becomes_null_not_invalid_json(api_url, monkeypatch, tmp_path):
+    """Gassco's JSON can carry NaN (Python json allows it); bare NaN in an SSE
+    frame is invalid JSON and JSON.parse would drop every frame."""
+    import json as json_mod
+
+    real_urlopen = urllib.request.urlopen
+
+    def nan_json(url, *args, **kwargs):
+        class R:
+            def read(self):
+                return (
+                    b'{"nodes": [{"name": "Germany", "value": NaN},'
+                    b'{"name": "France", "value": 42.9}], "timestamp": 1793101090000}'
+                )
+
+            def close(self):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+        return R()
+
+    monkeypatch.setattr(urllib.request, "urlopen", nan_json)
+    site = tmp_path / "site"
+    site.mkdir()
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    thread = threading.Thread(
+        target=serve,
+        args=(site,),
+        daemon=True,
+        kwargs={
+            "meta": gassco.meta(),
+            "frames": lambda: poll(gassco, poll_seconds=3600),
+            "port": port,
+            "open_browser": False,
+        },
+    )
+    thread.start()
+    import time as time_mod
+
+    for _ in range(50):
+        try:
+            response = real_urlopen(f"http://127.0.0.1:{port}/stream", timeout=10)
+            break
+        except OSError:
+            time_mod.sleep(0.1)
+    else:
+        pytest.fail("the live server never came up")
+    lines = []
+    while True:
+        line = response.readline().decode().strip()
+        lines.append(line)
+        if line == "event: frame":
+            lines.append(response.readline().decode().strip())  # its data line
+            break
+        if len(lines) > 10:
+            pytest.fail(f"no frame event: {lines}")
+    data = lines[-1]
+    payload = data[len("data: ") :]
+    assert "NaN" not in payload, payload  # never invalid JSON
+    assert json_mod.loads(payload)  # and it parses

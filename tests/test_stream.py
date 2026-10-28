@@ -518,3 +518,64 @@ def test_order_sets_which_stream_comes_first(north_sea):
     real = load_stream("denmark-gas-energinet", north_sea)
     assert (synthetic.order, real.order) == (1, 100)
     assert not real.synthetic and real.source.startswith("https://")
+
+
+def test_import_factor_and_timezone_report_as_data_errors(tiny, tmp_path):
+    raw = "when,point,kwh\n2026-01-01T00:00:00+01:00,North A,1000\n"
+    # a non-numeric factor must be a DataError naming the problem, not a traceback
+    make_stream(
+        tmp_path / "bad-factor",
+        """
+title = "Bad factor"
+[import]
+file = "raw.csv"
+timestamp = "when"
+asset = "point"
+value = "kwh"
+factor = "not-a-number"
+""",
+        {"raw.csv": raw},
+    )
+    with pytest.raises(DataError) as boom:
+        load_stream("bad-factor", tiny, tmp_path)
+    assert any("factor must be a number" in p for p in boom.value.problems)
+
+    # a bogus timezone likewise
+    make_stream(
+        tmp_path / "bad-tz",
+        """
+title = "Bad timezone"
+[import]
+file = "raw.csv"
+timestamp = "when"
+asset = "point"
+value = "kwh"
+timezone = "Mars/Olympus"
+""",
+        {"raw.csv": raw},
+    )
+    with pytest.raises(DataError) as boom:
+        load_stream("bad-tz", tiny, tmp_path)
+    assert any("timezone must be a valid IANA zone" in p for p in boom.value.problems)
+
+
+def test_a_derate_actually_cuts_a_supply_nodes_flow(tiny):
+    """An event on a supply node used to be silently ignored: synthesize built its
+    supply override from the *base* capacity. A 50% derate must roughly halve
+    what the field pushes into its pipeline while it is active."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from nora.stream import Event, synthesize
+
+    t0 = datetime(2026, 1, 5, tzinfo=ZoneInfo("UTC"))
+    events = (Event("derate", "gas", t0.replace(hour=1), t0.replace(hour=2), 0.5),)
+    rows = synthesize(
+        tiny, {"start": "2026-01-05T00:00:00Z", "step_minutes": 60, "steps": 3, "seed": 1}, events
+    )
+    feed = {(when, asset): value for when, asset, metric, value in rows if asset == "feed"}
+    hours = sorted({when for (when, _) in feed})
+    before = feed[(hours[0], "feed")]
+    during = feed[(hours[1], "feed")]
+    assert during < before * 0.75, (before, during)
+    assert feed[(hours[2], "feed")] > during, "and it recovers after the event"
