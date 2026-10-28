@@ -252,7 +252,7 @@ a { color: var(--text); text-underline-offset: 3px; }
   text-align: left; border: 1px solid var(--rule); background: var(--raised); border-radius: 8px;
   padding: 9px 12px; cursor: pointer;
 }
-.units button:hover { border-color: var(--rule-strong); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.units button:hover { border-color: var(--rule-strong); background: var(--surface); }
 .schematic { width: 100%; max-width: 520px; height: auto; display: block; }
 /* stroke: none - the global svg rule outlines shapes, which smudges text into a blur */
 .schematic text { font: 11.5px var(--font); fill: var(--text); stroke: none; }
@@ -309,7 +309,7 @@ table.data tbody tr:hover { background: var(--band); }
   border: 0; border-radius: 50%; background: var(--selected-bg); color: var(--selected-text);
   cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
 }
-.play:hover { transform: scale(1.04); }
+.play:hover { opacity: 0.88; }
 .play svg { fill: currentColor; stroke: none; width: 15px; height: 15px; }
 .play .when-playing, .playing .play .when-paused { display: none; }
 .playing .play .when-playing { display: block; }

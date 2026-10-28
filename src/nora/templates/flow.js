@@ -146,6 +146,16 @@
     }
     return out;
   }
+  // A reading inside a circle, on a patch of the circle's own fill: the faint + and the
+  // day bar never run through a number.
+  function reading(ctx, text, x, y, look) {
+    const w = ctx.measureText(text).width;
+    ctx.save();
+    ctx.fillStyle = look.fill;
+    ctx.fillRect(x - w / 2 - 1.5, y - 5.5, w + 3, 11);
+    ctx.restore();
+    ctx.fillText(text, x, y);
+  }
   function drawQuadrants(ctx, x, y, id, look, { pressure, day, total }) {
     const r = CIRC.r, q = quadrants(id), at = r * 0.42;
     ctx.save();
@@ -160,10 +170,10 @@
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = look.ink;
-    ctx.font = "700 9.5px Archivo, system-ui, sans-serif";
+    ctx.font = "600 9.5px Archivo, system-ui, sans-serif";
     for (const [side, flow] of Object.entries(q)) {
       const [ux, uy] = QUAD[side];
-      ctx.fillText(fitText(ctx, `${App.fmt(flow, flow < 10 ? 1 : 0)}M`, r * 0.85), x + ux * at, y + uy * at);
+      reading(ctx, fitText(ctx, `${App.fmt(flow, flow < 10 ? 1 : 0)}M`, r * 0.85), x + ux * at, y + uy * at, look);
     }
     // Pressure: across the top half when both upper quadrants are free (the usual case,
     // gas arriving from above), else in a free quadrant. The exit day bar runs across
@@ -171,17 +181,17 @@
     if (pressure) {
       ctx.font = "600 8.5px Archivo, system-ui, sans-serif";
       ctx.fillStyle = look.dim;
-      if (!q.NE && !q.NW) ctx.fillText(fitText(ctx, pressure, r * 1.5), x, y - at);
+      if (!q.NE && !q.NW) reading(ctx, fitText(ctx, pressure, r * 1.5), x, y - at, look);
       else {
         const free = ["SW", "SE", "NW", "NE"].find((side) => !(side in q));
-        if (free) ctx.fillText(fitText(ctx, pressure.replace(" bar", "b"), r * 0.85), x + QUAD[free][0] * at, y + QUAD[free][1] * at);
+        if (free) reading(ctx, fitText(ctx, pressure.replace(" bar", "b"), r * 0.85), x + QUAD[free][0] * at, y + QUAD[free][1] * at, look);
       }
     }
     if (day) drawDayBar(ctx, x, y + 1, day, look);
     if (!Object.keys(q).length && total != null) {
-      ctx.font = "700 9.5px Archivo, system-ui, sans-serif";
+      ctx.font = "600 9.5px Archivo, system-ui, sans-serif";
       ctx.fillStyle = look.ink;
-      ctx.fillText(`${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y + at);
+      reading(ctx, `${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y + at, look);
     }
     ctx.restore();
   }
@@ -218,7 +228,7 @@
         if (live) drawQuadrants(ctx, x, y, id, look, { pressure, day, total: now.flow });
         else if (big) {
           ctx.fillStyle = look.ink;
-          ctx.font = "700 12.5px Archivo, system-ui, sans-serif";
+          ctx.font = "600 12.5px Archivo, system-ui, sans-serif";
           ctx.fillText(fitText(ctx, big, CIRC.r * 1.6), x, y);
         }
         // Name below the circle, then the rate of change (bold when it is fast) and the
@@ -235,7 +245,7 @@
         if (r != null && Math.abs(r) >= 0.05) {
           const through = App.window4h(id).past.slice(-1)[0] || 0;
           const fast = through > 0 && Math.abs(r) / through >= App.thresholds.step[0];
-          sub = { text: `${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`, font: `${fast ? 700 : 400} 10px Archivo, system-ui, sans-serif`, ink: fast ? look.ink : look.dim };
+          sub = { text: `${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`, font: `${fast ? 600 : 400} 10px Archivo, system-ui, sans-serif`, ink: fast ? look.ink : look.dim };
         } else if (s.sub && !live) {
           ctx.font = SUB_FONT;
           sub = { text: fitText(ctx, s.sub, CIRC.r * 3), font: SUB_FONT, ink: look.dim };
