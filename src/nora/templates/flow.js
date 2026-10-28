@@ -211,8 +211,8 @@
     for (const [side, cell] of Object.entries(q)) {
       const [ux, uy] = QUAD[side], both = cell.in && cell.out;
       const labels = [];
-      if (cell.in) labels.push({ text: `in ${App.fmt(cell.in, cell.in < 10 ? 1 : 0)}M`, dy: both ? -7 : 0, ink: look.dim });
-      if (cell.out) labels.push({ text: `out ${App.fmt(cell.out, cell.out < 10 ? 1 : 0)}M`, dy: both ? 7 : 0, ink: look.ink });
+      if (cell.in) labels.push({ text: `${App.fmt(cell.in, cell.in < 10 ? 1 : 0)}M`, dy: both ? -7 : 0, ink: look.dim });
+      if (cell.out) labels.push({ text: `${App.fmt(cell.out, cell.out < 10 ? 1 : 0)}M`, dy: both ? 7 : 0, ink: look.ink });
       for (const label of labels) {
         ctx.fillStyle = label.ink;
         reading(ctx, fitText(ctx, label.text, r * 1.15), x + ux * at, y + uy * at + label.dy, look);
