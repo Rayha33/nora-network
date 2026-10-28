@@ -30,7 +30,7 @@ europipe_2_south,Europipe II (Baltic tie-in - Dornum),baltic_tie,dornum,export,2
 franpipe,Franpipe,draupner_e,dunkirk,export,840,42,55,false,1998,operating,Gassco,https://en.wikipedia.org/wiki/Franpipe,
 zeepipe_1,Zeepipe I,sleipner,zeebrugge,export,814,40,42,false,1993,operating,Gassco,https://en.wikipedia.org/wiki/Zeepipe,
 langeled_south,Langeled (south),sleipner,easington,export,543,44,72,false,2006,operating,Gassco,https://en.wikipedia.org/wiki/Langeled_pipeline,
-vesterled,Vesterled,heimdal,st_fergus,export,360,32,39,false,1978,operating,Gassco,https://en.wikipedia.org/wiki/Vesterled,
+vesterled,Vesterled,heimdal,st_fergus,export,360,32,39,false,2001,operating,Gassco,https://gassco.eu/en/rorledningsnettverk/vesterled,Frigg Norwegian Pipeline adapted for other fields and renamed Vesterled in 2001
 baltic_pipe_ns,Baltic Pipe (North Sea leg),baltic_tie,nybro,export,110,,27,false,2022,operating,Energinet,https://www.baltic-pipe.eu/,Offshore leg plus the short onshore run to Nybro
 baltic_pipe_east,Baltic Pipe (Denmark - Poland),nybro,pl_vtp,export,,,27,false,2022,operating,Energinet / GAZ-SYSTEM,https://www.baltic-pipe.eu/,Onshore Denmark plus the Baltic Sea offshore section
 tyra_nybro,Tyra - Nybro,tyra,nybro,export,220,30,30,false,1984,operating,,https://en.wikipedia.org/wiki/Tyra_field,
