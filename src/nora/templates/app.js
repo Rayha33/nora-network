@@ -118,16 +118,20 @@ const App = (() => {
      opaque band in the peak's calm colour over the line, with a dark casing so it
      stands off the paper in both themes, and a crisp edge at the head so the direction
      of travel reads at a glance. The dot and its label are drawn on top of it. */
-  function drawBand(ctx, marker, a, b, width = 4) {
+  function drawBand(ctx, marker, a, b, width = 4, path = null) {
     const color = marker.kind === "quality" ? COLORS[QUALITY[marker.gas].color] : COLORS.peak;
-    const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy);
+    const points = path && path.length > 1 ? path : [a, b];
+    const head = points[points.length - 1], before = points[points.length - 2];
+    const dx = head.x - before.x, dy = head.y - before.y, len = Math.hypot(dx, dy);
     ctx.save();
     ctx.lineCap = "round";
+    ctx.lineJoin = "round";
     ctx.setLineDash([]);
     ctx.globalAlpha = 1;
     ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.lineTo(len < 1 ? a.x + 0.5 : b.x, len < 1 ? a.y : b.y);
+    ctx.moveTo(points[0].x, points[0].y);
+    for (const point of points.slice(1)) ctx.lineTo(point.x, point.y);
+    if (len < 1) ctx.lineTo(a.x + 0.5, a.y);
     ctx.strokeStyle = COLORS.casing;
     ctx.lineWidth = width + 1.2;
     ctx.stroke();
@@ -145,8 +149,8 @@ const App = (() => {
     if (len >= 1) { // the head: a short dark bar across the band
       const nx = -dy / len, ny = dx / len, h = width / 2 + 1;
       ctx.beginPath();
-      ctx.moveTo(b.x + nx * h, b.y + ny * h);
-      ctx.lineTo(b.x - nx * h, b.y - ny * h);
+      ctx.moveTo(head.x + nx * h, head.y + ny * h);
+      ctx.lineTo(head.x - nx * h, head.y - ny * h);
       ctx.strokeStyle = COLORS.casing;
       ctx.lineWidth = 1;
       ctx.lineCap = "butt";
