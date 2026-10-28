@@ -129,12 +129,6 @@
       paint: { "line-color": ["to-color", state("color", C.inactive)], "line-width": width(0.8), "line-dasharray": [2, 2], "line-opacity": opacity } });
     map.addLayer({ id: "nora-pipes", type: "line", source: "nora-pipes", filter: ["!=", ["get", "onshore"], true], layout: { "line-cap": "round" },
       paint: { "line-color": ["to-color", state("color", C.normal)], "line-width": width(1), "line-opacity": opacity } });
-    map.addLayer({ id: "nora-pipe-names", type: "symbol", source: "nora-pipes", filter: ["!=", ["get", "map_name"], ""],
-      layout: {
-        "symbol-placement": "line", "text-field": ["get", "map_name"], "text-font": ["Noto Sans Regular"],
-        "text-size": 11.5, "text-optional": true, "text-keep-upright": true, "text-max-width": 12, "text-padding": 4,
-      },
-      paint: { "text-opacity": opacity, "text-color": C.text, "text-halo-color": C.paper, "text-halo-width": 2 } });
     map.addLayer({ id: "nora-pipes-hit", type: "line", source: "nora-pipes", paint: { "line-color": "#000", "line-opacity": 0, "line-width": 14 } });
     /* Nodes are plain circles in their state grey, as in the Flow view: no icons (Ray,
        28 Oct). An alarm colours only the outline, and the badge carries the shape and
@@ -189,7 +183,6 @@
       "nora-pipes-hit": { paint: { "line-width": 14 * k } },
       "nora-selected": { paint: { "circle-radius": radius(5), "circle-stroke-width": 2 * k } },
       "nora-node-dots": { paint: { "circle-radius": radius(), "circle-stroke-width": ["*", k, state("edgeWidth", 1)] } },
-      "nora-pipe-names": { layout: { "text-size": 11.5 * k }, paint: { "text-halo-width": 2 * k } },
       "nora-nodes": { layout: { "text-size": 11.5 * k }, paint: { "text-halo-width": 2 * k } },
       "nora-node-alarms": { layout: { "icon-size": 0.85 * k } },
       "nora-pipe-alarms": { layout: { "icon-size": 0.85 * k } },
@@ -462,11 +455,41 @@
       }
       ctx.globalAlpha = 1;
     }
-    // Peaks as bands from tail to head first, then every marker on top.
+    // Peaks as bands from tail to head, then pipeline names and every marker on top.
     const marks = App.markers().filter((m) => ends[m.id] && !App.pipeStyle(m.id).hidden);
-    for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]), 3.2 * App.uiScale(), projectBand(m.id, m.extent));
-    const zoom = map.getZoom(), detail = zoom >= 6.5 ? 2 : zoom >= 5 ? 1 : 0;
-    const taken = marks.length ? nodeBoxes(ctx) : [];
+    const zoom = map.getZoom(), detail = zoom >= 6.5 ? 2 : zoom >= 5 ? 1 : 0, u = App.uiScale();
+    const taken = (marks.length || App.settings().names) ? nodeBoxes(ctx) : [];
+    const pipeLabels = [];
+    if (App.settings().names) {
+      ctx.save();
+      ctx.font = `${11.5 * u}px Archivo, system-ui, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      for (const id of App.pipeIds) {
+        const style = App.pipeStyle(id), text = App.pipeMapName(id);
+        if (!text || style.hidden || style.dim) continue;
+        const point = project(id, 0.5), y = point.y - 9 * u;
+        const w = ctx.measureText(text).width + 4 * u;
+        const box = [point.x - w / 2, y - 8 * u, point.x + w / 2, y + 8 * u];
+        if (taken.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) continue;
+        taken.push(box); // reserve now so marker labels avoid the name too
+        pipeLabels.push({ text, x: point.x, y });
+      }
+      ctx.restore();
+    }
+    for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]), 3.2 * u, projectBand(m.id, m.extent));
+    // MapLibre's own label layer would be below this canvas. Paint names here instead,
+    // after the bands, so a moving snake can never cross out a pipeline's name.
+    ctx.save();
+    ctx.font = `${11.5 * u}px Archivo, system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineJoin = "round";
+    for (const label of pipeLabels) {
+      ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(label.text, label.x, label.y);
+      ctx.fillStyle = C.text; ctx.fillText(label.text, label.x, label.y);
+    }
+    ctx.restore();
     drawnMarks = [];
     for (const m of marks) {
       const p = project(m.id, m.along);
@@ -499,7 +522,6 @@
   view.applySettings = () => {
     if (!view.ready) return;
     map.setLayoutProperty("nora-nodes", "text-field", App.settings().names ? ["get", "name"] : "");
-    map.setLayoutProperty("nora-pipe-names", "visibility", App.settings().names ? "visible" : "none");
     scaleLayers();
   };
 
