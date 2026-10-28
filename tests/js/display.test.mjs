@@ -22,7 +22,7 @@ function load({ width = 1280, search = "", stored = {} } = {}) {
   }
   const App = vm.runInContext("App", context);
   assertHealthy(assert, { App, NORA: nora });
-  return { App, document };
+  return { App, NORA: nora, document };
 }
 
 test("auto: the window picks the profile and the scale", () => {
@@ -60,6 +60,27 @@ test("?scale= and Settings override the scale; nonsense falls back to auto", () 
   assert.equal(saved.App.display(), "desk", "Settings pick the profile");
   assert.equal(saved.App.uiScale(), 1.75, "and the size");
   assert.equal(load({ search: "?display=compact", width: 3840 }).App.display(), "compact");
+});
+
+test("exit nominations: six hourly bars with hour-only labels", () => {
+  const { App, NORA } = load();
+  const id = "dunkirk", stream = NORA.streams[0], block = stream.metrics.nomination_msm3d;
+  const column = block.assets.indexOf(id);
+  assert.ok(column >= 0, "the fixture has an exit nomination series");
+  App.live.stream = stream;
+  App.live.frames = stream.times.slice(0, 6).map((t, i) => ({ t, flows: {}, metrics: { nomination_msm3d: { [id]: block.values[i][column] } }, plan: null }));
+  App.live.index = 0;
+  App.live.time = stream.times[0];
+  const series = App.nominationWindow(id);
+  assert.equal(series.length, 6);
+  for (let k = 1; k < series.length; k++) assert.equal(series[k].t - series[k - 1].t, 3600, "one bar per hour");
+  const chart = App.nominationHistogram(id).innerHTML;
+  assert.equal((chart.match(/class="nomination-bar"/g) || []).length, 6);
+  for (const reading of series) {
+    const hour = String(new Date(reading.t * 1000).getUTCHours()).padStart(2, "0");
+    assert.ok(chart.includes(`>${hour}</text>`), `hour ${hour} is labelled`);
+  }
+  assert.ok(!chart.includes(":00"), "hour labels do not repeat minutes");
 });
 
 test("the scale reaches the page as --ui-scale and a data-display attribute", () => {
