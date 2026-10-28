@@ -372,6 +372,16 @@
   function stubDistance(id, travel, scale, positions = framePos) {
     return circleRadius(id, positions) + 10 / scale + travel;
   }
+  function stubClear(a, b, positions, scale) {
+    const vx = b.x - a.x, vy = b.y - a.y, length2 = vx * vx + vy * vy;
+    for (const [id, point] of Object.entries(positions)) {
+      if (!point) continue;
+      const t = length2 ? Math.max(0, Math.min(1, ((point.x - a.x) * vx + (point.y - a.y) * vy) / length2)) : 0;
+      const distance = Math.hypot(point.x - (a.x + vx * t), point.y - (a.y + vy * t));
+      if (distance < circleRadius(id, positions) + 2 / scale) return false;
+    }
+    return true;
+  }
   function overlay(ctx) {
     const positions = network.getPositions();
     drawRowNames(ctx, positions);
@@ -412,9 +422,12 @@
             const d = stubDistance(nid, inflow ? (stub - band) * (1 - t) + band : (stub - band) * t + band, scale, positions);
             ctx.globalAlpha = 0.25 + (inflow ? t : 1 - t) * 0.55;
             const cx = pn.x + ux * d, cy = pn.y + uy * d;
+            const x1 = cx - ux * band / 2, y1 = cy - uy * band / 2;
+            const x2 = cx + ux * band / 2, y2 = cy + uy * band / 2;
+            if (!stubClear({ x: x1, y: y1 }, { x: x2, y: y2 }, positions, scale)) continue;
             ctx.beginPath();
-            ctx.moveTo(cx - ux * band / 2, cy - uy * band / 2);
-            ctx.lineTo(cx + ux * band / 2, cy + uy * band / 2);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
             ctx.stroke();
           }
         }
@@ -600,6 +613,7 @@
   view.pointAlong = pointAlong;
   view.animateStubs = animateStubs;
   view.stubDistance = stubDistance;
+  view.stubClear = stubClear;
   view.card = card; // for tests: the renderer of one node
   App.register("flow", view);
 })();
