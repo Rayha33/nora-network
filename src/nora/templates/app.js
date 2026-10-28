@@ -110,10 +110,10 @@ const App = (() => {
     return weight ? Math.round(sum / weight) : null;
   }
   /* A position as the control room writes it: always °N and °E (west is a negative
-     east), then the water depth there: "61.90055°N  4.25673°E  ·  WD 58 m". */
+     east), then the EMODnet depth there: "61.90055°N  4.25673°E  ·  ED 58 m". */
   function positionText(lon, lat, digits = 5) {
     const depth = depthAt(lon, lat);
-    return `${lat.toFixed(digits)}°N  ${lon.toFixed(digits)}°E${depth != null ? `  ·  WD ${fmt(depth)} m` : ""}`;
+    return `${lat.toFixed(digits)}°N  ${lon.toFixed(digits)}°E${depth != null ? `  ·  ED ${fmt(depth)} m` : ""}`;
   }
   // Dates likewise: one cached Intl.DateTimeFormat per set of options.
   const DATE_FORMATS = new Map();
