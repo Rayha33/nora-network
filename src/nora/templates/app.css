@@ -460,8 +460,7 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
   .bar-secondary > .toolbar-label, .toolbar-rule { display: none; }
   .seg button { padding: 0 11px; }
   .year input { width: 110px; }
-  .map-context { max-width: calc(100% - 28px); }
-  .map-context-meta { margin-top: 7px; }
+  .map-context { display: none; } /* on a phone the map needs the room; the bar names the unit */
   .player { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 58px 44px; gap: 0 12px; padding: 0 14px 6px; }
   .transport { grid-column: 1; grid-row: 1; }
   .play { width: var(--ctl); height: var(--ctl); }
