@@ -189,7 +189,7 @@
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     const w = ctx.measureText(text).width;
     ctx.fillStyle = look.fill;
-    ctx.fillRect(point.x - w / 2 - 1.5, point.y - 6.5, w + 3, 13);
+    ctx.fillRect(point.x - w / 2 - 2, point.y - 8, w + 4, 16);
     ctx.fillText(text, point.x, point.y);
     ctx.restore();
   }
@@ -207,7 +207,7 @@
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = look.ink;
-    ctx.font = modelFont("600 11px Archivo, system-ui, sans-serif");
+    ctx.font = modelFont("600 13px Archivo, system-ui, sans-serif");
     for (const [side, cell] of Object.entries(q)) {
       const [ux, uy] = QUAD[side], both = cell.in && cell.out;
       const labels = [];
@@ -221,7 +221,7 @@
     // Flow faces both incoming and outgoing lines. Pressure stays outside the circle.
     if (day) drawDayBar(ctx, x, y + 1, day, look);
     if (!Object.keys(q).length && total != null) {
-      ctx.font = modelFont("600 11px Archivo, system-ui, sans-serif");
+      ctx.font = modelFont("600 13px Archivo, system-ui, sans-serif");
       ctx.fillStyle = look.ink;
       reading(ctx, `${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y + at, look);
     }
@@ -263,7 +263,7 @@
         const pressure = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "";
         if (live && overviewReading(network ? network.getScale() : 1, radius)) {
           ctx.fillStyle = look.ink;
-          ctx.font = modelFont("600 11px Archivo, system-ui, sans-serif");
+          ctx.font = modelFont("600 13px Archivo, system-ui, sans-serif");
           reading(ctx, big, x, y, look); // one readable total when the circle can contain it
         } else if (live && detailed) drawQuadrants(ctx, x, y, id, look, { day, total: now.flow, r: radius });
         else if (big) {
