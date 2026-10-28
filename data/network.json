@@ -47,8 +47,8 @@
    "name": "Baltic Pipe tie-in",
    "type": "hub",
    "country": "DK",
-   "lat": 55.9,
-   "lon": 6.66,
+   "lat": 55.814,
+   "lon": 6.512,
    "capacity_msm3d": null,
    "status": "operating",
    "id": "baltic_tie"
@@ -77,8 +77,8 @@
    "name": "CATS Riser Platform",
    "type": "hub",
    "country": "GB",
-   "lat": 57.8,
-   "lon": 1.9,
+   "lat": 57.759,
+   "lon": 1.802,
    "capacity_msm3d": null,
    "status": "operating",
    "id": "cats_riser"
@@ -107,8 +107,8 @@
    "name": "Dornum",
    "type": "terminal",
    "country": "DE",
-   "lat": 53.65,
-   "lon": 7.43,
+   "lat": 53.648,
+   "lon": 7.327,
    "capacity_msm3d": null,
    "status": "operating",
    "id": "dornum"
@@ -117,8 +117,8 @@
    "name": "Draupner E",
    "type": "hub",
    "country": "NO",
-   "lat": 58.16,
-   "lon": 2.52,
+   "lat": 58.19,
+   "lon": 2.473,
    "capacity_msm3d": null,
    "status": "operating",
    "id": "draupner_e"
@@ -127,8 +127,8 @@
    "name": "Draupner S",
    "type": "hub",
    "country": "NO",
-   "lat": 58.22,
-   "lon": 2.42,
+   "lat": 58.189,
+   "lon": 2.473,
    "capacity_msm3d": null,
    "status": "operating",
    "id": "draupner_s"
@@ -137,8 +137,8 @@
    "name": "Dunkirk (Franpipe)",
    "type": "terminal",
    "country": "FR",
-   "lat": 51.02,
-   "lon": 2.27,
+   "lat": 51.044,
+   "lon": 2.462,
    "capacity_msm3d": null,
    "status": "operating",
    "id": "dunkirk"
@@ -157,8 +157,8 @@
    "name": "Easington",
    "type": "terminal",
    "country": "GB",
-   "lat": 53.65,
-   "lon": 0.11,
+   "lat": 53.642,
+   "lon": 0.156,
    "capacity_msm3d": null,
    "status": "operating",
    "id": "easington"
@@ -207,8 +207,8 @@
    "name": "Emden",
    "type": "terminal",
    "country": "DE",
-   "lat": 53.35,
-   "lon": 7.21,
+   "lat": 53.377,
+   "lon": 7.219,
    "capacity_msm3d": null,
    "status": "operating",
    "id": "emden"
@@ -257,8 +257,8 @@
    "name": "Frigg",
    "type": "field",
    "country": "NO",
-   "lat": 59.9,
-   "lon": 1.67,
+   "lat": 59.88,
+   "lon": 2.065,
    "capacity_msm3d": null,
    "status": "decommissioned",
    "id": "frigg"
@@ -337,8 +337,8 @@
    "name": "Irpa",
    "type": "field",
    "country": "NO",
-   "lat": 67.0,
-   "lon": 5.2,
+   "lat": 67.027,
+   "lon": 5.306,
    "capacity_msm3d": null,
    "status": "planned",
    "id": "irpa"
@@ -357,8 +357,8 @@
    "name": "Johan Sverdrup",
    "type": "field",
    "country": "NO",
-   "lat": 58.87,
-   "lon": 2.63,
+   "lat": 58.837,
+   "lon": 2.557,
    "capacity_msm3d": 6.0,
    "status": "operating",
    "id": "johan_sverdrup"
@@ -377,8 +377,8 @@
    "name": "K\u00e5rst\u00f8",
    "type": "processing",
    "country": "NO",
-   "lat": 59.28,
-   "lon": 5.52,
+   "lat": 59.273,
+   "lon": 5.521,
    "capacity_msm3d": 88.0,
    "status": "operating",
    "id": "karsto"
@@ -387,8 +387,8 @@
    "name": "Kollsnes",
    "type": "processing",
    "country": "NO",
-   "lat": 60.55,
-   "lon": 4.84,
+   "lat": 60.548,
+   "lon": 4.845,
    "capacity_msm3d": 144.0,
    "status": "operating",
    "id": "kollsnes"
@@ -467,8 +467,8 @@
    "name": "Nyhamna",
    "type": "processing",
    "country": "NO",
-   "lat": 62.85,
-   "lon": 6.95,
+   "lat": 62.848,
+   "lon": 6.954,
    "capacity_msm3d": 84.0,
    "status": "operating",
    "id": "nyhamna"
@@ -477,8 +477,8 @@
    "name": "Odin",
    "type": "field",
    "country": "NO",
-   "lat": 59.96,
-   "lon": 1.8,
+   "lat": 60.077,
+   "lon": 2.166,
    "capacity_msm3d": null,
    "status": "decommissioned",
    "id": "odin"
@@ -517,8 +517,8 @@
    "name": "Poland VTP",
    "type": "market",
    "country": "PL",
-   "lat": 54.6,
-   "lon": 11.0,
+   "lat": 53.95,
+   "lon": 15.1,
    "capacity_msm3d": null,
    "status": "operating",
    "id": "pl_vtp"
@@ -557,8 +557,8 @@
    "name": "St Fergus",
    "type": "terminal",
    "country": "GB",
-   "lat": 57.57,
-   "lon": -1.84,
+   "lat": 57.553,
+   "lon": -1.85,
    "capacity_msm3d": null,
    "status": "operating",
    "id": "st_fergus"
@@ -587,8 +587,8 @@
    "name": "Teesside (CATS)",
    "type": "terminal",
    "country": "GB",
-   "lat": 54.63,
-   "lon": -1.17,
+   "lat": 54.612,
+   "lon": -1.195,
    "capacity_msm3d": null,
    "status": "operating",
    "id": "teesside"
@@ -607,8 +607,8 @@
    "name": "Tjeldbergodden",
    "type": "market",
    "country": "NO",
-   "lat": 63.41,
-   "lon": 8.7,
+   "lat": 63.395,
+   "lon": 8.655,
    "capacity_msm3d": null,
    "status": "operating",
    "id": "tjeldbergodden"
@@ -677,8 +677,8 @@
    "name": "Zeebrugge",
    "type": "terminal",
    "country": "BE",
-   "lat": 51.33,
-   "lon": 3.2,
+   "lat": 51.34,
+   "lon": 3.178,
    "capacity_msm3d": null,
    "status": "operating",
    "id": "zeebrugge"
@@ -827,7 +827,7 @@
    "name": "Culzean - CATS",
    "type": "feeder",
    "from_id": "culzean",
-   "length_km": 66.71695598673392,
+   "length_km": 62.433403273733134,
    "capacity": 15.0,
    "source": "culzean",
    "target": "cats_riser"
@@ -846,7 +846,7 @@
    "name": "Dornum grid entry",
    "type": "onshore",
    "from_id": "dornum",
-   "length_km": 135.35813912709708,
+   "length_km": 139.58596951607817,
    "source": "dornum",
    "target": "the"
   },
@@ -893,7 +893,7 @@
    "name": "Sleipner - Draupner",
    "type": "link",
    "from_id": "sleipner",
-   "length_km": 34.1530506541083,
+   "length_km": 38.58045638097173,
    "capacity": 60.0,
    "source": "draupner_s",
    "target": "sleipner"
@@ -913,7 +913,7 @@
    "name": "Dunkirk grid entry",
    "type": "onshore",
    "from_id": "dunkirk",
-   "length_km": 72.75127402218759,
+   "length_km": 72.2654362203727,
    "source": "dunkirk",
    "target": "peg"
   },
@@ -931,7 +931,7 @@
    "name": "Easington grid entry",
    "type": "onshore",
    "from_id": "easington",
-   "length_km": 145.84417424524804,
+   "length_km": 147.00684606553855,
    "source": "easington",
    "target": "nbp"
   },
@@ -988,7 +988,7 @@
    "name": "Emden grid entry",
    "type": "onshore",
    "from_id": "emden",
-   "length_km": 123.09858957366532,
+   "length_km": 124.38039178417735,
    "source": "emden",
    "target": "the"
   },
@@ -1150,7 +1150,7 @@
    "name": "Johan Sverdrup gas export",
    "type": "feeder",
    "from_id": "johan_sverdrup",
-   "length_km": 171.31001648364764,
+   "length_km": 176.25684968624589,
    "capacity": 6.0,
    "source": "johan_sverdrup",
    "target": "karsto"
@@ -1267,7 +1267,7 @@
    "name": "Baltic Pipe (Denmark - Poland)",
    "type": "export",
    "from_id": "nybro",
-   "length_km": 202.5873295504207,
+   "length_km": 468.5899702535001,
    "capacity": 27.0,
    "source": "nybro",
    "target": "pl_vtp"
@@ -1336,7 +1336,7 @@
    "name": "Sleipner - Draupner",
    "type": "link",
    "from_id": "sleipner",
-   "length_km": 34.1530506541083,
+   "length_km": 38.58045638097173,
    "capacity": 60.0,
    "source": "sleipner",
    "target": "draupner_s"
@@ -1366,7 +1366,7 @@
    "name": "St Fergus grid entry",
    "type": "onshore",
    "from_id": "st_fergus",
-   "length_km": 554.1310792505745,
+   "length_km": 552.293673653052,
    "source": "st_fergus",
    "target": "nbp"
   },
@@ -1404,7 +1404,7 @@
    "name": "Teesside grid entry",
    "type": "onshore",
    "from_id": "teesside",
-   "length_km": 225.73436892554145,
+   "length_km": 223.72443544727608,
    "source": "teesside",
    "target": "nbp"
   },
@@ -1526,7 +1526,7 @@
    "name": "Zeebrugge grid entry",
    "type": "onshore",
    "from_id": "zeebrugge",
-   "length_km": 96.44839055819426,
+   "length_km": 98.32542019070479,
    "source": "zeebrugge",
    "target": "ztp"
   },
@@ -1544,7 +1544,7 @@
    "name": "Zeebrugge grid entry",
    "type": "onshore",
    "from_id": "zeebrugge",
-   "length_km": 96.44839055819426,
+   "length_km": 98.32542019070479,
    "source": "ztp",
    "target": "zeebrugge"
   }
