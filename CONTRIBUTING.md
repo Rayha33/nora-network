@@ -89,5 +89,5 @@ branch -> pull request -> CI checks + preview link -> review -> merge -> site up
 
 - Invite regular contributors as collaborators (Settings → Collaborators) so their
   branches get preview links. External contributors can always fork and open a pull request.
-- Consider protecting `main` in Settings → Branches: require a pull request and the
-  `checks` job before merging. It is not currently protected.
+- `main` is protected by repository rules: changes arrive through pull requests and need
+  the `checks` job to pass. Administrators can bypass in an emergency.
