@@ -110,7 +110,7 @@ function NoraCanvasMap(view) {
     ctx.setLineDash([]);
     ctx.globalAlpha = 1;
     // Nodes: calm circles by state; names placed so no two overlap.
-    const r = nodeRadius(), names = App.settings().names, boxes = [];
+    const r = nodeRadius(), names = App.settings().names, boxes = [], dots = [];
     for (const n of nodes) {
       const s = App.nodeStyle(n.id);
       if (s.hidden) continue;
@@ -131,6 +131,7 @@ function NoraCanvasMap(view) {
       }
       ctx.globalAlpha = 1;
       if (s.level) App.drawBadge(ctx, s.level, q.x + r + u, q.y - r - 10 * u, 7 * u);
+      dots.push([q.x - r - u, q.y - r - u, q.x + r + u, q.y + r + u]);
       if (names && !s.dim) boxes.push({ id: n.id, x: q.x, y: q.y + r + 3 * u, level: s.level });
     }
     // Labels: alarms first, then the rest; a name that would cover another is skipped.
@@ -158,10 +159,11 @@ function NoraCanvasMap(view) {
         if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]), 3.2 * u, bandPath(m.id, m.extent));
       }
       drawnMarks = [];
+      const taken = [...placed, ...dots]; // marker labels keep clear of names and dots
       for (const m of marks) {
         if (!pipeById[m.id] || App.pipeStyle(m.id).hidden) continue;
         const p = along(m.id, m.along);
-        App.drawMarker(ctx, m, p.x, p.y, p.angle, m.kind === "pig" ? 8.5 : 6.5, detail);
+        App.drawMarker(ctx, m, p.x, p.y, p.angle, m.kind === "pig" ? 8.5 : 6.5, detail, taken);
         if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
       }
     }

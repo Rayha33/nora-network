@@ -432,13 +432,35 @@
     const marks = App.markers().filter((m) => ends[m.id] && !App.pipeStyle(m.id).hidden);
     for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]), 3.2 * App.uiScale(), projectBand(m.id, m.extent));
     const zoom = map.getZoom(), detail = zoom >= 6.5 ? 2 : zoom >= 5 ? 1 : 0;
+    const taken = marks.length ? nodeBoxes(ctx) : [];
     drawnMarks = [];
     for (const m of marks) {
       const p = project(m.id, m.along);
-      App.drawMarker(ctx, m, p.x, p.y, p.angle, m.kind === "pig" ? 8.5 : 6.5, detail);
+      App.drawMarker(ctx, m, p.x, p.y, p.angle, m.kind === "pig" ? 8.5 : 6.5, detail, taken);
       if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
     }
   };
+
+  /* Screen boxes of the node dots and their names, where MapLibre puts them (under the
+     dot, wrapped at 9 em), so the labels of pigs and peaks keep clear of them. */
+  function nodeBoxes(ctx) {
+    const out = [], names = App.settings().names, w0 = map.getContainer().clientWidth, h0 = map.getContainer().clientHeight;
+    const k = App.uiScale(), wrap = 104 * k; // the names grow with the one UI scale
+    ctx.save();
+    ctx.font = `${11.5 * k}px Archivo, system-ui, sans-serif`;
+    for (const id of App.nodeIds) {
+      const d = NORA.assets[id];
+      if (App.nodeStyle(id).hidden) continue;
+      const p = map.project([d.lon, d.lat]);
+      if (p.x < -150 || p.y < -60 || p.x > w0 + 150 || p.y > h0 + 60) continue;
+      out.push([p.x - 6 * k, p.y - 6 * k, p.x + 6 * k, p.y + 6 * k]);
+      if (!names) continue;
+      const w = ctx.measureText(d.name).width, half = Math.min(w, wrap) / 2 + 2;
+      out.push([p.x - half, p.y + 7 * k, p.x + half, p.y + 9 * k + Math.ceil(w / wrap) * 14 * k]);
+    }
+    ctx.restore();
+    return out;
+  }
 
   view.applySettings = () => {
     if (!view.ready) return;

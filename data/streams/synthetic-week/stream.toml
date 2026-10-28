@@ -11,9 +11,11 @@ steps = 168
 seed = 7
 operations = true   # also pressures, hourly nominations and bookings
 quality = true      # also H2S and CO2 at each field, with the excursions below
-# A pig on every trunk, export line and interconnector, launches staggered so several
-# are always under way. The named [[pigs]] below still win for their lines.
-pig_programme = { every_hours = 48, speed_mps = 4.0 }
+# A pig on every trunk, export line and interconnector, launched once a fortnight and
+# staggered; with the named pigs below, about five are under way at any time (2 to 7)
+# (Ray: "a few peaks and pigs going through different pipelines"). The named [[pigs]]
+# below still win for their lines.
+pig_programme = { every_hours = 336, speed_mps = 4.0 }
 
 # Gas quality excursions at fields: the reading ramps up to `peak` and holds it for
 # `hours`. NORA follows each slug with the gas to the exit point.
@@ -71,39 +73,39 @@ label = "Cleaning pig, Langeled (south)"
 pipeline = "langeled_south"
 launch = 2026-10-19T01:00:00Z
 speed_mps = 4.5
-every_hours = 36
+every_hours = 108
 
 [[pigs]]
 label = "Inspection pig, Europipe I"
 pipeline = "europipe_1"
 launch = 2026-10-19T03:00:00Z
 speed_mps = 4.0
-every_hours = 42
+every_hours = 126
 
 [[pigs]]
 label = "Cleaning pig, Statpipe (rich gas)"
 pipeline = "statpipe_rich"
 launch = 2026-10-19T00:00:00Z
 speed_mps = 4.0
-every_hours = 24
+every_hours = 72
 
 [[pigs]]
 label = "Cleaning pig, Vesterled"
 pipeline = "vesterled"
 launch = 2026-10-19T06:00:00Z
 speed_mps = 5.0
-every_hours = 24
+every_hours = 72
 
 [[pigs]]
 label = "Cleaning pig, IUK"
 pipeline = "iuk"
 launch = 2026-10-19T02:00:00Z
 speed_mps = 4.5
-every_hours = 18
+every_hours = 54
 
 [[pigs]]
 label = "Inspection pig, NOGAT"
 pipeline = "nogat"
 launch = 2026-10-19T08:00:00Z
 speed_mps = 4.0
-every_hours = 20
+every_hours = 60

@@ -100,3 +100,13 @@ test("the plan's deliverable total comes from the payload, not JS aggregation", 
   assert.equal(typeof nora.deliverable, "number",
     "the payload carries a Python-computed deliverable");
 });
+/* Fewer numbers (Ray): a line with no flow is drawn dark grey; a "0.0" on it adds nothing. */
+test("lines: no flow, no number on the line", () => {
+  const { App } = loadApp();
+  App.state.mode = "live";
+  const id = App.pipeIds[0];
+  App.live.values[id] = 0;
+  assert.equal(App.pipeStyle(id).label, "", "a still line carries no value");
+  App.live.values[id] = 12.34;
+  assert.equal(App.pipeStyle(id).label, "12.3", "a flowing one does");
+});
