@@ -3124,7 +3124,7 @@ function NoraCanvasMap(view) {
   /* Circles, not squares: a Flow node is a circle filled by its state grey, holding
      the live numbers (no icon: Ray, 28 Oct, "this is valuable space ... for live flow
      values and pressures"), with its name and rate below and a sparkline under that. */
-  const CIRC = { r: 27, name: 14, sub: 12, trend: 12, pad: 8 };
+  const CIRC = { r: 30, name: 14, sub: 12, trend: 12, pad: 8 };
   const SPACING = { // [stage, rank] in canvas units
     vertical: { compact: [96, 160], comfortable: [124, 178], spacious: [160, 210] },
     horizontal: { compact: [210, 62], comfortable: [250, 72], spacious: [300, 90] },
@@ -3216,7 +3216,7 @@ function NoraCanvasMap(view) {
      the ends the critical one. The pointer is where the day stands; it takes the alarm
      colour only outside the tolerance. */
   function drawDayBar(ctx, x, y, day, look) {
-    const T = App.thresholds.nomination, half = 16, full = T[2] * 1.2;
+    const T = App.thresholds.nomination, half = 11, full = T[2] * 1.2;
     const at = (share) => x + Math.max(-1, Math.min(1, share / full)) * half;
     ctx.save();
     ctx.lineCap = "butt";
@@ -3236,42 +3236,60 @@ function NoraCanvasMap(view) {
     if (day.level) { ctx.strokeStyle = C.casing; ctx.lineWidth = 1; ctx.stroke(); }
     ctx.restore();
   }
-  /* The way gas runs through a node: the direction of its busiest line, from where the
-     gas comes in towards where it goes out, measured from this frame's positions so it
-     turns with the line when the node is dragged. Radians on the canvas; null if idle. */
-  function flowAngle(id) {
-    const here = framePos[id];
-    if (!here) return null;
-    let best = null, most = 0.05;
+  /* Four quadrants inside each circle, facing right, down, left and up (split by a faint
+     ×). The flow of every line leaving the node is written in the quadrant facing that
+     line (lines on the same side are summed); directions come from this frame's
+     positions, so the numbers move to the right quadrant when a node is dragged. */
+  const QUAD = { E: [1, 0], S: [0, 1], W: [-1, 0], N: [0, -1] };
+  function quadrants(id, positions = framePos) {
+    const here = positions[id], out = {};
+    if (!here) return out;
     for (const pid of App.pipeIds) {
       const p = NORA.assets[pid], v = App.live.values[pid];
-      if (!v || (p.from !== id && p.to !== id) || Math.abs(v) <= most || App.pipeStyle(pid).hidden) continue;
-      const other = framePos[p.from === id ? p.to : p.from];
+      if (!v || Math.abs(v) < 0.05 || (p.from !== id && p.to !== id) || App.pipeStyle(pid).hidden) continue;
+      if ((p.from === id) !== (v > 0)) continue; // gas comes in on this line, not out
+      const other = positions[p.from === id ? p.to : p.from];
       if (!other) continue;
-      const outward = (p.from === id) === (v > 0); // gas leaves this node along the line
-      best = outward ? Math.atan2(other.y - here.y, other.x - here.x) : Math.atan2(here.y - other.y, here.x - other.x);
-      most = Math.abs(v);
+      const dx = other.x - here.x, dy = other.y - here.y;
+      const side = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "E" : "W") : (dy > 0 ? "S" : "N");
+      out[side] = (out[side] || 0) + Math.abs(v);
     }
-    return best;
+    return out;
   }
-  // The flow inside the circle, short ("34M"), along the line with a small arrow.
-  function drawFlowAlong(ctx, x, y, text, angle, look) {
-    let a = angle == null ? 0 : angle, back = false;
-    if (a > Math.PI / 2 || a < -Math.PI / 2) { a += Math.PI; back = true; } // keep the text upright
+  function drawQuadrants(ctx, x, y, id, look, { pressure, day, total }) {
+    const r = CIRC.r, q = quadrants(id), at = r * 0.55;
     ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(a);
-    ctx.font = "700 12.5px Archivo, system-ui, sans-serif";
+    ctx.globalAlpha = 0.35; // the faint ×
+    ctx.strokeStyle = look.edge;
+    ctx.lineWidth = 0.6;
+    const k = r * 0.62;
+    ctx.beginPath();
+    ctx.moveTo(x - k, y - k); ctx.lineTo(x + k, y + k);
+    ctx.moveTo(x + k, y - k); ctx.lineTo(x - k, y + k);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const w = ctx.measureText(text).width, arrow = angle == null ? 0 : 7;
     ctx.fillStyle = look.ink;
-    ctx.fillText(text, back ? arrow / 2 : -arrow / 2, 0);
-    if (arrow) { // the direction of travel: a small chevron at the downstream end
-      const tip = back ? -(w + arrow) / 2 - 1 : (w + arrow) / 2 + 1, d = back ? -1 : 1;
-      ctx.beginPath();
-      ctx.moveTo(tip - d * 3.5, -3); ctx.lineTo(tip, 0); ctx.lineTo(tip - d * 3.5, 3);
-      ctx.strokeStyle = look.dim; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.font = "700 10px Archivo, system-ui, sans-serif";
+    for (const [side, flow] of Object.entries(q)) {
+      const [ux, uy] = QUAD[side];
+      ctx.fillText(fitText(ctx, `${App.fmt(flow, flow < 10 ? 1 : 0)}M`, r * 0.9), x + ux * at, y + uy * at);
+    }
+    // Pressure in a free quadrant (top first); the exit day bar through the centre; a
+    // node with nothing leaving it (a market) shows what arrives, in the centre.
+    const free = ["N", "W", "E", "S"].find((side) => !(side in q));
+    if (pressure && free) {
+      const [ux, uy] = QUAD[free];
+      ctx.font = "600 8.5px Archivo, system-ui, sans-serif";
+      ctx.fillStyle = look.dim;
+      ctx.fillText(fitText(ctx, pressure, r * 0.9), x + ux * at, y + uy * at);
+    }
+    if (day) drawDayBar(ctx, x, y + 2, day, look);
+    else if (!Object.keys(q).length && total != null) {
+      ctx.font = "700 10px Archivo, system-ui, sans-serif";
+      ctx.fillStyle = look.ink;
+      ctx.fillText(`${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y);
     }
     ctx.restore();
   }
@@ -3305,19 +3323,12 @@ function NoraCanvasMap(view) {
           : App.state.mode === "risk" && d.lost ? `−${App.fmt(d.lost)}` : "";
         const day = live ? App.dayDelivery(id) : null; // exit points: within-day delivery bar
         const pressure = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "";
-        if (pressure) { // pressure on top, level
-          ctx.fillStyle = look.dim;
-          ctx.font = "600 9px Archivo, system-ui, sans-serif";
-          ctx.fillText(fitText(ctx, pressure, CIRC.r * 1.4), x, y - 15);
-        }
-        // Flow in the middle, short ("34M" for 34 MSm³/d), running along its line.
-        if (live && big !== "–") drawFlowAlong(ctx, x, y, `${big}M`, flowAngle(id), look);
+        if (live) drawQuadrants(ctx, x, y, id, look, { pressure, day, total: now.flow });
         else if (big) {
           ctx.fillStyle = look.ink;
           ctx.font = "700 12.5px Archivo, system-ui, sans-serif";
           ctx.fillText(fitText(ctx, big, CIRC.r * 1.6), x, y);
         }
-        if (day) drawDayBar(ctx, x, y + 17, day, look);
         // Name below the circle, then the rate of change (bold when it is fast).
         ctx.textBaseline = "alphabetic";
         ctx.textAlign = "center";
@@ -3454,7 +3465,6 @@ function NoraCanvasMap(view) {
     const scale = network.getScale(), detail = scale >= 0.9 ? 2 : scale >= 0.5 ? 1 : 0;
     ctx.save();
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    drawSplitLabels(ctx, positions, ratio);
     const marks = App.markers().filter((m) => edges.get(m.id) && !App.pipeStyle(m.id).hidden);
     const at = (m, t) => network.canvasToDOM(pointAlong(edges.get(m.id), Math.max(0, Math.min(1, t)), positions));
     for (const m of marks) if (m.extent) App.drawBand(ctx, m, at(m, m.extent[0]), at(m, m.extent[1]));
@@ -3541,57 +3551,8 @@ function NoraCanvasMap(view) {
     network.once("afterDrawing", () => { layout(); view.setUnit(App.route.unit); });
   };
 
-  /* Where a node sends gas into two or more lines, each line gets its own reading just
-     outside the circle: the flow in it (MSm³/d) and its pressure from inlet to outlet
-     (the two end nodes' pressures, bar). Those lines drop the mid-line number. */
-  function splitLines() {
-    const out = new Map(); // pipeline id -> the node it leaves
-    if (App.state.mode !== "live") return out;
-    const by = {};
-    for (const id of App.pipeIds) {
-      const v = App.live.values[id], p = NORA.assets[id];
-      if (!v || Math.abs(v) < 0.05 || App.pipeStyle(id).hidden) continue;
-      const from = v > 0 ? p.from : p.to;
-      (by[from] = by[from] || []).push(id);
-    }
-    for (const [node, ids] of Object.entries(by)) {
-      if (ids.length >= 2 && !App.nodeStyle(node).hidden) for (const id of ids) out.set(id, node);
-    }
-    return out;
-  }
-  function drawSplitLabels(ctx, positions, ratio) {
-    if (network.getScale() < 0.5) return; // unreadable when zoomed far out
-    ctx.save();
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.lineJoin = "round";
-    for (const [id, node] of splitLines()) {
-      const p = NORA.assets[id], other = p.from === node ? p.to : p.from;
-      const a = positions[node], b = positions[other];
-      if (!a || !b) continue;
-      const len = Math.hypot(b.x - a.x, b.y - a.y);
-      if (len < CIRC.r * 4) continue;
-      const t = (CIRC.r + 30) / len, at = network.canvasToDOM({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
-      const flow = Math.abs(App.live.values[id]), pin = App.reading(node).pressure, pout = App.reading(other).pressure;
-      const lines = [[`${App.fmt(flow, flow < 10 ? 1 : 0)} MSm³/d`, "600 10.5px", C.text]];
-      if (pin != null) lines.push([pout != null ? `${App.fmt(pin)} → ${App.fmt(pout)} bar` : `${App.fmt(pin)} bar`, "9.5px", C.text_dim]);
-      lines.forEach(([text, font, color], k) => {
-        const y = at.y + (k - (lines.length - 1) / 2) * 12;
-        ctx.font = `${font} Archivo, system-ui, sans-serif`;
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = C.paper;
-        ctx.strokeText(text, at.x, y);
-        ctx.fillStyle = color;
-        ctx.fillText(text, at.x, y);
-      });
-    }
-    ctx.restore();
-  }
-
   view.restyle = () => {
     if (!view.ready) return;
-    const split = splitLines();
     nodes.update(App.nodeIds.map((id) => {
       const s = App.nodeStyle(id);
       return { id, hidden: s.hidden, title: `${NORA.assets[id].name}${s.sub ? `\n${s.sub}` : ""}` };
@@ -3599,7 +3560,7 @@ function NoraCanvasMap(view) {
     edges.update(App.pipeIds.map((id) => {
       const s = App.pipeStyle(id);
       return {
-        id, hidden: s.hidden, label: split.has(id) ? " " : s.label || " ", width: s.width, dashes: s.dashed ? [5, 5] : false,
+        id, hidden: s.hidden, label: s.label || " ", width: s.width, dashes: s.dashed ? [5, 5] : false,
         color: { color: s.color, highlight: s.color, hover: s.color, inherit: false, opacity: s.dim ? 0.3 : 1 },
         shadow: s.level ? { enabled: true, color: C.casing, size: 3, x: 0, y: 0 } : { enabled: false },
         arrows: { to: { enabled: s.forward, scaleFactor: 0.4 }, from: { enabled: s.backward, scaleFactor: 0.4 } },
@@ -3654,7 +3615,7 @@ function NoraCanvasMap(view) {
     view.setUnit(App.route.unit);
   };
 
-  view.splitLines = splitLines; // for tests: which lines carry their own reading
+  view.quadrants = quadrants; // for tests: which side of a node each outflow is written on
   App.register("flow", view);
 })();
 
