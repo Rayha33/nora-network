@@ -211,7 +211,7 @@ test("flow circles: incoming and outgoing totals share space dynamically", () =>
   assert.ok(mixed.radius > 30, "the mixed-direction circle expands for two stacked readings");
 });
 
-test("flow circles: a mixed quadrant renders separate incoming and outgoing labels", () => {
+test("flow circles: a mixed quadrant renders separate numeric readings without prefixes", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;
   loadFirstHour(App, NORA);
@@ -243,9 +243,10 @@ test("flow circles: a mixed quadrant renders separate incoming and outgoing labe
     set(target, key, value) { target[key] = value; return true; },
   });
   App.views.flow.drawQuadrants(ctx, 0, 0, id, App.colors.card.active, { day: null, total: null, r: 44, positions: pos });
-  const incoming = labels.find((label) => label.text.startsWith("in "));
-  const outgoing = labels.find((label) => label.text.startsWith("out ") && label.x === incoming?.x && Math.abs(label.y - incoming.y) === 14);
-  assert.ok(incoming && outgoing, `both directions are written on separate lines: ${JSON.stringify(labels)}`);
+  const incoming = labels.find((label, index) => /^\d/.test(label.text) && labels.some((other, otherIndex) => otherIndex > index && /^\d/.test(other.text) && other.x === label.x && Math.abs(other.y - label.y) === 14));
+  const outgoing = labels.find((label) => label !== incoming && /^\d/.test(label.text) && label.x === incoming?.x && Math.abs(label.y - incoming.y) === 14);
+  assert.ok(incoming && outgoing, `both directions are numeric readings on separate lines: ${JSON.stringify(labels)}`);
+  assert.ok(labels.every((label) => !/^(in|out)\s/.test(label.text)), "position alone communicates direction");
   assert.notEqual(incoming.y, outgoing.y, "the two readings have their own lines");
 });
 
