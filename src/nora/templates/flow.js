@@ -1,8 +1,8 @@
 /* Flow view (level 2): the whole network as a gas flow overview on dotted paper, top to
    bottom by default (fields at the top, markets at the bottom), with straight lines.
    vis-network draws the nodes, edges and options pyvis produced; each node is drawn as
-   a square holding one flow value for every connected line (MSm³/d), with its pressure
-   repeated just outside the square at every line end. Rate of change and a 4-hour trend
+   a square holding one flow value for every connected line (MSm³/d), with pressure
+   outside the square: one value per node in the overview and every line end on zoom in. Rate of change and a 4-hour trend
    remain where the line readings leave room; the name sits below. Stage and rank come
    from layout.py (NORA.grid); direction and spacing come from the settings; colours,
    widths and labels come from App.pipeStyle / App.nodeStyle. */
@@ -218,6 +218,12 @@
   function pressureVisibility(mode, scale) {
     return mode === "live" && scale > 0; // endpoint pressures stay readable at every zoom
   }
+  function pressureReadings(id, positions = framePos, scale = network ? network.getScale() : 1) {
+    const lines = lineReadings(id, positions);
+    // A node's pressure is identical at each of its line ends. Do not repeat it seven
+    // times in the fitted overview; restore every endpoint as soon as detail is useful.
+    return detailedFlow(scale) ? lines : lines.slice(0, 1);
+  }
   function overviewReading(scale, radius) {
     return scale < 1 && radius * scale >= 11; // otherwise a clean dot is better than spilled text
   }
@@ -318,13 +324,13 @@
     if (day) drawDayBar(ctx, x, y + half * 0.84, day, look);
     ctx.restore();
   }
-  /* The pressure belongs to a pipeline end, not to the middle of the node. Repeat the
-     node's measured pressure beside every connected line, just beyond the square. A
-     node without a measurement says so rather than borrowing a neighbour's pressure. */
+  /* Pressure belongs to a pipeline end, not to the middle of the node. Show one clear
+     value per node in the overview and every line end in the detailed view, just beyond
+     the square. A node without a measurement says so rather than borrowing a neighbour's. */
   function drawEndpointPressures(ctx, x, y, id, look, { half, positions = framePos, placed = network ? pressurePlacements : [] }) {
-    const readings = lineReadings(id, positions), now = App.reading(id);
-    const text = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "– bar";
     const scale = network ? network.getScale() : 1, boxes = [];
+    const readings = pressureReadings(id, positions, scale), now = App.reading(id);
+    const text = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "– bar";
     ctx.save();
     ctx.font = modelFont(SUB_FONT);
     ctx.textAlign = "center";
@@ -832,6 +838,7 @@
   view.animateStubs = animateStubs;
   view.detailedFlow = detailedFlow;
   view.pressureVisibility = pressureVisibility;
+  view.pressureReadings = pressureReadings;
   view.overviewReading = overviewReading;
   view.overviewNameLines = overviewNameLines;
   view.stubDistance = stubDistance;

@@ -181,6 +181,16 @@ test("flow pressures: endpoint labels remain visible when zoomed out", () => {
   assert.equal(App.views.flow.pressureVisibility("load", 0.25), false, "non-live modes still have no live pressure labels");
 });
 
+test("flow pressures: one value per node in the overview, every line end on zoom in", () => {
+  const loaded = loadApp();
+  const { App, NORA } = loaded;
+  loadFirstHour(App, NORA);
+  App.state.mode = "live";
+  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: stage * 250, y: rank * 72 }]));
+  assert.equal(App.views.flow.pressureReadings("ttf", pos, 0.27).length, 1, "the overview avoids repeating the same node pressure");
+  assert.equal(App.views.flow.pressureReadings("ttf", pos, 1.1).length, 7, "the detailed view keeps every line-end pressure");
+});
+
 test("flow nodes: live flow (MSm³/d) and pressure (bar) for each node", () => {
   const loaded = loadApp();
   const { App } = loaded;
