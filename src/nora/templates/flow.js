@@ -478,7 +478,7 @@
     for (const m of marksNow) {
       const p = pointAlong(edges.get(m.id), Math.max(0, Math.min(1, m.along)), positions);
       const dom = network.canvasToDOM(p);
-      App.drawMarker(ctx, m, dom.x, dom.y, p.angle, m.kind === "pig" ? 8.5 : 6.5, detail, taken);
+      App.drawMarker(ctx, m, dom.x, dom.y, p.angle, m.kind === "pig" ? 10 : 6.5, detail, taken);
     }
   }
 
