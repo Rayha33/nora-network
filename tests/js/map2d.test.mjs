@@ -86,6 +86,25 @@ test("flow: where a node splits into two or more flowing lines, each line gets i
   assert.equal(App.views.flow.splitLines().size, 0, "live readings only in Live mode");
 });
 
+test("exit circles: within-day delivery against the nominations, as a share", () => {
+  const { App, NORA } = loadApp();
+  const exit = "easington";
+  const pipe = App.pipeIds.find((id) => NORA.assets[id].to === exit && NORA.assets[id].type !== "onshore");
+  const day0 = Date.UTC(2026, 9, 20, 5) / 1000; // a gas day starting 05:00 UTC
+  const frame = (h, delivered) => ({ t: day0 + h * HOUR, flows: { [pipe]: delivered }, metrics: { nomination_msm3d: { [exit]: 20 } }, plan: null });
+  App.live.frames = [0, 1, 2, 3].map((h) => frame(h, 20));
+  App.live.index = 3;
+  assert.equal(App.dayDelivery(exit).share, 0, "delivered exactly as nominated: on plan");
+  assert.equal(App.dayDelivery(exit).level, 0, "and no alarm");
+  App.live.frames = [0, 1, 2, 3].map((h) => frame(h, 17));
+  const short = App.dayDelivery(exit);
+  assert.ok(Math.abs(short.share + 0.15) < 1e-9, "15 % short over the day so far");
+  assert.equal(short.level, 3, "past the critical tolerance");
+  App.live.frames = [frame(-2, 0), frame(0, 20), frame(1, 20)]; // the hour before 05:00 belongs to yesterday
+  App.live.index = 2;
+  assert.equal(App.dayDelivery(exit).share, 0, "only this gas day counts");
+});
+
 /* One real hour of the first stream with pressures, the way `start()` loads it. */
 function loadFirstHour(App, nora) {
   const stream = nora.streams.find((s) => s.metrics && s.metrics.pressure_bar) || nora.streams[0];

@@ -35,6 +35,7 @@ DEFAULTS: dict = {
         "risk": [0.05, 0.10, 0.15],
         "step": [0.15, 0.25, 0.40],
         "plan_lookahead_hours": 6,
+        "gas_day_start_utc": 5,
     },
     "pipelines": {"gas_velocity_mps": 8.0, "step_min": 0.25, "peak_max": 2},
     "quality": {"h2s_ppm": [2.5, 3.0, 3.3], "co2_molpct": [2.2, 2.35, 2.5], "follow_from": 0.8},

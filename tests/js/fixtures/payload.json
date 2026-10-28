@@ -23797,7 +23797,8 @@
     0.25,
     0.4
    ],
-   "plan_lookahead_hours": 6
+   "plan_lookahead_hours": 6,
+   "gas_day_start_utc": 5
   },
   "pipelines": {
    "gas_velocity_mps": 8.0,

@@ -392,6 +392,24 @@ const App = (() => {
     return (recent[recent.length - 1] - recent[0]) / ((recent.length - 1) * stepHours());
   }
 
+  /* Within-day delivery at an exit point: the gas delivered so far this gas day against
+     what was nominated for the same hours, as a share (0 = on plan, -0.05 = 5 % short).
+     The gas day starts at thresholds.gas_day_start_utc. */
+  function dayDelivery(id) {
+    const start = T.gas_day_start_utc == null ? 5 : T.gas_day_start_utc, now = frame();
+    if (now.t == null || metric("nomination_msm3d", id, now) == null) return null;
+    const dayStart = Math.floor((now.t - start * 3600) / 86400) * 86400 + start * 3600;
+    let actual = 0, nominated = 0;
+    for (let i = live.index; i >= 0 && live.frames[i] && live.frames[i].t >= dayStart; i--) {
+      const f = live.frames[i], nom = metric("nomination_msm3d", id, f), got = throughput(id, f.flows);
+      if (nom == null || got == null) continue;
+      actual += got;
+      nominated += nom;
+    }
+    if (nominated <= 0) return null;
+    const share = (actual - nominated) / nominated;
+    return { share, level: level(Math.abs(share), T.nomination) };
+  }
   // How fast gas through a node is changing, MSm³/d per hour, over the last 2 hours.
   const flowRate = (id) => rate(window4h(id).past);
   /* The 4-hour window shown in each flow-view card: the last 2 hours of actual flow,
@@ -1836,7 +1854,8 @@ const App = (() => {
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T,
     // Flow through a node now (MSm³/d) and its pressure (bar), for the views to show.
-    reading: (id) => ({ flow: throughput(id, frame().flows), pressure: metric("pressure_bar", id) }), register, restyle, go, start, theme: () => theme,
+    reading: (id) => ({ flow: throughput(id, frame().flows), pressure: metric("pressure_bar", id) }),
+    dayDelivery, register, restyle, go, start, theme: () => theme,
     select: (id) => {
       if (!id || !assets[id]) { if (route.screen === "unit" && state.mode !== "whatif") closeSidebar(); return; }
       // In What-if mode a click takes a node offline or brings it back instead.

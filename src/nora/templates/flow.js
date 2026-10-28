@@ -98,6 +98,31 @@
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(nowX, y - 1); ctx.lineTo(nowX, y + h + 1); ctx.stroke();
   }
+  /* Within-day delivery at an exit point, without words: the middle line is the plan
+     (delivered = nominated so far today), the lines either side the warning tolerance,
+     the ends the critical one. The pointer is where the day stands; it takes the alarm
+     colour only outside the tolerance. */
+  function drawDayBar(ctx, x, y, day, look) {
+    const T = App.thresholds.nomination, half = 16, full = T[2] * 1.2;
+    const at = (share) => x + Math.max(-1, Math.min(1, share / full)) * half;
+    ctx.save();
+    ctx.lineCap = "butt";
+    ctx.strokeStyle = look.dim;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x - half, y); ctx.lineTo(x + half, y); ctx.stroke(); // the track
+    ctx.strokeStyle = look.ink;
+    for (const [share, h] of [[-T[0], 3], [T[0], 3], [0, 5]]) { // tolerance lines, plan line
+      ctx.lineWidth = share ? 1 : 1.6;
+      ctx.beginPath(); ctx.moveTo(at(share), y - h); ctx.lineTo(at(share), y + h); ctx.stroke();
+    }
+    const px = at(day.share);
+    ctx.beginPath(); // the pointer: a small triangle on the track
+    ctx.moveTo(px, y - 1.5); ctx.lineTo(px - 3.5, y - 7); ctx.lineTo(px + 3.5, y - 7); ctx.closePath();
+    ctx.fillStyle = day.level ? App.levelColor[day.level] : look.ink;
+    ctx.fill();
+    if (day.level) { ctx.strokeStyle = C.casing; ctx.lineWidth = 1; ctx.stroke(); }
+    ctx.restore();
+  }
   // vis-network custom shape: the circle for one node, name and live numbers below it.
   function card(id) {
     return ({ ctx, x, y, state: { selected, hover } }) => ({
@@ -126,9 +151,10 @@
         const big = live ? (now.flow == null ? "–" : App.fmt(now.flow, now.flow < 10 ? 1 : 0))
           : App.state.mode === "load" && d.modelFlow != null ? App.fmt(d.modelFlow)
           : App.state.mode === "risk" && d.lost ? `−${App.fmt(d.lost)}` : "";
+        const day = live ? App.dayDelivery(id) : null; // exit points: within-day delivery bar
         if (big) {
           const pressure = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "";
-          const top = pressure ? y - 8 : y - 3;
+          const top = day ? y - 11 : pressure ? y - 8 : y - 3;
           ctx.fillStyle = look.ink;
           ctx.font = "700 13px Archivo, system-ui, sans-serif";
           ctx.fillText(fitText(ctx, big, CIRC.r * 1.7), x, top);
@@ -138,9 +164,10 @@
           if (pressure) {
             ctx.fillStyle = look.ink;
             ctx.font = "600 9.5px Archivo, system-ui, sans-serif";
-            ctx.fillText(fitText(ctx, pressure, CIRC.r * 1.7), x, y + 15);
+            ctx.fillText(fitText(ctx, pressure, CIRC.r * 1.7), x, day ? y + 8 : y + 15);
           }
         }
+        if (day) drawDayBar(ctx, x, y + 17, day, look);
         // Name below the circle, then the rate of change (bold when it is fast).
         ctx.textBaseline = "alphabetic";
         ctx.textAlign = "center";

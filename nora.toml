@@ -33,6 +33,7 @@ pressure_margin = [0.10, 0.05, 0.0]   # distance to a pressure limit, as a share
 risk = [0.05, 0.10, 0.15]             # share of deliverable gas lost if one asset trips
 step = [0.15, 0.25, 0.40]             # flow change within an hour, as a share of capacity
 plan_lookahead_hours = 6              # how far ahead the plan check looks
+gas_day_start_utc = 5                 # the gas day runs 05:00-05:00 UTC (06:00 CET)
 
 # Moving markers along the lines: peaks (sudden flow changes) travel with the gas,
 # pigs at their own speed.
