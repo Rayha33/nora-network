@@ -53,11 +53,16 @@
 
   // The paper: a dot grid in canvas units, so it pans and zooms with the drawing.
   let framePos = {}; // node positions for this frame (nodes can be dragged)
+  let overviewBoxes = []; // screen-space circles and accepted names at low zoom
   function paper(ctx) {
     App.frame.begin(); // ends after the overlay: one cache for the whole vis frame
     framePos = network.getPositions();
     drawnBoxes = {}; // refilled as the nodes are drawn
     const scale = network.getScale();
+    overviewBoxes = scale < 1 ? Object.entries(framePos).map(([id, p]) => {
+      const point = network.canvasToDOM(p), r = circleRadius(id) * scale;
+      return [point.x - r, point.y - r, point.x + r, point.y + r];
+    }) : [];
     let step = 24;
     while (step * scale < 12) step *= 2;
     const a = network.DOMtoCanvas({ x: 0, y: 0 }), b = network.DOMtoCanvas({ x: el.clientWidth, y: el.clientHeight });
@@ -180,6 +185,40 @@
   function overviewReading(scale, radius) {
     return scale < 1 && radius * scale >= 11; // otherwise a clean dot is better than spilled text
   }
+  function overviewNameLines(text) {
+    if (text.length <= 14) return [text];
+    const spaces = [...text.matchAll(/ /g)].map((match) => match.index);
+    if (!spaces.length) return [text];
+    const split = spaces.sort((a, b) => Math.abs(a - text.length / 2) - Math.abs(b - text.length / 2))[0];
+    return [text.slice(0, split), text.slice(split + 1)];
+  }
+  function drawOverviewName(ctx, id, x, y, radius) {
+    if (!network) return;
+    const ratio = (network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
+    const point = network.canvasToDOM({ x, y }), lines = overviewNameLines(App.nameOf(id));
+    ctx.save();
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.font = "600 11.5px Archivo, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    const width = Math.max(...lines.map((line) => ctx.measureText(line).width));
+    const top = point.y + radius * network.getScale() + 4;
+    const box = [point.x - width / 2 - 3, top - 2, point.x + width / 2 + 3, top + lines.length * 13 + 2];
+    if (overviewBoxes.some((other) => box[0] < other[2] && box[2] > other[0] && box[1] < other[3] && box[3] > other[1])) {
+      ctx.restore();
+      return;
+    }
+    overviewBoxes.push(box);
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = C.paper;
+    ctx.fillStyle = C.text;
+    lines.forEach((line, index) => {
+      ctx.strokeText(line, point.x, top + index * 13);
+      ctx.fillText(line, point.x, top + index * 13);
+    });
+    ctx.restore();
+  }
   // A reading inside a circle, on a patch of the circle's own fill so the day bar never
   // runs through a number. Text stays at its real screen size at every zoom.
   function reading(ctx, text, x, y, look) {
@@ -266,6 +305,7 @@
         }
         if (!detailed) {
           drawnBoxes[id] = [x - radius, y - radius, x + radius, y + radius];
+          drawOverviewName(ctx, id, x, y, radius);
           ctx.restore();
           if (s.level) App.drawBadge(ctx, s.level, x + radius - 3, y - radius + 3, 8);
           return;
@@ -633,6 +673,7 @@
   view.animateStubs = animateStubs;
   view.detailedFlow = detailedFlow;
   view.overviewReading = overviewReading;
+  view.overviewNameLines = overviewNameLines;
   view.stubDistance = stubDistance;
   view.stubClear = stubClear;
   view.card = card; // for tests: the renderer of one node
