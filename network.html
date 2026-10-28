@@ -343,7 +343,7 @@ table.data.quality td:nth-child(2) { white-space: nowrap; }
 /* Replay player */
 .player {
   position: fixed; inset: auto 0 0; height: var(--player-h); z-index: 20;
-  display: grid; grid-template-columns: minmax(280px, 340px) minmax(160px, 1fr) auto auto;
+  display: grid; grid-template-columns: minmax(280px, 340px) minmax(160px, 1fr) auto;
   align-items: center; gap: 22px; padding: 0 20px;
   background: var(--panel); border-top: 1px solid var(--rule); box-shadow: 0 -5px 20px rgba(18, 30, 38, 0.04);
 }
@@ -378,13 +378,6 @@ table.data.quality td:nth-child(2) { white-space: nowrap; }
 .track canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .track input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
 .feed-mode .track input { display: none; }
-.next {
-  height: var(--ctl); border: 1px solid var(--rule); border-radius: 7px; background: var(--raised);
-  padding: 0 12px; cursor: pointer; white-space: nowrap; font-size: var(--ctl-font); font-weight: 400;
-}
-.next:hover:not(:disabled) { border-color: var(--rule-strong); background: var(--band); }
-.next:disabled { opacity: 0.45; cursor: default; }
-.feed-mode .next { display: none; }
 .speed { display: grid; gap: 4px; }
 .speed select { height: var(--ctl); font-size: var(--ctl-font); border: 1px solid var(--rule); border-radius: 6px; background: var(--raised); padding: 2px 7px; cursor: pointer; }
 .tag { font-size: 11px; color: var(--text-dim); margin-left: 6px; }
@@ -509,11 +502,10 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
   .seg button { padding: 0 11px; }
   .year input { width: 110px; }
   .map-context { display: none; } /* on a phone the map needs the room; the bar names the unit */
-  .player { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 58px 44px; gap: 0 12px; padding: 0 14px 6px; }
+  .player { grid-template-columns: minmax(0, 1fr); grid-template-rows: 58px 44px; gap: 0 12px; padding: 0 14px 6px; }
   .transport { grid-column: 1; grid-row: 1; }
   .play { width: var(--ctl); height: var(--ctl); }
   .timeline { grid-column: 1 / -1; grid-row: 2; align-self: start; }
-  .next { grid-column: 2; grid-row: 1; padding: 0 9px; }
   .now select { font-size: 11px; }
   .player .speed { display: none; }
   .sidebar { width: calc(100vw / var(--ui-scale)); }
@@ -630,7 +622,6 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
       <input type="range" id="scrub" min="-14400" max="14400" step="3600" value="0" aria-label="Move around real time: four hours back or ahead">
     </div>
   </div>
-  <button type="button" class="next" id="next-problem" title="Jump to the next hour where the plan is at risk">Next problem</button>
   <label class="speed" title="How fast the data plays"><span class="player-label">Playback</span>
     <select id="speed" aria-label="Playback speed">
       <option value="1">Real time</option>
@@ -2510,7 +2501,6 @@ const App = (() => {
         section("Controls", true, timeline,
           h("ul", { class: "key-notes" },
             item(h("span", null, "▶"), "Play / scrub"),
-            item(h("span", null, "◎"), "Next problem"),
             item(h("span", null, "↗"), "Click for details"),
             item(h("span", null, "⌁"), "What-if: click offline"),
             item(h("span", null, "↔"), "Year: past / future"))),
@@ -2706,9 +2696,6 @@ const App = (() => {
     $("tl-now").textContent = "Real time · UTC";
     $("tl-future").textContent = "+4 h";
     seek(retimed ? nowPosition() : 0); // synthetic data opens at now; recordings keep their start
-    const none = !stream.frames.some((f) => f.plan && (f.plan.now[0] || f.plan.ahead[0]));
-    $("next-problem").disabled = none;
-    $("next-problem").title = none ? "The plan holds throughout this dataset" : "Jump to the next hour where the plan is at risk";
   }
   function seek(position) {
     const s = live.stream;
@@ -2812,24 +2799,6 @@ const App = (() => {
     const offset = Number(scrub.value); // seconds left/right of the real-time centre
     scrub.value = "0";
     if (offset) seek(live.playhead + offset / live.stream.step);
-  });
-  /* The next hour where the plan is at risk, now or within the look-ahead, after the
-     problem being shown (if any). Wraps round to the start of the data. */
-  function nextProblem(from = live.index) {
-    const frames = live.frames, n = frames.length;
-    const risky = (i) => { const p = frames[i] && frames[i].plan; return Boolean(p && (p.now[0] || p.ahead[0])); };
-    for (let k = 1; k < n; k++) {
-      const i = (from + k) % n;
-      if (risky(i) && !(risky((i - 1 + n) % n) && i !== 0)) return i;
-    }
-    return null;
-  }
-  $("next-problem").addEventListener("click", () => {
-    const i = nextProblem();
-    if (i == null) return;
-    pause();
-    seek(i);
-    if (route.screen !== "overview") go({ screen: "overview" });
   });
   $("speed").addEventListener("change", (e) => {
     live.speed = Number(e.target.value);
