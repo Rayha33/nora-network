@@ -32,11 +32,6 @@
         <button type="button" role="tab" data-mode="plain" title="Just the network, no values">Plain</button>
       </div>
     </div>
-    <label class="year" id="year-wrap" title="Timeline: drag the year to show the network as it was, or will be, in that year. Planned assets appear at their startup year; decommissioned ones disappear from their shutdown year">
-      <span class="sr-only">Network year</span>
-      <input type="range" id="year" min="1900" max="2100" step="1" value="1900" aria-label="Year shown on the timeline">
-      <output id="year-out" for="year" aria-live="polite"></output>
-    </label>
     <div class="primary-actions">
       <div class="alarm-counts" id="alarm-counts" aria-live="polite"></div>
       <button type="button" class="plan-chip" id="plan-chip" aria-live="polite" title="Can the network deliver what shippers nominated? Opens the overview"></button>

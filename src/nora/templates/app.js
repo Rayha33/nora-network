@@ -460,38 +460,18 @@ const App = (() => {
   const state = { view: C.screen.network_view, mode: C.screen.network_mode, year: null };
 
   // ---------------------------------------------------------------- timeline
-  /* Planned and decommissioned assets on a timeline: the year on the track
-     decides which assets both views show, on top of App.nodeStyle / pipeStyle.
-     A node is shown from its startup year until the year before its shutdown
-     year; a blank year means the data does not know, so the asset has always
-     been there. The track is data-driven and deterministic: it spans the years
-     in the CSVs, starts at today and only restyles (no animation). */
+  /* Planned and decommissioned assets are filtered to the current year at startup.
+     The operator-facing year slider is intentionally omitted; all current units stay visible. */
   const YEARS = [...nodeIds, ...pipeIds].flatMap((id) => {
     const d = assets[id];
     return [d.startup, d.shutdown, d.commissioned].filter((y) => y != null);
   });
-  const yearInput = $("year"), yearOut = $("year-out");
   function yearActive(id) {
     const d = assets[id], year = state.year;
     if (year == null) return true;
     if (d.kind === "pipeline") return yearActive(d.from) && yearActive(d.to);
     return !(d.startup && year < d.startup) && !(d.shutdown && year >= d.shutdown);
   }
-  function setYear(year) {
-    state.year = year;
-    whatif.cache = null;  // the what-if network is the one standing in that year
-    yearInput.value = String(year);
-    const appearing = nodeIds.filter((id) => assets[id].startup === year);
-    const shutting = nodeIds.filter((id) => assets[id].shutdown === year);
-    yearOut.replaceChildren(String(year), h("span", { class: "dim" },
-      `${appearing.length ? ` +${appearing.length}` : ""}${shutting.length ? ` −${shutting.length}` : ""}`));
-    yearInput.title = [
-      appearing.length ? `Appearing in ${year}: ${appearing.map(nameOf).join(", ")}` : "",
-      shutting.length ? `No longer shown from ${year}: ${shutting.map(nameOf).join(", ")}` : "",
-    ].filter(Boolean).join("; ") || "No asset starts or shuts down in this year";
-    restyle();
-  }
-  yearInput.addEventListener("input", () => setYear(Number(yearInput.value)));
   const live = {
     stream: null, // recorded stream being replayed
     feed: null, // EventSource when connected to a live feed
@@ -1814,8 +1794,7 @@ const App = (() => {
             item(h("span", null, "▶"), "Play / scrub"),
             item(h("span", null, "◎"), "Next problem"),
             item(h("span", null, "↗"), "Click for details"),
-            item(h("span", null, "⌁"), "What-if: click offline"),
-            item(h("span", null, "↔"), "Year: past / future"))),
+            item(h("span", null, "⌁"), "What-if: click offline"))),
         section("Moving", false, h("ul", null,
           item(svg("0 0 26 14", `<path d="M17 7l-8-4.5v9z" fill="${COLORS.pig}" stroke="${COLORS.casing}"/>`), "Pig"),
           item(svg("0 0 26 14", `<line x1="3" y1="7" x2="23" y2="7" stroke="${COLORS.peak}" stroke-width="4"/><circle cx="13" cy="7" r="5" fill="${COLORS.peak}" stroke="${COLORS.casing}"/>`), "Peak"),
@@ -2350,11 +2329,11 @@ const App = (() => {
     if (views[params.get("view")]) state.view = params.get("view");
     if (["live", "load", "risk", "whatif", "plain"].includes(params.get("mode"))) state.mode = params.get("mode");
     if (YEARS.length) {
-      const today = new Date().getFullYear(); // the default view is today, in the browser
-      yearInput.min = String(Math.min(...YEARS));
-      yearInput.max = String(Math.max(...YEARS, today));
-      setYear(Math.min(Math.max(today, Number(yearInput.min)), Number(yearInput.max)));
-    } else $("year-wrap").hidden = true;
+      const today = new Date().getFullYear(); // the fixed network view is today, in the browser
+      const first = Math.min(...YEARS), last = Math.max(...YEARS, today);
+      state.year = Math.min(Math.max(today, first), last);
+      whatif.cache = null;
+    }
     markTabs();
     renderWhatif();
     buildKey();

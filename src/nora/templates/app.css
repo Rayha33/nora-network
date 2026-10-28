@@ -123,10 +123,6 @@ body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer 
 .seg button:hover { color: var(--text); background: var(--surface); }
 .seg button[aria-selected="true"] { background: var(--selected-bg); color: var(--selected-text); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14); }
 
-.year { display: flex; align-items: center; gap: 8px; flex: none; height: var(--ctl); }
-.year input { width: 90px; height: 20px; margin: 0; accent-color: var(--text); cursor: ew-resize; }
-.year output { font: 500 var(--ctl-font)/1 var(--font); min-width: 50px; }
-.year output .dim { font-weight: 400; }
 .icon {
   display: grid; place-items: center; width: var(--ctl); height: var(--ctl); padding: 0; border: 0;
   border-radius: 7px; background: transparent; color: var(--text-dim); cursor: pointer;
@@ -426,7 +422,6 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
   .brand-copy small { display: none; }
   .bar-primary { gap: 14px; }
   .plan-chip { max-width: 280px; }
-  .year > .toolbar-label { display: none; }
   .player { grid-template-columns: minmax(240px, 300px) 1fr auto; gap: 16px; }
   .player .speed { display: none; }
 }
@@ -441,7 +436,6 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
   .search { flex: none; }
   .search:focus-within { width: 150px; }
   .search:focus-within input, .search input:not(:placeholder-shown) { width: 105px; }
-  .year { display: none; }
   .cols { grid-template-columns: minmax(0, 1fr); }
   .screen-body { padding: 22px 18px 40px; }
   .bank { grid-template-columns: minmax(90px, 1fr) minmax(110px, 1.6fr) 70px; }
