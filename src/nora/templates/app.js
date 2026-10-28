@@ -78,7 +78,7 @@ const App = (() => {
      next stop. */
   function markerLabel(ctx, marker, x, y, size, detail) {
     if (!marker.value || (!detail && !marker.level && marker.kind !== "quality")) return;
-    const font = 10, gap = 4, lx = x + size * 0.9, ly = y - size * 0.9;
+    const font = 11, gap = 4, lx = x + size * 0.9, ly = y - size * 0.9; // labels never under 11 px
     const parts = [[marker.value, COLORS.text], [marker.eta || "", COLORS.text_dim]];
     if (detail >= 2 && marker.to) parts.push([marker.to, COLORS.text_dim]);
     ctx.save();
@@ -219,7 +219,7 @@ const App = (() => {
     const shape = lvl === 3 ? `<rect x="${x - s}" y="${y - s}" width="${2 * s}" height="${2 * s}" rx="1" ${outline}/>`
       : lvl === 2 ? `<path d="M${x} ${y - s - 1}L${x + s + 1} ${y}L${x} ${y + s + 1}L${x - s - 1} ${y}Z" ${outline}/>`
       : `<path d="M${x} ${y - s}L${x + s} ${y + s - 1}L${x - s} ${y + s - 1}Z" ${outline}/>`;
-    const number = `<text x="${x}" y="${y + (lvl === 1 ? 4.2 : 3.6)}" text-anchor="middle" font-size="${s * 1.35}" font-weight="700" font-family="Archivo, sans-serif" fill="${ink}">${4 - lvl}</text>`;
+    const number = `<text x="${x}" y="${y + (lvl === 1 ? 4.2 : 3.6)}" text-anchor="middle" font-size="${s * 1.35}" font-weight="600" font-family="Archivo, sans-serif" fill="${ink}">${4 - lvl}</text>`;
     return shape + number;
   }
   function badge(lvl, text) {
@@ -240,7 +240,7 @@ const App = (() => {
     ctx.strokeStyle = COLORS.text;
     ctx.stroke();
     ctx.fillStyle = COLORS.text;
-    ctx.font = `700 ${size * 1.3}px Archivo, sans-serif`;
+    ctx.font = `600 ${size * 1.3}px Archivo, sans-serif`; // nothing heavier than semibold
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(String(4 - lvl), x, y + (lvl === 1 ? size * 0.28 : size * 0.08));
