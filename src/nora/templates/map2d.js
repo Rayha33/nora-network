@@ -59,8 +59,17 @@ function NoraCanvasMap(view) {
     return { ...pts[0], angle: 0 };
   }
   function bandPath(id, extent) {
-    const steps = Math.max(4, Math.ceil(Math.abs(extent[1] - extent[0]) * 32));
-    return Array.from({ length: steps + 1 }, (_, i) => along(id, extent[0] + (extent[1] - extent[0]) * (i / steps)));
+    const pts = pipeById[id].line.map(([lon, lat]) => toScreen(lon, lat));
+    const lengths = pts.slice(1).map((p, i) => Math.hypot(p.x - pts[i].x, p.y - pts[i].y));
+    const total = lengths.reduce((a, b) => a + b, 0) || 1;
+    const visible = App.visibleRange(total, nodeRadius() + 8 * App.uiScale());
+    let distance = 0;
+    const vertices = [0];
+    for (const length of lengths) {
+      distance += length;
+      vertices.push(distance / total);
+    }
+    return App.bandStops(extent, vertices, visible).map((t) => along(id, t));
   }
   /* Line widths follow map.js: hairlines when zoomed out, a little more weight closer in.
      Every size in screen pixels follows the one UI scale (App.uiScale, issue #59). */

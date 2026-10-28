@@ -94,12 +94,25 @@ under the pointer, not a sounding. Rebuild it with `python scripts/build_bathyme
 
 ## Pipeline routes and positions
 
-`geo/routes.json` holds the laid routes of the Norwegian pipelines, so the map draws
-each line where it runs, not straight from end to end. It comes from the Norwegian
-Offshore Directorate's pipeline register (https://factpages.sodir.no/downloads/csv/pipLine.zip,
-licence NLOD, credit "Norwegian Offshore Directorate") and is built by
-`scripts/build_routes.py`, which also lists which SODIR segments make up each NORA
-pipeline. Lines outside the register (UK, Dutch, Danish systems) are drawn straight.
+`geo/routes.json` holds the laid routes of the physical trunk and feeder pipelines, so
+the map draws each line where it runs, not straight from end to end. It is built by
+`scripts/build_routes.py`, which records the public register segments used for each NORA
+pipeline and the source of every route:
+
+- Norwegian Offshore Directorate's pipeline register
+  (https://factpages.sodir.no/downloads/csv/pipLine.zip, licence NLOD, credit
+  "Norwegian Offshore Directorate") for the Norwegian system and its export lines.
+- North Sea Transition Authority's UKCS offshore infrastructure pipeline linear WGS84
+  FeatureServer for FLAGS, SAGE, CATS, SEAL, IUK and BBL. NSTA PL774 is split at CATS T5;
+  Culzean's PL4106 joins that tee rather than taking a false path to the CATS riser.
+- EMODnet Human Activities, Pipelines
+  (https://emodnet.ec.europa.eu/en/human-activities, licence CC BY 4.0) for NOGAT, NGT,
+  WGT, Tyra West–F3 and Tyra–Nybro. NOGAT joins its F3–L2 and L2–Callantsoog sections.
+
+Run `python scripts/build_routes.py` to refresh all three sources. `--from pipLine.csv`
+retains a SODIR-only offline build; add `--nsta-from nsta.json` and
+`--emodnet-from emodnet.json` for a complete offline rebuild. Aggregate gathering lines
+and notional grid/market links remain schematic: they do not represent a surveyed pipe.
 
 Positions of Norwegian platforms, subsea tees and landing terminals follow SODIR's
 facility register (fclPoint): the Draupner S and E riser platforms, for example, are

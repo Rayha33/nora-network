@@ -28,6 +28,7 @@ nyhamna,Nyhamna,processing,NO,62.848,6.954,Gassco,84,operating,,,https://equinor
 flags_brent,FLAGS North (Brent area),hub,GB,61.05,1.71,,,operating,,,https://en.wikipedia.org/wiki/FLAGS,Northern end of FLAGS; receives Tampen Link and Gjøa gas
 beryl,Beryl,field,GB,59.55,1.53,,10,operating,,,https://en.wikipedia.org/wiki/Beryl_oil_field,Start of SAGE
 cats_riser,CATS Riser Platform,hub,GB,57.759,1.802,,,operating,,,https://en.wikipedia.org/wiki/Central_Area_Transmission_System,Central North Sea entry point to CATS
+cats_t5,CATS T5 (Stella tie-in),hub,GB,57.029375,1.203222,,,operating,,,https://services-eu1.arcgis.com/OZMfUznmLTnWccBc/arcgis/rest/services/UKCS_offshore_infrastructure_pipeline_linear_(WGS84)/FeatureServer/1,Offshore tee on the CATS trunkline; receives Culzean gas at Stella PLEM
 culzean,Culzean,field,GB,57.20,1.90,TotalEnergies,15,operating,,,https://totalenergies.com/newsroom/uk-total-starts-production-culzean-field?lang=eng,High-pressure high-temperature field exporting through CATS
 elgin_franklin,Elgin-Franklin,field,GB,57.01,1.84,TotalEnergies,15,operating,,,https://en.wikipedia.org/wiki/Elgin%E2%80%93Franklin_fields,Exports through SEAL
 sns_fields,Southern North Sea fields,field,GB,53.10,2.10,,15,operating,,,https://en.wikipedia.org/wiki/List%20of%20oil%20and%20gas%20fields%20of%20the%20North%20Sea,Aggregate of mature southern gas fields
