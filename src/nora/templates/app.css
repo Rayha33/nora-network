@@ -343,7 +343,7 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 .map2d-zoom button { width: 28px; height: 28px; border: 1px solid var(--rule); border-radius: var(--r);
   background: var(--raised); color: var(--text); font-size: 16px; line-height: 1; cursor: pointer; }
 
-/* Asset sidebar: slides in from the right when a field, plant or icon is clicked.
+/* Asset sidebar: slides in from the right when a field, plant or line is clicked.
    It mirrors the asset page (schematic, values, facts) in one calm column. */
 .sidebar {
   position: fixed; top: var(--bar-h); right: 0; bottom: var(--player-h); width: min(460px, 96vw); z-index: 25;
