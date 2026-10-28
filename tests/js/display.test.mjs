@@ -43,7 +43,7 @@ test("a wall is large and dark unless the operator chose a theme", () => {
   assert.equal(wall.App.uiScale(), 1.5, "readable from metres away: at least 150 %");
   assert.equal(wall.document.documentElement.dataset.theme, "dark");
   assert.equal(wall.App.colors.card.inactive.ink, wall.App.colors.text, "dark-gray nodes use light primary text");
-  assert.equal(wall.App.colors.card.inactive.dim, wall.App.colors.text_dim, "secondary text inside dark-gray nodes stays light too");
+  assert.equal(wall.App.colors.card.inactive.dim, wall.App.colors.text, "secondary text inside dark-gray nodes is just as bright as primary text");
   const chosen = load({ width: 3840, stored: { "nora-theme": "light" } });
   assert.equal(chosen.App.display(), "wall");
   assert.equal(chosen.document.documentElement.dataset.theme, "light", "the operator's choice wins");
