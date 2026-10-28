@@ -1960,11 +1960,15 @@ const App = (() => {
       ? Number(settings.speed)
       : speeds.includes(C.screen.speed) ? C.screen.speed : speeds[0];
     $("speed").value = String(live.speed);
-    scrub.max = String(Math.max(0, stream.times.length - 1));
+    scrub.min = String(-4 * 3600);
+    scrub.max = String(4 * 3600);
+    scrub.step = "3600";
+    scrub.value = "0";
     const retimed = stream.offset != null;
-    $("tl-past").textContent = retimed ? "History" : "Replay timeline";
-    $("tl-future").textContent = retimed ? "Model" : "UTC";
-    seek(retimed ? nowPosition() : 0); // a re-timed stream opens at now
+    $("tl-past").textContent = "−4 h";
+    $("tl-now").textContent = "Real time · UTC";
+    $("tl-future").textContent = "+4 h";
+    seek(retimed ? nowPosition() : 0); // synthetic data opens at now; recordings keep their start
     const none = !stream.frames.some((f) => f.plan && (f.plan.now[0] || f.plan.ahead[0]));
     $("next-problem").disabled = none;
     $("next-problem").title = none ? "The plan holds throughout this dataset" : "Jump to the next hour where the plan is at risk";
@@ -1993,7 +1997,7 @@ const App = (() => {
     if (live.stream && !live.feed) {
       live.values = valuesAt(live.playhead);
       live.time = live.stream.times[live.index] + (live.playhead - live.index) * live.stream.step;
-      scrub.value = String(live.index);
+      scrub.value = "0"; // the selected real time remains at the centre of the window
     }
     prunePeaks();
     advanceQuality();
@@ -2005,7 +2009,13 @@ const App = (() => {
     if ((side.id || side.marker) && route.screen === "unit") renderSidebar();
     drawSpark();
   }
-  // The track shows the plan status over time: plain where it holds, marked where not.
+  // The selected time is the real-time centre of an eight-hour window: four hours of
+  // history on the left and four hours ahead on the right.
+  function timelineWindow() {
+    const now = live.time == null ? 0 : live.time;
+    return { start: now - 4 * 3600, now, end: now + 4 * 3600 };
+  }
+  // The track shows plan status and events within that moving eight-hour window.
   function drawSpark() {
     if ($("player").hidden) return;
     // The player is zoomed by the UI scale: draw at that resolution, or the track blurs.
@@ -2017,59 +2027,36 @@ const App = (() => {
     ctx.scale(ratio, ratio);
     const frames = live.frames, n = frames.length;
     if (n < 2) return;
-    const x = (i) => (i / (n - 1)) * width;
-    const nowAt = nowPosition(), mid = height / 2;
-    const split = nowAt == null ? width : Math.max(0, Math.min(width, x(nowAt)));
+    const window8h = timelineWindow(), x = (t) => ((t - window8h.start) / (8 * 3600)) * width, mid = height / 2;
     ctx.fillStyle = COLORS.dots;
-    ctx.fillRect(0, mid - 3, split, 6);
-    if (split < width) {
-      // The model's side: the same track, lighter, edged with dashes like the look-ahead in the trends.
-      ctx.globalAlpha = 0.45;
-      ctx.fillRect(split, mid - 3, width - split, 6);
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = COLORS.text_dim;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 3]);
-      ctx.beginPath();
-      ctx.moveTo(split, mid - 3.5); ctx.lineTo(width, mid - 3.5);
-      ctx.moveTo(split, mid + 3.5); ctx.lineTo(width, mid + 3.5);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    frames.forEach((f, i) => {
+    ctx.fillRect(0, mid - 3, width / 2, 6);
+    ctx.globalAlpha = 0.45;
+    ctx.fillRect(width / 2, mid - 3, width / 2, 6);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = COLORS.text_dim;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(width / 2, mid - 3.5); ctx.lineTo(width, mid - 3.5);
+    ctx.moveTo(width / 2, mid + 3.5); ctx.lineTo(width, mid + 3.5);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    frames.forEach((f) => {
       const lvl = f.plan ? f.plan.now[0] : 0;
-      if (!lvl) return;
+      if (!lvl || f.t < window8h.start || f.t > window8h.end) return;
       ctx.fillStyle = LEVEL_COLOR[lvl];
-      ctx.fillRect(x(i), mid - 6, Math.max(1.5, width / n), 12);
+      ctx.fillRect(x(f.t), mid - 6, Math.max(1.5, ((live.stream ? live.stream.step : 3600) / (8 * 3600)) * width), 12);
     });
     for (const event of (live.stream && live.stream.events) || []) {
-      const a = frames.findIndex((f) => f.t >= event.start), b = frames.findIndex((f) => f.t >= event.end);
-      if (a < 0) continue;
+      if (event.end < window8h.start || event.start > window8h.end) continue;
+      const left = Math.max(0, x(event.start)), right = Math.min(width, x(event.end));
       ctx.strokeStyle = COLORS.text;
       ctx.setLineDash(event.planned ? [3, 2] : []);
-      ctx.strokeRect(x(a), mid - 8, Math.max(2, x(b < 0 ? n - 1 : b) - x(a)), 16);
+      ctx.strokeRect(left, mid - 8, Math.max(2, right - left), 16);
     }
     ctx.setLineDash([]);
-    const showNow = nowAt != null && nowAt >= 0 && nowAt <= n - 1;
-    if (showNow) {
-      // Now: a hairline through the track under a small notch, quieter than the playhead.
-      ctx.fillStyle = COLORS.text_dim;
-      ctx.fillRect(split - 0.5, 4, 1, height - 4);
-      ctx.beginPath(); ctx.moveTo(split - 3.5, 0); ctx.lineTo(split + 3.5, 0); ctx.lineTo(split, 4.5); ctx.closePath(); ctx.fill();
-    }
     ctx.fillStyle = COLORS.text;
-    ctx.fillRect(x(live.feed ? n - 1 : live.playhead) - 1, 0, 2, height);
-    placeNowLabel(showNow ? split : null, width);
-  }
-  /* "Now" above its tick, unless it would touch the labels at either end: text never
-     sits on text. */
-  function placeNowLabel(at, width) {
-    const label = $("tl-now");
-    if (at == null) { label.hidden = true; return; }
-    label.hidden = false;
-    label.style.left = `${at}px`;
-    const half = label.offsetWidth / 2, gap = 8;
-    label.hidden = at - half < $("tl-past").offsetWidth + gap || at + half > width - $("tl-future").offsetWidth - gap;
+    ctx.fillRect(width / 2 - 1, 0, 2, height);
   }
   function play() {
     if (!live.stream && !live.feed) return;
@@ -2083,7 +2070,12 @@ const App = (() => {
     $("play").setAttribute("aria-label", "Play");
   }
   $("play").addEventListener("click", () => (live.playing ? pause() : play()));
-  scrub.addEventListener("input", () => seek(Number(scrub.value)));
+  scrub.addEventListener("input", () => {
+    if (!live.stream || live.feed) return;
+    const offset = Number(scrub.value); // seconds left/right of the real-time centre
+    scrub.value = "0";
+    if (offset) seek(live.playhead + offset / live.stream.step);
+  });
   /* The next hour where the plan is at risk, now or within the look-ahead, after the
      problem being shown (if any). Wraps round to the start of the data. */
   function nextProblem(from = live.index) {
@@ -2389,7 +2381,7 @@ const App = (() => {
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     pipeStyle, pipeMapName, visibleRange, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
-    timeState,
+    timeState, timelineWindow,
     // The display profile (desk, wall or compact) and the one UI scale (1 = 100 %).
     display: () => display.profile,
     uiScale: () => display.scale,

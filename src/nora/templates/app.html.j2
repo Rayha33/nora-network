@@ -108,10 +108,10 @@
     </div>
   </div>
   <div class="timeline">
-    <div class="timeline-label"><span id="tl-past">Replay timeline</span><span id="tl-now" hidden>Now</span><span id="tl-future">UTC</span></div>
-    <div class="track" title="Drag to move through time. Marks show when the plan is at risk; boxes are events. On synthetic data the middle tick is now: right of it is the model">
+    <div class="timeline-label"><span id="tl-past">−4 h</span><span id="tl-now">Real time · UTC</span><span id="tl-future">+4 h</span></div>
+    <div class="track" title="Real time stays in the centre. Drag right for later values or left for historical values. Arrow keys move one hour.">
       <canvas id="spark" aria-hidden="true"></canvas>
-      <input type="range" id="scrub" min="0" max="0" step="1" value="0" aria-label="Position in the data">
+      <input type="range" id="scrub" min="-14400" max="14400" step="3600" value="0" aria-label="Move around real time: four hours back or ahead">
     </div>
   </div>
   <button type="button" class="next" id="next-problem" title="Jump to the next hour where the plan is at risk">Next problem</button>

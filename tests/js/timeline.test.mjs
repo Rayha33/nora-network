@@ -28,8 +28,11 @@ function load(mutate = () => {}) {
   const choose = (name) => document.getElementById("stream-select")._listeners.change[0]({ target: { value: name } });
   const scrubTo = (index) => {
     const scrub = document.getElementById("scrub");
-    scrub.value = String(index);
-    scrub._listeners.input[0]({ target: scrub });
+    while (App.live.index !== index) {
+      const remaining = (index - App.live.index) * App.live.stream.step;
+      scrub.value = String(Math.sign(remaining) * Math.min(Math.abs(remaining), 4 * HOUR));
+      scrub._listeners.input[0]({ target: scrub });
+    }
   };
   return { App, NORA: nora, document, choose, scrubTo, $: (id) => document.getElementById(id) };
 }
@@ -63,8 +66,8 @@ test("the player opens at now and says so", () => {
   assert.ok(ts && !ts.model, "at now nothing is the model's yet");
   assert.equal($("when").hidden, false);
   assert.equal($("when").textContent, "Now");
-  assert.equal($("tl-past").textContent, "History");
-  assert.equal($("tl-future").textContent, "Model");
+  assert.equal($("tl-past").textContent, "−4 h");
+  assert.equal($("tl-future").textContent, "+4 h");
 });
 
 test("right of now is the model, left of it history", () => {
@@ -100,7 +103,7 @@ test("recorded real data keeps its own dates and has no now", () => {
   assert.equal(App.live.index, 0, "a recording plays from its start");
   assert.equal(App.timeState(), null);
   assert.equal($("when").hidden, true);
-  assert.equal($("tl-past").textContent, "Replay timeline");
+  assert.equal($("tl-past").textContent, "−4 h");
 });
 
 test("[screen] now_in_middle = false plays synthetic data at its own dates", () => {

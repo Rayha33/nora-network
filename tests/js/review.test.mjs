@@ -32,34 +32,45 @@ function loadAppWith(nora, search = "") {
 
 /* ---------------------------------------------------------------- playback head */
 
-test("playback: scrub clamps to the data, and the values track the frame", () => {
+test("playback: real time stays centred between four hours back and ahead", () => {
   const loaded = loadApp();
   assertHealthy(assert, loaded);
   const { App, document, NORA } = loaded;
-  // setStream reads $("speed").options; the stub has none until we arm it.
   document.getElementById("speed").options = [{ value: "60" }];
   // Load a stream through the REAL change listener, as the browser would.
-  document.getElementById("stream-select")._listeners.change[0](
-    { target: { value: NORA.streams[0].name } });
-  const s = App.live.stream;
+  document.getElementById("stream-select")._listeners.change[0]({ target: { value: NORA.streams[0].name } });
+  const s = App.live.stream, scrub = document.getElementById("scrub"), initial = App.live.index;
   assert.ok(s && s.frames.length > 1, "a recorded stream is prepared");
-  // A synthetic stream opens at now, near its middle (timeline.test.mjs has the details).
-  assert.ok(Math.abs(App.live.time - Date.now() / 1000) < 5, "starts at the wall clock");
+  assert.ok(initial > 0 && initial < s.times.length - 1, "the opening view has history and look-ahead");
+  assert.ok(Math.abs(App.live.time - Date.now() / 1000) < 5, "a synthetic stream still opens at wall-clock now");
+  assert.equal(scrub.min, String(-4 * 3600));
+  assert.equal(scrub.max, String(4 * 3600));
+  assert.equal(scrub.value, "0", "the real-time handle starts at the centre");
 
-  // Seek past the end through the real scrub input listener. The handler closes
-  // over the element itself (not event.target), so set .value as a drag would.
-  const scrub = document.getElementById("scrub");
-  scrub.value = String(s.times.length + 50);
+  scrub.value = "3600";
   scrub._listeners.input[0]({ target: { value: scrub.value } });
-  assert.equal(App.live.index, s.times.length - 1, "seek past the end clamps to the last frame");
-  assert.equal(App.live.playhead, s.times.length - 1, "playhead clamped too");
-  assert.equal(App.live.time, s.times[s.times.length - 1], "time is the last timestamp");
-  assert.deepEqual(App.live.values, s.frames[s.times.length - 1].flows,
-    "values at a whole playhead are exactly the frame's flows");
+  assert.equal(App.live.index, initial + 1, "dragging right moves one hour forward");
+  assert.equal(scrub.value, "0", "the handle returns to the real-time centre");
 
-  scrub.value = "-7";
+  scrub.value = "-7200";
   scrub._listeners.input[0]({ target: { value: scrub.value } });
-  assert.equal(App.live.index, 0, "a negative seek clamps to frame 0");
+  assert.equal(App.live.index, initial - 1, "dragging left moves back through historical values");
+  const window = App.timelineWindow();
+  assert.equal(window.now, App.live.time);
+  assert.equal(window.start, App.live.time - 4 * 3600);
+  assert.equal(window.end, App.live.time + 4 * 3600);
+
+  while (App.live.index < s.times.length - 1) {
+    scrub.value = String(4 * 3600);
+    scrub._listeners.input[0]({ target: scrub });
+  }
+  assert.equal(App.live.index, s.times.length - 1, "repeated forward drags clamp to the last frame");
+  assert.deepEqual(App.live.values, s.frames[s.times.length - 1].flows);
+  while (App.live.index > 0) {
+    scrub.value = String(-4 * 3600);
+    scrub._listeners.input[0]({ target: scrub });
+  }
+  assert.equal(App.live.index, 0, "repeated backward drags clamp to the first frame");
 });
 
 test("playback: Next problem lands on an hour where the plan is at risk", () => {
@@ -72,8 +83,10 @@ test("playback: Next problem lands on an hour where the plan is at risk", () => 
   const s = App.live.stream;
   // Start from the first hour (a synthetic stream opens at now, mid-way).
   const scrub = document.getElementById("scrub");
-  scrub.value = "0";
-  scrub._listeners.input[0]({ target: scrub });
+  while (App.live.index > 0) {
+    scrub.value = String(-4 * 3600);
+    scrub._listeners.input[0]({ target: scrub });
+  }
 
   // A risky hour: the plan's now- or ahead-level is raised. Use a real one if the
   // fixture has it, otherwise plant one (as a scripted event would).
