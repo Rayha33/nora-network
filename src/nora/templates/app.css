@@ -1,26 +1,29 @@
-/* NORA operations UI: a quiet instrument panel with clear hierarchy. Neutral
-   surfaces carry the interface; colour remains reserved for operating alarms. */
+/* NORA operations UI: a quiet instrument panel on calm grey paper. Colour is reserved
+   for abnormal states. The palette roles (paper, panel, state greys, text) come from
+   nora.toml and are set on :root by app.js; the values here are only the first paint.
+   The surface tokens below sit between those greys, so panels and cards stay calm on
+   the paper instead of glowing white. */
 :root {
-  --paper: #eef1f3;
-  --dots: #d8dee2;
-  --panel: #f8fafb;
-  --inactive: #6b7680;
-  --normal: #c6d0d6;
-  --active: #f4f7f8;
-  --text: #18242c;
-  --text-dim: #586771;
+  --paper: #c6c9cc;
+  --dots: #b4b8bc;
+  --panel: #d4d7d9;
+  --inactive: #6b7177;
+  --normal: #dfe2e4;
+  --active: #f1f2f3;
+  --text: #22272b;
+  --text-dim: #50575d;
   --warning: #ffbf00;
   --medium: #ff7a1a;
   --critical: #e5322d;
-  --surface: #f7f9fa;
-  --raised: #fafbfc;        /* the lightest surface: never pure white */
-  --band: #e5eaed;
-  --rule: rgba(24, 36, 44, 0.13);
-  --rule-strong: rgba(24, 36, 44, 0.24);
-  --selected-bg: #1d2c35;
-  --selected-text: #f5f8fa;
-  --shadow-sm: 0 1px 2px rgba(18, 30, 38, 0.05), 0 4px 14px rgba(18, 30, 38, 0.04);
-  --shadow-lg: 0 18px 50px rgba(18, 30, 38, 0.16), 0 3px 12px rgba(18, 30, 38, 0.08);
+  --surface: #d9dcde;       /* cards on the paper */
+  --raised: #e6e8ea;        /* inputs and pressed controls: light, never pure white */
+  --band: #c9cdd0;          /* tracks and hover */
+  --rule: rgba(34, 39, 43, 0.16);
+  --rule-strong: rgba(34, 39, 43, 0.3);
+  --selected-bg: #2f353a;
+  --selected-text: #eef0f1;
+  --shadow-sm: 0 1px 2px rgba(20, 24, 27, 0.08);
+  --shadow-lg: 0 14px 40px rgba(20, 24, 27, 0.18), 0 2px 8px rgba(20, 24, 27, 0.1);
   --font: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --r: 8px;
@@ -33,15 +36,16 @@
 }
 
 :root[data-theme="dark"] {
-  --surface: #1a252c;
-  --raised: #223039;
-  --band: #26353e;
-  --rule: rgba(225, 234, 239, 0.12);
-  --rule-strong: rgba(225, 234, 239, 0.24);
-  --selected-bg: #dce5e9;
-  --selected-text: #132027;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.16), 0 4px 14px rgba(0, 0, 0, 0.12);
-  --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.42), 0 3px 12px rgba(0, 0, 0, 0.24);
+  --surface: #30353a;
+  --raised: #3a4046;
+  --band: #25292d;
+  --rule: rgba(225, 228, 230, 0.12);
+  --rule-strong: rgba(225, 228, 230, 0.24);
+  --selected-bg: #d5d9dc;
+  --selected-text: #22272b;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 14px 40px rgba(0, 0, 0, 0.42), 0 2px 8px rgba(0, 0, 0, 0.24);
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
