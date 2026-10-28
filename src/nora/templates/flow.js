@@ -168,35 +168,53 @@
           ctx.strokeStyle = selected || hover ? look.ink : look.edge;
           ctx.stroke();
         }
-        if (live) drawLiveBars(ctx, id, x, y, look); // the bar graph: live simulated flow in the circle
-        else {
+        if (live) {
+          drawLiveBars(ctx, id, x, y, look); // recent flow remains as a quiet chart behind the reading
+          if (s.flow) {
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = look.ink;
+            ctx.font = `700 ${s.flow.includes("/") ? 9 : 12}px Archivo, system-ui, sans-serif`;
+            ctx.fillText(fitText(ctx, s.flow, CIRC.r * 1.65), x, y - 2);
+            ctx.fillStyle = look.dim;
+            ctx.font = "600 6.5px Archivo, system-ui, sans-serif";
+            ctx.fillText(s.flow.includes("/") ? "FLOW / NOM" : "MSm³/d", x, y + 9);
+          }
+        } else {
           const icon = images[d.type];
           if (icon && icon.complete) ctx.drawImage(icon, x - CIRC.r / 2, y - CIRC.r / 2, CIRC.r, CIRC.r);
         }
-        // Name below the circle, then the rate of change (bold when it is fast).
+        // Name and pressure sit outside the circle; flow stays inside it.
         ctx.textBaseline = "alphabetic";
         ctx.textAlign = "center";
-        let nameY = y + CIRC.r + CIRC.name;
+        const nameY = y + CIRC.r + CIRC.name;
         ctx.fillStyle = look.ink;
         ctx.font = "600 11.5px Archivo, system-ui, sans-serif";
         ctx.fillText(fitText(ctx, d.name, CIRC.r * 3), x, nameY);
+        let subY = nameY + CIRC.sub;
+        if (live && s.pressure) {
+          ctx.fillStyle = look.dim;
+          ctx.font = "500 10px Archivo, system-ui, sans-serif";
+          ctx.fillText(s.pressure, x, subY);
+          subY += CIRC.sub;
+        }
         const r = live ? App.flowRate(id) : null;
         if (r != null && Math.abs(r) >= 0.05) {
           const through = App.window4h(id).past.slice(-1)[0] || 0;
           const fast = through > 0 && Math.abs(r) / through >= App.thresholds.step[0];
           ctx.font = `${fast ? 700 : 400} 10px Archivo, system-ui, sans-serif`;
           ctx.fillStyle = fast ? look.ink : look.dim;
-          ctx.fillText(`${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`, x, nameY + CIRC.sub);
+          ctx.fillText(`${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`, x, subY);
         } else if (s.sub) {
           ctx.fillStyle = look.dim;
           ctx.font = "10px Archivo, system-ui, sans-serif";
-          ctx.fillText(fitText(ctx, s.sub, CIRC.r * 3), x, nameY + CIRC.sub);
+          ctx.fillText(fitText(ctx, s.sub, CIRC.r * 3), x, subY);
         }
-        if (live) drawTrend(ctx, id, x - CIRC.r, nameY + CIRC.sub + 2, CIRC.r * 2, CIRC.trend, look);
+        if (live) drawTrend(ctx, id, x - CIRC.r, subY + 2, CIRC.r * 2, CIRC.trend, look);
         ctx.restore();
         if (s.level) App.drawBadge(ctx, s.level, x + CIRC.r - 3, y - CIRC.r + 3, 8);
       },
-      nodeDimensions: { width: CIRC.r * 2, height: CIRC.r * 2 + CIRC.name + CIRC.sub + CIRC.trend + 4 },
+      nodeDimensions: { width: CIRC.r * 2, height: CIRC.r * 2 + CIRC.name + CIRC.sub * 2 + CIRC.trend + 4 },
     });
   }
 
@@ -394,7 +412,10 @@
     if (!view.ready) return;
     nodes.update(App.nodeIds.map((id) => {
       const s = App.nodeStyle(id);
-      return { id, hidden: s.hidden, title: `${NORA.assets[id].name}${s.sub ? `\n${s.sub}` : ""}` };
+      const details = App.state.mode === "live"
+        ? [s.flow ? `${s.flow} MSm³/d` : "", s.pressure].filter(Boolean).join("\n")
+        : s.sub;
+      return { id, hidden: s.hidden, title: `${NORA.assets[id].name}${details ? `\n${details}` : ""}` };
     }));
     edges.update(App.pipeIds.map((id) => {
       const s = App.pipeStyle(id);

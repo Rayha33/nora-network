@@ -34,6 +34,38 @@ Open an [issue](https://github.com/Rayha33/nora-network/issues/new/choose) for a
 correction, an idea or a bug, or start a
 [discussion](https://github.com/Rayha33/nora-network/discussions).
 
+## Fork, clone, and keep your copy current
+
+You can run NORA from a direct clone. To propose changes without collaborator access,
+fork it first on GitHub, then clone your fork:
+
+```bash
+gh repo fork Rayha33/nora-network --clone
+cd nora-network
+make setup
+make check
+```
+
+Without the GitHub CLI, press **Fork** on the repository page, then use your own GitHub
+username:
+
+```bash
+git clone https://github.com/YOUR-USERNAME/nora-network.git
+cd nora-network
+git remote add upstream https://github.com/Rayha33/nora-network.git
+make setup
+```
+
+Create a branch for each change, push it to your fork, and open a pull request against
+`Rayha33/nora-network:main`. To update your fork later:
+
+```bash
+git fetch upstream
+git switch main
+git merge --ff-only upstream/main
+git push origin main
+```
+
 ## How a change reaches the site
 
 ```
@@ -56,6 +88,6 @@ branch -> pull request -> CI checks + preview link -> review -> merge -> site up
 ## For maintainers
 
 - Invite regular contributors as collaborators (Settings → Collaborators) so their
-  branches get preview links.
-- `main` is protected: changes arrive through pull requests and need the `checks` job
-  to pass. Admins can bypass in an emergency.
+  branches get preview links. External contributors can always fork and open a pull request.
+- Consider protecting `main` in Settings → Branches: require a pull request and the
+  `checks` job before merging. It is not currently protected.

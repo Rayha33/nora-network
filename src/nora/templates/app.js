@@ -881,11 +881,9 @@ const App = (() => {
       const nom = metric("nomination_msm3d", id, f);
       out.level = levelOf(id);
       if (through != null && through < 0.05) out.inactive = true;
-      const parts = [];
-      if (nom > 0) parts.push(`${fmt(through, 1)} / ${fmt(nom, 1)} nom`);
-      else if (through != null) parts.push(`${fmt(through, 1)} MSm³/d`);
-      if (p != null) parts.push(`${fmt(p)} bar`);
-      out.sub = parts.join("  ") || out.sub;
+      out.flow = nom > 0 ? `${fmt(through, 1)} / ${fmt(nom, 1)}` : through != null ? fmt(through, 1) : "";
+      out.pressure = p != null ? `${fmt(p)} bar` : "";
+      out.sub = "";
     } else if (mode === "load" && d.modelFlow != null) {
       out.sub = `${fmt(d.modelFlow)} MSm³/d`;
     } else if (mode === "risk" && d.type !== "market") {
@@ -1295,6 +1293,9 @@ const App = (() => {
     const unitSelect = $("crumb-unit");
     unitSelect.value = s === "asset" || s === "diag" ? unitOf[route.asset] || "all" : route.unit;
     unitSelect.setAttribute("aria-current", s === "unit" ? "page" : "false");
+    const mapUnit = route.unit === "all" ? null : unitById[route.unit];
+    $("map-kicker").textContent = mapUnit ? "Operating unit" : "All operating units";
+    $("map-unit").textContent = mapUnit ? mapUnit.name : "North Sea gas network";
     const deep = s === "asset" || s === "diag";
     $("sep-asset").hidden = $("crumb-asset").hidden = !deep;
     $("sep-diag").hidden = $("crumb-diag").hidden = s !== "diag";
@@ -1696,6 +1697,8 @@ const App = (() => {
   function markTabs() {
     for (const tab of document.querySelectorAll("[data-view]")) tab.setAttribute("aria-selected", String(tab.dataset.view === state.view));
     for (const tab of document.querySelectorAll("[data-mode]")) tab.setAttribute("aria-selected", String(tab.dataset.mode === state.mode));
+    const modeLabels = { live: "Live operations", load: "Capacity load · model", risk: "Outage exposure · model", whatif: "What-if analysis", plain: "Network assets" };
+    $("map-mode-label").textContent = modeLabels[state.mode];
   }
 
   function start() {
