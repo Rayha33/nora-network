@@ -79,7 +79,8 @@ function NoraCanvasMap(view) {
     canvas.style.height = `${height}px`;
   }
 
-  function redraw() {
+  function redraw() { App.frame.run(redrawNow); }
+  function redrawNow() {
     if (!ctx || !width) return;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.fillStyle = C.water;

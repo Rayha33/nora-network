@@ -374,7 +374,8 @@
   };
 
   // Pigs and peaks (and, if switched on, faint flow dots) on a canvas over the map.
-  view.draw = () => {
+  view.draw = () => App.frame.run(drawNow);
+  function drawNow() {
     if (!ctx) return;
     sizeCanvas();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -439,7 +440,7 @@
       App.drawMarker(ctx, m, p.x, p.y, p.angle, m.kind === "pig" ? 8.5 : 6.5, detail, taken);
       if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
     }
-  };
+  }
 
   /* Screen boxes of the node dots and their names, where MapLibre puts them (under the
      dot, wrapped at 9 em), so the labels of pigs and peaks keep clear of them. */

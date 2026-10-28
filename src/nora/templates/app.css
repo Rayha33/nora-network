@@ -369,6 +369,9 @@ div.vis-tooltip {
   border: 1px solid var(--rule); border-radius: 7px; box-shadow: var(--shadow-lg); padding: 7px 10px; white-space: pre-line;
 }
 
+/* The Flow view's moving layer (flow.js): pigs, peaks and flow stubs over the network. */
+.flow-marks { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+
 /* The map drawn without WebGL (map2d.js). */
 canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch-action: none; }
 .map-note.quiet { position: absolute; left: 14px; top: auto; bottom: 14px; transform: none; box-shadow: none; z-index: 2; font-size: 11px; color: var(--text-dim);

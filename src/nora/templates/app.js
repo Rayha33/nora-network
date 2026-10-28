@@ -81,6 +81,23 @@ const App = (() => {
     if (!DATE_FORMATS.has(key)) DATE_FORMATS.set(key, new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", ...opts }));
     return DATE_FORMATS.get(key).format(new Date(epoch * 1000));
   };
+  /* One frame's cache. While a view draws a frame the state cannot change, yet the Flow
+     view asks for the same line style ~1,900 times a frame and the same node readings
+     several times each. Between App.frame.begin() and end() (the views wrap each draw),
+     styles and readings are computed once per asset; outside a frame nothing is cached,
+     so anything that changes state and then reads it straight away sees the new state. */
+  const frameCache = { on: false, maps: {} };
+  const frameApi = {
+    begin() { frameCache.on = true; frameCache.maps = {}; },
+    end() { frameCache.on = false; frameCache.maps = {}; },
+    run(draw) { if (frameCache.on) return draw(); frameApi.begin(); try { return draw(); } finally { frameApi.end(); } },
+  };
+  function cached(kind, key, compute) {
+    if (!frameCache.on) return compute();
+    const map = frameCache.maps[kind] || (frameCache.maps[kind] = new Map());
+    if (!map.has(key)) map.set(key, compute());
+    return map.get(key);
+  }
   const formatTime = (t) => timeFormat(t, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + " UTC";
   const shortTime = (t) => timeFormat(t, { weekday: "short", hour: "2-digit", minute: "2-digit" });
 
@@ -499,7 +516,8 @@ const App = (() => {
   /* Within-day delivery at an exit point: the gas delivered so far this gas day against
      what was nominated for the same hours, as a share (0 = on plan, -0.05 = 5 % short).
      The gas day starts at thresholds.gas_day_start_utc. */
-  function dayDelivery(id) {
+  const dayDelivery = (id) => cached("day", id, () => dayDeliveryNow(id));
+  function dayDeliveryNow(id) {
     const start = T.gas_day_start_utc == null ? 5 : T.gas_day_start_utc, now = frame();
     if (now.t == null || metric("nomination_msm3d", id, now) == null) return null;
     const dayStart = Math.floor((now.t - start * 3600) / 86400) * 86400 + start * 3600;
@@ -519,7 +537,8 @@ const App = (() => {
   /* The 4-hour window shown in each flow-view card: the last 2 hours of actual flow,
      and the next 2 hours of what shippers have nominated (from the recorded data, or
      the `ahead` block of a live-feed frame). */
-  function window4h(id) {
+  function window4h(id) { return cached("w4h", id, () => window4hNow(id)); }
+  function window4hNow(id) {
     const n = Math.max(1, Math.round(2 / stepHours()));
     const past = [];
     for (let i = live.index - n; i <= live.index; i++) past.push(live.frames[i] ? throughput(id, live.frames[i].flows) : null);
@@ -1012,7 +1031,8 @@ const App = (() => {
   // ------------------------------------------------------------------ styling rules (both views)
   /* A pipeline: grey by state (dark grey without flow, lightest grey flowing); colour
      only for an abnormal condition. */
-  function pipeStyle(id) {
+  function pipeStyle(id) { return cached("pipe", id, () => pipeStyleNow(id)); }
+  function pipeStyleNow(id) {
     const d = assets[id], mode = state.mode, onshore = d.type === "onshore";
     const out = {
       color: COLORS.normal, width: d.capacity ? 0.6 + 0.9 * Math.sqrt(d.capacity / maxCapacity) : 0.6,
@@ -1055,7 +1075,8 @@ const App = (() => {
     return out;
   }
   /* A node: a circle in its state grey, dark grey when inactive, an alarm badge when abnormal. */
-  function nodeStyle(id) {
+  function nodeStyle(id) { return cached("node", id, () => nodeStyleNow(id)); }
+  function nodeStyleNow(id) {
     const d = assets[id], mode = state.mode;
     const out = { level: 0, inactive: d.status !== "operating", sub: NORA.short[d.type], scale: 1,
       hidden: !visible(id), dim: route.unit !== "all" && unitOf[id] !== route.unit };
@@ -1898,6 +1919,7 @@ const App = (() => {
 
   let lastTick = 0, lastStep = 0;
   function tick(now) {
+    frameApi.end(); // a draw that threw must not leave the cache on
     const dt = lastTick ? Math.min(0.25, (now - lastTick) / 1000) : 0;
     lastTick = now;
     if (live.playing) {
@@ -2146,7 +2168,8 @@ const App = (() => {
     display: () => display.profile,
     uiScale: () => display.scale,
     // Flow through a node now (MSm³/d) and its pressure (bar), for the views to show.
-    reading: (id) => ({ flow: throughput(id, frame().flows), pressure: metric("pressure_bar", id) }),
+    reading: (id) => cached("reading", id, () => ({ flow: throughput(id, frame().flows), pressure: metric("pressure_bar", id) })),
+    frame: frameApi, cached,
     dayDelivery, register, restyle, go, start, theme: () => theme,
     select: (id) => {
       if (!id || !assets[id]) { if (route.screen === "unit" && state.mode !== "whatif") closeSidebar(); return; }

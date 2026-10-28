@@ -49,3 +49,22 @@ test("the player clock reads as before", () => {
     { timeZone: "UTC", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + " UTC";
   assert.equal(document.getElementById("clock").textContent, before);
 });
+
+/* The frame cache: inside one frame a style is computed once; outside a frame nothing is
+   cached, so a change of mode (or anything else) shows on the very next call. */
+test("styles are cached within a frame and never outside one", () => {
+  const { App } = loadApp();
+  const id = App.pipeIds[0];
+  assert.notEqual(App.pipeStyle(id), App.pipeStyle(id), "outside a frame: computed fresh");
+  App.frame.run(() => {
+    assert.equal(App.pipeStyle(id), App.pipeStyle(id), "inside a frame: computed once");
+    assert.equal(App.nodeStyle(App.nodeIds[0]), App.nodeStyle(App.nodeIds[0]));
+  });
+  App.state.mode = "live";
+  const live = App.pipeStyle(id);
+  App.state.mode = "plain";
+  assert.equal(App.pipeStyle(id).label, "", "the new mode shows at once after a frame");
+  assert.ok(live !== App.pipeStyle(id));
+  assert.throws(() => App.frame.run(() => { throw new Error("draw failed"); }));
+  assert.notEqual(App.pipeStyle(id), App.pipeStyle(id), "a failed frame does not leave the cache on");
+});
