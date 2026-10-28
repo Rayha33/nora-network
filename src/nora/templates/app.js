@@ -119,7 +119,7 @@ const App = (() => {
      opaque band in the peak's calm colour over the line, with a dark casing so it
      stands off the paper in both themes, and a crisp edge at the head so the direction
      of travel reads at a glance. The dot and its label are drawn on top of it. */
-  function drawBand(ctx, marker, a, b, width = 4, path = null) {
+  function drawBand(ctx, marker, a, b, width = 3.2, path = null) {
     const color = marker.kind === "quality" ? COLORS[QUALITY[marker.gas].color] : COLORS.peak;
     const points = path && path.length > 1 ? path : [a, b];
     const head = points[points.length - 1], before = points[points.length - 2];

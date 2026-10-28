@@ -430,7 +430,7 @@
     }
     // Peaks as bands from tail to head first, then every marker on top.
     const marks = App.markers().filter((m) => ends[m.id] && !App.pipeStyle(m.id).hidden);
-    for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]), 4 * App.uiScale(), projectBand(m.id, m.extent));
+    for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]), 3.2 * App.uiScale(), projectBand(m.id, m.extent));
     const zoom = map.getZoom(), detail = zoom >= 6.5 ? 2 : zoom >= 5 ? 1 : 0;
     drawnMarks = [];
     for (const m of marks) {

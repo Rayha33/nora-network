@@ -155,7 +155,7 @@ function NoraCanvasMap(view) {
     if (live) {
       const z = zoom(), detail = z >= 6.5 ? 2 : z >= 5 ? 1 : 0, marks = App.markers();
       for (const m of marks) {
-        if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]), 4 * u, bandPath(m.id, m.extent));
+        if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]), 3.2 * u, bandPath(m.id, m.extent));
       }
       drawnMarks = [];
       for (const m of marks) {
