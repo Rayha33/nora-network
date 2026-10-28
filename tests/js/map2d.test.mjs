@@ -108,6 +108,14 @@ test("peaks: Flow samples the pipeline path instead of joining only head and tai
   assert.deepEqual(path.at(-1), App.views.flow.pointAlong(edge, extent[1], pos));
 });
 
+test("flow circles: the fitted overview stays simple until labels are readable", () => {
+  const { App } = loadApp();
+  assert.equal(App.views.flow.detailedFlow(0.24), false, "the whole-network fit uses clean totals, not tiny labels");
+  assert.equal(App.views.flow.detailedFlow(1), true, "full labels appear at 100% zoom");
+  assert.equal(App.views.flow.overviewReading(0.24, 62), true, "a total appears when the circle can contain it");
+  assert.equal(App.views.flow.overviewReading(0.08, 62), false, "tiny nodes stay clean dots without spilled text");
+});
+
 test("flow circles: live flow (MSm³/d) and pressure (bar) for each node", () => {
   const loaded = loadApp();
   const { App } = loaded;
