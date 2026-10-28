@@ -26,3 +26,13 @@ def test_now_in_middle_must_be_true_or_false(tmp_path):
     with pytest.raises(DataError) as error:
         load_config(path)
     assert "now_in_middle: must be true or false" in str(error.value)
+
+
+def test_display_profile_is_one_of_the_choices(tmp_path):
+    path = tmp_path / "nora.toml"
+    path.write_text('[screen]\ndisplay = "wall"\n', encoding="utf-8")
+    assert load_config(path)["screen"]["display"] == "wall"
+    path.write_text('[screen]\ndisplay = "cinema"\n', encoding="utf-8")
+    with pytest.raises(DataError) as error:
+        load_config(path)
+    assert "display: must be one of auto, desk, wall, compact" in str(error.value)

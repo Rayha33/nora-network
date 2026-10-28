@@ -24,6 +24,7 @@ DEFAULTS: dict = {
         "autoplay": True,
         "speed": 600,  # default playback: data seconds per real second
         "now_in_middle": True,  # synthetic streams: the wall-clock now sits mid-timeline
+        "display": "auto",  # auto (from the window), desk, wall or compact
     },
     "labels": {"names": True, "line_values": "auto"},
     "assets": {"hide": [], "grid_entries": True},
@@ -97,6 +98,7 @@ CHOICES = {
     ("screen", "network_mode"): ("live", "load", "risk", "plain"),
     ("screen", "theme"): ("light", "dark", "auto"),
     ("screen", "speed"): (1, 60, 120, 300, 600, 1800),
+    ("screen", "display"): ("auto", "desk", "wall", "compact"),
     ("labels", "line_values"): ("auto", "on", "off"),
     ("flow", "direction"): ("auto", "horizontal", "vertical"),
     ("flow", "density"): ("compact", "comfortable", "spacious"),

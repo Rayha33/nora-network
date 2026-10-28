@@ -9,7 +9,7 @@
   let map = null, canvas = null, ctx = null, highlighted = null, alarmKey = "";
   let drawnMarks = []; // where pigs, peaks and slugs were drawn this frame, for mouse-over
   const markAt = (x, y) => {
-    let best = null, bestD = 9; // px
+    let best = null, bestD = 9 * App.uiScale(); // px
     for (const d of drawnMarks) { const dist = Math.hypot(d.x - x, d.y - y); if (dist < bestD) { best = d.m; bestD = dist; } }
     return best;
   };
@@ -156,6 +156,34 @@
     view.setUnit(App.route.unit);
     view.restyle();
     view.highlight(App.route.focus);
+  }
+
+  /* Sizes in screen pixels follow the one UI scale (App.uiScale, issue #59): a video
+     wall gets lines, circles, names and badges it can read from metres away. The
+     layers are added at 100 %; scaleLayers() sets these whenever settings apply. */
+  function scaleLayers() {
+    const k = App.uiScale(), state = (key, fallback) => ["coalesce", ["feature-state", key], fallback];
+    const width = (w, extra = 0) => ["interpolate", ["linear"], ["zoom"],
+      3, ["+", extra * k, ["*", 0.45 * w * k, state("width", 1)]],
+      6, ["+", extra * k, ["*", 0.7 * w * k, state("width", 1)]],
+      9, ["+", extra * k, ["*", 1.1 * w * k, state("width", 1)]]];
+    const radius = (extra = 0) => ["interpolate", ["linear"], ["zoom"], 3, (3.5 + extra) * k, 6, (5.5 + extra) * k, 9, (8 + extra) * k];
+    const sizes = {
+      "nora-casing": { paint: { "line-width": width(1, 1.6) } },
+      "nora-pipes-onshore": { paint: { "line-width": width(0.8) } },
+      "nora-pipes": { paint: { "line-width": width(1) } },
+      "nora-pipes-hit": { paint: { "line-width": 14 * k } },
+      "nora-selected": { paint: { "circle-radius": radius(5), "circle-stroke-width": 2 * k } },
+      "nora-node-dots": { paint: { "circle-radius": radius(), "circle-stroke-width": ["*", k, state("edgeWidth", 1)] } },
+      "nora-nodes": { layout: { "text-size": 11.5 * k }, paint: { "text-halo-width": 2 * k } },
+      "nora-node-alarms": { layout: { "icon-size": 0.85 * k } },
+      "nora-pipe-alarms": { layout: { "icon-size": 0.85 * k } },
+    };
+    for (const [id, { paint = {}, layout = {} }] of Object.entries(sizes)) {
+      if (!map.getLayer(id)) continue;
+      for (const [key, value] of Object.entries(paint)) map.setPaintProperty(id, key, value);
+      for (const [key, value] of Object.entries(layout)) map.setLayoutProperty(id, key, value);
+    }
   }
 
   function sizeCanvas() {
@@ -369,21 +397,22 @@
         if (!node) continue;
         const pn = map.project([node.lon, node.lat]);
         if (pn.x < -40 || pn.y < -40 || pn.x > canvas.clientWidth + 40 || pn.y > canvas.clientHeight + 40) continue;
+        const k = App.uiScale();
         for (const pid of App.pipeIds) {
           const v = App.live.values[pid], p = NORA.assets[pid];
           if (!v || Math.abs(v) < 0.05 || !p || (p.from !== nid && p.to !== nid)) continue;
           if (App.pipeStyle(pid).hidden) continue;
           const line = ends[pid], other = map.project(p.from === nid ? line[1] : line[line.length - 2]);
           const dx = other.x - pn.x, dy = other.y - pn.y, len = Math.hypot(dx, dy);
-          if (len < 8) continue;
+          if (len < 8 * k) continue;
           const ux = dx / len, uy = dy / len;
           // The stub shrinks with short lines (overview zoom): a hint, not a hair.
-          const stub = Math.min(26, len * 0.4), band = Math.max(3, Math.min(8, stub * 0.5));
+          const stub = Math.min(26 * k, len * 0.4), band = Math.max(3 * k, Math.min(8 * k, stub * 0.5));
           // Gas moves toward this node when the flow sign points here.
           const inflow = (p.to === nid) === (v > 0);
           const share = Math.min(1, Math.abs(v) / (p.capacity || 30));
           ctx.strokeStyle = C.active;
-          ctx.lineWidth = 1.6 + share * 2.2;
+          ctx.lineWidth = (1.6 + share * 2.2) * k;
           for (let k = 0; k < 2; k++) {
             const t = (App.live.clock * 0.45 + k / 2) % 1;
             const d = inflow ? (stub - band) * (1 - t) + band : (stub - band) * t + band;
@@ -401,7 +430,7 @@
     }
     // Peaks as bands from tail to head first, then every marker on top.
     const marks = App.markers().filter((m) => ends[m.id] && !App.pipeStyle(m.id).hidden);
-    for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]), 4, projectBand(m.id, m.extent));
+    for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]), 4 * App.uiScale(), projectBand(m.id, m.extent));
     const zoom = map.getZoom(), detail = zoom >= 6.5 ? 2 : zoom >= 5 ? 1 : 0;
     drawnMarks = [];
     for (const m of marks) {
@@ -414,6 +443,7 @@
   view.applySettings = () => {
     if (!view.ready) return;
     map.setLayoutProperty("nora-nodes", "text-field", App.settings().names ? ["get", "name"] : "");
+    scaleLayers();
   };
 
   let pendingFit = false;

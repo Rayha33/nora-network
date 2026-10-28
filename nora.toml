@@ -11,6 +11,7 @@ theme = "light"             # light, dark or auto (follows the device); the butt
 autoplay = true             # start playing the data when the page opens (?autoplay=0 to stop)
 speed = 600                 # default playback: data seconds per real second (10 min/s: a peak crosses a line in about a minute)
 now_in_middle = true        # synthetic data is re-timed in the browser so now sits mid-timeline: history left, model right
+display = "auto"            # auto (from the window), desk, wall (video wall: large, dark, kiosk) or compact; ?display= and Settings override
 
 [labels]
 names = true
