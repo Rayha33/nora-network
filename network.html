@@ -3935,15 +3935,24 @@ function NoraCanvasMap(view) {
     if (!cells.length) return CIRC.r;
     return cells.some((cell) => cell.in && cell.out) ? 70 : 62;
   }
+  function detailedFlow(scale) {
+    return scale >= 1; // never render the detailed 11 px labels below their actual size
+  }
+  function overviewReading(scale, radius) {
+    return scale < 1 && radius * scale >= 11; // otherwise a clean dot is better than spilled text
+  }
   // A reading inside a circle, on a patch of the circle's own fill: the faint + and the
-  // day bar never run through a number.
+  // day bar never run through a number. Text stays at its real screen size at every zoom.
   function reading(ctx, text, x, y, look) {
-    const w = ctx.measureText(text).width;
+    const ratio = (network && network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
+    const point = network ? network.canvasToDOM({ x, y }) : { x, y };
     ctx.save();
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    const w = ctx.measureText(text).width;
     ctx.fillStyle = look.fill;
-    ctx.fillRect(x - w / 2 - 1.5, y - 6.5, w + 3, 13);
+    ctx.fillRect(point.x - w / 2 - 1.5, point.y - 6.5, w + 3, 13);
+    ctx.fillText(text, point.x, point.y);
     ctx.restore();
-    ctx.fillText(text, x, y);
   }
   function drawQuadrants(ctx, x, y, id, look, { day, total, r = CIRC.r, positions = framePos }) {
     const q = flowQuadrants(id, positions), at = r * 0.45;
@@ -3987,6 +3996,7 @@ function NoraCanvasMap(view) {
       drawNode() {
         const s = App.nodeStyle(id), d = NORA.assets[id];
         const live = App.state.mode === "live";
+        const detailed = detailedFlow(network ? network.getScale() : 1);
         const radius = live ? circleRadius(id) : CIRC.r;
         const look = C.card[s.inactive ? "inactive" : live ? "active" : "normal"];
         ctx.save();
@@ -4012,11 +4022,22 @@ function NoraCanvasMap(view) {
           : App.state.mode === "risk" && d.lost ? `−${App.fmt(d.lost)}` : "";
         const day = live ? App.dayDelivery(id) : null; // exit points: within-day delivery bar
         const pressure = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "";
-        if (live) drawQuadrants(ctx, x, y, id, look, { day, total: now.flow, r: radius });
+        if (live && overviewReading(network ? network.getScale() : 1, radius)) {
+          ctx.fillStyle = look.ink;
+          ctx.font = modelFont("600 11px Archivo, system-ui, sans-serif");
+          reading(ctx, big, x, y, look); // one readable total when the circle can contain it
+        } else if (live && detailed) drawQuadrants(ctx, x, y, id, look, { day, total: now.flow, r: radius });
         else if (big) {
           ctx.fillStyle = look.ink;
           ctx.font = "600 12.5px Archivo, system-ui, sans-serif";
-          ctx.fillText(fitText(ctx, big, CIRC.r * 1.6), x, y);
+          if (detailed) ctx.fillText(fitText(ctx, big, CIRC.r * 1.6), x, y);
+          else if (overviewReading(network ? network.getScale() : 1, radius)) reading(ctx, big, x, y, look);
+        }
+        if (!detailed) {
+          drawnBoxes[id] = [x - radius, y - radius, x + radius, y + radius];
+          ctx.restore();
+          if (s.level) App.drawBadge(ctx, s.level, x + radius - 3, y - radius + 3, 8);
+          return;
         }
         // Name below the circle, then the rate of change (bold when it is fast) and the
         // trend, on a paper backing: lines leave a node downwards, and no line may run
@@ -4390,6 +4411,8 @@ function NoraCanvasMap(view) {
   view.pointAlong = pointAlong;
   view.bandPath = bandPath;
   view.animateStubs = animateStubs;
+  view.detailedFlow = detailedFlow;
+  view.overviewReading = overviewReading;
   view.stubDistance = stubDistance;
   view.stubClear = stubClear;
   view.card = card; // for tests: the renderer of one node
