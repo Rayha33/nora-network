@@ -74,3 +74,10 @@ MSm3/d is million standard cubic metres per day. One MSm3/d over a year is about
 ## streams/
 
 Time series that the chart replays as live data. See [streams/README.md](streams/README.md).
+
+## Coastline
+
+`geo/coastline.json` is the land around the North Sea that the Map view draws itself
+when a browser has no WebGL. It comes from Natural Earth's 1:10m land polygons (public
+domain, https://www.naturalearthdata.com), clipped to the network's area and simplified
+by `scripts/build_coastline.py`. Rebuild it with `python scripts/build_coastline.py`.

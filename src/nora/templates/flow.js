@@ -1,33 +1,24 @@
 /* Flow view (level 2): the whole network as a gas flow overview on dotted paper, top to
    bottom by default (fields at the top, markets at the bottom), with straight lines.
    vis-network draws the nodes, edges and options pyvis produced; each node is drawn as
-   a card: icon, name, value, and a 4-hour trend (the last 2 hours of flow, solid, and
-   the next 2 hours of nominations, dashed). Stage and rank come from layout.py
+   a circle holding its live flow (MSm³/d) and pressure (bar), with its name, rate of
+   change and a 4-hour trend below (the last 2 hours of flow, solid, and the next 2
+   hours of nominations, dashed). Stage and rank come from layout.py
    (NORA.grid); direction and spacing from the settings; colours, widths and labels from
    App.pipeStyle / App.nodeStyle. Alarm badges, pigs and peaks are drawn on top. */
 (() => {
   "use strict";
   const view = { ready: false, mounted: false };
   const C = App.colors; // updated in place when the theme switches
-  /* Circles, not squares: a Flow node is a circle filled by its state grey, the
-     asset icon inside, its name (and live rate) below, and a sparkline under
-     that when there is data. Ray, 27 Oct: "circles to show the nodes not squares". */
-  const CIRC = { r: 23, name: 14, sub: 12, trend: 12, pad: 8 };
+  /* Circles, not squares: a Flow node is a circle filled by its state grey, holding
+     the live numbers (no icon: Ray, 28 Oct, "this is valuable space ... for live flow
+     values and pressures"), with its name and rate below and a sparkline under that. */
+  const CIRC = { r: 27, name: 14, sub: 12, trend: 12, pad: 8 };
   const SPACING = { // [stage, rank] in canvas units
     vertical: { compact: [96, 160], comfortable: [124, 178], spacious: [160, 210] },
     horizontal: { compact: [210, 62], comfortable: [250, 72], spacious: [300, 90] },
   };
   let network = null, el = null, direction = "vertical";
-  const images = {};
-
-  function loadIcons() {
-    for (const [kind, uri] of Object.entries(NORA.icons)) {
-      const image = new Image();
-      image.onload = () => network && network.redraw();
-      image.src = uri;
-      images[kind] = image;
-    }
-  }
   function chooseDirection() {
     const wanted = App.settings().direction;
     if (wanted !== "auto") return wanted;
@@ -128,8 +119,28 @@
           ctx.strokeStyle = selected || hover ? look.ink : look.edge;
           ctx.stroke();
         }
-        const icon = images[d.type];
-        if (icon && icon.complete) ctx.drawImage(icon, x - CIRC.r / 2, y - CIRC.r / 2, CIRC.r, CIRC.r);
+        // Inside the circle: flow now (MSm³/d), and pressure (bar) when it is measured.
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const now = live ? App.reading(id) : null;
+        const big = live ? (now.flow == null ? "–" : App.fmt(now.flow, now.flow < 10 ? 1 : 0))
+          : App.state.mode === "load" && d.modelFlow != null ? App.fmt(d.modelFlow)
+          : App.state.mode === "risk" && d.lost ? `−${App.fmt(d.lost)}` : "";
+        if (big) {
+          const pressure = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "";
+          const top = pressure ? y - 8 : y - 3;
+          ctx.fillStyle = look.ink;
+          ctx.font = "700 13px Archivo, system-ui, sans-serif";
+          ctx.fillText(fitText(ctx, big, CIRC.r * 1.7), x, top);
+          ctx.fillStyle = look.dim;
+          ctx.font = "8px Archivo, system-ui, sans-serif";
+          ctx.fillText("MSm³/d", x, top + 10);
+          if (pressure) {
+            ctx.fillStyle = look.ink;
+            ctx.font = "600 9.5px Archivo, system-ui, sans-serif";
+            ctx.fillText(fitText(ctx, pressure, CIRC.r * 1.7), x, y + 15);
+          }
+        }
         // Name below the circle, then the rate of change (bold when it is fast).
         ctx.textBaseline = "alphabetic";
         ctx.textAlign = "center";
@@ -144,7 +155,7 @@
           ctx.font = `${fast ? 700 : 400} 10px Archivo, system-ui, sans-serif`;
           ctx.fillStyle = fast ? look.ink : look.dim;
           ctx.fillText(`${r > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(r), 1)}/h`, x, nameY + CIRC.sub);
-        } else if (s.sub) {
+        } else if (s.sub && !live) {
           ctx.fillStyle = look.dim;
           ctx.font = "10px Archivo, system-ui, sans-serif";
           ctx.fillText(fitText(ctx, s.sub, CIRC.r * 3), x, nameY + CIRC.sub);
@@ -266,12 +277,13 @@
     const scale = network.getScale(), detail = scale >= 0.9 ? 2 : scale >= 0.5 ? 1 : 0;
     ctx.save();
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    for (const marker of App.markers()) {
-      const e = edges.get(marker.id);
-      if (!e || App.pipeStyle(marker.id).hidden) continue;
-      const p = pointAlong(e, Math.max(0, Math.min(1, marker.along)), positions);
+    const marks = App.markers().filter((m) => edges.get(m.id) && !App.pipeStyle(m.id).hidden);
+    const at = (m, t) => network.canvasToDOM(pointAlong(edges.get(m.id), Math.max(0, Math.min(1, t)), positions));
+    for (const m of marks) if (m.extent) App.drawBand(ctx, m, at(m, m.extent[0]), at(m, m.extent[1]));
+    for (const m of marks) {
+      const p = pointAlong(edges.get(m.id), Math.max(0, Math.min(1, m.along)), positions);
       const dom = network.canvasToDOM(p);
-      App.drawMarker(ctx, marker, dom.x, dom.y, p.angle, 6.5, detail);
+      App.drawMarker(ctx, m, dom.x, dom.y, p.angle, 6.5, detail);
     }
     ctx.restore();
   }
@@ -281,7 +293,11 @@
     el.style.background = C.paper;
     network = new vis.Network(container, { nodes, edges }, flowOptions);
     view.network = network;
-    loadIcons();
+    // No zooming out far past the whole network: it would only shrink it to a speck.
+    network.on("zoom", () => {
+      const min = minScale();
+      if (network.getScale() < min) network.moveTo({ scale: min, animation: false });
+    });
     if (App.embed) network.setOptions({ interaction: { zoomView: false } });
     nodes.update(App.nodeIds.map((id) => ({ id, shape: "custom", ctxRenderer: card(id), label: "" })));
     network.on("beforeDrawing", paper);
@@ -371,10 +387,17 @@
   view.theme = () => {
     if (!view.ready) return;
     el.style.background = C.paper;
-    loadIcons();
     view.restyle();
   };
 
+  // The scale at which the whole network fits the window, less a little margin.
+  function minScale() {
+    const positions = Object.values(network.getPositions());
+    if (!positions.length || !el.clientWidth) return 0;
+    const xs = positions.map((p) => p.x), ys = positions.map((p) => p.y);
+    const w = Math.max(...xs) - Math.min(...xs) + CIRC.r * 6, h = Math.max(...ys) - Math.min(...ys) + CIRC.r * 6;
+    return Math.min(el.clientWidth / w, el.clientHeight / h) * 0.8;
+  }
   view.setUnit = (unit) => {
     if (!view.ready) return;
     const members = unit === "all" ? null : App.units[unit].nodes.filter((id) => !App.nodeStyle(id).hidden);

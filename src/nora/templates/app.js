@@ -101,6 +101,7 @@ const App = (() => {
   }
   // A gas quality parcel: a calm-coloured dot; the strongest parcel of a slug is labelled.
   function drawParcel(ctx, marker, x, y, size, detail) {
+    if (marker.noDot) return; // the band shows this stretch; the dot is on the strongest part
     ctx.save();
     ctx.beginPath();
     ctx.arc(x, y, size * (marker.lead ? 0.85 : 0.6), 0, Math.PI * 2);
@@ -111,6 +112,39 @@ const App = (() => {
     ctx.stroke();
     ctx.restore();
     if (marker.lead) markerLabel(ctx, marker, x, y, size, detail);
+  }
+
+  /* The stretch of gas a peak covers, from tail (a) to head (b), in screen pixels: an
+     opaque band in the peak's calm colour over the line, with a dark casing so it
+     stands off the paper in both themes, and a crisp edge at the head so the direction
+     of travel reads at a glance. The dot and its label are drawn on top of it. */
+  function drawBand(ctx, marker, a, b, width = 7) {
+    const color = marker.kind === "quality" ? COLORS[QUALITY[marker.gas].color] : COLORS.peak;
+    const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy);
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(len < 1 ? a.x + 0.5 : b.x, len < 1 ? a.y : b.y);
+    ctx.strokeStyle = COLORS.casing;
+    ctx.lineWidth = width + 2;
+    ctx.stroke();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.stroke();
+    if (len >= 1) { // the head: a short dark bar across the band
+      const nx = -dy / len, ny = dx / len, h = width / 2 + 1;
+      ctx.beginPath();
+      ctx.moveTo(b.x + nx * h, b.y + ny * h);
+      ctx.lineTo(b.x - nx * h, b.y - ny * h);
+      ctx.strokeStyle = COLORS.casing;
+      ctx.lineWidth = 1.6;
+      ctx.lineCap = "butt";
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   // ------------------------------------------------------------------ alarm levels
@@ -597,21 +631,41 @@ const App = (() => {
       const place = pigPlace(pig, live.time);
       if (place) out.push({ kind: "pig", id: place.pid, along: place.along, label: "", level: 0, title: pig.label });
     }
+    /* Head and tail: a peak is a stretch of gas, not a point. A change in flow spreads
+       over the gas that passed in one data step (velocity × step); the band is centred
+       on the dot. `extent` is [tail, head] in the line's 0..1, clipped to the line. */
+    const v = C.pipelines.gas_velocity_mps, stepSeconds = (live.stream && live.stream.step) || 3600;
+    const clip01 = (x) => Math.max(0, Math.min(1, x));
+    const extentOf = (pid, lo, hi, forward) => {
+      const pad = (v * stepSeconds) / 2 / lineMetres(pid);
+      const a = clip01(lo - pad), b = clip01(hi + pad);
+      return forward ? [a, b] : [b, a];
+    };
     for (const peak of live.peaks) {
       const place = peakPlace(peak);
       if (!place) continue;
       const d = assets[place.pid];
       out.push({ kind: "peak", id: place.pid, along: place.along, level: peak.level, rising: place.delta > 0,
         value: `${place.delta > 0 ? "+" : "−"}${fmt(Math.abs(place.delta), 1)}`, eta: clock(place.exitAt),
-        to: nameOf(place.forward ? d.to : d.from) });
+        to: nameOf(place.forward ? d.to : d.from), extent: extentOf(place.pid, place.along, place.along, place.forward) });
     }
-    const leads = new Map(slugs().map((s) => [s.q, s]));
+    /* A slug of H₂S or CO₂ is drawn as one band per line it covers, from its rear parcel
+       to its front parcel; the dot (and the label) sits on its strongest parcel. */
+    const leads = new Map(slugs().map((s) => [s.q, s])), spans = new Map();
     for (const q of live.quality) {
-      const along = q.arrived ? 1 : Math.min(1, (live.time - q.t0) / travelSeconds(q.pid)), s = leads.get(q);
-      out.push({ kind: "quality", gas: q.metric, id: q.pid, along: q.forward ? along : 1 - along, lead: Boolean(s),
-        level: s ? Math.max(s.level, s.exitLevel) : 0,
-        value: s ? `${QUALITY[q.metric].name} ${fmt(q.conc, QUALITY[q.metric].digits)}` : "",
-        eta: s && !q.arrived ? clock(s.next.t) : "", to: s ? nameOf(q.arrived ? q.arrived.node : s.next.node) : "" });
+      const t = q.arrived ? 1 : Math.min(1, (live.time - q.t0) / travelSeconds(q.pid)), at = q.forward ? t : 1 - t;
+      const key = `${q.slug}|${q.pid}`, span = spans.get(key) || { q, lo: at, hi: at, lead: null };
+      span.lo = Math.min(span.lo, at); span.hi = Math.max(span.hi, at);
+      if (leads.has(q)) span.lead = { q, at, s: leads.get(q) };
+      spans.set(key, span);
+    }
+    for (const { q, lo, hi, lead } of spans.values()) {
+      const base = { kind: "quality", gas: q.metric, id: q.pid, extent: extentOf(q.pid, lo, hi, q.forward) };
+      if (!lead) { out.push({ ...base, along: (lo + hi) / 2, lead: false, noDot: true, level: 0, value: "" }); continue; }
+      const { s } = lead;
+      out.push({ ...base, along: lead.at, lead: true, level: Math.max(s.level, s.exitLevel),
+        value: `${QUALITY[q.metric].name} ${fmt(lead.q.conc, QUALITY[q.metric].digits)}`,
+        eta: lead.q.arrived ? "" : clock(s.next.t), to: nameOf(lead.q.arrived ? lead.q.arrived.node : s.next.node) });
     }
     return out.sort((a, b) => Number(Boolean(a.lead)) - Number(Boolean(b.lead)));
   }
@@ -1779,8 +1833,10 @@ const App = (() => {
       offline: () => [...whatif.offline],
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
-    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
-    pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T, register, restyle, go, start, theme: () => theme,
+    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
+    pipeStyle, nodeStyle, markers, window4h, flowRate, thresholds: T,
+    // Flow through a node now (MSm³/d) and its pressure (bar), for the views to show.
+    reading: (id) => ({ flow: throughput(id, frame().flows), pressure: metric("pressure_bar", id) }), register, restyle, go, start, theme: () => theme,
     select: (id) => {
       if (!id || !assets[id]) { if (route.screen === "unit" && state.mode !== "whatif") closeSidebar(); return; }
       // In What-if mode a click takes a node offline or brings it back instead.

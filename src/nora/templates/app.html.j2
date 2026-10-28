@@ -109,6 +109,7 @@ var edges = new vis.DataSet({{ edges|tojson }});
 var flowOptions = {{ options|safe }};
 var NORA = {{ nora|tojson }};
 {{ inline.app_js|safe }}
+{{ inline.map2d_js|safe }}
 {{ inline.map_js|safe }}
 {{ inline.flow_js|safe }}
 App.start();

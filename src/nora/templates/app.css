@@ -172,7 +172,8 @@ svg .fill { fill: currentColor; stroke: none; }
 
 /* Level 3: the asset as a small schematic, top to bottom */
 .schematic { width: 100%; height: auto; display: block; }
-.schematic text { font: 11.5px var(--font); fill: var(--text); }
+/* stroke: none - the global svg rule outlines shapes, which smudges text into a blur */
+.schematic text { font: 11.5px var(--font); fill: var(--text); stroke: none; }
 .schematic .dimtext { fill: var(--text-dim); }
 
 /* Level 4: data */
@@ -247,6 +248,14 @@ div.vis-tooltip {
 
 .bank .rate-inline { display: none; }
 
+/* The map drawn without WebGL (map2d.js). */
+canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch-action: none; }
+.map-note.quiet { position: absolute; left: 10px; top: 10px; transform: none; box-shadow: none; z-index: 2; font-size: 11px; color: var(--text-dim);
+  background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r); padding: 3px 8px; }
+.map2d-zoom { position: absolute; right: 10px; bottom: 34px; z-index: 2; display: grid; gap: 4px; }
+.map2d-zoom button { width: 28px; height: 28px; border: 1px solid var(--rule); border-radius: var(--r);
+  background: var(--raised); color: var(--text); font-size: 16px; line-height: 1; cursor: pointer; }
+
 /* Asset sidebar: slides in from the right when a field, plant or icon is clicked.
    It mirrors the asset page (schematic, values, facts) in one calm column. */
 .sidebar {
@@ -284,6 +293,12 @@ div.vis-tooltip {
 .sidebar .facts { gap: 5px 16px; }
 .sidebar .facts dt { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; }
 .sidebar .facts dd { font-size: 12.5px; }
+/* The sidebar is narrow: values in three columns, the rate inline, nothing outside. */
+.sidebar .bank { grid-template-columns: minmax(80px, 1fr) minmax(110px, 1.6fr) 70px; }
+.sidebar .bank .rate, .sidebar .bank .state.optional, .sidebar .bank .head.optional { display: none; }
+.sidebar .bank .rate-inline { display: inline; margin-left: 8px; }
+.sidebar .bank > * { min-width: 0; }
+.sidebar .schematic { max-width: 380px; margin: 0 auto; }
 .sidebar .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 10px; }
 .sidebar .actions button {
   border: 1px solid var(--rule); background: var(--surface); color: var(--text);
