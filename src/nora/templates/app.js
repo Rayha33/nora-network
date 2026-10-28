@@ -598,6 +598,7 @@ const App = (() => {
       if (live.time >= event.start && live.time < event.end && !event.planned) add(2, event.asset, "event", event.label);
     }
     if (f.plan && f.plan.now[0]) add(f.plan.now[0], f.plan.now[2] || "plan", "plan", `Plan: ${f.plan.now[1]}`);
+    if (live.stale) add(2, "feed", "feed", `Live feed stale, values from ${live.time ? formatTime(live.time) : "before"}: ${live.stale.text}`);
     out.sort((a, b) => b.level - a.level || a.text.localeCompare(b.text));
     live.conditions = out;
     live.levelOf = {};
@@ -1307,11 +1308,13 @@ const App = (() => {
     const nowLevel = plan ? plan.now[0] : 0, aheadLevel = plan ? Math.min(plan.ahead[0], 2) : 0;
     const bannerLevel = nowLevel || aheadLevel;
     const headline = !plan ? "No nominations in this dataset, so there is no plan to check"
+      : !plan.nominated ? "No nominations at this hour, so there is no plan to check"
       : nowLevel ? `${plan.now[1]} now`
       : plan.ahead[0] ? `In ${fmt(plan.ahead[3])} h: ${plan.ahead[1]}`
       : "Plan holds at every exit point";
     const ts = timeState(), ahead = ts && ts.model ? `Model, ${spanText(ts.ahead)} ahead of now. ` : "";
-    const context = ahead + (plan ? `Nominated ${fmt(plan.nominated)} MSm³/d, deliverable ${fmt(plan.deliverable)} MSm³/d. Busiest line: ${nameOf(plan.bottleneck)} at ${fmt(plan.maxLoad * 100)}%.` : "");
+    const context = ahead + (plan && plan.nominated ? `Nominated ${fmt(plan.nominated)} MSm³/d, deliverable ${fmt(plan.deliverable)} MSm³/d.`
+      + (plan.bottleneck ? ` Busiest line: ${nameOf(plan.bottleneck)} at ${fmt(plan.maxLoad * 100)}%.` : "") : "");
     const units = NORA.units.map((u) => {
       const conds = live.conditions.filter((c) => unitOf[c.id] === u.id);
       return h("button", { type: "button", onclick: () => go({ screen: "unit", unit: u.id }) },
@@ -1402,7 +1405,7 @@ const App = (() => {
   function facts(id) {
     const d = assets[id];
     const lost = d.lost ? `${fmt(d.lost)} MSm³/d (${fmt(d.share * 100, 1)}%)` : "Nothing lost";
-    const position = d.lat != null ? `${d.lat.toFixed(4)}°N, ${d.lon.toFixed(4)}°E` : null;
+    const position = d.lat != null ? `${Math.abs(d.lat).toFixed(4)}°${d.lat >= 0 ? "N" : "S"}, ${Math.abs(d.lon).toFixed(4)}°${d.lon >= 0 ? "E" : "W"}` : null;
     const rows = d.kind === "node"
       ? [["Operator", d.operator], ["Capacity", d.capacity == null ? null : `${fmt(d.capacity)} MSm³/d`], ["If it trips", lost],
         ["Pressure window", C.pressure[d.type] ? `${C.pressure[d.type][0]}–${C.pressure[d.type][1]} bar` : null], ["Status", d.status],
@@ -1591,8 +1594,12 @@ const App = (() => {
     const counts = [3, 2, 1].map((l) => [l, live.conditions.filter((c) => c.level === l).length]).filter(([, n]) => n);
     $("alarm-counts").replaceChildren(...counts.map(([l, n]) => h("span", { title: `${n} ${LEVEL[l].toLowerCase()}` }, badge(l, String(n)))));
     const plan = frame().plan, chip = $("plan-chip");
-    chip.hidden = !plan;
-    if (!plan) return;
+    chip.hidden = false; // always there: the top bar never changes between modes or datasets
+    if (!plan || !plan.nominated) {
+      chip.replaceChildren(h("span", { class: "dim" }, "No plan to check"));
+      chip.title = plan ? "No nominations at this hour. Opens the overview" : "This dataset has no exit-point nominations, so there is no plan to check. Opens the overview";
+      return;
+    }
     const [lvl, text] = plan.now, [aheadLvl, aheadText, , hours] = plan.ahead;
     chip.replaceChildren(...(lvl ? [badge(lvl, ""), h("span", null, text)]
       : aheadLvl ? [badge(Math.min(aheadLvl, 2), ""), h("span", null, `In ${fmt(hours)} h: ${aheadText}`)]
@@ -1778,6 +1785,13 @@ const App = (() => {
   // The chip beside the clock, and a page-wide class so model numbers read as such.
   function showTime() {
     const ts = timeState(), when = $("when");
+    if (live.feed) {
+      when.hidden = !live.stale;
+      when.textContent = live.stale ? "Stale" : "";
+      when.title = live.stale ? live.stale.text : "";
+      when.classList.toggle("model", Boolean(live.stale));
+      return;
+    }
     when.hidden = !ts;
     when.textContent = timeText(ts);
     when.classList.toggle("model", Boolean(ts && ts.model));
@@ -1971,6 +1985,10 @@ const App = (() => {
       showTime();
       drawSpark();
     }
+    // A feed that goes quiet without an error is stale too: three missed frames, at least a minute.
+    if (live.feed && !live.stale && live.frameGap && Date.now() - live.lastFrameWall > Math.max(60000, 3 * live.frameGap)) {
+      feedTrouble(`No new data for ${spanText((Date.now() - live.lastFrameWall) / 1000)}`);
+    }
     const view = current();
     if (route.screen === "unit" && view && view.ready) view.draw();
     requestAnimationFrame(tick);
@@ -1993,24 +2011,54 @@ const App = (() => {
       live.feedPigs = meta.pigs || [];
       select.replaceChildren(h("option", null, `${meta.title || "Live feed"} (live)`));
     });
-    live.feed.addEventListener("frame", (message) => {
-      const f = JSON.parse(message.data);
-      for (const [id, v] of Object.entries(f.values)) {
-        live.typical[id] = Math.max((live.typical[id] || 0) * 0.995, Math.abs(v));
-        live.maxAbs = Math.max(live.maxAbs, Math.abs(v));
+    live.feed.addEventListener("frame", (message) => receiveFrame(JSON.parse(message.data)));
+    /* `error` is both the server's own event (it could not read its source: the data
+       says why) and the browser's (the connection dropped; it reconnects by itself). */
+    live.feed.addEventListener("error", (event) => {
+      let text = "Connection to the live feed lost; reconnecting";
+      if (event && typeof event.data === "string") {
+        try { const d = JSON.parse(event.data); text = `${d.source || "Live source"}: ${d.error || "no data"}`; } catch (error) { /* keep the general text */ }
       }
-      const previous = live.frames[live.frames.length - 1];
-      live.frames.push({ t: f.t, flows: f.values, metrics: f.metrics || {}, plan: f.plan || null });
-      if (live.frames.length > 240) live.frames.shift();
-      live.index = live.frames.length - 1;
-      live.values = f.values;
-      live.time = f.t;
-      trackTrips(frame());
-      spawnPeaks(previous, frame());
-      spawnQuality(previous, frame());
-      if (!live.playing) play();
-      step();
+      feedTrouble(text);
     });
+  }
+  /* One frame from the live feed. Frames must rise in time: routes, the gas day's
+     delivery and peaks all assume it. A frame older than the last one means the feed
+     started over (a replay looped, or the server restarted and the browser
+     reconnected), so a new timeline begins; one with the same time replaces it. */
+  function receiveFrame(f) {
+    const last = live.frames[live.frames.length - 1], entry = { t: f.t, flows: f.values, metrics: f.metrics || {}, plan: f.plan || null };
+    if (last && f.t < last.t) {
+      live.frames = []; live.peaks = []; live.quality = []; live.down = {};
+      pigRoutes.clear();
+    }
+    for (const [id, v] of Object.entries(f.values)) {
+      live.typical[id] = Math.max((live.typical[id] || 0) * 0.995, Math.abs(v));
+      live.maxAbs = Math.max(live.maxAbs, Math.abs(v));
+    }
+    const wall = Date.now();
+    if (live.lastFrameWall) live.frameGap = wall - live.lastFrameWall;
+    live.lastFrameWall = wall;
+    live.stale = null; // fresh data
+    const same = last && live.frames.length && f.t === last.t;
+    const previous = same ? null : live.frames[live.frames.length - 1];
+    if (same) live.frames[live.frames.length - 1] = entry;
+    else live.frames.push(entry);
+    if (live.frames.length > 240) live.frames.shift();
+    live.index = live.frames.length - 1;
+    live.values = f.values;
+    live.time = f.t;
+    trackTrips(frame());
+    if (previous) { spawnPeaks(previous, frame()); spawnQuality(previous, frame()); }
+    if (!live.playing) play();
+    step();
+  }
+  /* The feed is in trouble: the last frame stays on screen, marked stale and raised
+     as an alarm, never passed off as live data. */
+  function feedTrouble(text) {
+    if (live.stale && live.stale.text === text) return;
+    live.stale = { text, since: live.lastFrameWall || Date.now() };
+    step();
   }
 
   // ------------------------------------------------------------------ start
@@ -2206,6 +2254,7 @@ const App = (() => {
       go({ screen: "asset", asset: id });
     },
     sidebar: { open: (id) => openSidebar(id), close: closeSidebar, id: () => side.id },
+    feed: { frame: receiveFrame, trouble: feedTrouble }, // the live feed's handlers, for tests
     menu: { open: openMenu, close: closeMenu, for: menuFor },
   };
 })();

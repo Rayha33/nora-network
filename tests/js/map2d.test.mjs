@@ -476,3 +476,87 @@ test("marker labels: never over a node name or another label", () => {
   const first = labelAt(taken), second = labelAt(taken);
   assert.ok(second && (second.x !== first.x || second.y !== first.y), "a second peak at the same spot labels elsewhere");
 });
+
+/* Review finding: the canvas map cleared its whole container, which holds the page's
+   map card, and every later navigation wrote to the card's missing labels and threw.
+   It must keep the card, so navigation and the card's words keep working. */
+test("map: the canvas map keeps the map card, so navigation keeps working", () => {
+  const { App, NORA, document } = loadApp();
+  App.state.view = "map";
+  App.go({ screen: "unit", unit: "all" });
+  assert.equal(App.views.map.canvasMap, true, "the canvas map took over");
+  const unit = NORA.units[1];
+  assert.doesNotThrow(() => App.go({ screen: "unit", unit: unit.id }), "navigating after the fallback");
+  assert.equal(document.getElementById("map-unit").textContent, unit.name, "the card names the unit");
+  assert.doesNotThrow(() => App.go({ screen: "overview" }), "and on to the overview");
+});
+
+// A canvas whose 2D context counts what is drawn, and a map container with a size.
+function drawableCanvas(document, counts) {
+  const make = document.createElement;
+  document.createElement = (tag) => {
+    const node = make(tag);
+    if (tag === "canvas") {
+      node.getContext = (kind) => (kind !== "2d" ? null : new Proxy({}, {
+        get(target, key) {
+          if (key in target) return target[key];
+          if (key === "measureText") return (t) => ({ width: String(t).length * 6 });
+          return () => { counts[key] = (counts[key] || 0) + 1; };
+        },
+        set(target, key, value) { target[key] = value; return true; },
+      }));
+    }
+    return node;
+  };
+  Object.assign(document.getElementById("view-map"), { clientWidth: 800, clientHeight: 600 });
+}
+
+/* Review finding: the canvas map (the one for machines without a GPU) redrew the
+   whole map every animation frame even while paused. It redraws only while playing. */
+test("map: the canvas map draws each frame only while the data plays", () => {
+  const counts = {};
+  const { App, document } = loadApp({ globals: { Path2D: class { moveTo() {} lineTo() {} closePath() {} } } });
+  drawableCanvas(document, counts);
+  App.state.view = "map";
+  App.go({ screen: "unit", unit: "all" });
+  const view = App.views.map;
+  App.live.playing = false;
+  const paused = counts.fillRect || 0;
+  view.draw(); view.draw(); view.draw();
+  assert.equal(counts.fillRect || 0, paused, "paused: no redraw per frame");
+  App.live.playing = true;
+  view.draw();
+  assert.ok((counts.fillRect || 0) > paused, "playing: each frame redraws");
+});
+
+/* Review finding: after the online map style failed and the map fell back to raster
+   tiles, a theme switch reloaded the online style that had failed, and the map came
+   back empty. The theme switch reloads the style in use. */
+test("map: a theme switch keeps the fallback basemap", () => {
+  class FakeMap {
+    constructor() { this.handlers = {}; this.styles = []; this.touchZoomRotate = { disableRotation() {} }; maplibregl.last = this; }
+    getCanvas() { return { addEventListener() {}, style: {} }; }
+    getContainer() { return { clientWidth: 800, clientHeight: 600 }; }
+    once() {}
+    on(type, a, b) { (this.handlers[type] ??= []).push(b || a); }
+    addControl() {}
+    setStyle(style) { this.styles.push(style); }
+    fire(type, event) { for (const fn of this.handlers[type] || []) fn(event); }
+  }
+  const maplibregl = {
+    Map: FakeMap, ScaleControl: class {}, NavigationControl: class {},
+    Popup: class { setLngLat() { return this; } setText() { return this; } addTo() { return this; } remove() {} },
+  };
+  const { App, document } = loadApp({ globals: { maplibregl } });
+  const make = document.createElement;
+  document.createElement = (tag) => { const node = make(tag); if (tag === "canvas") node.getContext = (kind) => (kind.startsWith("webgl") ? { getExtension: () => null } : null); return node; };
+  App.state.view = "map";
+  App.go({ screen: "unit", unit: "all" });
+  const map = maplibregl.last;
+  assert.ok(map, "the WebGL map mounted");
+  map.fire("error", { error: { message: "style unreachable" } }); // the online style never loaded
+  const fallback = map.styles.at(-1);
+  assert.ok(fallback && fallback.sources && fallback.sources.osm, "it fell back to raster tiles");
+  App.views.map.theme();
+  assert.equal(map.styles.at(-1), fallback, "the theme switch reloads the raster style, not the one that failed");
+});

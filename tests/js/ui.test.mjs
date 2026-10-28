@@ -93,3 +93,52 @@ test("what-if: no 0.0 on dead lines, and the chip never cuts twice", () => {
   const text = (chip.children || []).map((c) => c.textContent).join("");
   assert.match(text, /^What-if: [\d.,]+ of [\d.,]+ MSm³\/d · 1 offline · Restore all$/, text);
 });
+
+/* The top bar never changes (Ray). The plan chip used to vanish for datasets without
+   nominations and come back in What-if; it now says there is no plan to check. */
+test("top bar: the plan chip is always there, also without nominations", () => {
+  const { App, document } = loadApp();
+  App.live.frames = [{ t: 3600, flows: {}, metrics: {}, plan: null }];
+  App.live.index = 0;
+  App.state.mode = "live";
+  App.go({ screen: "unit", unit: "all" });
+  const chip = document.getElementById("plan-chip");
+  assert.equal(chip.hidden, false, "the chip stays");
+  assert.match(chip.textContent, /No plan to check/);
+});
+
+test("overview: an hour without nominations says so, never 'null'", () => {
+  const { App, document } = loadApp();
+  const plan = { now: [0, "No nominations", null], ahead: [0, "No nominations", null, 0], nominated: 0, deliverable: 0, maxLoad: 0, bottleneck: null };
+  App.live.frames = [{ t: 3600, flows: {}, metrics: {}, plan }];
+  App.live.index = 0;
+  App.go({ screen: "overview" });
+  const text = document.getElementById("screen-overview").textContent;
+  assert.match(text, /No nominations at this hour/);
+  assert.doesNotMatch(text, /null|Plan holds/);
+});
+
+test("asset facts: a position west of Greenwich reads °W", () => {
+  const { App, document } = loadApp();
+  App.go({ screen: "asset", asset: "teesside" });
+  const text = document.getElementById("screen-asset").textContent;
+  assert.match(text, /\d\.\d{4}°W/);
+  assert.doesNotMatch(text, /-\d+\.\d{4}°E/);
+});
+
+/* Review finding: the Flow right-click subtracted a circle's radius in canvas units
+   from a distance in screen pixels, so zoomed out a node won clicks right on a line. */
+test("flow: the hit test measures circles and lines in screen pixels at any zoom", () => {
+  const { App, NORA } = loadApp();
+  App.state.mode = "live";
+  const pid = App.pipeIds.find((id) => NORA.assets[id].type === "trunk");
+  const { from, to } = NORA.assets[pid];
+  App.live.values[pid] = 20; // flowing: the end circles are the large live ones
+  const positions = { [from]: { x: 0, y: 0 }, [to]: { x: 1000, y: 0 } };
+  const scale = 0.3, toDOM = (p) => ({ x: p.x * scale, y: p.y * scale });
+  const flow = App.views.flow;
+  assert.ok(flow.circleRadius(from, positions) * scale < 40, "zoomed out, the circle is small on screen");
+  assert.equal(flow.hitTest({ x: 40, y: 0 }, positions, toDOM, scale), pid, "a click on the line, clear of the circle, is the line");
+  assert.equal(flow.hitTest({ x: 5, y: 0 }, positions, toDOM, scale), from, "a click in the circle is the node");
+  assert.equal(flow.hitTest({ x: 150, y: 80 }, positions, toDOM, scale), null, "empty paper is nothing");
+});

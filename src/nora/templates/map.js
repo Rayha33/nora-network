@@ -7,6 +7,7 @@
   const view = { ready: false, mounted: false };
   const C = App.colors;
   let map = null, canvas = null, ctx = null, highlighted = null, alarmKey = "";
+  let basemap = null; // the style in use: the online one, or FALLBACK_STYLE once that failed
   let drawnMarks = []; // where pigs, peaks and slugs were drawn this frame, for mouse-over
   const markAt = (x, y) => {
     let best = null, bestD = 9 * App.uiScale(); // px
@@ -246,8 +247,7 @@
   function canvasFallback(el) {
     if (map) { try { map.remove(); } catch { /* already gone */ } }
     map = null; canvas = null; ctx = null;
-    el.replaceChildren();
-    NoraCanvasMap(view);
+    NoraCanvasMap(view); // its mount clears the map's own elements and keeps the map card
     view.mount(el);
   }
   const wantSimple = new URLSearchParams(location.search).get("map") === "simple";
@@ -289,6 +289,7 @@
       if (styled) return;
       styled = true;
       note.remove();
+      basemap = FALLBACK_STYLE;
       try { map.setStyle(FALLBACK_STYLE); } catch { /* already gone */ }
     };
     // If the online style never arrives (CDN blocked, DNS, captive portal), fall back.
@@ -521,12 +522,14 @@
     limitZoom();
     if (pendingFit) view.setUnit(App.route.unit);
   };
-  // A new palette: reload the style so the basemap, icons and badges are redrawn in it.
+  /* A new palette: reload the style so the basemap, icons and badges are redrawn in
+     it. The style in use, not the configured one: after a fall back to raster tiles,
+     reloading the online style that failed would leave the map empty. */
   view.theme = () => {
     if (!map) return;
     view.ready = false;
     alarmKey = "";
-    map.setStyle(NORA.config.map.style, { diff: false });
+    map.setStyle(basemap || NORA.config.map.style, { diff: false });
   };
 
   App.register("map", view);
