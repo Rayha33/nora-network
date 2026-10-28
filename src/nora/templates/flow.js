@@ -69,9 +69,11 @@
   function paper(ctx) {
     App.frame.begin(); // ends after the overlay: one cache for the whole vis frame
     framePos = network.getPositions();
-    pressurePlacements = [];
     drawnBoxes = {}; // refilled as the nodes are drawn
-    const scale = network.getScale();
+    const scale = network.getScale(), half = nodeHalf();
+    // Pressures avoid every square as well as every label already placed. This matters
+    // most in the fitted overview, where a long label can otherwise cover a neighbour.
+    pressurePlacements = Object.values(framePos).map((p) => [p.x - half, p.y - half, p.x + half, p.y + half]);
     overviewBoxes = scale < 1 ? Object.entries(framePos).map(([id, p]) => {
       const point = network.canvasToDOM(p), r = circleRadius(id) * scale;
       return [point.x - r, point.y - r, point.x + r, point.y + r];
@@ -213,6 +215,9 @@
   function detailedFlow(scale) {
     return scale >= 1; // never render the detailed 11 px labels below their actual size
   }
+  function pressureVisibility(mode, scale) {
+    return mode === "live" && scale > 0; // endpoint pressures stay readable at every zoom
+  }
   function overviewReading(scale, radius) {
     return scale < 1 && radius * scale >= 11; // otherwise a clean dot is better than spilled text
   }
@@ -240,6 +245,8 @@
       return;
     }
     overviewBoxes.push(box);
+    const ca = network.DOMtoCanvas({ x: box[0], y: box[1] }), cb = network.DOMtoCanvas({ x: box[2], y: box[3] });
+    pressurePlacements.push([ca.x, ca.y, cb.x, cb.y]); // later pressures avoid this name too
     ctx.lineJoin = "round";
     ctx.lineWidth = 3;
     ctx.strokeStyle = C.paper;
@@ -382,15 +389,22 @@
           reading(ctx, big, x, y, look); // zoomed out: one readable total when the square can hold it
         } else if (live && detailed) {
           drawSquare(ctx, x, y, id, look, { half, now, day: App.dayDelivery(id) });
-          pressureBoxes = drawEndpointPressures(ctx, x, y, id, look, { half });
         } else if (big) {
           ctx.fillStyle = look.ink;
           ctx.font = "600 12.5px Archivo, system-ui, sans-serif";
           if (detailed) ctx.fillText(fitText(ctx, big, half * 1.6), x, y);
           else if (overviewReading(scale, half)) reading(ctx, big, x, y, look);
         }
+        if (pressureVisibility(App.state.mode, scale)) pressureBoxes = drawEndpointPressures(ctx, x, y, id, look, { half });
         if (!detailed) {
-          drawnBoxes[id] = [x - half, y - half, x + half, y + half];
+          const ownBox = [x - half, y - half, x + half, y + half];
+          drawnBoxes[id] = [ownBox, ...pressureBoxes].reduce((all, box) => [
+            Math.min(all[0], box[0]), Math.min(all[1], box[1]), Math.max(all[2], box[2]), Math.max(all[3], box[3]),
+          ]);
+          for (const box of pressureBoxes) {
+            const a = network.canvasToDOM({ x: box[0], y: box[1] }), b = network.canvasToDOM({ x: box[2], y: box[3] });
+            overviewBoxes.push([a.x, a.y, b.x, b.y]); // names must not cover a pressure
+          }
           drawOverviewName(ctx, id, x, y, half);
           ctx.restore();
           if (s.level) App.drawBadge(ctx, s.level, x + half - 2, y - half + 2, 8);
@@ -425,6 +439,7 @@
         drawnBoxes[id] = [ownBox, ...pressures].reduce((all, box) => [
           Math.min(all[0], box[0]), Math.min(all[1], box[1]), Math.max(all[2], box[2]), Math.max(all[3], box[3]),
         ]);
+        pressurePlacements.push(ownBox); // later nodes' pressures avoid this square and name
         ctx.save();
         ctx.globalAlpha = 1;
         ctx.fillStyle = C.paper;
@@ -816,6 +831,7 @@
   view.bandPath = bandPath;
   view.animateStubs = animateStubs;
   view.detailedFlow = detailedFlow;
+  view.pressureVisibility = pressureVisibility;
   view.overviewReading = overviewReading;
   view.overviewNameLines = overviewNameLines;
   view.stubDistance = stubDistance;
