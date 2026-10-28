@@ -286,8 +286,24 @@ def import_rows(folder: Path, spec: dict, where: str, problems: list[str]) -> li
         problems.append(f'{where}: [import] layout must be "long" or "wide", got \'{layout}\'')
         return []
     mapping: dict[str, str] = spec.get("assets", {})
-    factor = float(spec.get("factor", 1.0))
-    tz = ZoneInfo(spec.get("timezone", "UTC"))
+    factor_text = spec.get("factor", 1.0)
+    try:
+        factor = float(factor_text)
+    except (TypeError, ValueError):
+        problems.append(
+            f"{where}: [import] factor must be a number"
+            + suggest(str(factor_text), [str(f) for f in (0.001, 0.01, 0.1, 1.0, 10.0)])
+        )
+        return []
+    tz_text = spec.get("timezone", "UTC")
+    try:
+        tz = ZoneInfo(str(tz_text))
+    except Exception:  # ZoneInfoNotFoundError is not always importable as a name
+        common = ["UTC", "Europe/Oslo", "Europe/London", "Europe/Berlin", "America/New_York"]
+        problems.append(
+            f"{where}: [import] timezone must be a valid IANA zone" + suggest(str(tz_text), common)
+        )
+        return []
     time_column = spec.get("timestamp", "timestamp")
     where_filter: dict[str, str] = {k: str(v) for k, v in spec.get("where", {}).items()}
     totals: dict[tuple[datetime, str], float] = {}
@@ -374,7 +390,9 @@ def synthesize(
         supply = {}
         for node in suppliers:
             drift[node] = 0.9 * drift[node] + rng.gauss(0, 0.012)
-            capacity = base.nodes[node]["capacity_msm3d"] or 0.0
+            # The event-applied graph, not the base: a derated or offline supply
+            # node must actually reduce what it can push into the network.
+            capacity = graph.nodes[node]["capacity_msm3d"] or 0.0
             supply[node] = capacity * _load(when, base.nodes[node]["type"], drift[node])
         # Dispatch keeps exit points on their nominations: the plan is what the supply
         # would deliver without events, and only an event pushes the flows off it.
@@ -516,6 +534,10 @@ def apply_events(base: nx.DiGraph, events: tuple[Event, ...], when: datetime) ->
             elif factor == 0:
                 graph.remove_node(event.asset)
             else:
+                # A processing node's capacity travels on the node, not its edges:
+                # scale it too, or a partial derate is silently ignored.
+                if attrs.get("capacity_msm3d"):
+                    attrs["capacity_msm3d"] *= factor
                 for _, _, edge in graph.out_edges(event.asset, data=True):
                     if "capacity" in edge:
                         edge["capacity"] *= factor

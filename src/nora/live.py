@@ -20,6 +20,7 @@ browsers and proxies don't reap an idle connection.
 from __future__ import annotations
 
 import json
+import math
 import sys
 import time
 import webbrowser
@@ -158,7 +159,18 @@ class _Handler(SimpleHTTPRequestHandler):
                 self.wfile.flush()
 
     def _send(self, event: str, data: dict) -> None:
-        self.wfile.write(f"event: {event}\ndata: {json.dumps(data)}\n\n".encode())
+        # A polled source can carry NaN (no finite check out there): bare NaN is
+        # invalid JSON, JSON.parse would drop every frame. Null it instead.
+        def safe(value):
+            if isinstance(value, dict):
+                return {k: safe(v) for k, v in value.items()}
+            if isinstance(value, list):
+                return [safe(v) for v in value]
+            if isinstance(value, float) and not math.isfinite(value):
+                return None
+            return value
+
+        self.wfile.write(f"event: {event}\ndata: {json.dumps(safe(data))}\n\n".encode())
         self.wfile.flush()
 
 
