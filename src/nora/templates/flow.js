@@ -296,55 +296,16 @@
     };
   }
 
-  /* Row names, pinned to the left edge (or the top, left to right) so they stay readable
-     while panning. Rows before the terminals mix fields, hubs and plants, so they share
-     one name on their first row; terminals, LNG and markets each get their own. */
-  function rowNames() {
-    const types = {}, member = {};
-    for (const [id, [stage]] of Object.entries(NORA.grid)) {
-      (types[stage] = types[stage] || new Set()).add(NORA.assets[id].type);
-      member[stage] = member[stage] || id;
-    }
-    const own = (stage) => types[stage].size === 1 && ["terminal", "lng", "market"].includes([...types[stage]][0]);
-    const stages = Object.keys(types).map(Number).sort((a, b) => a - b);
-    const upstream = stages.filter((stage) => !own(stage));
-    const kinds = Object.keys(NORA.plural).filter((t) => upstream.some((stage) => types[stage].has(t)));
-    const names = kinds.map((t, i) => (i ? NORA.plural[t].replace(/^[A-Z](?=[a-z])/, (c) => c.toLowerCase()) : NORA.plural[t]));
-    const upstreamName = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : names[0];
-    const rows = [];
-    if (upstream.length) rows.push({ id: member[upstream[0]], name: upstreamName });
-    for (const stage of stages) if (own(stage)) rows.push({ id: member[stage], name: NORA.plural[[...types[stage]][0]] });
-    return rows;
-  }
-  const ROWS = rowNames();
-  function drawRowNames(ctx, positions) {
+  /* Keep the direction hint, but leave the network edges free of category labels. */
+  function drawDirection(ctx) {
     const ratio = (network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
-    const scale = network.getScale();
-    const u = App.uiScale(); // screen-pixel text follows the one UI scale (issue #59)
+    const u = App.uiScale();
     ctx.save();
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    ctx.font = `600 ${11 * u}px Archivo, system-ui, sans-serif`;
-    ctx.textBaseline = "middle";
-    for (const row of ROWS) {
-      const p = positions[row.id];
-      if (!p) continue;
-      const dom = network.canvasToDOM(p);
-      const width = ctx.measureText(row.name).width;
-      const [x, y] = direction === "vertical"
-        ? [10 * u, dom.y - circleRadius(row.id) * scale - 12 * u]
-        : [dom.x - width / 2, 12 * u];
-      if (y < 0 || y > el.clientHeight || x > el.clientWidth) continue;
-      ctx.globalAlpha = 0.85;
-      ctx.fillStyle = C.paper;
-      ctx.fillRect(x - 4 * u, y - 8 * u, width + 8 * u, 16 * u);
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = C.text_dim;
-      ctx.textAlign = "left";
-      ctx.fillText(row.name, x, y);
-    }
     ctx.fillStyle = C.text_dim;
     ctx.font = `${11 * u}px Archivo, system-ui, sans-serif`;
     ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
     ctx.fillText(direction === "vertical" ? "Gas flows from top to bottom ↓" : "Gas flows from left to right →", el.clientWidth - 10 * u, el.clientHeight - 12 * u);
     ctx.restore();
   }
@@ -378,7 +339,7 @@
   }
   function overlay(ctx) {
     const positions = network.getPositions();
-    drawRowNames(ctx, positions);
+    drawDirection(ctx);
     for (const id of App.pipeIds) {
       const s = App.pipeStyle(id), e = edges.get(id);
       if (s.level && !s.hidden && e) { const m = pointAlong(e, 0.5, positions); App.drawBadge(ctx, s.level, m.x + 12, m.y, 7); }
