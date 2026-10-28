@@ -242,6 +242,28 @@ test("flow overview: pressure is a stronger label above the square", () => {
   assert.ok(parseFloat(labels[0].font) >= 12, "the overview pressure is prominent and readable");
 });
 
+test("flow detail: line-end pressures grow to a readable 13 px", () => {
+  const loaded = loadApp();
+  const { App, NORA } = loaded;
+  loadFirstHour(App, NORA);
+  App.state.mode = "live";
+  App.live.values = App.live.frames[0].flows;
+  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: stage * 250, y: rank * 72 }]));
+  const labels = [];
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
+      if (key === "fillText") return (text, x, y) => labels.push({ text, x, y, font: target.font });
+      return () => {};
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  App.views.flow.drawEndpointPressures(ctx, 0, 0, "ttf", App.colors.card.active, { half: 64, positions: pos, placed: [], zoom: 1.1 });
+  assert.equal(labels.length, 7, "all seven detailed line-end pressures are present");
+  assert.ok(labels.every((label) => parseFloat(label.font) >= 13), "zooming in must not make pressures smaller");
+});
+
 test("flow pressures: one value per node in the overview, every line end on zoom in", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;
