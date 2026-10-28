@@ -43,7 +43,8 @@ test("playback: scrub clamps to the data, and the values track the frame", () =>
     { target: { value: NORA.streams[0].name } });
   const s = App.live.stream;
   assert.ok(s && s.frames.length > 1, "a recorded stream is prepared");
-  assert.equal(App.live.index, 0, "starts at the first frame");
+  // A synthetic stream opens at now, near its middle (timeline.test.mjs has the details).
+  assert.ok(Math.abs(App.live.time - Date.now() / 1000) < 5, "starts at the wall clock");
 
   // Seek past the end through the real scrub input listener. The handler closes
   // over the element itself (not event.target), so set .value as a drag would.
@@ -69,6 +70,10 @@ test("playback: Next problem lands on an hour where the plan is at risk", () => 
   document.getElementById("stream-select")._listeners.change[0](
     { target: { value: NORA.streams[0].name } });
   const s = App.live.stream;
+  // Start from the first hour (a synthetic stream opens at now, mid-way).
+  const scrub = document.getElementById("scrub");
+  scrub.value = "0";
+  scrub._listeners.input[0]({ target: scrub });
 
   // A risky hour: the plan's now- or ahead-level is raised. Use a real one if the
   // fixture has it, otherwise plant one (as a scripted event would).

@@ -104,12 +104,12 @@
     <div class="now">
       <span class="player-label">Dataset</span>
       <select id="stream-select" aria-label="Dataset"></select>
-      <time id="clock"></time>
+      <div class="clock-row"><time id="clock"></time><span class="when" id="when" hidden></span></div>
     </div>
   </div>
   <div class="timeline">
-    <div class="timeline-label"><span>Replay timeline</span><span>UTC</span></div>
-    <div class="track" title="Drag to move through time. Marks show when the plan is at risk; boxes are events">
+    <div class="timeline-label"><span id="tl-past">Replay timeline</span><span id="tl-now" hidden>Now</span><span id="tl-future">UTC</span></div>
+    <div class="track" title="Drag to move through time. Marks show when the plan is at risk; boxes are events. On synthetic data the middle tick is now: right of it is the model">
       <canvas id="spark" aria-hidden="true"></canvas>
       <input type="range" id="scrub" min="0" max="0" step="1" value="0" aria-label="Position in the data">
     </div>

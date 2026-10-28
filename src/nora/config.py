@@ -23,6 +23,7 @@ DEFAULTS: dict = {
         "theme": "light",
         "autoplay": True,
         "speed": 600,  # default playback: data seconds per real second
+        "now_in_middle": True,  # synthetic streams: the wall-clock now sits mid-timeline
     },
     "labels": {"names": True, "line_values": "auto"},
     "assets": {"hide": [], "grid_entries": True},
