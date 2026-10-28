@@ -4278,6 +4278,7 @@ function NoraCanvasMap(view) {
   }
   function overlayNow(ctx) {
     const positions = network.getPositions();
+    lineValueBoxes = drawLineValues(ctx, positions);
     drawDirection(ctx);
     for (const id of App.pipeIds) {
       const s = App.pipeStyle(id), e = edges.get(id);
@@ -4368,7 +4369,7 @@ function NoraCanvasMap(view) {
       const path = bandPath(edges.get(m.id), m.extent, positions).map((p) => network.canvasToDOM(p));
       App.drawBand(ctx, m, path[0], path[path.length - 1], 3.2 * App.uiScale(), path);
     }
-    const taken = marksNow.length ? nodeBoxes() : []; // labels keep clear of the circles' text
+    const taken = marksNow.length ? [...nodeBoxes(), ...lineValueBoxes] : []; // labels keep clear of the circles' text and line values
     for (const m of marksNow) {
       const p = pointAlong(edges.get(m.id), Math.max(0, Math.min(1, m.along)), positions);
       const dom = network.canvasToDOM(p);
@@ -4404,7 +4405,7 @@ function NoraCanvasMap(view) {
   /* Screen boxes of every circle drawn this frame with the name, pressure, rate and
      trend under it, so the labels of pigs and peaks keep clear of them. Each node
      records its box (in canvas units) as it is drawn, so this costs no extra pass. */
-  let drawnBoxes = {};
+  let drawnBoxes = {}, lineValueBoxes = [];
   function nodeBoxes() {
     return Object.values(drawnBoxes).map(([x0, y0, x1, y1]) => {
       const a = network.canvasToDOM({ x: x0, y: y0 }), b = network.canvasToDOM({ x: x1, y: y1 });
@@ -4433,6 +4434,9 @@ function NoraCanvasMap(view) {
     network.on("afterDrawing", overlay);
     /* vis's own hit test does not see the custom circle shape: what vis hit (edges)
        wins, else hitTest finds the circle or line under the pointer. */
+    // The tooltip says what the node is doing now: filled in when the pointer arrives,
+    // not on every step of the player (that re-sent every node to vis).
+    network.on("hoverNode", ({ node }) => nodes.update({ id: node, title: tooltip(node) }));
     network.on("click", (event) => {
       const at = event.pointer && event.pointer.DOM;
       const id = event.nodes[0] || event.edges[0] || (at && hitTest(at, network.getPositions(), (p) => network.canvasToDOM(p), network.getScale()));
@@ -4455,28 +4459,75 @@ function NoraCanvasMap(view) {
     network.once("afterDrawing", () => { layout(); view.setUnit(App.route.unit); });
   };
 
+  /* What a node or line looks like to vis-network. The player restyles four times a
+     second, and vis re-reads every item it is handed, changed or not: all 144 nodes
+     and 75 lines took about 28 ms, a visible stutter four times a second. So only items
+     whose look changed are handed over. A node's look is just whether it shows (the
+     circle draws its live numbers itself; the tooltip is filled in on hover); a line's
+     value is drawn by the overlay, not as a vis label, and its width is rounded to a
+     quarter pixel, so playing the data hands vis almost nothing. */
+  const sent = new Map(); // id -> the look last handed to vis
+  function nodeLook(id) { return { hidden: App.nodeStyle(id).hidden }; }
+  function lineLook(id) {
+    const s = App.pipeStyle(id);
+    return {
+      hidden: s.hidden, width: Math.round(s.width * 4) / 4, dashes: s.dashed ? [5, 5] : false,
+      color: { color: s.color, highlight: s.color, hover: s.color, inherit: false, opacity: s.dim ? 0.3 : 1 },
+      shadow: s.level ? { enabled: true, color: C.casing, size: 3, x: 0, y: 0 } : { enabled: false },
+      arrows: { to: { enabled: s.forward, scaleFactor: 0.4 }, from: { enabled: s.backward, scaleFactor: 0.4 } },
+    };
+  }
+  function changes(ids, lookOf) {
+    const out = [];
+    for (const id of ids) {
+      const look = lookOf(id), key = JSON.stringify(look);
+      if (sent.get(id) !== key) { sent.set(id, key); out.push({ id, ...look }); }
+    }
+    return out;
+  }
+  function tooltip(id) {
+    const s = App.nodeStyle(id);
+    const details = App.state.mode === "live"
+      ? [s.flow ? `${s.flow} MSm³/d` : "", s.pressure].filter(Boolean).join("\n")
+      : s.sub;
+    return `${NORA.assets[id].name}${details ? `\n${details}` : ""}`;
+  }
   view.restyle = () => {
     if (!view.ready) return;
-    nodes.update(App.nodeIds.map((id) => {
-      const s = App.nodeStyle(id);
-      const details = App.state.mode === "live"
-        ? [s.flow ? `${s.flow} MSm³/d` : "", s.pressure].filter(Boolean).join("\n")
-        : s.sub;
-      return { id, hidden: s.hidden, title: `${NORA.assets[id].name}${details ? `\n${details}` : ""}` };
-    }));
-    edges.update(App.pipeIds.map((id) => {
-      const s = App.pipeStyle(id);
-      return {
-        id, hidden: s.hidden, label: s.label || " ", width: s.width, dashes: s.dashed ? [5, 5] : false,
-        color: { color: s.color, highlight: s.color, hover: s.color, inherit: false, opacity: s.dim ? 0.3 : 1 },
-        shadow: s.level ? { enabled: true, color: C.casing, size: 3, x: 0, y: 0 } : { enabled: false },
-        arrows: { to: { enabled: s.forward, scaleFactor: 0.4 }, from: { enabled: s.backward, scaleFactor: 0.4 } },
-        font: { color: C.text_dim, background: C.paper },
-      };
-    }));
-    // DataSet updates already request one coalesced redraw on the next animation frame.
-    // A second synchronous redraw here doubled the whole-network layout/paint cost.
+    const nodeChanges = changes(App.nodeIds, nodeLook), lineChanges = changes(App.pipeIds, lineLook);
+    if (nodeChanges.length) nodes.update(nodeChanges);
+    if (lineChanges.length) edges.update(lineChanges);
+    // The circles and line values draw from the live data themselves: ask for one
+    // coalesced redraw on the next frame (a DataSet update asks for the same).
+    if (!nodeChanges.length && !lineChanges.length) network.body.emitter.emit("_requestRedraw");
   };
+  view.changes = () => ({ nodes: changes(App.nodeIds, nodeLook), lines: changes(App.pipeIds, lineLook) }); // for tests
+
+  /* Line values, drawn over the lines at their middle on a paper patch, as vis drew its
+     labels (11 px in canvas units, so they scale with the zoom; hidden when too small to
+     read). Returns their screen boxes, so marker labels keep clear of them. */
+  function drawLineValues(ctx, positions) {
+    const scale = network.getScale(), boxes = [];
+    if (11 * scale < 5) return boxes;
+    ctx.save();
+    ctx.font = "11px Archivo, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for (const id of App.pipeIds) {
+      const s = App.pipeStyle(id), p = NORA.assets[id], a = positions[p.from], b = positions[p.to];
+      if (!s.label || s.hidden || !a || !b) continue;
+      const x = (a.x + b.x) / 2, y = (a.y + b.y) / 2, w = ctx.measureText(s.label).width;
+      ctx.globalAlpha = s.dim ? 0.35 : 1;
+      ctx.fillStyle = C.paper;
+      ctx.fillRect(x - w / 2 - 2, y - 7, w + 4, 14);
+      ctx.fillStyle = C.text_dim;
+      ctx.fillText(s.label, x, y);
+      const lo = network.canvasToDOM({ x: x - w / 2 - 2, y: y - 7 }), hi = network.canvasToDOM({ x: x + w / 2 + 2, y: y + 7 });
+      boxes.push([lo.x, lo.y, hi.x, hi.y]);
+    }
+    ctx.restore();
+    return boxes;
+  }
 
   // Every frame while playing: only the moving layer. The circles follow each data step.
   view.draw = () => { if (App.state.mode === "live" && App.live.playing) drawMarks(); };
