@@ -346,6 +346,9 @@ const App = (() => {
      at x, y, turned along the line by `angle`. Each kind has its own shape AND its
      own calm colour, so nothing reads as an alarm badge (triangle/diamond/square in
      amber/orange/red). */
+  function markerSize(kind) {
+    return kind === "pig" ? 16 : 6.5; // pigs must remain visible in a dense operating view
+  }
   function drawMarker(ctx, marker, x, y, angle, size = 7, detail = 1, taken = null) {
     size *= display.scale; // markers are drawn in screen pixels in every view
     if (marker.kind === "quality") { drawParcel(ctx, marker, x, y, size, detail, taken); return; }
@@ -2415,7 +2418,7 @@ const App = (() => {
       offline: () => [...whatif.offline],
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
-    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
+    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     pipeStyle, pipeMapName, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
     timeState, timelineWindow,

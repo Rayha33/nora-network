@@ -37,6 +37,13 @@ test("marker labels are at least 11 px and regular weight", () => {
   }
 });
 
+test("pig markers use a larger shared size without enlarging peaks", () => {
+  const { App } = loadApp();
+  assert.ok(App.markerSize("pig") >= 16, "pig icons are clearly visible");
+  assert.ok(App.markerSize("pig") > App.markerSize("peak"), "pigs are more prominent than peak dots");
+  assert.equal(App.markerSize("peak"), 6.5, "peak markers keep their established size");
+});
+
 test("alarm badge numbers are never heavier than semibold", () => {
   const loaded = loadApp();
   const { ctx, texts } = recorder();
