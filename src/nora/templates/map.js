@@ -75,10 +75,7 @@
   async function addLayers() {
     view.ready = false;
     calmBasemap();
-    await Promise.all([
-      ...Object.entries(NORA.icons).map(([kind, uri]) => loadImage(`nora-${kind}`, uri, 48)),
-      ...[1, 2, 3].map((l) => loadImage(`nora-alarm-${l}`, badgeUri(l), 32)),
-    ]);
+    await Promise.all([1, 2, 3].map((l) => loadImage(`nora-alarm-${l}`, badgeUri(l), 32)));
     map.addSource("nora-pipes", { type: "geojson", data: NORA.geo.pipes });
     map.addSource("nora-nodes", { type: "geojson", data: NORA.geo.nodes });
     map.addSource("nora-node-badges", { type: "geojson", data: badgeData });
@@ -98,22 +95,30 @@
     map.addLayer({ id: "nora-pipes", type: "line", source: "nora-pipes", filter: ["!=", ["get", "onshore"], true], layout: { "line-cap": "round" },
       paint: { "line-color": ["to-color", state("color", C.normal)], "line-width": width(1), "line-opacity": opacity } });
     map.addLayer({ id: "nora-pipes-hit", type: "line", source: "nora-pipes", paint: { "line-color": "#000", "line-opacity": 0, "line-width": 14 } });
+    /* Nodes are plain circles in their state grey, as in the Flow view: no icons (Ray,
+       28 Oct). An alarm colours only the outline, and the badge carries the shape and
+       number. Names are a separate text layer that is never reloaded. */
+    const radius = (extra = 0) => ["interpolate", ["linear"], ["zoom"], 3, 3.5 + extra, 6, 5.5 + extra, 9, 8 + extra];
+    const nodeOpacity = ["case", ["boolean", ["feature-state", "hide"], false], 0, ["boolean", ["feature-state", "dim"], false], 0.3, 1];
     map.addLayer({ id: "nora-selected", type: "circle", source: "nora-nodes",
-      paint: { "circle-radius": ["case", ["boolean", ["feature-state", "selected"], false], 17, 0], "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2.5, "circle-stroke-color": C.text } });
+      paint: { "circle-radius": radius(5), "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2, "circle-stroke-color": C.text,
+        "circle-stroke-opacity": ["case", ["boolean", ["feature-state", "selected"], false], 1, 0] } });
+    map.addLayer({ id: "nora-node-dots", type: "circle", source: "nora-nodes",
+      paint: {
+        "circle-radius": radius(), "circle-color": ["to-color", state("fill", C.normal)],
+        "circle-stroke-color": ["to-color", state("edge", C.text_dim)], "circle-stroke-width": state("edgeWidth", 1),
+        "circle-opacity": nodeOpacity, "circle-stroke-opacity": nodeOpacity,
+      } });
     map.addLayer({ id: "nora-nodes", type: "symbol", source: "nora-nodes",
       layout: {
-        "icon-image": ["concat", "nora-", ["get", "type"]], "icon-size": ["interpolate", ["linear"], ["zoom"], 3, 0.55, 6, 0.8, 9, 1],
-        "icon-allow-overlap": true, "icon-ignore-placement": true,
-        "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 11.5, "text-offset": [0, 1.3],
-        "text-anchor": "top", "text-optional": true, "text-max-width": 9,
+        "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 11.5,
+        "text-offset": [0, 0.8], "text-anchor": "top", "text-optional": true, "text-max-width": 9,
       },
       paint: {
-        "icon-opacity": ["case", ["boolean", ["feature-state", "hide"], false], 0, ["boolean", ["feature-state", "dim"], false], 0.3, ["boolean", ["feature-state", "inactive"], false], 0.55, 1],
-        "text-opacity": ["case", ["boolean", ["feature-state", "hide"], false], 0, ["boolean", ["feature-state", "dim"], false], 0.3, 1],
-        "text-color": C.text, "text-halo-color": C.paper, "text-halo-width": 1.5,
+        "text-opacity": nodeOpacity, "text-color": C.text, "text-halo-color": C.paper, "text-halo-width": 1.5,
       } });
     // Alarm badges: shape + number + colour, on nodes and at the middle of lines.
-    for (const [id, source, offset] of [["nora-node-alarms", "nora-node-badges", [22, -22]], ["nora-pipe-alarms", "nora-mids", [0, 0]]]) {
+    for (const [id, source, offset] of [["nora-node-alarms", "nora-node-badges", [12, -12]], ["nora-pipe-alarms", "nora-mids", [0, 0]]]) {
       map.addLayer({ id, type: "symbol", source, filter: [">", ["get", "alarm"], 0],
         layout: { "icon-image": ["concat", "nora-alarm-", ["to-string", ["get", "alarm"]]], "icon-size": 0.85, "icon-offset": offset,
           "icon-allow-overlap": true, "icon-ignore-placement": true, "symbol-sort-key": ["-", 0, ["get", "alarm"]] } });
@@ -240,7 +245,7 @@
     map.on("resize", sizeCanvas);
     map.on("render", () => view.ready && view.draw());
     const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12 });
-    for (const layer of ["nora-nodes", "nora-pipes-hit"]) {
+    for (const layer of ["nora-node-dots", "nora-nodes", "nora-pipes-hit"]) {
       map.on("mousemove", layer, (e) => {
         map.getCanvas().style.cursor = "pointer";
         const id = e.features[0].properties.asset;
@@ -250,7 +255,7 @@
     }
     map.on("click", (e) => {
       if (!view.ready) return;
-      const hit = map.queryRenderedFeatures(e.point, { layers: ["nora-nodes", "nora-pipes-hit"] });
+      const hit = map.queryRenderedFeatures(e.point, { layers: ["nora-node-dots", "nora-nodes", "nora-pipes-hit"] });
       if (hit.length) App.select(hit[0].properties.asset);
     });
     // Right-click a node or a pipeline: the same menu everywhere. A plain DOM
@@ -259,7 +264,7 @@
     el.addEventListener("contextmenu", (e) => {
       if (!view.ready) return;
       const rect = map.getCanvas().getBoundingClientRect();
-      const hit = map.queryRenderedFeatures([e.clientX - rect.left, e.clientY - rect.top], { layers: ["nora-nodes", "nora-pipes-hit"] });
+      const hit = map.queryRenderedFeatures([e.clientX - rect.left, e.clientY - rect.top], { layers: ["nora-node-dots", "nora-nodes", "nora-pipes-hit"] });
       if (!hit.length) return;
       e.preventDefault();
       const id = hit[0].properties.asset, d = NORA.assets[id];
@@ -281,7 +286,11 @@
     }
     for (const id of App.nodeIds) {
       const s = App.nodeStyle(id);
-      map.setFeatureState(featureOf[id], { inactive: s.inactive, dim: s.dim, hide: s.hidden });
+      const look = C.card[s.inactive ? "inactive" : App.state.mode === "live" ? "active" : "normal"];
+      map.setFeatureState(featureOf[id], {
+        fill: look.fill, edge: s.level ? App.levelColor[s.level] : C.text_dim, edgeWidth: s.level ? 2.5 : 1,
+        dim: s.dim, hide: s.hidden,
+      });
       if (s.level && !s.hidden) alarms.push(`${id}:${s.level}`);
     }
     // Badges are layout, so they follow the data, not feature state: reload them only

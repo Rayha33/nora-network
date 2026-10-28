@@ -1290,7 +1290,13 @@ const App = (() => {
       const label = `${nameOf(pid)}${v == null ? "" : `: ${fmt(Math.abs(v), 1)}`}`;
       m += `<text x="${x}" y="${above ? y : y + 14}" text-anchor="middle">${esc(label.length > 34 ? `${label.slice(0, 33)}…` : label)}</text>`;
     }
-    if (d.kind === "node") m += `<image href="${NORA.icons[d.type]}" x="${W / 2 - 18}" y="${mid - 18}" width="36" height="36"/>`;
+    if (d.kind === "node") { // the node as in the Flow view: a state-grey circle holding flow and pressure
+      const st = nodeStyle(id), look = COLORS.card[st.inactive ? "inactive" : state.mode === "live" ? "active" : "normal"];
+      const flow = throughput(id, f.flows), bar = metric("pressure_bar", id);
+      m += `<circle cx="${W / 2}" cy="${mid}" r="22" fill="${look.fill}" stroke="${st.level ? LEVEL_COLOR[st.level] : look.edge}" stroke-width="${st.level ? 2.5 : 1}"/>`;
+      if (flow != null) m += `<text x="${W / 2}" y="${mid + (bar != null ? -2 : 4)}" text-anchor="middle" font-weight="700" fill="${look.ink}">${esc(fmt(flow, flow < 10 ? 1 : 0))}</text>`;
+      if (bar != null) m += `<text x="${W / 2}" y="${mid + 12}" text-anchor="middle" class="dimtext" style="font-size:9.5px">${esc(fmt(bar))} bar</text>`;
+    }
     else {
       const s = pipeStyle(id);
       m += `<text x="${W / 2}" y="40" text-anchor="middle">${esc(nameOf(d.from))}</text><text x="${W / 2}" y="${H - 14}" text-anchor="middle">${esc(nameOf(d.to))}</text>`;
@@ -1440,9 +1446,7 @@ const App = (() => {
       h("h3", null, "Indicators"),
       rangeBar({ min: 0, max: 10, value: 6, band: [3, 7], ticks: [{ at: 1.5, level: 3 }, { at: 8.5, level: 3 }], target: 5 }),
       h("p", { class: "dim", style: "margin:4px 0 0" }, "Light band: normal range. Ticks: alarm limits. Hollow diamond: the target (nomination). Pointer: the value now. Trends show the last hours, dashed where they are heading."),
-      h("p", { class: "dim", style: "margin:6px 0 0" }, "Each box in the Flow view shows the flow and pressure now, and a 4-hour line: the last 2 hours solid, the next 2 hours of nominations dashed."),
-      h("h3", null, "Asset types"),
-      h("ul", null, Object.keys(NORA.icons).map((k) => h("li", null, h("img", { src: NORA.icons[k], alt: "" }), NORA.nodeTypes[k]))));
+      h("p", { class: "dim", style: "margin:6px 0 0" }, "Each circle shows the gas flowing through it now (MSm³/d) and its pressure (bar). At exit points a small bar shows today's delivery against the nominations: the middle line is on plan. Under each circle, a 4-hour line: the last 2 hours solid, the next 2 hours of nominations dashed."));
   }
   function storedFlag(key) { try { return localStorage.getItem(key); } catch (error) { return "1"; } }
   function openGuide() {
