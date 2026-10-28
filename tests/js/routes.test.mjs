@@ -73,6 +73,28 @@ test("routes: a peak moves with the gas and leaves the network in the end", () =
   assert.equal(routes.peakPlace(peak, peak.t0 + 400 * 24 * HOUR), null, "the peak is gone in the far future");
 });
 
+test("routes: a peak circle stays exactly between its head and tail at line boundaries", () => {
+  const loaded = loadApp();
+  assertHealthy(assert, loaded);
+  const { App, document, NORA } = loaded;
+  document.getElementById("speed").options = [{ value: "60" }];
+  document.getElementById("stream-select")._listeners.change[0]({ target: { value: NORA.streams[0].name } });
+  const stream = App.live.stream;
+  const pid = stream.assets.find((id) => App.pipeIds.includes(id));
+  for (const forward of [true, false]) {
+    const peak = { id: pid, t0: stream.times[0], delta: 10, forward, level: 1 };
+    App.live.peaks = [peak];
+    for (const elapsed of [0, 60, 3600]) {
+      App.live.time = stream.times[0] + elapsed;
+      const marker = App.markers().find((m) => m.kind === "peak");
+      assert.ok(marker, "the peak is visible");
+      const midpoint = (marker.extent[0] + marker.extent[1]) / 2;
+      assert.ok(Math.abs(midpoint - marker.along) < 1e-12,
+        `${forward ? "forward" : "reverse"} peak at ${elapsed}s is centred`);
+    }
+  }
+});
+
 test("routes: a choice made in the past stays made when the hour on screen changes", () => {
   const loaded = loadApp();
   assertHealthy(assert, loaded);
