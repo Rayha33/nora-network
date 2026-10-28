@@ -402,8 +402,7 @@
     // Route markers use the visible line segment, from where it leaves one square to
     // where it enters the next, with a small gap so no dot or peak band enters a node.
     const screenScale = network ? network.getScale() : 1;
-    const gapA = edgeGap(nodeHalf(), ux, uy) + 8 / screenScale, gapB = edgeGap(nodeHalf(), ux, uy) + 8 / screenScale;
-    const start = Math.min(0.45, gapA / len), end = Math.max(0.55, 1 - gapB / len);
+    const [start, end] = App.visibleRange(len, edgeGap(nodeHalf(), ux, uy) + 8 / screenScale, edgeGap(nodeHalf(), ux, uy) + 8 / screenScale);
     const t = start + (end - start) * along;
     return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, angle: Math.atan2(b.y - a.y, b.x - a.x) };
   }
