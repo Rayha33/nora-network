@@ -344,7 +344,31 @@ const App = (() => {
     display.scale = scale;
     document.documentElement.dataset.display = profile;
     document.documentElement.style.setProperty("--ui-scale", String(scale));
+    placeMenuParts();
     return true;
+  }
+  /* Compact screens have one bar row: the crumbs, search and tools move into the menu
+     sheet (the second bar row, shown as a sheet) and back when the screen grows. */
+  const menuParts = [".crumbs", ".search", ".utility-actions"].map((selector) => {
+    const el = document.querySelector(selector);
+    return el ? { el, home: el.parentElement, next: el.nextElementSibling } : null;
+  }).filter(Boolean);
+  function placeMenuParts() {
+    const sheet = $("bar-secondary");
+    if (!sheet || !sheet.prepend) return;
+    if (display.profile === "compact") {
+      const [crumbs, ...tools] = menuParts;
+      if (crumbs && crumbs.el.parentElement !== sheet) sheet.prepend(crumbs.el);
+      for (const part of tools) if (part.el.parentElement !== sheet) sheet.append(part.el);
+    } else {
+      // Back in reverse order, so each one's next sibling is home already.
+      for (const part of [...menuParts].reverse()) if (part.el.parentElement !== part.home) part.home.insertBefore(part.el, part.next);
+      openMenuSheet(false);
+    }
+  }
+  function openMenuSheet(open) {
+    document.body.classList.toggle("menu-open", open);
+    $("menu-toggle").setAttribute("aria-expanded", String(open));
   }
   applyDisplay();
   // Control rooms are dim: a wall starts dark unless the link or the operator chose.
@@ -2005,6 +2029,12 @@ const App = (() => {
       go({ screen: "overview" });
     });
     $("theme-toggle").addEventListener("click", () => setTheme(theme === "light" ? "dark" : "light"));
+    // The compact menu sheet: a choice in it closes it, and so do Esc and a click outside.
+    $("menu-toggle").addEventListener("click", (e) => { e.stopPropagation(); openMenuSheet(!document.body.classList.contains("menu-open")); });
+    $("bar-secondary").addEventListener("click", (e) => { if (display.profile === "compact" && e.target.closest("button")) openMenuSheet(false); });
+    $("crumb-unit").addEventListener("change", () => openMenuSheet(false));
+    addEventListener("keydown", (e) => { if (e.key === "Escape") openMenuSheet(false); });
+    addEventListener("click", (e) => { if (document.body.classList.contains("menu-open") && !e.target.closest(".bar")) openMenuSheet(false); });
     $("side-close").addEventListener("click", closeSidebar);
     addEventListener("keydown", (e) => { if (e.key === "Escape" && side.id) closeSidebar(); });
     addEventListener("click", closeMenu);

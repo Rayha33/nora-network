@@ -495,6 +495,38 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
   .screen h1 { font-size: 21px; }
 }
 
+/* Compact (tablet and phone, issue #59): one bar row with the plan status, the alarm
+   counts and a menu. The screens, the view and mode tabs, the year, search and the
+   tools live in the menu sheet, which opens over the page and never changes the bar's
+   height. app.js moves the crumbs, search and tools into the sheet and back. */
+.menu-toggle { display: none; }
+:root[data-display="compact"] { --bar-h: 52px; }
+[data-display="compact"] .bar-primary {
+  height: 52px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-bottom: 0;
+}
+[data-display="compact"] .brand-copy { display: none; }
+[data-display="compact"] .brand-mark { width: 30px; height: 30px; }
+[data-display="compact"] .primary-actions { flex: 1; min-width: 0; width: auto; margin: 0; gap: 6px; }
+[data-display="compact"] .plan-chip { flex: 1; max-width: none; justify-content: flex-start; padding: 0 9px; }
+[data-display="compact"] .menu-toggle { display: grid; flex: none; }
+[data-display="compact"] .bar-secondary { display: none; }
+[data-display="compact"] body.menu-open .bar-secondary {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 2; height: auto; overflow: auto;
+  max-height: calc(100vh / var(--ui-scale) - var(--bar-h) - 16px);
+  display: grid; grid-template-columns: minmax(0, 1fr); justify-items: start; gap: 8px; padding: 14px 14px 18px;
+  background: var(--panel); border-bottom: 1px solid var(--rule); box-shadow: var(--shadow-lg);
+}
+[data-display="compact"] .bar-secondary .toolbar-rule, [data-display="compact"] .bar-secondary .spacer { display: none; }
+[data-display="compact"] .bar-secondary > .toolbar-label { display: block; margin-top: 6px; }
+[data-display="compact"] .bar-secondary .crumbs { flex-wrap: wrap; justify-self: stretch; }
+[data-display="compact"] .bar-secondary .crumbs .level { display: inline-grid; }
+[data-display="compact"] .bar-secondary .crumbs button, [data-display="compact"] .bar-secondary .crumbs select { max-width: none; }
+[data-display="compact"] .bar-secondary .search,
+[data-display="compact"] .bar-secondary .search:focus-within { position: static; width: 100%; justify-self: stretch; border-color: var(--rule); background: var(--raised); }
+[data-display="compact"] .bar-secondary .search input { width: 100%; margin-left: 7px; }
+[data-display="compact"] .bar-secondary .utility-actions { border-left: 0; padding-left: 0; gap: 6px; }
+[data-display="compact"] .bar-secondary .year .toolbar-label { display: inline; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
