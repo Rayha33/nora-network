@@ -37,6 +37,13 @@ test("breadcrumb level markers meet the 11 px readability floor", () => {
   assert.doesNotMatch(block[0], /(?:\s|:)9px(?:\s|\/|;)/, "the marker number is not below 11 px");
 });
 
+test("player: the Next problem control is removed", () => {
+  const html = readFileSync(new URL("../../src/nora/templates/app.html.j2", import.meta.url), "utf8");
+  assert.doesNotMatch(html, /id="next-problem"/);
+  const { document } = loadApp();
+  assert.equal(document.getElementById("next-problem"), null);
+});
+
 test("player space is reserved only when the player exists", () => {
   const css = readFileSync(new URL("../../src/nora/templates/app.css", import.meta.url), "utf8");
   const sidebar = css.match(/\.sidebar\s*\{[^}]+\}/s);

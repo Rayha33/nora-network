@@ -1832,7 +1832,6 @@ const App = (() => {
         section("Controls", true, timeline,
           h("ul", { class: "key-notes" },
             item(h("span", null, "▶"), "Play / scrub"),
-            item(h("span", null, "◎"), "Next problem"),
             item(h("span", null, "↗"), "Click for details"),
             item(h("span", null, "⌁"), "What-if: click offline"),
             item(h("span", null, "↔"), "Year: past / future"))),
@@ -2028,9 +2027,6 @@ const App = (() => {
     $("tl-now").textContent = "Real time · UTC";
     $("tl-future").textContent = "+4 h";
     seek(retimed ? nowPosition() : 0); // synthetic data opens at now; recordings keep their start
-    const none = !stream.frames.some((f) => f.plan && (f.plan.now[0] || f.plan.ahead[0]));
-    $("next-problem").disabled = none;
-    $("next-problem").title = none ? "The plan holds throughout this dataset" : "Jump to the next hour where the plan is at risk";
   }
   function seek(position) {
     const s = live.stream;
@@ -2134,24 +2130,6 @@ const App = (() => {
     const offset = Number(scrub.value); // seconds left/right of the real-time centre
     scrub.value = "0";
     if (offset) seek(live.playhead + offset / live.stream.step);
-  });
-  /* The next hour where the plan is at risk, now or within the look-ahead, after the
-     problem being shown (if any). Wraps round to the start of the data. */
-  function nextProblem(from = live.index) {
-    const frames = live.frames, n = frames.length;
-    const risky = (i) => { const p = frames[i] && frames[i].plan; return Boolean(p && (p.now[0] || p.ahead[0])); };
-    for (let k = 1; k < n; k++) {
-      const i = (from + k) % n;
-      if (risky(i) && !(risky((i - 1 + n) % n) && i !== 0)) return i;
-    }
-    return null;
-  }
-  $("next-problem").addEventListener("click", () => {
-    const i = nextProblem();
-    if (i == null) return;
-    pause();
-    seek(i);
-    if (route.screen !== "overview") go({ screen: "overview" });
   });
   $("speed").addEventListener("change", (e) => {
     live.speed = Number(e.target.value);
