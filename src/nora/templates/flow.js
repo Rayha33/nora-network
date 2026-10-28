@@ -277,6 +277,7 @@
     const scale = network.getScale(), detail = scale >= 0.9 ? 2 : scale >= 0.5 ? 1 : 0;
     ctx.save();
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    drawSplitLabels(ctx, positions, ratio);
     const marks = App.markers().filter((m) => edges.get(m.id) && !App.pipeStyle(m.id).hidden);
     const at = (m, t) => network.canvasToDOM(pointAlong(edges.get(m.id), Math.max(0, Math.min(1, t)), positions));
     for (const m of marks) if (m.extent) App.drawBand(ctx, m, at(m, m.extent[0]), at(m, m.extent[1]));
@@ -363,8 +364,57 @@
     network.once("afterDrawing", () => { layout(); view.setUnit(App.route.unit); });
   };
 
+  /* Where a node sends gas into two or more lines, each line gets its own reading just
+     outside the circle: the flow in it (MSm³/d) and its pressure from inlet to outlet
+     (the two end nodes' pressures, bar). Those lines drop the mid-line number. */
+  function splitLines() {
+    const out = new Map(); // pipeline id -> the node it leaves
+    if (App.state.mode !== "live") return out;
+    const by = {};
+    for (const id of App.pipeIds) {
+      const v = App.live.values[id], p = NORA.assets[id];
+      if (!v || Math.abs(v) < 0.05 || App.pipeStyle(id).hidden) continue;
+      const from = v > 0 ? p.from : p.to;
+      (by[from] = by[from] || []).push(id);
+    }
+    for (const [node, ids] of Object.entries(by)) {
+      if (ids.length >= 2 && !App.nodeStyle(node).hidden) for (const id of ids) out.set(id, node);
+    }
+    return out;
+  }
+  function drawSplitLabels(ctx, positions, ratio) {
+    if (network.getScale() < 0.5) return; // unreadable when zoomed far out
+    ctx.save();
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineJoin = "round";
+    for (const [id, node] of splitLines()) {
+      const p = NORA.assets[id], other = p.from === node ? p.to : p.from;
+      const a = positions[node], b = positions[other];
+      if (!a || !b) continue;
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      if (len < CIRC.r * 4) continue;
+      const t = (CIRC.r + 30) / len, at = network.canvasToDOM({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+      const flow = Math.abs(App.live.values[id]), pin = App.reading(node).pressure, pout = App.reading(other).pressure;
+      const lines = [[`${App.fmt(flow, flow < 10 ? 1 : 0)} MSm³/d`, "600 10.5px", C.text]];
+      if (pin != null) lines.push([pout != null ? `${App.fmt(pin)} → ${App.fmt(pout)} bar` : `${App.fmt(pin)} bar`, "9.5px", C.text_dim]);
+      lines.forEach(([text, font, color], k) => {
+        const y = at.y + (k - (lines.length - 1) / 2) * 12;
+        ctx.font = `${font} Archivo, system-ui, sans-serif`;
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = C.paper;
+        ctx.strokeText(text, at.x, y);
+        ctx.fillStyle = color;
+        ctx.fillText(text, at.x, y);
+      });
+    }
+    ctx.restore();
+  }
+
   view.restyle = () => {
     if (!view.ready) return;
+    const split = splitLines();
     nodes.update(App.nodeIds.map((id) => {
       const s = App.nodeStyle(id);
       return { id, hidden: s.hidden, title: `${NORA.assets[id].name}${s.sub ? `\n${s.sub}` : ""}` };
@@ -372,7 +422,7 @@
     edges.update(App.pipeIds.map((id) => {
       const s = App.pipeStyle(id);
       return {
-        id, hidden: s.hidden, label: s.label || " ", width: s.width, dashes: s.dashed ? [5, 5] : false,
+        id, hidden: s.hidden, label: split.has(id) ? " " : s.label || " ", width: s.width, dashes: s.dashed ? [5, 5] : false,
         color: { color: s.color, highlight: s.color, hover: s.color, inherit: false, opacity: s.dim ? 0.3 : 1 },
         shadow: s.level ? { enabled: true, color: C.casing, size: 3, x: 0, y: 0 } : { enabled: false },
         arrows: { to: { enabled: s.forward, scaleFactor: 0.4 }, from: { enabled: s.backward, scaleFactor: 0.4 } },
@@ -427,5 +477,6 @@
     view.setUnit(App.route.unit);
   };
 
+  view.splitLines = splitLines; // for tests: which lines carry their own reading
   App.register("flow", view);
 })();

@@ -39,9 +39,9 @@ DEFAULTS: dict = {
     "pipelines": {"gas_velocity_mps": 8.0, "step_min": 0.25, "peak_max": 2},
     "quality": {"h2s_ppm": [2.5, 3.0, 3.3], "co2_molpct": [2.2, 2.35, 2.5], "follow_from": 0.8},
     "pressure": {
-        "field": [80, 220],
-        "hub": [70, 200],
-        "processing": [60, 180],
+        "field": [100, 175],
+        "hub": [100, 170],
+        "processing": [100, 165],
         "terminal": [55, 85],
         "lng": [60, 90],
         "storage": [50, 150],

@@ -65,6 +65,27 @@ test("flow circles: live flow (MSm³/d) and pressure (bar) for each node", () =>
   assert.ok(readings.some((r) => r.pressure > 0), "and a pressure where it is measured");
 });
 
+test("flow: where a node splits into two or more flowing lines, each line gets its own reading", () => {
+  const loaded = loadApp();
+  const { App } = loaded;
+  loadFirstHour(App, loaded.NORA);
+  App.state.mode = "live";
+  App.live.values = App.live.frames[0].flows;
+  const split = App.views.flow.splitLines();
+  assert.ok(split.size >= 2, "some nodes send gas into several lines");
+  const perNode = {};
+  for (const [pid, node] of split) {
+    const p = App.pipeIds.includes(pid) && loaded.NORA.assets[pid];
+    assert.ok(p && (p.from === node || p.to === node), "the line leaves that node");
+    const v = App.live.values[pid];
+    assert.equal(v > 0 ? p.from : p.to, node, "and the gas flows out of it, not in");
+    perNode[node] = (perNode[node] || 0) + 1;
+  }
+  for (const count of Object.values(perNode)) assert.ok(count >= 2, "only nodes with two or more lines out");
+  App.state.mode = "load";
+  assert.equal(App.views.flow.splitLines().size, 0, "live readings only in Live mode");
+});
+
 /* One real hour of the first stream with pressures, the way `start()` loads it. */
 function loadFirstHour(App, nora) {
   const stream = nora.streams.find((s) => s.metrics && s.metrics.pressure_bar) || nora.streams[0];

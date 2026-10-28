@@ -52,9 +52,9 @@ follow_from = 0.8          # follow a peak once a field's reading reaches 80% of
 # Operating pressure windows (bar) by asset type. Illustrative values for the model;
 # replace them with real limits per asset when they are known.
 [pressure]
-field = [80, 220]
-hub = [70, 200]
-processing = [60, 180]
+field = [100, 175]        # offshore lines typically run at 120-160 bar
+hub = [100, 170]
+processing = [100, 165]
 terminal = [55, 85]
 lng = [60, 90]
 storage = [50, 150]
