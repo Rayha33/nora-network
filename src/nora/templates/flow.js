@@ -1,8 +1,8 @@
 /* Flow view (level 2): the whole network as a gas flow overview on dotted paper, top to
    bottom by default (fields at the top, markets at the bottom), with straight lines.
    vis-network draws the nodes, edges and options pyvis produced; each node is drawn as
-   a circle holding its live flow (MSm³/d) and pressure (bar), with its name, rate of
-   change and a 4-hour trend below (the last 2 hours of flow, solid, and the next 2
+   a circle holding its live incoming and outgoing flow (MSm³/d), with pressure (bar),
+   its name, rate of change and a 4-hour trend below (the last 2 hours of flow, solid, and the next 2
    hours of nominations, dashed). Stage and rank come from layout.py
    (NORA.grid); direction and spacing from the settings; colours, widths and labels from
    App.pipeStyle / App.nodeStyle. Alarm badges, pigs and peaks are drawn on top. */
@@ -30,15 +30,22 @@
      lines are easier to follow. */
   function layout() {
     direction = chooseDirection();
-    const [baseGap, rankGap] = SPACING[direction][App.settings().density] || SPACING[direction].comfortable;
+    const [baseGap, baseRankGap] = SPACING[direction][App.settings().density] || SPACING[direction].comfortable;
     const cells = Object.values(NORA.grid), ranks = cells.map((c) => c[1]);
     const stagesSpan = Math.max(1, Math.max(...cells.map((c) => c[0])));
+    // Measure the current directional readings before spacing the ranks. A circle that
+    // needs both in/out labels also gets room from its neighbours.
+    framePos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id,
+      direction === "vertical" ? { x: rank * baseRankGap, y: stage * baseGap } : { x: stage * baseGap, y: rank * baseRankGap }]));
+    const reserved = App.state.mode === "live" ? 70 : CIRC.r; // a quadrant may gain its second direction during playback
+    const extra = Math.max(0, Math.max(reserved, ...App.nodeIds.map((id) => circleRadius(id))) - CIRC.r) * 2;
+    const rankGap = baseRankGap + extra;
     const across = (Math.max(...ranks) - Math.min(...ranks) + 1) * rankGap;
     const aspect = direction === "vertical" ? el.clientHeight / el.clientWidth : el.clientWidth / el.clientHeight;
-    const stageGap = Math.min(baseGap * 2.5, Math.max(baseGap, (across * (aspect || 1)) / stagesSpan));
-    nodes.update(Object.entries(NORA.grid).map(([id, [stage, rank]]) => (direction === "vertical"
-      ? { id, x: rank * rankGap, y: stage * stageGap }
-      : { id, x: stage * stageGap, y: rank * rankGap })));
+    const stageGap = Math.min((baseGap + extra) * 2.5, Math.max(baseGap + extra, (across * (aspect || 1)) / stagesSpan));
+    framePos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id,
+      direction === "vertical" ? { x: rank * rankGap, y: stage * stageGap } : { x: stage * stageGap, y: rank * rankGap }]));
+    nodes.update(Object.entries(framePos).map(([id, p]) => ({ id, x: p.x, y: p.y })));
   }
 
   // The paper: a dot grid in canvas units, so it pans and zooms with the drawing.
@@ -126,25 +133,34 @@
     if (day.level) { ctx.strokeStyle = C.casing; ctx.lineWidth = 1; ctx.stroke(); }
     ctx.restore();
   }
-  /* Four quadrants inside each circle, split by a faint +: up-right, down-right,
-     down-left and up-left. The flow of every line leaving the node is written in the
-     quadrant facing that line (lines on the same side are summed), so the two lines a
-     node splits into each get their own number. Directions come from this frame's
-     positions, so the numbers move quadrant when a node is dragged. */
+  /* Four quadrants inside each circle. Every visible line contributes to the side
+     facing its far end: incoming and outgoing totals are kept separately, and lines
+     sharing a direction are summed. Positions come from the current frame, so dragging
+     a node also moves the readings. */
   const QUAD = { NE: [1, -1], SE: [1, 1], SW: [-1, 1], NW: [-1, -1] };
-  function quadrants(id, positions = framePos) {
+  function flowQuadrants(id, positions = framePos) {
     const here = positions[id], out = {};
     if (!here) return out;
     for (const pid of App.pipeIds) {
       const p = NORA.assets[pid], v = App.live.values[pid];
       if (!v || Math.abs(v) < 0.05 || (p.from !== id && p.to !== id) || App.pipeStyle(pid).hidden) continue;
-      if ((p.from === id) !== (v > 0)) continue; // gas comes in on this line, not out
       const other = positions[p.from === id ? p.to : p.from];
       if (!other) continue;
       const side = `${other.y - here.y > 0 ? "S" : "N"}${other.x - here.x >= 0 ? "E" : "W"}`;
-      out[side] = (out[side] || 0) + Math.abs(v);
+      const cell = out[side] = out[side] || { in: 0, out: 0 };
+      cell[(p.from === id) === (v > 0) ? "out" : "in"] += Math.abs(v);
     }
     return out;
+  }
+  function quadrants(id, positions = framePos) {
+    const q = flowQuadrants(id, positions), out = {};
+    for (const [side, cell] of Object.entries(q)) if (cell.out) out[side] = cell.out;
+    return out;
+  }
+  function circleRadius(id, positions = framePos) {
+    const cells = Object.values(flowQuadrants(id, positions));
+    if (!cells.length) return CIRC.r;
+    return cells.some((cell) => cell.in && cell.out) ? 70 : 62;
   }
   // A reading inside a circle, on a patch of the circle's own fill: the faint + and the
   // day bar never run through a number.
@@ -156,8 +172,8 @@
     ctx.restore();
     ctx.fillText(text, x, y);
   }
-  function drawQuadrants(ctx, x, y, id, look, { day, total }) {
-    const r = CIRC.r, q = quadrants(id), at = r * 0.42;
+  function drawQuadrants(ctx, x, y, id, look, { day, total, r = CIRC.r, positions = framePos }) {
+    const q = flowQuadrants(id, positions), at = r * 0.45;
     ctx.save();
     ctx.globalAlpha = 0.35; // the faint +
     ctx.strokeStyle = look.edge;
@@ -171,12 +187,17 @@
     ctx.textBaseline = "middle";
     ctx.fillStyle = look.ink;
     ctx.font = "600 11px Archivo, system-ui, sans-serif";
-    for (const [side, flow] of Object.entries(q)) {
-      const [ux, uy] = QUAD[side];
-      reading(ctx, fitText(ctx, `${App.fmt(flow, flow < 10 ? 1 : 0)}M`, r * 0.85), x + ux * at, y + uy * at, look);
+    for (const [side, cell] of Object.entries(q)) {
+      const [ux, uy] = QUAD[side], both = cell.in && cell.out;
+      const labels = [];
+      if (cell.in) labels.push({ text: `in ${App.fmt(cell.in, cell.in < 10 ? 1 : 0)}M`, dy: both ? -7 : 0, ink: look.dim });
+      if (cell.out) labels.push({ text: `out ${App.fmt(cell.out, cell.out < 10 ? 1 : 0)}M`, dy: both ? 7 : 0, ink: look.ink });
+      for (const label of labels) {
+        ctx.fillStyle = label.ink;
+        reading(ctx, fitText(ctx, label.text, r * 1.15), x + ux * at, y + uy * at + label.dy, look);
+      }
     }
-    // Flow remains in the quadrants facing its outgoing lines. Pressure is written
-    // outside the circle with the asset name, where it has room to stay readable.
+    // Flow faces both incoming and outgoing lines. Pressure stays outside the circle.
     if (day) drawDayBar(ctx, x, y + 1, day, look);
     if (!Object.keys(q).length && total != null) {
       ctx.font = "600 11px Archivo, system-ui, sans-serif";
@@ -187,15 +208,18 @@
   }
   // vis-network custom shape: the circle for one node, name and live numbers below it.
   function card(id) {
-    return ({ ctx, x, y, state: { selected, hover } }) => ({
+    return ({ ctx, x, y, state: { selected, hover } }) => {
+      const dimensionsRadius = App.state.mode === "live" ? circleRadius(id) : CIRC.r;
+      return ({
       drawNode() {
         const s = App.nodeStyle(id), d = NORA.assets[id];
         const live = App.state.mode === "live";
+        const radius = live ? circleRadius(id) : CIRC.r;
         const look = C.card[s.inactive ? "inactive" : live ? "active" : "normal"];
         ctx.save();
         ctx.globalAlpha = s.dim ? 0.35 : 1;
         ctx.beginPath();
-        ctx.arc(x, y, CIRC.r, 0, Math.PI * 2);
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
         ctx.fillStyle = look.fill;
         ctx.fill();
         if (s.level) { // alarm: dark casing ring, colour inside it, never colour alone
@@ -215,7 +239,7 @@
           : App.state.mode === "risk" && d.lost ? `−${App.fmt(d.lost)}` : "";
         const day = live ? App.dayDelivery(id) : null; // exit points: within-day delivery bar
         const pressure = now && now.pressure != null ? `${App.fmt(now.pressure)} bar` : "";
-        if (live) drawQuadrants(ctx, x, y, id, look, { day, total: now.flow });
+        if (live) drawQuadrants(ctx, x, y, id, look, { day, total: now.flow, r: radius });
         else if (big) {
           ctx.fillStyle = look.ink;
           ctx.font = "600 12.5px Archivo, system-ui, sans-serif";
@@ -226,10 +250,10 @@
         // through its text (Ray, 28 Oct).
         ctx.textBaseline = "alphabetic";
         ctx.textAlign = "center";
-        const nameY = y + CIRC.r + CIRC.name, pressureY = nameY + CIRC.sub;
+        const nameY = y + radius + CIRC.name, pressureY = nameY + CIRC.sub;
         const subY = pressureY + (pressure ? CIRC.sub : 0);
         ctx.font = NAME_FONT;
-        const name = fitText(ctx, d.name, CIRC.r * 3);
+        const name = fitText(ctx, d.name, radius * 3);
         let width = ctx.measureText(name).width;
         const r = live ? App.flowRate(id) : null;
         let sub = null;
@@ -243,12 +267,12 @@
         }
         if (sub) { ctx.font = sub.font; width = Math.max(width, ctx.measureText(sub.text).width); }
         if (pressure) { ctx.font = SUB_FONT; width = Math.max(width, ctx.measureText(pressure).width); }
-        if (live) width = Math.max(width, CIRC.r * 2);
+        if (live) width = Math.max(width, radius * 2);
         const bottom = live ? subY + 4 + CIRC.trend : (sub ? subY : nameY) + 4;
         ctx.save();
         ctx.globalAlpha = 1;
         ctx.fillStyle = C.paper;
-        ctx.fillRect(x - width / 2 - 4, y + CIRC.r + 1.5, width + 8, bottom - (y + CIRC.r + 1.5));
+        ctx.fillRect(x - width / 2 - 4, y + radius + 1.5, width + 8, bottom - (y + radius + 1.5));
         ctx.restore();
         ctx.fillStyle = look.ink;
         ctx.font = NAME_FONT;
@@ -263,12 +287,13 @@
           ctx.fillStyle = sub.ink;
           ctx.fillText(sub.text, x, subY);
         }
-        if (live) drawTrend(ctx, id, x - CIRC.r, subY + 2, CIRC.r * 2, CIRC.trend, look);
+        if (live) drawTrend(ctx, id, x - radius, subY + 2, radius * 2, CIRC.trend, look);
         ctx.restore();
-        if (s.level) App.drawBadge(ctx, s.level, x + CIRC.r - 3, y - CIRC.r + 3, 8);
+        if (s.level) App.drawBadge(ctx, s.level, x + radius - 3, y - radius + 3, 8);
       },
-      nodeDimensions: { width: CIRC.r * 2, height: CIRC.r * 2 + CIRC.name + CIRC.sub * 2 + CIRC.trend + 4 },
-    });
+      nodeDimensions: { width: dimensionsRadius * 2, height: dimensionsRadius * 2 + CIRC.name + CIRC.sub * 2 + CIRC.trend + 4 },
+      });
+    };
   }
 
   /* Row names, pinned to the left edge (or the top, left to right) so they stay readable
@@ -305,7 +330,7 @@
       const dom = network.canvasToDOM(p);
       const width = ctx.measureText(row.name).width;
       const [x, y] = direction === "vertical"
-        ? [10, dom.y - CIRC.r * scale - 12]
+        ? [10, dom.y - circleRadius(row.id) * scale - 12]
         : [dom.x - width / 2, 12];
       if (y < 0 || y > el.clientHeight || x > el.clientWidth) continue;
       ctx.globalAlpha = 0.85;
@@ -440,7 +465,7 @@
         const p = positions[nid];
         if (!p) continue; // a node the layout has not placed (hidden units)
         const dom = network.canvasToDOM(p);
-        const score = Math.hypot(dom.x - at.x, dom.y - at.y) - CIRC.r; // to the circle's edge
+        const score = Math.hypot(dom.x - at.x, dom.y - at.y) - circleRadius(nid); // to the circle's edge
         if (best === null || score < bestScore) { bestScore = score; best = nid; }
       }
       for (const pid of App.pipeIds) {
@@ -501,7 +526,8 @@
     const positions = Object.values(network.getPositions());
     if (!positions.length || !el.clientWidth) return 0;
     const xs = positions.map((p) => p.x), ys = positions.map((p) => p.y);
-    const w = Math.max(...xs) - Math.min(...xs) + CIRC.r * 6, h = Math.max(...ys) - Math.min(...ys) + CIRC.r * 6;
+    const margin = Math.max(CIRC.r, ...App.nodeIds.map((id) => circleRadius(id))) * 6;
+    const w = Math.max(...xs) - Math.min(...xs) + margin, h = Math.max(...ys) - Math.min(...ys) + margin;
     return Math.min(el.clientWidth / w, el.clientHeight / h) * 0.8;
   }
   view.setUnit = (unit) => {
@@ -534,6 +560,9 @@
   };
 
   view.quadrants = quadrants; // for tests: which side of a node each outflow is written on
+  view.flowQuadrants = flowQuadrants;
+  view.circleRadius = circleRadius;
+  view.drawQuadrants = drawQuadrants;
   view.card = card; // for tests: the renderer of one node
   App.register("flow", view);
 })();

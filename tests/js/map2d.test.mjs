@@ -117,6 +117,98 @@ test("flow circles: each outgoing line's flow sits in the quadrant facing that l
   assert.equal(after, `${side[0] === "S" ? "N" : "S"}${side[1] === "E" ? "W" : "E"}`, "dragged past it, the flow faces the line again");
 });
 
+test("flow circles: incoming and outgoing totals share space dynamically", () => {
+  const loaded = loadApp();
+  const { App, NORA } = loaded;
+  loadFirstHour(App, NORA);
+  App.state.mode = "live";
+  App.live.values = App.live.frames[0].flows;
+  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 178, y: stage * 124 }]));
+  let checkedIn = 0, checkedOut = 0, mixed = null;
+  for (const id of App.nodeIds) {
+    const q = App.views.flow.flowQuadrants(id, pos);
+    for (const [side, cell] of Object.entries(q)) {
+      let incoming = 0, outgoing = 0;
+      for (const pid of App.pipeIds) {
+        const p = NORA.assets[pid], v = App.live.values[pid];
+        if (!v || Math.abs(v) < 0.05 || (p.from !== id && p.to !== id)) continue;
+        const otherId = p.from === id ? p.to : p.from;
+        const otherSide = `${pos[otherId].y - pos[id].y > 0 ? "S" : "N"}${pos[otherId].x - pos[id].x >= 0 ? "E" : "W"}`;
+        if (side !== otherSide) continue;
+        if ((p.from === id) === (v > 0)) outgoing += Math.abs(v); else incoming += Math.abs(v);
+      }
+      assert.ok(Math.abs(cell.in - incoming) < 1e-6, `${id} ${side}: incoming flow is included`);
+      assert.ok(Math.abs(cell.out - outgoing) < 1e-6, `${id} ${side}: outgoing flow is included`);
+      if (incoming) checkedIn++;
+      if (outgoing) checkedOut++;
+      if (incoming && outgoing && !mixed) mixed = { id, radius: App.views.flow.circleRadius(id, pos) };
+    }
+  }
+  assert.ok(checkedIn > 0, "incoming lines have readings");
+  assert.ok(checkedOut > 0, "outgoing lines keep their readings");
+  if (!mixed) {
+    // Force two real connected lines into opposite directions on the same side.
+    outer: for (const id of App.nodeIds) {
+      const sides = {};
+      for (const pid of App.pipeIds) {
+        const p = NORA.assets[pid];
+        if (p.from !== id && p.to !== id) continue;
+        const otherId = p.from === id ? p.to : p.from;
+        const side = `${pos[otherId].y - pos[id].y > 0 ? "S" : "N"}${pos[otherId].x - pos[id].x >= 0 ? "E" : "W"}`;
+        (sides[side] = sides[side] || []).push(pid);
+      }
+      const pair = Object.values(sides).find((lines) => lines.length > 1);
+      if (!pair) continue;
+      for (const [index, pid] of pair.slice(0, 2).entries()) {
+        const p = NORA.assets[pid], outgoing = index === 0;
+        App.live.values[pid] = ((p.from === id) === outgoing ? 1 : -1) * 5;
+      }
+      mixed = { id, radius: App.views.flow.circleRadius(id, pos) };
+      break outer;
+    }
+  }
+  assert.ok(mixed, "a quadrant can contain both directions");
+  assert.ok(mixed.radius > 30, "the mixed-direction circle expands for two stacked readings");
+});
+
+test("flow circles: a mixed quadrant renders separate incoming and outgoing labels", () => {
+  const loaded = loadApp();
+  const { App, NORA } = loaded;
+  loadFirstHour(App, NORA);
+  App.state.mode = "live";
+  App.live.values = App.live.frames[0].flows;
+  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 178, y: stage * 124 }]));
+  let id, pair;
+  outer: for (const node of App.nodeIds) {
+    const sides = {};
+    for (const pid of App.pipeIds) {
+      const p = NORA.assets[pid];
+      if (p.from !== node && p.to !== node || App.pipeStyle(pid).hidden) continue;
+      const other = p.from === node ? p.to : p.from;
+      const side = `${pos[other].y - pos[node].y > 0 ? "S" : "N"}${pos[other].x - pos[node].x >= 0 ? "E" : "W"}`;
+      (sides[side] = sides[side] || []).push(pid);
+      if (Object.values(sides).some((lines) => lines.length > 1)) { id = node; pair = Object.values(sides).find((lines) => lines.length > 1); break outer; }
+    }
+  }
+  for (const [index, pid] of pair.slice(0, 2).entries()) {
+    const p = NORA.assets[pid], outgoing = index === 0;
+    App.live.values[pid] = ((p.from === id) === outgoing ? 1 : -1) * 5;
+  }
+  const labels = [];
+  const ctx = new Proxy({
+    measureText: (t) => ({ width: String(t).length * 6 }),
+    fillText: (text, x, y) => labels.push({ text, x, y }),
+  }, {
+    get: (target, key) => key in target ? target[key] : () => {},
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  App.views.flow.drawQuadrants(ctx, 0, 0, id, App.colors.card.active, { day: null, total: null, r: 44, positions: pos });
+  const incoming = labels.find((label) => label.text.startsWith("in "));
+  const outgoing = labels.find((label) => label.text.startsWith("out ") && label.x === incoming?.x && Math.abs(label.y - incoming.y) === 14);
+  assert.ok(incoming && outgoing, `both directions are written on separate lines: ${JSON.stringify(labels)}`);
+  assert.notEqual(incoming.y, outgoing.y, "the two readings have their own lines");
+});
+
 test("exit circles: within-day delivery against the nominations, as a share", () => {
   const { App, NORA } = loadApp();
   const exit = "easington";

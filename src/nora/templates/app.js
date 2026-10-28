@@ -1491,7 +1491,7 @@ const App = (() => {
       h("h3", null, "Indicators"),
       rangeBar({ min: 0, max: 10, value: 6, band: [3, 7], ticks: [{ at: 1.5, level: 3 }, { at: 8.5, level: 3 }], target: 5 }),
       h("p", { class: "dim", style: "margin:4px 0 0" }, "Light band: normal range. Ticks: alarm limits. Hollow diamond: the target (nomination). Pointer: the value now. Trends show the last hours, dashed where they are heading."),
-      h("p", { class: "dim", style: "margin:6px 0 0" }, "In the Flow view each circle shows, in the quarter facing each line that leaves it, the gas going out on that line (34M is 34 MSm³/d). Pressure (bar) sits below the asset name, outside the circle. At exit points a small bar shows today's delivery against the nominations: the middle line is on plan. Under each name, a 4-hour line: the last 2 hours solid, the next 2 hours of nominations dashed. The sidebar's picture lists the gas coming in above the circle and going out below it."));
+      h("p", { class: "dim", style: "margin:6px 0 0" }, "In the Flow view each circle shows incoming (in) and outgoing (out) totals in the quarter facing each connected line (34M is 34 MSm³/d). Circles expand when both directions need separate lines. Pressure (bar) sits below the asset name, outside the circle. At exit points a small bar shows today's delivery against the nominations: the middle line is on plan. Under each name, a 4-hour line: the last 2 hours solid, the next 2 hours of nominations dashed. The sidebar's picture lists the gas coming in above the circle and going out below it."));
   }
   function storedFlag(key) { try { return localStorage.getItem(key); } catch (error) { return "1"; } }
   function openGuide() {
