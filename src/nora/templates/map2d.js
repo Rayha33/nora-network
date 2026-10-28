@@ -156,14 +156,14 @@ function NoraCanvasMap(view) {
     if (live) {
       const z = zoom(), detail = z >= 6.5 ? 2 : z >= 5 ? 1 : 0, marks = App.markers();
       for (const m of marks) {
-        if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]), 4 * u, bandPath(m.id, m.extent));
+        if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]), 3.2 * u, bandPath(m.id, m.extent));
       }
       drawnMarks = [];
       const taken = [...placed, ...dots]; // marker labels keep clear of names and dots
       for (const m of marks) {
         if (!pipeById[m.id] || App.pipeStyle(m.id).hidden) continue;
         const p = along(m.id, m.along);
-        App.drawMarker(ctx, m, p.x, p.y, p.angle, 6.5, detail, taken);
+        App.drawMarker(ctx, m, p.x, p.y, p.angle, m.kind === "pig" ? 8.5 : 6.5, detail, taken);
         if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
       }
     }

@@ -36,9 +36,15 @@ const App = (() => {
   if (!PALETTES[theme]) theme = "light";
 
   // ------------------------------------------------------------------ helpers
+  /* Number formats are cached: toLocaleString with options builds a new Intl.NumberFormat
+     on every call, and the views format thousands of numbers a frame (the Flow view ran
+     at 3 fps on that alone). */
+  const NUMBER_FORMATS = {};
   function fmt(value, digits = 0) {
     if (value == null || Number.isNaN(value)) return "–";
-    return Number(value).toLocaleString("en-GB", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    const format = NUMBER_FORMATS[digits]
+      || (NUMBER_FORMATS[digits] = new Intl.NumberFormat("en-GB", { minimumFractionDigits: digits, maximumFractionDigits: digits }));
+    return format.format(Number(value));
   }
   function signed(value, digits = 1) {
     if (value == null || Number.isNaN(value)) return "–";
@@ -68,7 +74,13 @@ const App = (() => {
   }
   const assets = NORA.assets;
   const nameOf = (id) => (assets[id] || {}).name || id;
-  const timeFormat = (epoch, opts) => new Date(epoch * 1000).toLocaleString("en-GB", { timeZone: "UTC", ...opts });
+  // Dates likewise: one cached Intl.DateTimeFormat per set of options.
+  const DATE_FORMATS = new Map();
+  const timeFormat = (epoch, opts) => {
+    const key = JSON.stringify(opts || {});
+    if (!DATE_FORMATS.has(key)) DATE_FORMATS.set(key, new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", ...opts }));
+    return DATE_FORMATS.get(key).format(new Date(epoch * 1000));
+  };
   const formatTime = (t) => timeFormat(t, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + " UTC";
   const shortTime = (t) => timeFormat(t, { weekday: "short", hour: "2-digit", minute: "2-digit" });
 
@@ -137,7 +149,7 @@ const App = (() => {
      opaque band in the peak's calm colour over the line, with a dark casing so it
      stands off the paper in both themes, and a crisp edge at the head so the direction
      of travel reads at a glance. The dot and its label are drawn on top of it. */
-  function drawBand(ctx, marker, a, b, width = 4, path = null) {
+  function drawBand(ctx, marker, a, b, width = 3.2, path = null) {
     const color = marker.kind === "quality" ? COLORS[QUALITY[marker.gas].color] : COLORS.peak;
     const points = path && path.length > 1 ? path : [a, b];
     const head = points[points.length - 1], before = points[points.length - 2];
