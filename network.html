@@ -4042,8 +4042,8 @@ function NoraCanvasMap(view) {
   function overviewReading(scale, radius) {
     return scale < 1 && radius * scale >= 11; // otherwise a clean dot is better than spilled text
   }
-  // A reading inside a circle, on a patch of the circle's own fill: the faint + and the
-  // day bar never run through a number. Text stays at its real screen size at every zoom.
+  // A reading inside a circle, on a patch of the circle's own fill so the day bar never
+  // runs through a number. Text stays at its real screen size at every zoom.
   function reading(ctx, text, x, y, look) {
     const ratio = (network && network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
     const point = network ? network.canvasToDOM({ x, y }) : { x, y };
@@ -4058,14 +4058,6 @@ function NoraCanvasMap(view) {
   function drawQuadrants(ctx, x, y, id, look, { day, total, r = CIRC.r, positions = framePos }) {
     const q = flowQuadrants(id, positions), at = r * 0.45;
     ctx.save();
-    ctx.globalAlpha = 0.35; // the faint +
-    ctx.strokeStyle = look.edge;
-    ctx.lineWidth = 0.6;
-    ctx.beginPath();
-    ctx.moveTo(x - r * 0.8, y); ctx.lineTo(x + r * 0.8, y);
-    ctx.moveTo(x, y - r * 0.8); ctx.lineTo(x, y + r * 0.8);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = look.ink;
