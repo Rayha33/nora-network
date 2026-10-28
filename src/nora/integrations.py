@@ -205,8 +205,7 @@ class NationalGasInterconnector(Connector):
                     readings = [
                         (time, value)
                         for time, value in row.items()
-                        if re.fullmatch(r"\d{2}:\d{2}", time)
-                        and isinstance(value, (int, float))
+                        if re.fullmatch(r"\d{2}:\d{2}", time) and isinstance(value, (int, float))
                     ]
                     if readings:
                         return float(sorted(readings)[-1][1])

@@ -70,7 +70,9 @@ def test_gassco_fetch_maps_countries_to_market_nodes(api_url, monkeypatch):
     assert readings[0].when.tzinfo is not None  # epoch ms became an aware datetime
 
 
-def test_interconnector_combines_bacton_export_and_import_into_signed_iuk_flow(api_url, monkeypatch):
+def test_interconnector_combines_bacton_export_and_import_into_signed_iuk_flow(
+    api_url, monkeypatch
+):
     monkeypatch.setenv("NORA_NATIONAL_GAS_URL", api_url + "/national-gas")
     now = datetime(2026, 10, 28, 12, 0, tzinfo=UTC)
     readings = list(interconnector.fetch(now - timedelta(minutes=2), now))
