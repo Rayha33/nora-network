@@ -337,6 +337,8 @@
     }
     map.on("click", (e) => {
       if (!view.ready) return;
+      const mark = markAt(e.point.x, e.point.y); // a pig or a peak under the pointer wins
+      if (mark) { App.selectMarker(mark.key); return; }
       const hit = map.queryRenderedFeatures(e.point, { layers: ["nora-node-dots", "nora-nodes", "nora-pipes-hit"] });
       if (hit.length) App.select(hit[0].properties.asset);
     });

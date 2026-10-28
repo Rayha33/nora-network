@@ -523,10 +523,12 @@
       App.drawBand(ctx, m, path[0], path[path.length - 1], 3.2 * App.uiScale(), path);
     }
     const taken = marksNow.length ? [...nodeBoxes(), ...lineValueBoxes] : []; // labels keep clear of the circles' text and line values
+    drawnMarks = [];
     for (const m of marksNow) {
       const p = pointAlong(edges.get(m.id), Math.max(0, Math.min(1, m.along)), positions);
       const dom = network.canvasToDOM(p);
       App.drawMarker(ctx, m, dom.x, dom.y, p.angle, m.kind === "pig" ? 10 : 6.5, detail, taken);
+      if (!m.noDot) drawnMarks.push({ x: dom.x, y: dom.y, m });
     }
   }
 
@@ -559,6 +561,13 @@
      trend under it, so the labels of pigs and peaks keep clear of them. Each node
      records its box (in canvas units) as it is drawn, so this costs no extra pass. */
   let drawnBoxes = {}, lineValueBoxes = [];
+  // Where pigs and peaks were drawn this frame (screen pixels), so a click can open one.
+  let drawnMarks = [];
+  function markAt(x, y) {
+    let best = null, bestD = 9 * App.uiScale();
+    for (const d of drawnMarks) { const dist = Math.hypot(d.x - x, d.y - y); if (dist < bestD) { best = d.m; bestD = dist; } }
+    return best;
+  }
   function nodeBoxes() {
     return Object.values(drawnBoxes).map(([x0, y0, x1, y1]) => {
       const a = network.canvasToDOM({ x: x0, y: y0 }), b = network.canvasToDOM({ x: x1, y: y1 });
@@ -592,6 +601,8 @@
     network.on("hoverNode", ({ node }) => nodes.update({ id: node, title: tooltip(node) }));
     network.on("click", (event) => {
       const at = event.pointer && event.pointer.DOM;
+      const mark = at && markAt(at.x, at.y); // a pig or a peak under the pointer wins
+      if (mark) { App.selectMarker(mark.key); return; }
       const id = event.nodes[0] || event.edges[0] || (at && hitTest(at, network.getPositions(), (p) => network.canvasToDOM(p), network.getScale()));
       if (id) App.select(id);
     });
@@ -745,5 +756,6 @@
   view.stubClear = stubClear;
   view.card = card; // for tests: the renderer of one node
   view.hitTest = hitTest;
+  view.markAt = (x, y) => markAt(x, y); // for tests: the pig or peak at a screen point
   App.register("flow", view);
 })();

@@ -219,10 +219,11 @@ const App = (() => {
   /* What a marker is, for a mouse-over: the value and when it reaches its next stop. */
   function markerTip(m) {
     const when = m.eta && m.to ? `: reaches ${m.to} at ${m.eta}` : m.to ? ` at ${m.to}` : "";
-    if (m.kind === "pig") return `${m.title || "Pig"}${when}`;
-    if (m.kind === "peak") return `Flow change ${m.value} MSm³/d on ${nameOf(m.id)}${when}`;
-    if (m.noDot) return `${QUALITY[m.gas].name} slug on ${nameOf(m.id)}`;
-    return `${m.value} ${QUALITY[m.gas].unit} on ${nameOf(m.id)}${when}`;
+    const more = " · click for details";
+    if (m.kind === "pig") return `${m.title || "Pig"}${when}${more}`;
+    if (m.kind === "peak") return `Flow change ${m.value} MSm³/d on ${nameOf(m.id)}${when}${more}`;
+    if (m.noDot) return `${QUALITY[m.gas].name} slug on ${nameOf(m.id)}${more}`;
+    return `${m.value} ${QUALITY[m.gas].unit} on ${nameOf(m.id)}${when}${more}`;
   }
 
   // ------------------------------------------------------------------ alarm levels
@@ -473,6 +474,7 @@ const App = (() => {
     down: {}, // pipelines whose flow has collapsed
     peaks: [], // flow changes travelling down pipelines
     quality: [], // parcels of H₂S or CO₂-rich gas travelling with the flow
+    slugs: new Map(), // slug -> {origin, metric, first, last, volume, max}: what each slug is
     conditions: [], // active abnormal conditions, worst first
     levelOf: {}, // asset -> worst active level
   };
@@ -789,7 +791,7 @@ const App = (() => {
     for (const pig of pigs) {
       const place = pigPlace(pig, live.time);
       if (place) out.push({ kind: "pig", id: place.pid, along: place.along, label: "", level: 0, title: pig.label,
-        eta: clock(place.exitAt), to: nameOf(place.next) });
+        eta: clock(place.exitAt), to: nameOf(place.next), key: `pig:${pig.label}|${pig.launch}`, ref: pig });
     }
     /* Head and tail: a peak is a stretch of gas, not a point. A change in flow spreads
        over the gas that passed in one data step (velocity × step); the band is centred
@@ -812,7 +814,8 @@ const App = (() => {
       const d = assets[place.pid];
       out.push({ kind: "peak", id: place.pid, along: place.along, level: peak.level, rising: place.delta > 0,
         value: `${place.delta > 0 ? "+" : "−"}${fmt(Math.abs(place.delta), 1)}`, eta: clock(place.exitAt),
-        to: nameOf(place.forward ? d.to : d.from), extent: peakExtentOf(place.pid, place.along, place.forward) });
+        to: nameOf(place.forward ? d.to : d.from), extent: peakExtentOf(place.pid, place.along, place.forward),
+        key: `peak:${peak.id}|${peak.t0}`, ref: peak });
     }
     /* A slug of H₂S or CO₂ is drawn as one band per line it covers, from its rear parcel
        to its front parcel; the dot (and the label) sits on its strongest parcel. */
@@ -825,7 +828,7 @@ const App = (() => {
       spans.set(key, span);
     }
     for (const { q, lo, hi, lead } of spans.values()) {
-      const base = { kind: "quality", gas: q.metric, id: q.pid, extent: extentOf(q.pid, lo, hi, q.forward) };
+      const base = { kind: "quality", gas: q.metric, id: q.pid, extent: extentOf(q.pid, lo, hi, q.forward), key: `quality:${q.slug}`, ref: q.slug };
       if (!lead) { out.push({ ...base, along: (lo + hi) / 2, lead: false, noDot: true, level: 0, value: "" }); continue; }
       const { s } = lead;
       out.push({ ...base, along: lead.at, lead: true, level: Math.max(s.level, s.exitLevel),
@@ -883,7 +886,15 @@ const App = (() => {
             if (live.quality[k].origin === node && live.quality[k].metric === name) { slug = live.quality[k].slug; break; }
           }
         }
-        live.quality.push({ metric: name, origin: node, slug, conc: value, pid: route.pid, forward: route.forward, t0: current.t, arrived: null });
+        live.quality.push({ metric: name, origin: node, slug, conc: value, pid: route.pid, forward: route.forward, t0: current.t, born: current.t, arrived: null });
+        /* Each parcel is one data step of the field's gas: the slug's volume adds them
+           up as they leave the field, so it stays whole after its head has left. */
+        const step = previous ? current.t - previous.t : (live.stream && live.stream.step) || 3600;
+        const info = live.slugs.get(slug) || { slug, metric: name, origin: node, first: current.t, last: current.t, volume: 0, max: 0 };
+        info.last = current.t;
+        info.max = Math.max(info.max, value);
+        info.volume += ((throughput(node, current.flows) || 0) * step) / 86400; // MSm³/d over the step, in MSm³
+        live.slugs.set(slug, info);
       }
     }
   }
@@ -903,6 +914,7 @@ const App = (() => {
   }
   function replayQuality(index) {
     live.quality = [];
+    live.slugs = new Map();
     for (let i = Math.max(0, index - 36); i <= index && live.frames[i]; i++) {
       spawnQuality(live.frames[i - 1], live.frames[i]);
       advanceQuality(live.frames[i].t, live.frames[i]);
@@ -1421,20 +1433,39 @@ const App = (() => {
 
   /* The asset sidebar: a calm column that slides in from the right when a field,
      plant or line is clicked on the unit screen, and follows the data as it plays. */
-  const side = { id: null };
+  const side = { id: null, marker: null };
   function openSidebar(id) {
     if (!assets[id]) return;
     side.id = id;
+    side.marker = null;
+    renderSidebar();
+    $("asset-side").classList.add("open");
+    $("asset-side").setAttribute("aria-hidden", "false");
+  }
+  // A pig or a peak: the sidebar follows it as the data plays (`key` from markers()).
+  function openMarker(key) {
+    if (!key) return;
+    side.id = null;
+    side.marker = key;
     renderSidebar();
     $("asset-side").classList.add("open");
     $("asset-side").setAttribute("aria-hidden", "false");
   }
   function closeSidebar() {
     side.id = null;
+    side.marker = null;
     $("asset-side").classList.remove("open");
     $("asset-side").setAttribute("aria-hidden", "true");
   }
   function renderSidebar() {
+    if (side.marker) {
+      const body = $("side-body"), top = body.scrollTop, detail = markerDetail(side.marker);
+      $("side-title").textContent = detail.title;
+      $("side-sub").textContent = detail.sub;
+      body.replaceChildren(detail.body);
+      body.scrollTop = top;
+      return;
+    }
     if (!side.id || !assets[side.id]) return;
     const d = assets[side.id], body = $("side-body"), top = body.scrollTop;
     $("side-title").textContent = d.name;
@@ -1443,6 +1474,85 @@ const App = (() => {
       : `${NORA.pipelineTypes[d.type]} · ${nameOf(d.from)} to ${nameOf(d.to)}`;
     body.replaceChildren(assetDetail(side.id, true));
     body.scrollTop = top;
+  }
+  /* A pig or a peak in the sidebar (Ray, 28 Oct: "head ETA and tail ETA as well as
+     total volume of the peak as the origin of the peak (where was it first
+     generated)"). Every time is an estimate from the model's gas speed and the flows
+     of the data, and says so. */
+  function markerDetail(key) {
+    const m = markers().find((k) => k.key === key && !k.noDot) || markers().find((k) => k.key === key);
+    const row = (label, ...value) => [h("dt", null, label), h("dd", null, ...value)];
+    const box = (title, ...rows) => h("div", { class: "box" }, h("h2", null, title), h("dl", { class: "facts" }, ...rows.flat()));
+    const note = (text) => h("p", { class: "dim small" }, text);
+    const at = (node, t) => (t == null ? nameOf(node) : `${nameOf(node)}, ${etaText(t)}`);
+    const v = C.pipelines.gas_velocity_mps, step = (live.stream && live.stream.step) || 3600;
+    const volume = (msm3) => `${fmt(msm3, msm3 < 1 ? 2 : 1)} MSm³`;
+    if (!m) return { title: "Left the network", sub: "", body: h("div", { class: "side-detail" }, h("p", { class: "empty" }, "This pig or peak has left the network, or the data moved past it. Click another on the map or in the Flow.")) };
+    if (m.kind === "pig") {
+      const pig = m.ref, trip = pigTrip(pig, live.time);
+      return { title: pig.label, sub: `Pig on ${nameOf(m.id)}`, body: h("div", { class: "side-detail" },
+        box("Where it is going",
+          row("Now on", nameOf(m.id)),
+          row("Next stop", at(trip.next, trip.nextAt)),
+          row("Receiver", at(trip.receiver, trip.arrives))),
+        box("Run",
+          row("Launched", formatTime(trip.start)),
+          row("Speed", `${fmt(pig.speed, 1)} m/s`),
+          pig.every ? row("Relaunched", `every ${fmt(pig.every / 3600)} h`) : []),
+        note("Estimate from the pig's speed and the route the gas takes through each node.")) };
+    }
+    if (m.kind === "peak") {
+      const peak = m.ref, place = peakPlace(peak), pad = step / 2, d = assets[place.pid];
+      const next = place.forward ? d.to : d.from, end = peakEnd(peak);
+      const rose = place.delta > 0;
+      return { title: `Flow ${rose ? "increase" : "drop"} of ${fmt(Math.abs(place.delta), 1)} MSm³/d`, sub: `Peak on ${nameOf(place.pid)}`,
+        body: h("div", { class: "side-detail" },
+          box("Head and tail",
+            row("Head reaches", at(next, place.exitAt - pad)),
+            row("Tail reaches", at(next, place.exitAt + pad)),
+            end ? row(end.leaves ? "Leaves the network" : "Fades out", `${at(end.node, end.t)}, head to tail ${fmt(step / 3600, step % 3600 ? 1 : 0)} h`) : []),
+          box("Volume and origin",
+            row("Total volume", `${volume((Math.abs(place.delta) * step) / 86400)} ${rose ? "more" : "less"} gas`),
+            row("Origin", `${nameOf(peak.id)}, first seen ${formatTime(peak.t0)}`),
+            row("At the origin", `${signed(peak.delta, 1)} MSm³/d in one data step`)),
+          note(`Estimate: a change in flow travels with the gas at ${fmt(v)} m/s, spread over the gas of one data step, and fades where other gas joins it.`)) };
+    }
+    // An H₂S or CO₂ slug: its head is the parcel that left the field first, its tail the last.
+    const slug = live.slugs.get(m.ref), parcels = live.quality.filter((q) => q.slug === m.ref), q0 = QUALITY[m.gas];
+    const head = parcels.reduce((a, b) => (a && a.born <= b.born ? a : b), null), tail = parcels.reduce((a, b) => (a && a.born >= b.born ? a : b), null);
+    const ahead = (q) => (q ? project(q) : null), headGo = ahead(head), tailGo = ahead(tail);
+    const conc = (value) => `${fmt(value, q0.digits)} ${q0.unit}`;
+    return { title: `${q0.name} peak`, sub: `${m.value ? `${m.value} ${q0.unit} ` : ""}on ${nameOf(m.id)}${slug ? ` · from ${nameOf(slug.origin)}` : ""}`,
+      body: h("div", { class: "side-detail" },
+        box("Head and tail",
+          headGo ? row("Head reaches", head.arrived ? `${nameOf(head.arrived.node)}: arrived` : at(headGo.next.node, headGo.next.t)) : [],
+          tailGo ? row("Tail reaches", tail.arrived ? `${nameOf(tail.arrived.node)}: arrived` : at(tailGo.next.node, tailGo.next.t)) : [],
+          headGo && headGo.exit ? row("Head leaves at", `${at(headGo.exit.node, headGo.exit.t)}, ${conc(headGo.exit.conc)}`) : [],
+          tailGo && tailGo.exit ? row("Tail leaves at", `${at(tailGo.exit.node, tailGo.exit.t)}, ${conc(tailGo.exit.conc)}`) : []),
+        slug ? box("Volume and origin",
+          row("Total volume", `${volume(slug.volume)} of gas over ${conc(C.quality[m.gas][0] * C.quality.follow_from)}`),
+          row("Origin", `${nameOf(slug.origin)}, first seen ${formatTime(slug.first)}`),
+          row("Strongest at the origin", `${conc(slug.max)}; limit ${conc(C.quality[m.gas][2])}`)) : [],
+        note(`Estimate: gas travels at ${fmt(v)} m/s along the line taking most of the flow; where gas joins, it is assumed to carry the median field reading. The volume is the field's gas while its reading stayed over the follow level.`)) };
+  }
+  // Where a peak's route ends: its last line, from the flows the data will have then.
+  function peakEnd(peak) {
+    peakPlace(peak, Infinity); // works out the rest of its hops, kept on the peak
+    const last = peak.hops[peak.hops.length - 1];
+    if (!last) return null;
+    const node = last.forward ? assets[last.pid].to : assets[last.pid].from;
+    return { node, t: last.t + lineMetres(last.pid) / C.pipelines.gas_velocity_mps, leaves: isExit(node) };
+  }
+  // A pig's run: the next node, the receiver at the end of its route, and when.
+  function pigTrip(pig, time) {
+    const since = time - pig.launch, every = pig.every > 0 ? pig.every : 0;
+    const run = every ? Math.floor(since / every) : 0, start = pig.launch + run * every;
+    const place = pigPlace(pig, time), route = pigRoute(pig, run, Infinity), last = route[route.length - 1];
+    return {
+      start, next: place.next, nextAt: place.exitAt,
+      receiver: last.forward ? assets[last.pid].to : assets[last.pid].from,
+      arrives: start + (last.m + lineMetres(last.pid)) / pig.speed,
+    };
   }
   function facts(id) {
     const d = assets[id];
@@ -1892,7 +2002,7 @@ const App = (() => {
     showTime();
     restyle();
     refreshScreens();
-    if (side.id && route.screen === "unit") renderSidebar();
+    if ((side.id || side.marker) && route.screen === "unit") renderSidebar();
     drawSpark();
   }
   // The track shows the plan status over time: plain where it holds, marked where not.
@@ -2071,7 +2181,7 @@ const App = (() => {
   function receiveFrame(f) {
     const last = live.frames[live.frames.length - 1], entry = { t: f.t, flows: f.values, metrics: f.metrics || {}, plan: f.plan || null };
     if (last && f.t < last.t) {
-      live.frames = []; live.peaks = []; live.quality = []; live.down = {};
+      live.frames = []; live.peaks = []; live.quality = []; live.slugs = new Map(); live.down = {};
       pigRoutes.clear();
     }
     for (const [id, v] of Object.entries(f.values)) {
@@ -2295,7 +2405,8 @@ const App = (() => {
       if (route.screen === "unit") { openSidebar(id); return; }
       go({ screen: "asset", asset: id });
     },
-    sidebar: { open: (id) => openSidebar(id), close: closeSidebar, id: () => side.id },
+    sidebar: { open: (id) => openSidebar(id), close: closeSidebar, id: () => side.id, marker: () => side.marker },
+    selectMarker: openMarker, // a click on a pig or a peak, from any view
     feed: { frame: receiveFrame, trouble: feedTrouble }, // the live feed's handlers, for tests
     menu: { open: openMenu, close: closeMenu, for: menuFor },
   };
