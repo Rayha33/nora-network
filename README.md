@@ -12,6 +12,11 @@ Dutch and Danish gas to Europe's markets.
 
 ## What it does
 
+- **Four levels of detail.** Level 1 is the network overview: plan status, exit points,
+  pressures, active alarms and units. Level 2 is one operating unit on the Map or in the
+  Flow view. Level 3 is an asset: what flows in and out, its readings and state. Level 4
+  shows the recent readings behind the values, missing readings, source details, the
+  network data row and the modelled flow.
 - **Map.** The network at its true coordinates on a real map (MapLibre with free
   OpenFreeMap tiles). Click any asset for its details and a link to its data row.
 - **Flow.** The whole Gassco network as a gas flow overview drawn with
@@ -20,6 +25,9 @@ Dutch and Danish gas to Europe's markets.
 - **Analysis.** [networkx](https://networkx.org/) computes how much gas the network can
   deliver to each market (max flow) and how much is lost if any single asset trips (N-1).
   The *Load* and *Risk* modes show both, on the map and in the flow overview.
+- **Decision support.** When a plan is short, the overview names the likely active event,
+  alternative exits with spare booked capacity, and the basis and uncertainty of the
+  suggestion. Synthetic data is labelled; verify advice against the live system.
 - **Live replay.** Time series of flows, from a synthetic week to real daily flows from
   Energinet and a year of the Interconnector (IUK) both ways from National Gas, play
   back as if they were arriving live: lines
@@ -76,11 +84,21 @@ Every pull request is checked and built. Merging to `main` publishes the site at
 https://factorlab.app/nora-network/. Details for contributors and AI assistants are in
 [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md).
 
+## What diagnostics show
+
+Level 4 currently reports the selected asset's recent readings, missing readings,
+dataset and asset source metadata, the source CSV row, and its flow in the network
+model. It does not yet trace a live SCADA interface or tag through every ingestion and
+control-room system; those integrations and lineage need to be supplied and verified.
+
 ## Roadmap
 
 The [issues](https://github.com/Rayha33/nora-network/issues) are the roadmap. Directions:
 
 - **Realtime.** Connect live sources such as the ENTSOG Transparency Platform.
+- **Integrations.** Connectors for Origo and Gassco Booking need documented APIs and
+  credentials; CSV exports are the current import path. The public Gassco feed reports
+  country aggregates, not terminal-specific measurements.
 - **Data quality.** Sources for every row.
 - **Scenarios.** What-if outages and demand cases run in the browser.
 - **Operations.** Line pack, pressure and alarms closer to a real control room.
