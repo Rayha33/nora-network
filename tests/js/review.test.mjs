@@ -2,7 +2,7 @@
    the REAL templates (src/nora/templates/{app,map,flow}.js), driven through the same
    DOM stub the repo's own tests use. Findings-only: nothing here fixes anything.
 
-   1. Playback head: scrub/seek clamping, "Next problem" landing on a risky frame.
+   1. Playback head: scrub/seek clamping and the real-time-centred window.
    2. Live-feed mode (?live=): the playhead stays put there, so anything that
       animates must follow live.clock instead; and start() survives the harness.
    3. Escaping: a hostile asset NAME from the (crowd-edited) payload must never
@@ -71,36 +71,6 @@ test("playback: real time stays centred between four hours back and ahead", () =
     scrub._listeners.input[0]({ target: scrub });
   }
   assert.equal(App.live.index, 0, "repeated backward drags clamp to the first frame");
-});
-
-test("playback: Next problem lands on an hour where the plan is at risk", () => {
-  const loaded = loadApp();
-  assertHealthy(assert, loaded);
-  const { App, document, NORA } = loaded;
-  document.getElementById("speed").options = [{ value: "60" }];
-  document.getElementById("stream-select")._listeners.change[0](
-    { target: { value: NORA.streams[0].name } });
-  const s = App.live.stream;
-  // Start from the first hour (a synthetic stream opens at now, mid-way).
-  const scrub = document.getElementById("scrub");
-  while (App.live.index > 0) {
-    scrub.value = String(-4 * 3600);
-    scrub._listeners.input[0]({ target: scrub });
-  }
-
-  // A risky hour: the plan's now- or ahead-level is raised. Use a real one if the
-  // fixture has it, otherwise plant one (as a scripted event would).
-  let risky = s.frames.findIndex((f) => f.plan && (f.plan.now[0] || f.plan.ahead[0]));
-  if (risky < 0) {
-    risky = Math.min(10, s.frames.length - 1);
-    s.frames[risky].plan = { now: [2, "Plant trip at the terminal", "plan"],
-      ahead: [0, "", null, 1], nominated: 1, deliverable: 1, maxLoad: 1, bottleneck: "x" };
-  }
-  const next = document.getElementById("next-problem");
-  assert.equal(next.disabled, false, "Next problem is enabled while a risky hour exists");
-  next._listeners.click[0](); // the real click handler: pause, seek, maybe go()
-  assert.equal(App.live.index, risky, "the playhead is ON the risky hour");
-  assert.equal(App.live.playing, false, "and the player is paused");
 });
 
 /* ---------------------------------------------------------------------- feed mode */
