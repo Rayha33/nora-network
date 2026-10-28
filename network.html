@@ -781,7 +781,7 @@ const App = (() => {
      opaque band in the peak's calm colour over the line, with a dark casing so it
      stands off the paper in both themes, and a crisp edge at the head so the direction
      of travel reads at a glance. The dot and its label are drawn on top of it. */
-  function drawBand(ctx, marker, a, b, width = 4, path = null) {
+  function drawBand(ctx, marker, a, b, width = 3.2, path = null) {
     const color = marker.kind === "quality" ? COLORS[QUALITY[marker.gas].color] : COLORS.peak;
     const points = path && path.length > 1 ? path : [a, b];
     const head = points[points.length - 1], before = points[points.length - 2];
@@ -2950,7 +2950,7 @@ function NoraCanvasMap(view) {
     if (live) {
       const z = zoom(), detail = z >= 6.5 ? 2 : z >= 5 ? 1 : 0, marks = App.markers();
       for (const m of marks) {
-        if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]), 4 * u, bandPath(m.id, m.extent));
+        if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]), 3.2 * u, bandPath(m.id, m.extent));
       }
       drawnMarks = [];
       for (const m of marks) {
@@ -3588,7 +3588,7 @@ function NoraCanvasMap(view) {
     }
     // Peaks as bands from tail to head first, then every marker on top.
     const marks = App.markers().filter((m) => ends[m.id] && !App.pipeStyle(m.id).hidden);
-    for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]), 4 * App.uiScale(), projectBand(m.id, m.extent));
+    for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]), 3.2 * App.uiScale(), projectBand(m.id, m.extent));
     const zoom = map.getZoom(), detail = zoom >= 6.5 ? 2 : zoom >= 5 ? 1 : 0;
     drawnMarks = [];
     for (const m of marks) {
@@ -4080,7 +4080,7 @@ function NoraCanvasMap(view) {
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     const marks = App.markers().filter((m) => edges.get(m.id) && !App.pipeStyle(m.id).hidden);
     const at = (m, t) => network.canvasToDOM(pointAlong(edges.get(m.id), Math.max(0, Math.min(1, t)), positions));
-    for (const m of marks) if (m.extent) App.drawBand(ctx, m, at(m, m.extent[0]), at(m, m.extent[1]), 4 * App.uiScale());
+    for (const m of marks) if (m.extent) App.drawBand(ctx, m, at(m, m.extent[0]), at(m, m.extent[1]), 3.2 * App.uiScale());
     for (const m of marks) {
       const p = pointAlong(edges.get(m.id), Math.max(0, Math.min(1, m.along)), positions);
       const dom = network.canvasToDOM(p);
