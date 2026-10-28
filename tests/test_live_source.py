@@ -234,3 +234,16 @@ def test_a_nan_from_a_polled_source_becomes_null_not_invalid_json(api_url, monke
     payload = data[len("data: ") :]
     assert "NaN" not in payload, payload  # never invalid JSON
     assert json_mod.loads(payload)  # and it parses
+
+
+def test_interconnector_takes_the_newest_reading_after_midnight():
+    """Review finding: readings were ordered by the text of their time, so after
+    midnight "23:58" beat "00:02" and the IUK flow froze at the evening's value."""
+    fixture = json.loads((Path(__file__).parent / "data" / "national_gas_latest.json").read_text())
+    exported = fixture["data"]["Demand from interconnectors"]["data"][1]  # Bacton INT Export
+    assert exported["TERMINAL TOTALS"] == "Bacton INT Export"
+    for key in [k for k in exported if ":" in k]:
+        del exported[key]
+    exported.update({"23:58": 9.0, "00:02": 11.0})  # the gas day runs on past midnight
+    _, value = interconnector.parse(fixture)
+    assert value == pytest.approx(11.0 - 4.5)  # the 00:02 export, less the 09:44 import

@@ -114,18 +114,11 @@ class Stream:
     def frames_full(self) -> Iterator[tuple[int, datetime, dict, dict]]:
         """(index, time, flows, {metric: {asset: value}}) for every time step."""
         for i, (when, flows) in enumerate(self.frames()):
-            extra = (
-                {
-                    metric: {
-                        a: row[i]
-                        for a, row in zip(assets, zip(*values, strict=True), strict=True)
-                        if row[i] is not None
-                    }
-                    for metric, (assets, values) in self.metrics.items()
-                }
-                if self.metrics
-                else {}
-            )
+            # Row i of each metric's matrix (transposing it per step cost O(steps²)).
+            extra = {
+                metric: {a: v for a, v in zip(assets, values[i], strict=True) if v is not None}
+                for metric, (assets, values) in self.metrics.items()
+            }
             yield i, when, flows, extra
 
     def payload(self) -> dict:
@@ -387,13 +380,16 @@ def synthesize(
     times = [start + k * step for k in range(steps)]
     for when in times:
         graph = apply_events(base, events, when)
-        supply = {}
+        supply, plan_supply = {}, {}
         for node in suppliers:
             drift[node] = 0.9 * drift[node] + rng.gauss(0, 0.012)
+            share = _load(when, base.nodes[node]["type"], drift[node])
             # The event-applied graph, not the base: a derated or offline supply
-            # node must actually reduce what it can push into the network.
-            capacity = graph.nodes[node]["capacity_msm3d"] or 0.0
-            supply[node] = capacity * _load(when, base.nodes[node]["type"], drift[node])
+            # node must actually reduce what it can push into the network...
+            supply[node] = (graph.nodes[node]["capacity_msm3d"] or 0.0) * share
+            # ...while the plan (the nominations) is what it would supply without
+            # events, so a field outage shows as a shortfall against the plan.
+            plan_supply[node] = (base.nodes[node]["capacity_msm3d"] or 0.0) * share
         # Dispatch keeps exit points on their nominations: the plan is what the supply
         # would deliver without events, and only an event pushes the flows off it.
         flow = routed_flow(graph, supply)
@@ -402,7 +398,9 @@ def synthesize(
         ]
         if operations:
             actual.append(_throughput(net, flow))
-            planned.append(_throughput(net, flow if graph is base else routed_flow(base, supply)))
+            planned.append(
+                _throughput(net, flow if graph is base else routed_flow(base, plan_supply))
+            )
     if operations:
         rows += _operations_rows(net, times, actual, planned, pressure_windows, rng)
     if spec.get("quality", False):

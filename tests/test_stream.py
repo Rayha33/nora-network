@@ -9,7 +9,7 @@ import pytest
 
 from nora.data import DataError
 from nora.live import replay, serve
-from nora.stream import Stream, list_streams, load_stream, scaffold, write_flows
+from nora.stream import Event, Stream, list_streams, load_stream, scaffold, synthesize, write_flows
 
 
 def make_stream(folder, toml, files=None):
@@ -303,7 +303,22 @@ def test_replay_loops_through_frames(tiny, tmp_path):
     stream = load_stream("s", tiny, tmp_path)
     frames = list(itertools.islice(replay(stream, speed=1e9), 3))
     assert [f[1][1]["pipe_a"] for f in frames] == [1, 2, 1]
-    assert [round(f[0], 9) for f in frames] == [0.0, 3600e-9, 0.0]  # paced: hour gaps at wrap
+    # paced: an hour of data between frames, and starting over waits a step too (at
+    # least 0.05 s, so even a very fast replay never restarts in a busy loop)
+    assert [round(f[0], 9) for f in frames] == [0.0, 3600e-9, 0.05]
+
+
+def test_replay_of_one_frame_waits_between_loops(tiny, tmp_path):
+    """Review finding: a one-frame stream restarted at once, every loop, so the server
+    resent its frame in a busy loop at 100% CPU."""
+    make_stream(
+        tmp_path / "s",
+        "",
+        {"flows.csv": "timestamp,asset,flow_msm3d\n2026-01-01T00:00Z,pipe_a,1\n"},
+    )
+    stream = load_stream("s", tiny, tmp_path)
+    waits = [wait for wait, _ in itertools.islice(replay(stream, speed=3600), 3)]
+    assert waits == [0.0, 1.0, 1.0]  # an hour of data a second: a frame a second
 
 
 def test_live_server_sends_meta_then_frames(tiny, tmp_path):
@@ -579,3 +594,29 @@ def test_a_derate_actually_cuts_a_supply_nodes_flow(tiny):
     during = feed[(hours[1], "feed")]
     assert during < before * 0.75, (before, during)
     assert feed[(hours[2], "feed")] > during, "and it recovers after the event"
+
+
+def test_synthetic_nominations_are_the_plan_without_events(tiny):
+    """Review finding: the nominations were routed with the supply an event had already
+    cut, so a field outage moved the plan with it and never showed as a shortfall."""
+    spec = {"start": "2026-01-05T00:00:00Z", "steps": 8, "operations": True, "seed": 3}
+    start = datetime(2026, 1, 5, tzinfo=UTC)
+    outage = Event(
+        "Gas field derate", "gas", start + timedelta(hours=2), start + timedelta(hours=6), 0.5
+    )
+
+    def rows(events):
+        return {
+            (when, asset, metric): value
+            for when, asset, metric, value in synthesize(tiny, spec, events)
+        }
+
+    calm, derated = rows(()), rows((outage,))
+    nominations = [k for k in calm if k[2] == "nomination_msm3d"]
+    assert nominations and all(calm[k] == derated[k] for k in nominations), (
+        "the plan ignores the event"
+    )
+    hour = start + timedelta(hours=3)
+    assert derated[(hour, "feed", "flow_msm3d")] < calm[(hour, "feed", "flow_msm3d")], (
+        "the gas does not"
+    )

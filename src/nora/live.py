@@ -50,16 +50,23 @@ def replay(stream: Stream, speed: float = 3600.0, loop: bool = True) -> Iterator
     server can cut each wait into keepalive-sized chunks and write an SSE comment
     between them; see _Handler._pause.
     """
+    # Starting over waits one step of the stream, like any other frame: an instant
+    # restart made a one-frame stream resend its frame in a busy loop.
+    step = (stream.times[1] - stream.times[0]).total_seconds() if len(stream.times) > 1 else 3600.0
+    restart = 0.0
     while True:
         previous = None
         steps = 0
         for index, when, flows, metrics in stream.frames_full():
-            wait = 0.0 if previous is None else max(0.0, (when - previous).total_seconds() / speed)
+            wait = (
+                restart if previous is None else max(0.0, (when - previous).total_seconds() / speed)
+            )
             previous = when
             steps += 1
             yield wait, (when, flows, metrics, index)
         if not loop:
             return
+        restart = max(step / speed, 0.05)
         if not steps:
             # An empty stream would otherwise spin at 100% CPU until the
             # client disconnects; nap instead and try again.
