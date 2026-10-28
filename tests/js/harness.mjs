@@ -21,11 +21,13 @@ export function loadPayload() {
 }
 
 /* Evaluate the three templates in one context. `search` becomes location.search, so
-   URL-driven behaviour (?embed=1, ?theme=…) can be exercised per test. */
-export function loadApp({ search = "" } = {}) {
+   URL-driven behaviour (?embed=1, ?theme=…) can be exercised per test. `globals` adds
+   browser objects the stub lacks (a fake maplibregl, Path2D) for the tests that mount
+   a map view. */
+export function loadApp({ search = "", globals = {} } = {}) {
   const nora = loadPayload();
   const document = makeDom();
-  const sandbox = makeSandbox({ nora, document, search });
+  const sandbox = Object.assign(makeSandbox({ nora, document, search }), globals);
   const context = vm.createContext(sandbox, { name: "nora-dom" });
   const sources = {
     app: readFileSync(path.join(TEMPLATES, "app.js"), "utf8"),

@@ -237,7 +237,9 @@ function NoraCanvasMap(view) {
   // ------------------------------------------------------------------ view contract
   view.mount = (container) => {
     el = container;
-    el.replaceChildren();
+    // Clear what a map drew here before, but keep the page's map card: the app writes
+    // the unit and mode into it on every navigation (clearing it broke navigation).
+    for (const child of [...el.children]) if (!child.classList.contains("map-context")) child.remove();
     canvas = document.createElement("canvas");
     canvas.className = "map2d";
     canvas.setAttribute("role", "img");
@@ -328,7 +330,9 @@ function NoraCanvasMap(view) {
   };
 
   view.restyle = () => redraw();
-  view.draw = () => redraw();
+  // Called every animation frame: only playback moves anything. Changes while paused
+  // come through restyle, the camera and the settings, which redraw themselves.
+  view.draw = () => { if (App.live.playing) redraw(); };
   view.applySettings = () => redraw();
   view.setUnit = (unit) => {
     if (!view.ready) return;
