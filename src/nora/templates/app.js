@@ -1506,6 +1506,14 @@ const App = (() => {
     $("asset-side").classList.remove("open");
     $("asset-side").setAttribute("aria-hidden", "true");
   }
+  // A primary press anywhere outside dismisses the panel. Listening on pointerdown
+  // means selecting another background asset closes the old panel before the new one
+  // opens; interaction inside the panel itself never bubbles into a dismissal.
+  document.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0 || (!side.id && !side.marker)) return;
+    if (event.target.closest("#asset-side")) return;
+    closeSidebar();
+  });
   function renderSidebar() {
     if (side.marker) {
       const body = $("side-body"), top = body.scrollTop, detail = markerDetail(side.marker);

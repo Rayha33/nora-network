@@ -119,7 +119,8 @@ export function makeDom() {
     createTextNode: (text) => ({ nodeType: 3, textContent: String(text) }),
     querySelector: () => null,
     querySelectorAll: () => [],
-    addEventListener() {},
+    _listeners: {},
+    addEventListener(type, fn) { (this._listeners[type] ??= []).push(fn); },
     removeEventListener() {},
     hidden: false,
   };
