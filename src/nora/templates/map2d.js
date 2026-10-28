@@ -289,7 +289,7 @@ function NoraCanvasMap(view) {
     });
     canvas.addEventListener("pointermove", (e) => {
       const [lon, lat] = unmerc(...toMerc(e.offsetX, e.offsetY));
-      readout.textContent = `${Math.abs(lat).toFixed(4)}°${lat >= 0 ? "N" : "S"}  ${Math.abs(lon).toFixed(4)}°${lon >= 0 ? "E" : "W"}  ·  zoom ${zoom().toFixed(1)}`;
+      readout.textContent = App.positionText(lon, lat); // water depth instead of the zoom (Ray)
       const previous = pointers.get(e.pointerId);
       if (!previous) {
         const mark = drawnMarks.find((d) => Math.hypot(d.x - e.offsetX, d.y - e.offsetY) < 9 * App.uiScale());
