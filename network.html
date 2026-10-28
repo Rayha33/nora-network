@@ -2274,7 +2274,7 @@ const App = (() => {
     const item = (icon, text) => h("li", null, icon, h("span", null, text));
     const section = (title, wide, ...children) => h("section", { class: `key-section${wide ? " key-wide" : ""}` }, h("h3", null, title), ...children);
     const timeline = svg("0 0 280 58", `<path d="M9 9l7 5-7 5z" fill="${COLORS.text}"/><line x1="28" y1="28" x2="268" y2="28" stroke="${COLORS.text_dim}"/><line x1="148" y1="17" x2="148" y2="39" stroke="${COLORS.text}" stroke-width="2"/><circle cx="148" cy="28" r="4" fill="${COLORS.text}"/><g fill="${COLORS.text_dim}" font-size="11" font-family="Archivo, sans-serif"><text x="28" y="49">← History</text><text x="148" y="49" text-anchor="middle" fill="${COLORS.text}">Now</text><text x="268" y="49" text-anchor="end">Model →</text></g>`);
-    const flow = svg("0 0 280 96", `<line x1="12" y1="34" x2="94" y2="34" stroke="${COLORS.text_dim}"/><line x1="166" y1="34" x2="268" y2="34" stroke="${COLORS.text_dim}"/><path d="M82 30l10 4-10 4zM188 30l10 4-10 4z" fill="${COLORS.text_dim}"/><circle cx="130" cy="34" r="35" fill="${COLORS.card.active.fill}" stroke="${COLORS.card.active.edge}"/><g fill="${COLORS.card.active.ink}" font-size="11" font-family="Archivo, sans-serif" text-anchor="middle"><text x="113" y="31">in 34M</text><text x="147" y="43">out 30M</text><text x="130" y="80" fill="${COLORS.text}">Asset · 82 bar</text></g>`);
+    const flow = svg("0 0 280 96", `<line x1="12" y1="34" x2="94" y2="34" stroke="${COLORS.text_dim}"/><line x1="166" y1="34" x2="268" y2="34" stroke="${COLORS.text_dim}"/><path d="M82 30l10 4-10 4zM188 30l10 4-10 4z" fill="${COLORS.text_dim}"/><circle cx="130" cy="34" r="35" fill="${COLORS.card.active.fill}" stroke="${COLORS.card.active.edge}"/><g fill="${COLORS.card.active.ink}" font-size="11" font-family="Archivo, sans-serif" text-anchor="middle"><text x="113" y="31">34M</text><text x="147" y="43">30M</text><text x="130" y="80" fill="${COLORS.text}">Asset · 82 bar</text></g>`);
     const exit = svg("0 0 280 30", `<line x1="65" y1="14" x2="215" y2="14" stroke="${COLORS.text_dim}"/><line x1="105" y1="7" x2="105" y2="21" stroke="${COLORS.text_dim}"/><line x1="175" y1="7" x2="175" y2="21" stroke="${COLORS.text_dim}"/><line x1="145" y1="4" x2="145" y2="24" stroke="${COLORS.text}" stroke-width="3"/><g fill="${COLORS.text_dim}" font-size="11" font-family="Archivo, sans-serif"><text x="65" y="28">min</text><text x="140" y="28" fill="${COLORS.text}">now</text><text x="202" y="28">max</text></g>`);
     $("key").replaceChildren(
       h("button", { type: "button", class: "text close", onclick: closeGuide }, "Close"),
@@ -2297,7 +2297,7 @@ const App = (() => {
           item(sample(COLORS.normal, 3), "Normal"),
           item(sample(COLORS.inactive, 3), "Inactive"),
           item(sample(COLORS.inactive, 1.5, ' stroke-dasharray="3 3"'), "No data"))),
-        section("Flow", true, flow, h("p", { class: "key-caption" }, "in / out · MSm³/d"), exit, h("p", { class: "key-caption" }, "Exit delivery")),
+        section("Flow", true, flow, h("p", { class: "key-caption" }, "MSm³/d · position shows direction"), exit, h("p", { class: "key-caption" }, "Exit delivery")),
         section("Indicators", true, rangeBar({ min: 0, max: 10, value: 6, band: [3, 7], ticks: [{ at: 1.5, level: 3 }, { at: 8.5, level: 3 }], target: 5 }),
           h("p", { class: "key-caption" }, "Band: normal · ◇ target · pointer: now"),
           h("p", { class: "key-caption" }, "Solid: history · dashed: model"))));
@@ -3979,8 +3979,8 @@ function NoraCanvasMap(view) {
     for (const [side, cell] of Object.entries(q)) {
       const [ux, uy] = QUAD[side], both = cell.in && cell.out;
       const labels = [];
-      if (cell.in) labels.push({ text: `in ${App.fmt(cell.in, cell.in < 10 ? 1 : 0)}M`, dy: both ? -7 : 0, ink: look.dim });
-      if (cell.out) labels.push({ text: `out ${App.fmt(cell.out, cell.out < 10 ? 1 : 0)}M`, dy: both ? 7 : 0, ink: look.ink });
+      if (cell.in) labels.push({ text: `${App.fmt(cell.in, cell.in < 10 ? 1 : 0)}M`, dy: both ? -7 : 0, ink: look.dim });
+      if (cell.out) labels.push({ text: `${App.fmt(cell.out, cell.out < 10 ? 1 : 0)}M`, dy: both ? 7 : 0, ink: look.ink });
       for (const label of labels) {
         ctx.fillStyle = label.ink;
         reading(ctx, fitText(ctx, label.text, r * 1.15), x + ux * at, y + uy * at + label.dy, look);
