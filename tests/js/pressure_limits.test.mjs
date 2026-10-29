@@ -42,7 +42,12 @@ test("pressure limits: the number turns yellow, red, dark red, readable on its t
     assert.ok(marks.every((m) => !("fill" in m)), "the tag itself is not coloured");
     assert.equal(new Set(marks.map((m) => m.ink)).size, 3, "three distinct colours");
     const tag = theme === "dark" ? NORA.config.colors_dark.paper : App.colors.card.active.fill;
-    for (const m of marks) assert.ok(contrast(m.ink, tag) >= 3, `${theme} ${m.code}: ${contrast(m.ink, tag).toFixed(1)}:1 on its tag`);
+    // the yellow is vivid by Ray's choice ("a bit stronger"): 2.5:1 at the least, the others 3:1
+    for (const m of marks) assert.ok(contrast(m.ink, tag) >= (m.code === "H" ? 2.5 : 3), `${theme} ${m.code}: ${contrast(m.ink, tag).toFixed(1)}:1 on its tag`);
+    if (theme === "light") {
+      assert.ok(luminance(marks[0].ink) > luminance("#8c6900"), "a stronger yellow than the dim ochre it was");
+      assert.equal(marks[1].ink, App.colors.critical, "high-high in the full alarm red");
+    }
     const hue = (hex) => { const [r, g] = [1, 3].map((i) => parseInt(hex.slice(i, i + 2), 16)); return r >= g; };
     assert.ok(marks.every((m) => hue(m.ink)), "yellow to red, warm hues");
     assert.ok(luminance(marks[2].ink) < luminance(marks[1].ink), "integrity darker than high-high");

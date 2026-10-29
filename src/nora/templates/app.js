@@ -474,10 +474,13 @@ const App = (() => {
      (and, zoomed in, its H, HH or INT) takes the colour, in a shade that reads on the
      tag; the alarm list says which limit in words. */
 
+  // Strong enough to see at a glance (Ray, 29 Oct: "its a bit difficult to see the yellow
+  // color of the low or high warning numbers, maybe it can be a bit stronger for those and
+  // the red color as well"): a vivid golden yellow and the full alarm red on the light tag.
   function limitInk(lvl) {
     return theme === "dark"
       ? [null, COLORS.warning, COLORS.critical, mix(COLORS.integrity, COLORS.critical, 0.55)][lvl] // on the dark tag
-      : [null, mix(COLORS.warning, "#000000", 0.45), mix(COLORS.critical, "#000000", 0.15), COLORS.integrity][lvl];
+      : [null, mix(COLORS.warning, "#000000", 0.25), COLORS.critical, COLORS.integrity][lvl];
   }
   // Its limits are [low-low, low, high, high-high, integrity]: L and H yellow, LL and HH
   // red, INT dark red (`level` 1, 2, 3 for the colour).
