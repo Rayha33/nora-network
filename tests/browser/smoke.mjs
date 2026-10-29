@@ -44,9 +44,7 @@ const NOW = new Date("2026-10-28T10:00:00Z");
 /* Contrast failures already on main, each with the board task that fixes it. Strict: a
    known failure that no longer happens fails the run too, so delete its entry in the
    same change as the fix and this list cannot go stale. */
-const KNOWN = [
-  { theme: "dark", within: ".units button", task: "hub task 3698", why: "unit status text on the raised button, 3.22:1" },
-];
+const KNOWN = [];
 
 const failures = [];
 const passes = [];
