@@ -101,7 +101,6 @@ SPLITS = {
 NSTA_ROUTES = {
     "flags": "PL2",
     "sage": "PL762",
-    "seal": "PL1570",
     "iuk": "PL1339",
 }
 
