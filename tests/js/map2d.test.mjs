@@ -1027,3 +1027,28 @@ test("flow: a tie-in is a dot where the lines meet, with no square, tags or name
   assert.match(source("map.js"), /\["!=", \["get", "type"\], "tee"\]/, "no dot on the MapLibre map");
   assert.match(source("map2d.js"), /type === "tee"/, "nor on the canvas map");
 });
+
+test("exit nodes: the day bar stays at the same place in the square as you zoom", () => {
+  // Ray, 29 Oct: "the end of day target flow bar shifts when i zoom in and out".
+  const { App, NORA } = loadApp();
+  loadFirstHour(App, NORA);
+  const id = Object.keys(NORA.assets).find((a) => NORA.assets[a].exit && NORA.grid[a]);
+  const barY = (draw) => {
+    const fills = [];
+    const ctx = new Proxy({}, {
+      get(target, key) {
+        if (key in target) return target[key];
+        if (key === "measureText") return (t) => ({ width: String(t).length * 6 });
+        if (key === "fillRect") return (x, y, w, h) => fills.push({ y: y + h / 2, h });
+        return () => {};
+      },
+      set(target, key, value) { target[key] = value; return true; },
+    });
+    draw(ctx);
+    return fills.find((f) => f.h > 0)?.y; // the band, centred on the bar
+  };
+  const day = { share: 0.01, level: 0 }, half = 60;
+  const out = barY((ctx) => App.views.flow.drawOverviewFlows(ctx, 0, 0, id, App.colors.card.active, { half, total: 10, day, scale: 0.6 }));
+  const near = barY((ctx) => App.views.flow.drawSquare(ctx, 0, 0, id, App.colors.card.active, { half, now: App.reading(id), day }));
+  assert.ok(Math.abs(out - near) < 1e-9 && Math.abs(near + half * 0.52) < 1e-9, `zoomed out ${out}, zoomed in ${near}`);
+});

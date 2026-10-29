@@ -601,11 +601,14 @@
     // room, the next 6 hours of nominations (Ray, 29 Oct: "i should be able to see
     // nomination graph when zoomed out as well").
     const exit = day && outgoing < 0.05 && span * scale >= 30, steps = exit && span * scale >= 40 && App.rampAhead(id);
+    // The day bar sits where it does zoomed in, a quarter down the square, so it stays put
+    // as you zoom (Ray, 29 Oct: "the end of day target flow bar shifts when i zoom in and
+    // out"); the flow in the middle, the next 6 hours along the foot.
     const rows = [], inset = half - 5 / scale;
-    if (incoming >= 0.05) rows.push({ value: incoming, ink: look.soft || look.ink, at: top + span * (steps ? 0.22 : 0.3) });
+    if (incoming >= 0.05) rows.push({ value: incoming, ink: look.soft || look.ink, at: exit ? y + (steps ? 0 : half * 0.2) : top + span * 0.3 });
     if (outgoing >= 0.05) rows.push({ value: outgoing, ink: look.ink, at: top + span * 0.72 });
-    if (exit) drawDayBar(ctx, x, top + span * (steps ? 0.5 : 0.74), day, look, 1 / scale, inset);
-    if (steps) drawNominationSteps(ctx, id, x - inset, top + span * 0.68, 2 * inset, span * 0.22, look, 1 / scale);
+    if (exit) drawDayBar(ctx, x, y - half * 0.52, day, look, 1 / scale, inset);
+    if (steps) drawNominationSteps(ctx, id, x - inset, y + half * 0.44, 2 * inset, half * 0.36, look, 1 / scale);
     if (!rows.length && total != null) rows.push({ value: total, ink: look.ink, at: top + span / 2 });
     ctx.save();
     ctx.textAlign = "center";
