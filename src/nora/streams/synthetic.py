@@ -184,9 +184,9 @@ def _weather_rows(net: Network, times: list[datetime], seed) -> list[Row]:
 
 
 def _quality_rows(net: Network, times: list[datetime], excursions: list, seed) -> list[Row]:
-    """H2S and CO2 at each field. An excursion ramps up over an hour to `peak`, holds
-    it for `hours`, and ramps down again: a slug of off-spec gas to follow. With
-    `every_hours` it comes back that often."""
+    """H2S and CO2 at each field. An excursion reads `peak` for `hours` (one by
+    default): a slug of off-spec gas that long to follow (Ray, 29 Oct: "simulated peaks
+    are too long"). With `every_hours` it comes back that often."""
     rng = random.Random(f"quality-{seed}")  # its own generator: flows stay as they were
     fields = sorted(n.id for n in net.nodes if n.type == "field")
     problems, bumps = [], []
@@ -198,7 +198,7 @@ def _quality_rows(net: Network, times: list[datetime], excursions: list, seed) -
         if metric not in QUALITY_BASE:
             problems.append(f"{where}: metric must be one of {', '.join(QUALITY_BASE)}")
         try:
-            peak, hours = float(spec["peak"]), float(spec.get("hours", 3))
+            peak, hours = float(spec["peak"]), float(spec.get("hours", 1))
             start, every = parse_time(spec["start"]), float(spec.get("every_hours", 0))
             while start <= times[-1]:
                 bumps.append((asset, metric, peak, start, hours))
@@ -217,8 +217,9 @@ def _quality_rows(net: Network, times: list[datetime], excursions: list, seed) -
                 noise = 0.7 * noise + rng.gauss(0, 0.02)
                 value = base * (1 + noise)
                 for asset, kind, peak, start, hours in bumps:
-                    if asset == node and kind == metric:
-                        value += max(0.0, peak - base) * _plateau(when, start, hours)
+                    sending = start <= when < start + timedelta(hours=hours)
+                    if asset == node and kind == metric and sending:
+                        value += max(0.0, peak - base)
                 rows.append((when, node, metric, round(max(0.0, value), 2)))
     return rows
 
@@ -242,7 +243,8 @@ def _throughput(net: Network, flow) -> dict[str, float]:
 
 def _pressure_rises(net: Network, times: list[datetime], excursions: list) -> list:
     """A node's pressure rising by `rise_bar` (a restriction downstream, a compressor
-    trip): ramps like a quality excursion, and the pressure follows at its usual pace.
+    trip): ramps up over an hour, holds for `hours`, ramps down, and the pressure
+    follows at its usual pace.
     Scripted so the Flow view shows its limits in a demo (Ray, 29 Oct: high yellow,
     high-high red, integrity dark red)."""
     problems, rises = [], []

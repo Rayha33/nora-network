@@ -180,7 +180,7 @@ asset = "field_id"
 metric = "h2s_ppm" # or "co2_molpct"
 peak = 5.0
 start = 2026-10-19T06:00:00Z
-hours = 3
+hours = 1         # how long the field sends it; an hour of gas is about 29 km
 every_hours = 24 # optional repeat interval
 ```
 
