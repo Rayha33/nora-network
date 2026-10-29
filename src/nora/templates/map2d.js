@@ -173,10 +173,12 @@ function NoraCanvasMap(view) {
         const s = App.pipeStyle(p.id), text = App.pipeMapName(p.id);
         if (!text || s.hidden || s.dim || !pipeAtZoom(p.id)) continue;
         const m = along(p.id, 0.5), y = m.y - 9 * u;
-        const w = ctx.measureText(text).width + 4 * u, box = [m.x - w / 2, y - 8 * u, m.x + w / 2, y + 8 * u];
+        const sub = zoom() >= App.detailZoom ? App.pipeDetail(p.id) : ""; // diameter and length, zoomed in
+        const w = Math.max(ctx.measureText(text).width, sub ? ctx.measureText(sub).width : 0) + 4 * u;
+        const box = [m.x - w / 2, y - (sub ? 21 : 8) * u, m.x + w / 2, y + 8 * u];
         if (placed.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) continue;
         placed.push(box);
-        pipeLabels.push({ text, x: m.x, y });
+        pipeLabels.push({ text, sub, x: m.x, y });
       }
       ctx.textBaseline = "top";
     }
@@ -212,6 +214,12 @@ function NoraCanvasMap(view) {
     for (const label of pipeLabels) {
       ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(label.text, label.x, label.y);
       ctx.fillStyle = C.text; ctx.fillText(label.text, label.x, label.y);
+    }
+    ctx.font = `${10.5 * u}px Archivo, system-ui, sans-serif`;
+    for (const label of pipeLabels) {
+      if (!label.sub) continue;
+      ctx.lineWidth = 3.5 * u; ctx.strokeStyle = C.paper; ctx.strokeText(label.sub, label.x, label.y - 13 * u);
+      ctx.fillStyle = C.text_dim; ctx.fillText(label.sub, label.x, label.y - 13 * u);
     }
     ctx.font = `italic ${11 * u}px Archivo, system-ui, sans-serif`;
     for (const label of modelLabels) {

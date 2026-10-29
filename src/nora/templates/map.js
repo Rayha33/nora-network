@@ -489,11 +489,13 @@
         const style = App.pipeStyle(id), text = App.pipeMapName(id);
         if (!text || style.hidden || style.dim || !pipeAtZoom(id)) continue;
         const point = project(id, 0.5), y = point.y - 9 * u;
-        const w = ctx.measureText(text).width + 4 * u;
-        const box = [point.x - w / 2, y - 8 * u, point.x + w / 2, y + 8 * u];
+        // zoomed in, its diameter and length on a second line above the name
+        const sub = zoom >= App.detailZoom ? App.pipeDetail(id) : "";
+        const w = Math.max(ctx.measureText(text).width, sub ? ctx.measureText(sub).width : 0) + 4 * u;
+        const box = [point.x - w / 2, y - (sub ? 21 : 8) * u, point.x + w / 2, y + 8 * u];
         if (taken.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) continue;
         taken.push(box); // reserve now so marker labels avoid the name too
-        pipeLabels.push({ text, x: point.x, y });
+        pipeLabels.push({ text, sub, x: point.x, y });
       }
       ctx.restore();
     }
@@ -513,6 +515,12 @@
     for (const label of pipeLabels) {
       ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(label.text, label.x, label.y);
       ctx.fillStyle = C.text; ctx.fillText(label.text, label.x, label.y);
+    }
+    ctx.font = `${10.5 * u}px Archivo, system-ui, sans-serif`;
+    for (const label of pipeLabels) {
+      if (!label.sub) continue;
+      ctx.lineWidth = 3.5 * u; ctx.strokeStyle = C.paper; ctx.strokeText(label.sub, label.x, label.y - 13 * u);
+      ctx.fillStyle = C.text_dim; ctx.fillText(label.sub, label.x, label.y - 13 * u);
     }
     ctx.restore();
   }

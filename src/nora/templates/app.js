@@ -1409,6 +1409,15 @@ const App = (() => {
   }
   // Major named routes on the Map only. Split physical pipelines share one short name;
   // feeders, short links and notional grid entries stay quiet.
+  /* What a named line is, for the zoomed-in map (Ray, 28 Oct: "if i zoom in to areas on
+     the map view more details should appear like pipeline diameter, pipline length"):
+     its diameter and laid length from pipelines.csv, whichever are known. */
+  const DETAIL_ZOOM = 6.5;
+  function pipeDetail(id) {
+    const d = assets[id];
+    if (!d) return "";
+    return [d.diameter ? `${fmt(d.diameter)}″` : "", d.length ? `${fmt(d.length)} km` : ""].filter(Boolean).join(" · ");
+  }
   function pipeMapName(id) {
     const d = assets[id];
     if (!d || (!["trunk", "export", "interconnector"].includes(d.type) && id !== "ogt")) return "";
@@ -3180,7 +3189,7 @@ const App = (() => {
     linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
     pressureMark, flowMark,
     rampAhead, // the next 6 hours of nominations at an exit point
-    pipeStyle, pipeMapName, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
+    pipeStyle, pipeMapName, pipeDetail, detailZoom: DETAIL_ZOOM, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
     timeState, timelineWindow, seek,
     // The display profile (desk, wall or compact) and the one UI scale (1 = 100 %).
