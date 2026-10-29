@@ -1052,3 +1052,15 @@ test("exit nodes: the day bar stays at the same place in the square as you zoom"
   const near = barY((ctx) => App.views.flow.drawSquare(ctx, 0, 0, id, App.colors.card.active, { half, now: App.reading(id), day }));
   assert.ok(Math.abs(out - near) < 1e-9 && Math.abs(near + half * 0.52) < 1e-9, `zoomed out ${out}, zoomed in ${near}`);
 });
+
+test("flow: a line's values sit beside it, a hairline back to its centre", () => {
+  // Ray, 29 Oct: "settle out and pack rate covers too much of the pipeline ... have it just
+  // outisde the pipeline with a thin line pointing to the center of the pipe".
+  const { App } = loadApp();
+  const spot = App.views.flow.labelSpot({ x: 0, y: 0 }, { x: 200, y: 0 }, 40, 32, []);
+  assert.deepEqual([spot.at.x, spot.at.y], [100, 0], "anchored at the line's middle");
+  assert.ok(spot.box[1] > 0 || spot.box[3] < 0, "the box clear of the line itself");
+  assert.ok(Math.abs(spot.cy) >= 16 + 12, "a gap for the hairline");
+  const other = App.views.flow.labelSpot({ x: 0, y: 0 }, { x: 200, y: 0 }, 40, 32, [spot.box]);
+  assert.ok(Math.sign(other.cy) !== Math.sign(spot.cy) || other.at.x !== 100, "taken: the other side, or further along");
+});

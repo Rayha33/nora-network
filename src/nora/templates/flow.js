@@ -306,9 +306,12 @@
   const watched = new Set(NORA.config.flow.watch || []);
   function pressureText(id, unit = true) {
     const now = App.reading(id), value = now && now.pressure != null ? App.fmt(now.pressure) : "–";
-    const rate = App.settings().pressureChange ? App.pressureRate(id) : null; // Settings may leave it out
-    const show = rate != null && (watched.has(id) || Math.abs(rate) >= 0.1) && (unit || watched.has(id));
-    const trend = show ? `${rate >= 0.05 ? "▲" : rate <= -0.05 ? "▼" : "±"} ${App.fmt(Math.abs(rate), 1)}` : "";
+    // Zoomed in, always (Ray, 29 Oct: "the pressure change last hour only shows sometimes
+    // when zoomed in view, it should always show"): "± 0.0" when steady, "–" before an
+    // hour of data. Zoomed out, the watched hubs.
+    const wanted = App.settings().pressureChange && App.state.mode !== "whatif" && (unit || watched.has(id)); // a what-if is steady
+    const rate = wanted ? App.pressureRate(id) : null;
+    const trend = !wanted ? "" : rate == null ? (unit ? "–" : "") : `${rate >= 0.05 ? "▲" : rate <= -0.05 ? "▼" : "±"} ${App.fmt(Math.abs(rate), 1)}`;
     return { text: unit ? `${value} bar` : value, rate: trend };
   }
   function textWidth(text, font) {
@@ -1149,6 +1152,22 @@
      first spot along its line, from the middle out, clear of the squares, their names
      and tags and the values already placed: never text on text. Returns the screen
      boxes, so marker labels and badges keep clear. */
+  /* Where a line's values go: beside it at its middle (or further along), on whichever
+     side is clear, `reach` (half the box, across the line) plus 12 px away. Screen px. */
+  function labelSpot(da, db, w, height, taken = []) {
+    const len = Math.hypot(db.x - da.x, db.y - da.y) || 1;
+    const nx = -(db.y - da.y) / len, ny = (db.x - da.x) / len; // across the line
+    const reach = Math.abs(nx) * (w / 2 + 3) + Math.abs(ny) * (height / 2);
+    for (const t of [0.5, 0.4, 0.6, 0.32, 0.68, 0.25, 0.75]) {
+      const at = { x: da.x + (db.x - da.x) * t, y: da.y + (db.y - da.y) * t };
+      for (const side of [1, -1]) {
+        const cx = at.x + side * nx * (reach + 12), cy = at.y + side * ny * (reach + 12);
+        const box = [cx - w / 2 - 3, cy - height / 2, cx + w / 2 + 3, cy + height / 2];
+        if (!taken.some((o) => overlaps(box, o))) return { at, box, cx, cy, side, nx, ny, reach };
+      }
+    }
+    return null;
+  }
   function drawLineValues(ctx, positions) {
     const scale = network.getScale(), boxes = [], taken = [...nodeBoxes(), ...(scale < 1 ? overviewBoxes : [])];
     const ratio = (network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
@@ -1162,19 +1181,28 @@
       if (!s.label || lineHidden(id) || !a || !b) continue;
       const rows = s.pack ? [s.label, s.pack] : [s.label], w = Math.max(...rows.map((t) => ctx.measureText(t).width));
       const height = 16 * rows.length;
-      let spot = null;
-      for (const t of [0.5, 0.4, 0.6, 0.32, 0.68, 0.25, 0.75]) {
-        const at = network.canvasToDOM({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
-        const box = [at.x - w / 2 - 3, at.y - 8, at.x + w / 2 + 3, at.y - 8 + height];
-        if (!taken.some((o) => overlaps(box, o))) { spot = { at, box }; break; }
-      }
-      if (!spot) continue; // nowhere clear on this line at this zoom: zoom in to read it
+      /* Beside the line, not on it (Ray, 29 Oct: "settle out and pack rate covers too much
+         of the pipeline ... have it just outisde the pipeline with a thin line pointing to
+         the center of the pipe"): off to one side, a hairline back to the line. */
+      const spot = labelSpot(network.canvasToDOM(a), network.canvasToDOM(b), w, height, taken);
+      if (!spot) continue; // nowhere clear beside this line at this zoom: zoom in to read it
+      const { nx, ny, reach } = spot;
       ctx.globalAlpha = s.dim ? 0.35 : 1;
+      ctx.strokeStyle = C.text_dim; // the leader: from the box's edge to the line's centre
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(spot.cx - spot.side * nx * reach, spot.cy - spot.side * ny * reach);
+      ctx.lineTo(spot.at.x, spot.at.y);
+      ctx.stroke();
+      ctx.fillStyle = C.text_dim;
+      ctx.beginPath();
+      ctx.arc(spot.at.x, spot.at.y, 1.8, 0, Math.PI * 2);
+      ctx.fill();
       ctx.fillStyle = C.paper;
       ctx.fillRect(spot.box[0], spot.box[1], spot.box[2] - spot.box[0], height);
       rows.forEach((text, i) => {
         ctx.fillStyle = C.text; // full ink: the dim grey was hard to read on the paper
-        ctx.fillText(text, spot.at.x, spot.at.y + 16 * i);
+        ctx.fillText(text, spot.cx, spot.box[1] + 8 + 16 * i);
       });
       boxes.push(spot.box);
       taken.push(spot.box);
@@ -1275,6 +1303,7 @@
   view.portDistance = portDistance;
   view.drawPressureTags = drawPressureTags;
   view.drawDayBar = drawDayBar;
+  view.labelSpot = labelSpot;
   view.drawNominationSteps = drawNominationSteps;
   view.badgeCorner = badgeCorner;
   view.pointAlong = pointAlong;

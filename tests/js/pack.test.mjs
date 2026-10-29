@@ -81,3 +81,18 @@ test("settle-out pressure: on the line, the number alone, from its end pressures
   assert.ok(sop > 105 && sop < 115, `${sop} bar: the compressible mean of 140 and 70 bar, above the plain 105`);
   assert.equal(App.pipeStyle("franpipe").label, App.fmt(sop, 1), "Ray's old screen: sop on the lines, the number alone (29 Oct); flows are in the squares");
 });
+
+test("pressure tags: zoomed in, the last hour's change always shows, steady too", () => {
+  // Ray, 29 Oct: "the pressure change last hour only shows sometimes when zoomed in view, it
+  // should always show".
+  const { App, NORA } = loadApp();
+  twoHours(App, NORA, [140, 70], [140, 70]); // nothing moved in the hour
+  App.state.mode = "live";
+  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 258, y: stage * 204 }]));
+  const field = NORA.assets.franpipe.to; // Dunkirk: its pressure is in the frames, and it is not a watched hub
+  const near = App.views.flow.pressureTags(field, pos, 1.1, 64);
+  assert.ok(near.length && near.every((t) => t.rate === "± 0.0"), `zoomed in: ${near[0] && near[0].rate}`);
+  assert.ok(App.views.flow.pressureTags(field, pos, 0.6, 64).every((t) => !t.rate), "zoomed out: the watched hubs only");
+  App.state.mode = "whatif";
+  assert.ok(App.views.flow.pressureTags(field, pos, 1.1, 64).every((t) => !t.rate), "a what-if is steady: no change line");
+});

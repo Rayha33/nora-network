@@ -57,13 +57,43 @@ const App = (() => {
     for (const [key, value] of Object.entries(attrs || {})) {
       if (value == null || value === false) continue;
       if (key === "class") node.className = value;
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+      else if (key.startsWith("on")) on(node, key.slice(2), value);
       else node.setAttribute(key, value);
     }
     for (const child of children.flat(Infinity)) {
       if (child != null && child !== false) node.append(child instanceof Node ? child : String(child));
     }
     return node;
+  }
+  // A listener through a small table on the node, so an update in place (morph) can hand
+  // the node the newer one.
+  function on(node, type, act) {
+    if (!node._on) node._on = {};
+    if (!(type in node._on)) node.addEventListener(type, (event) => node._on[type](event));
+    node._on[type] = act;
+  }
+  /* Update a screen in place, so what the pointer is over keeps its hover and focus while
+     the data plays, a few times a second (Ray, 29 Oct: "when mouse over here the field is
+     blinking a lot which looks bad"): only what changed is touched. */
+  function morph(into, from) {
+    if (into.nodeType !== from.nodeType || into.nodeName !== from.nodeName) { into.replaceWith(from); return; }
+    if (into.nodeType === 3 || into.nodeType === 8) { if (into.nodeValue !== from.nodeValue) into.nodeValue = from.nodeValue; return; }
+    if (into.nodeType !== 1) return;
+    for (const { name, value } of [...from.attributes]) if (into.getAttribute(name) !== value) into.setAttribute(name, value);
+    for (const { name } of [...into.attributes]) if (!from.hasAttribute(name)) into.removeAttribute(name);
+    for (const [type, act] of Object.entries(from._on || {})) on(into, type, act);
+    if (into.tagName === "INPUT" || into.tagName === "SELECT") {
+      if (document.activeElement !== into && into.value !== from.value) into.value = from.value;
+      if (into.checked !== from.checked) into.checked = from.checked;
+    }
+    const a = [...into.childNodes], b = [...from.childNodes];
+    b.forEach((node, i) => (a[i] ? morph(a[i], node) : into.appendChild(node)));
+    for (let i = b.length; i < a.length; i++) a[i].remove();
+  }
+  function patch(container, fresh) {
+    const old = container.firstChild;
+    if (old && container.childNodes.length === 1 && typeof old.isEqualNode === "function" && old.nodeName === fresh.nodeName) morph(old, fresh);
+    else container.replaceChildren(fresh);
   }
   /* A row or a name that opens something but is not a button reaches the keyboard as
      well: it takes focus, Enter and Space act as a click, and its key finds it again
@@ -2016,7 +2046,7 @@ const App = (() => {
       return h("button", { type: "button", "data-key": `unit:${u.id}`, onclick: () => go({ screen: "unit", unit: u.id }) },
         h("span", null, u.name), badge(Math.max(0, ...conds.map((c) => c.level)), conds.length ? `${conds.length} active` : "Normal"));
     });
-    keepFocus(screens.overview, () => screens.overview.replaceChildren(h("div", { class: "screen-body" },
+    keepFocus(screens.overview, () => patch(screens.overview, h("div", { class: "screen-body" },
       h("div", { class: `box banner${bannerLevel ? " alarm" : ""}`, style: bannerLevel ? `border-color:${LEVEL_COLOR[bannerLevel]}` : null },
         bannerLevel ? badge(bannerLevel, "") : null,
         h("div", null, h("div", { class: `big${plan ? "" : " dim"}` }, headline), h("div", { class: "context" }, context))),
@@ -2292,7 +2322,7 @@ const App = (() => {
   }
   function renderAsset() {
     const detail = assetDetail(route.asset);
-    if (detail) keepFocus(screens.asset, () => screens.asset.replaceChildren(detail));
+    if (detail) keepFocus(screens.asset, () => patch(screens.asset, detail));
   }
 
   /* The asset sidebar: a calm column that slides in from the right when a field,
@@ -2338,7 +2368,7 @@ const App = (() => {
       const body = $("side-body"), top = body.scrollTop, detail = markerDetail(side.marker);
       $("side-title").textContent = detail.title;
       $("side-sub").textContent = detail.sub;
-      keepFocus(body, () => body.replaceChildren(detail.body));
+      keepFocus(body, () => patch(body, detail.body));
       body.scrollTop = top;
       return;
     }
@@ -2348,7 +2378,7 @@ const App = (() => {
     $("side-sub").textContent = d.kind === "node"
       ? `${NORA.nodeTypes[d.type]} · ${d.operator || d.country}`
       : `${NORA.pipelineTypes[d.type]} · ${nameOf(d.from)} to ${nameOf(d.to)}`;
-    keepFocus(body, () => body.replaceChildren(assetDetail(side.id, true)));
+    keepFocus(body, () => patch(body, assetDetail(side.id, true)));
     body.scrollTop = top;
   }
   /* A pig or a peak in the sidebar (Ray, 28 Oct: "head ETA and tail ETA as well as
@@ -2843,6 +2873,17 @@ const App = (() => {
     url.searchParams.set("s", btoa(JSON.stringify(settings)));
     if (navigator.clipboard) navigator.clipboard.writeText(url.toString());
   }
+  // NORA: back to the map of the whole network (Ray, 29 Oct: "clicking on NORA should take
+  // me back to map overview and not download file"; it linked to the folder).
+  if ($("brand")) $("brand").addEventListener("click", (event) => {
+    event.preventDefault();
+    closePops();
+    closeSidebar();
+    state.view = "map";
+    markTabs();
+    go({ screen: "unit", unit: "all" });
+    if (views.map && views.map.ready && views.map.fit) views.map.fit();
+  });
   const POPS = [["key-toggle", "key"], ["settings-toggle", "settings"], ["alarm-counts", "alarms"]];
   function closePops() {
     for (const [button, panel] of POPS) { if ($(panel)) $(panel).hidden = true; if ($(button)) $(button).setAttribute("aria-expanded", "false"); }
