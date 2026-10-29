@@ -497,6 +497,9 @@
       }
       ctx.restore();
     }
+    for (const id of App.pipeIds) {
+      if (NORA.assets[id].type === "interconnector" && !App.pipeStyle(id).hidden && pipeAtZoom(id)) App.drawFlowDirection(ctx, id, (t) => project(id, t), u, taken);
+    }
     for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]), 3.2 * u, projectBand(m.id, m.extent));
     for (const m of marks) {
       const p = project(m.id, m.along);

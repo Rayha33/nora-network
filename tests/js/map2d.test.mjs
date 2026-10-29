@@ -969,3 +969,38 @@ test("map: no alarm badges on the map; pigs and peaks stay", () => {
   assert.match(source("map.js"), /drawMarker/, "pigs and peaks are still drawn");
   assert.match(source("map2d.js"), /drawMarker/);
 });
+
+test("map: an interconnector shows which way its gas goes, and how much", () => {
+  // Ray, 29 Oct: "should be able to subtle see which way the gas is flowing for the
+  // interconnector and what quantities are going which way".
+  const { App, NORA } = loadApp();
+  App.state.mode = "live";
+  const id = App.pipeIds.find((pid) => NORA.assets[pid].type === "interconnector");
+  const draw = (v) => {
+    App.live.values[id] = v;
+    const texts = [], strokes = [];
+    let path = [];
+    const ctx = new Proxy({}, {
+      get(target, key) {
+        if (key in target) return target[key];
+        if (key === "measureText") return (t) => ({ width: String(t).length * 6 });
+        if (key === "fillText") return (t) => texts.push(String(t));
+        if (key === "beginPath") return () => { path = []; };
+        if (key === "moveTo" || key === "lineTo") return (x, y) => path.push([x, y]);
+        if (key === "stroke") return () => strokes.push(path.slice());
+        return () => {};
+      },
+      set(target, key, value) { target[key] = value; return true; },
+    });
+    App.drawFlowDirection(ctx, id, (t) => ({ x: 100 * t, y: 0, angle: 0 }), 1, []);
+    return { texts, chevrons: strokes.filter((s) => s.length === 3) };
+  };
+  const d = NORA.assets[id], east = draw(12.3), west = draw(-4);
+  assert.deepEqual(east.texts, [`12.3 to ${NORA.assets[d.to].name}`]);
+  assert.deepEqual(west.texts, [`4.0 to ${NORA.assets[d.from].name}`]);
+  assert.equal(east.chevrons.length, 4, "chevrons along the line");
+  assert.ok(east.chevrons.every(([a, tip]) => a[0] < tip[0]), "pointing with the flow");
+  assert.ok(west.chevrons.every(([a, tip]) => a[0] > tip[0]), "and the other way when it reverses");
+  assert.deepEqual(draw(0).texts, ["no flow"]);
+  assert.equal(draw(0).chevrons.length, 0);
+});

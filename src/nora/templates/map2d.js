@@ -202,6 +202,9 @@ function NoraCanvasMap(view) {
     }
     drawnMarks = [];
     const taken = [...placed, ...dots]; // marker labels keep clear of names and dots
+    for (const id of live ? App.pipeIds : []) {
+      if (NORA.assets[id].type === "interconnector" && pipeById[id] && !App.pipeStyle(id).hidden && pipeAtZoom(id)) App.drawFlowDirection(ctx, id, (t) => along(id, t), u, taken);
+    }
     for (const m of marks) {
       if (!pipeById[m.id] || App.pipeStyle(m.id).hidden || !pipeAtZoom(m.id)) continue;
       const p = along(m.id, m.along);
