@@ -31,13 +31,63 @@ test("map: without WebGL (or MapLibre) the Map view draws on a plain canvas inst
   assert.deepEqual(view.camera(), before, "zooming beyond the limit does not slide the camera");
 });
 
-test("map: the page carries the coastline the canvas map fills as land", () => {
+test("map: the page carries the coastline the canvas map fills as land, and its box", () => {
   const { NORA } = loadApp();
   assert.ok(NORA.land && NORA.land.rings.length > 10, "land rings are in the payload");
-  for (const ring of NORA.land.rings.slice(0, 5)) {
+  const [w, s, e, n] = NORA.land.box;
+  const [[bw, bs], [be, bn]] = NORA.config.map.bounds;
+  assert.ok(w < bw && s < bs && e > be && n > bn, "the box holds the whole network");
+  for (const ring of NORA.land.rings) {
     assert.ok(ring.length >= 4, "each ring is a polygon");
-    for (const [lon, lat] of ring) assert.ok(lon >= -14 && lon <= 24 && lat >= 46 && lat <= 71, "inside the network's box");
+    for (const [lon, lat] of ring) assert.ok(lon >= w && lon <= e && lat >= s && lat <= n, "inside the box");
   }
+});
+
+/* The land is clipped to its box, so a view past the box showed land cut off in a straight
+   line, and the sea beyond it (Ray, 29 Oct: "map seem to be glitched"). */
+function canvasMap(width, height) {
+  const loaded = loadApp({ globals: { Path2D: class { moveTo() {} lineTo() {} closePath() {} } } });
+  const { App, document } = loaded;
+  App.state.view = "map";
+  App.go({ screen: "unit", unit: "all" });
+  const host = Object.assign(document.createElement("div"), { clientWidth: width, clientHeight: height });
+  const view = App.views.map;
+  view.mount(host);
+  const canvas = host.children.find((c) => c.className === "map2d");
+  canvas.setPointerCapture = () => {};
+  const fire = (type, e) => { for (const fn of canvas._listeners[type] || []) fn({ pointerId: 1, button: 0, ...e }); };
+  const drag = (dx, dy) => {
+    fire("pointerdown", { offsetX: width / 2, offsetY: height / 2 });
+    fire("pointermove", { offsetX: width / 2 + dx, offsetY: height / 2 + dy });
+    fire("pointerup", { offsetX: width / 2 + dx, offsetY: height / 2 + dy });
+  };
+  // What the view shows, in degrees: Web Mercator back to longitude and latitude.
+  const shown = () => {
+    const { x, y, k } = view.camera();
+    const lon = (mx) => mx * 360 - 180, lat = (my) => (Math.atan(Math.sinh(Math.PI * (1 - 2 * my))) * 180) / Math.PI;
+    return { west: lon(x - width / 2 / k), east: lon(x + width / 2 / k), north: lat(y - height / 2 / k), south: lat(y + height / 2 / k) };
+  };
+  return { App, view, drag, shown, land: loaded.NORA.land.box, bounds: loaded.NORA.config.map.bounds };
+}
+
+test("map: zoomed out and dragged to any side, the canvas map stays over its land", () => {
+  for (const [width, height] of [[1280, 800], [1600, 700], [1000, 700]]) {
+    const { view, drag, shown, land: [w, s, e, n] } = canvasMap(width, height);
+    view.zoomAt(width / 2, height / 2, 1e-6); // as far out as it goes
+    for (const [dx, dy] of [[5000, 0], [-5000, 0], [0, 5000], [0, -5000], [4000, 4000], [-4000, -4000]]) {
+      drag(dx, dy);
+      const v = shown(), at = `${width}x${height} dragged ${dx},${dy}`;
+      assert.ok(v.west >= w - 1e-6 && v.east <= e + 1e-6, `${at}: ${v.west.toFixed(1)}..${v.east.toFixed(1)} E within the land`);
+      assert.ok(v.south >= s - 1e-6 && v.north <= n + 1e-6, `${at}: ${v.south.toFixed(1)}..${v.north.toFixed(1)} N within the land`);
+    }
+  }
+});
+
+test("map: on a very wide wall the whole network still fits, before the land's edge", () => {
+  const { view, shown, bounds: [[bw, bs], [be, bn]] } = canvasMap(5000, 700);
+  view.zoomAt(2500, 350, 1e-6);
+  const v = shown();
+  assert.ok(v.west <= bw && v.east >= be && v.south <= bs && v.north >= bn, "Aasta Hansteen to Poland is in view");
 });
 
 test("peaks: the band and head follow every bend in the pipeline path", () => {

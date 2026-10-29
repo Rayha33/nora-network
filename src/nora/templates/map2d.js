@@ -257,13 +257,31 @@ function NoraCanvasMap(view) {
   }
   /* Keep the camera on the network: zooming out stops a little past the whole of it,
      and panning keeps the centre within the network's area plus a margin. */
-  const minK = () => fitBounds(NORA.config.map.bounds).k * 0.75;
+  /* The land is clipped to a box (NORA.land.box): beyond it the map would show land cut
+     off in a straight line. So the view also stays inside the box, unless a very wide
+     screen needs more to show the whole network (Ray, 29 Oct: "map seem to be glitched"). */
+  const landBox = () => {
+    const b = NORA.land && NORA.land.box;
+    if (!b) return null;
+    const [x0, y1] = merc(b[0], b[1]), [x1, y0] = merc(b[2], b[3]);
+    return { x0, y0, x1, y1 };
+  };
+  const minK = () => {
+    const fit = fitBounds(NORA.config.map.bounds).k, box = landBox();
+    const inside = box ? Math.max(width / (box.x1 - box.x0), height / (box.y1 - box.y0)) : 0;
+    return Math.max(fit * 0.75, Math.min(inside, fit));
+  };
   function clampCam() {
     cam.k = Math.max(minK(), Math.min(512 * 2 ** MAX_ZOOM, cam.k));
     const [[w, s], [e, n]] = NORA.config.map.bounds, [x0, y1] = merc(w, s), [x1, y0] = merc(e, n);
     const mx = (x1 - x0) * 0.6, my = (y1 - y0) * 0.6;
     cam.x = Math.max(x0 - mx, Math.min(x1 + mx, cam.x));
     cam.y = Math.max(y0 - my, Math.min(y1 + my, cam.y));
+    const box = landBox();
+    if (!box) return;
+    const hw = width / 2 / cam.k, hh = height / 2 / cam.k;
+    cam.x = box.x1 - box.x0 > 2 * hw ? Math.max(box.x0 + hw, Math.min(box.x1 - hw, cam.x)) : (box.x0 + box.x1) / 2;
+    cam.y = box.y1 - box.y0 > 2 * hh ? Math.max(box.y0 + hh, Math.min(box.y1 - hh, cam.y)) : (box.y0 + box.y1) / 2;
   }
   function zoomAt(sx, sy, factor) {
     const k = Math.max(minK(), Math.min(512 * 2 ** MAX_ZOOM, cam.k * factor));
