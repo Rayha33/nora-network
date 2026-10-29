@@ -3987,6 +3987,10 @@ const App = (() => {
     return stream;
   }
   const scrub = $("scrub"), spark = $("spark");
+  // Redraw the ruler whenever its own box changes size, not only with the window: the
+  // player settles its layout after the first draw, and paused nothing else redraws it,
+  // so the bitmap was squeezed into a smaller box (tiny day names on a wall).
+  if (typeof ResizeObserver === "function") new ResizeObserver(() => drawSpark()).observe(spark);
   /* "Now" in the middle of the timeline (Ray: "the middle of the timeline bar should be
      real time, while dragging to the right means looking into the future and modelled
      pressures and flows"). A synthetic stream is re-timed once when it loads, by whole
