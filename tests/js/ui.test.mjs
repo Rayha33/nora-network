@@ -4,17 +4,15 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { loadApp } from "./harness.mjs";
 
-test("map context always names the complete North Sea network", () => {
+test("map page has no context card and always keeps all units selected", () => {
   const { App, NORA, document } = loadApp();
   App.go({ screen: "unit", unit: "all" });
-  assert.equal(document.getElementById("map-kicker").textContent, "All operating units");
-  assert.equal(document.getElementById("map-unit").textContent, "North Sea gas network");
+  assert.equal(document.querySelector(".map-context"), null, "the North Sea gas network card is removed");
 
   const unit = NORA.units[0];
   App.go({ screen: "unit", unit: unit.id });
   assert.equal(App.route.unit, "all", "unit selection is intentionally fixed");
-  assert.equal(document.getElementById("map-kicker").textContent, "All operating units");
-  assert.equal(document.getElementById("map-unit").textContent, "North Sea gas network");
+  assert.equal(document.querySelector(".map-context"), null, "navigation does not recreate the card");
 });
 
 test("live node style separates throughput and pressure for the Flow renderer", () => {
