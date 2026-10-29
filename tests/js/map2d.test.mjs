@@ -175,6 +175,32 @@ test("flow nodes: the fitted overview stays simple until labels are readable", (
   assert.deepEqual(Array.from(App.views.flow.overviewNameLines("Zeebrugge terminal")), ["Zeebrugge", "terminal"], "long names wrap instead of shrinking");
 });
 
+test("flow overview: a blocked node name moves instead of disappearing", () => {
+  const { App } = loadApp();
+  const blockers = [[60, 136, 140, 166]]; // exactly where the name would normally sit
+  const placement = App.views.flow.overviewNamePlacement({ x: 100, y: 100 }, 32, 1, 80, 30, blockers);
+  assert.ok(placement, "a clear nearby placement is always found");
+  const box = [placement.left, placement.top, placement.left + 80, placement.top + 30];
+  assert.ok(!blockers.some((other) => box[0] < other[2] && box[2] > other[0] && box[1] < other[3] && box[3] > other[1]), "the moved name is collision-free");
+});
+
+test("flow overview: a name near the bottom stays inside the canvas", () => {
+  const { App } = loadApp();
+  const placement = App.views.flow.overviewNamePlacement({ x: 100, y: 100 }, 32, 1, 80, 30, [], { width: 200, height: 150 });
+  assert.ok(placement, "an in-canvas placement is found");
+  assert.ok(placement.left >= 0 && placement.top >= 0, "the name does not leave the top or left edge");
+  assert.ok(placement.left + 80 <= 200 && placement.top + 30 <= 150, "the name does not leave the bottom or right edge");
+});
+
+test("flow overview: a name uses a shifted side slot when vertical slots are full", () => {
+  const { App } = loadApp();
+  const blockers = [[60, 0, 135, 250], [138, 85, 218, 115]];
+  const placement = App.views.flow.overviewNamePlacement({ x: 100, y: 100 }, 32, 1, 80, 30, blockers, { width: 250, height: 250 });
+  assert.ok(placement, "a shifted side slot prevents the name from disappearing");
+  const box = [placement.left, placement.top, placement.left + 80, placement.top + 30];
+  assert.ok(!blockers.some((other) => box[0] < other[2] && box[2] > other[0] && box[1] < other[3] && box[3] > other[1]), "the side slot is collision-free");
+});
+
 test("flow overview: incoming and outgoing totals are readable inside the square", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;
