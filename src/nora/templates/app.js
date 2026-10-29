@@ -430,27 +430,22 @@ const App = (() => {
     if (value == null || Number.isNaN(value)) return 0;
     return rising ? thresholds.filter((t) => value >= t).length : thresholds.filter((t) => value <= t).length;
   }
-  // Dark or light ink, whichever reads better on a fill (WCAG contrast).
-  function inkOn(fill) {
-    const lum = (hex) => {
-      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
-        .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
-      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    };
-    const dark = "#22272b", light = "#f1f2f3", l = lum(fill);
-    return (l + 0.05) / (lum(dark) + 0.05) >= (lum(light) + 0.05) / (l + 0.05) ? dark : light;
-  }
   /* A pressure at an upper limit (nora.toml [pressure_limits]): Ray, 29 Oct, "pressure
      number inside rectangles should change color when meeting a limit, high = yellow,
-     high high = red, integrity = dark red". The tag fills with that colour and its
-     number takes the ink that reads on it; never colour alone: zoomed in the tag also
-     says H, HH or INT, and the alarm list says which limit in words. */
+     high high = red, integrity = dark red"; "only the number itself should turn yellow
+     ... not the whole square"; "we want to use strong colors sparingly". The number
+     (and, zoomed in, its H, HH or INT) takes the colour, in a shade that reads on the
+     tag; the alarm list says which limit in words. */
   const LIMITS = [null, { code: "H", name: "high" }, { code: "HH", name: "high-high" }, { code: "INT", name: "integrity" }];
+  function limitInk(lvl) {
+    return theme === "dark"
+      ? [null, COLORS.warning, COLORS.critical, mix(COLORS.integrity, COLORS.critical, 0.55)][lvl] // on the dark tag
+      : [null, mix(COLORS.warning, "#000000", 0.45), mix(COLORS.critical, "#000000", 0.15), COLORS.integrity][lvl];
+  }
   function pressureMark(id, p = metric("pressure_bar", id)) {
     const limits = (C.pressure_limits || {})[(assets[id] || {}).type], lvl = limits ? level(p, limits) : 0;
     if (!lvl) return null;
-    const fill = [null, COLORS.warning, COLORS.critical, COLORS.integrity][lvl];
-    return { level: lvl, ...LIMITS[lvl], limit: limits[lvl - 1], fill, ink: inkOn(fill) };
+    return { level: lvl, ...LIMITS[lvl], limit: limits[lvl - 1], ink: limitInk(lvl) };
   }
   /* Each priority has its own shape and number as well as its colour; a warning (3) has
      none (Ray, 29 Oct: "remove all warning triangles") and reads as words only. */
@@ -822,12 +817,15 @@ const App = (() => {
   function nominationWindow(id) {
     return cached("nom6", id, () => {
       const current = frame(), out = [];
+      // Each hour's nomination and booking (a live feed's `ahead` block, or the
+      // recorded data's following hours).
+      const hourOf = (name, k, future) => (k === 0 ? metric(name, id, current)
+        : live.feed ? (((current.ahead || {})[name] || {})[id] || [])[k - 1]
+        : metric(name, id, future || {}));
       for (let k = 0; k < 6; k++) {
         const future = live.frames[live.index + k];
-        const value = k === 0 ? metric("nomination_msm3d", id, current)
-          : live.feed ? (((current.ahead || {}).nomination_msm3d || {})[id] || [])[k - 1]
-          : metric("nomination_msm3d", id, future || {});
-        out.push({ t: future && future.t != null ? future.t : current.t + k * 3600, value: value ?? null });
+        const value = hourOf("nomination_msm3d", k, future), booked = hourOf("booked_msm3d", k, future);
+        out.push({ t: future && future.t != null ? future.t : current.t + k * 3600, value: value ?? null, booked: booked ?? null });
       }
       return out;
     });
@@ -1090,20 +1088,8 @@ const App = (() => {
       const a = clip01(lo - pad), b = clip01(hi + pad);
       return forward ? [a, b] : [b, a];
     };
-    const peakExtentOf = (pid, at, forward) => {
-      const pad = (v * stepSeconds) / 2 / lineMetres(pid);
-      const half = Math.min(pad, at, 1 - at); // clip both sides equally around the dot
-      return forward ? [at - half, at + half] : [at + half, at - half];
-    };
-    for (const peak of live.peaks) {
-      const place = peakPlace(peak);
-      if (!place) continue;
-      const d = assets[place.pid];
-      out.push({ kind: "peak", id: place.pid, along: place.along, level: peak.level, rising: place.delta > 0,
-        value: `${place.delta > 0 ? "+" : "−"}${fmt(Math.abs(place.delta), 1)}`, eta: clock(place.exitAt),
-        to: nameOf(place.forward ? d.to : d.from), extent: peakExtentOf(place.pid, place.along, place.forward),
-        key: `peak:${peak.id}|${peak.t0}`, ref: peak });
-    }
+    // No marker for a change in flow (Ray, 29 Oct: "mainly stick to illustrating H2S, CO2
+    // and pigs"); a large one is still an alarm.
     /* A slug of H₂S or CO₂ is drawn as one band per line it covers, from its rear parcel
        to its front parcel. The dot and its label sit midway between the head and the tail
        (Ray, 29 Oct): where the gas that left the field halfway between them is now. The
@@ -1508,13 +1494,11 @@ const App = (() => {
     const W = 200, x = (v) => Math.max(0, Math.min(W, ((v - min) / (max - min || 1)) * W));
     let m = `<rect x="0" y="11" width="${W}" height="7" rx="1" fill="${COLORS.dots}"/>`;
     if (band) m += `<rect x="${x(band[0])}" y="11" width="${Math.max(1, x(band[1]) - x(band[0]))}" height="7" fill="${COLORS.band}"/>`;
-    for (const tick of ticks) {
+    // Only the critical limits (Ray, 29 Oct: "too much clutter here, simplify it a bit"):
+    // the band is the normal range, the marker the value.
+    for (const tick of ticks.filter((t) => t.level === 3)) {
       const tx = x(tick.at), tall = 3 + 2 * tick.level;
       m += `<line x1="${tx}" x2="${tx}" y1="${14.5 - tall}" y2="${14.5 + tall}" stroke="${COLORS.text}" stroke-width="${tick.level === 3 ? 1.6 : 1}"/>`;
-    }
-    if (target != null) {
-      const tx = x(target);
-      m += `<path d="M${tx} 9.5l3.5 5-3.5 5-3.5-5z" fill="none" stroke="${COLORS.text}" stroke-width="1.2"/>`;
     }
     if (value != null) {
       const px = x(value), fill = lvl ? LEVEL_COLOR[lvl] : COLORS.text;
@@ -1545,7 +1529,7 @@ const App = (() => {
   }
   function rateText(r, unit) {
     if (r == null) return h("span", { class: "dim" }, "–");
-    if (Math.abs(r) < 0.05) return h("span", { class: "dim" }, "◆ steady");
+    if (Math.abs(r) < 0.05) return h("span", { class: "dim" }, ""); // steady: nothing to say
     return h("span", null, `${r > 0 ? "▲" : "▼"} ${signed(r, 1)} ${unit}/h`);
   }
 
@@ -1600,9 +1584,11 @@ const App = (() => {
      read "Delivery", "Pressure" instead of the asset's name twice. */
   function bank(indicators, empty, { byMeasure = false } = {}) {
     if (!indicators.length) return h("p", { class: "empty" }, empty);
+    // One asset's values (a panel) need no column heads: the rows say what they are.
+    const heads = byMeasure ? [] : [h("div", { class: "head" }, "Asset"), h("div", { class: "head" }, "Value in its range"),
+      h("div", { class: "head" }, `Last ${spanLabel(TREND_STEPS * stepHours() * 3600)}`), h("div", { class: "head optional" }, "Change"), h("div", { class: "head optional" }, "State")];
     return h("div", { class: `bank${byMeasure ? " by-measure" : ""}` },
-      h("div", { class: "head" }, byMeasure ? "" : "Asset"), h("div", { class: "head" }, "Value in its range"),
-      h("div", { class: "head" }, `Last ${spanLabel(TREND_STEPS * stepHours() * 3600)}`), h("div", { class: "head optional" }, "Change"), h("div", { class: "head optional" }, "State"),
+      ...heads,
       ...indicators.flatMap((ind) => [
         byMeasure ? h("div", { class: "name measure" }, ind.measure || nameOf(ind.id))
           : h("div", pressable(`asset:${ind.id}`, () => go({ screen: "asset", asset: ind.id }), { class: "name", role: "link", title: "Open the asset" }), nameOf(ind.id)),
@@ -1781,22 +1767,43 @@ const App = (() => {
       h("p", { class: "dim small" }, `${source} MSm³/d; times CET.`));
   }
 
+  /* The next 6 hours at an exit: for each hour the booked capacity (outlined) and the
+     nomination (filled) side by side (Ray, 29 Oct: "two bars next to eachother for each
+     hour, booking level and nomination level"). A nomination over its booking takes a
+     muted yellow, and from the booking's critical level (nora.toml booking) a muted red
+     ("not strong color"); the hour's nomination is written over its pair. */
+  const muted = (lvl) => mix(LEVEL_COLOR[lvl], COLORS.surface, 0.35);
+  function bookingLevel(nominated, booked) {
+    if (nominated == null || !(booked > 0) || nominated <= booked) return 0;
+    return nominated / booked >= T.booking[2] ? 3 : 1;
+  }
   function nominationHistogram(id) {
     const readings = nominationWindow(id);
     if (!readings.some((reading) => reading.value != null)) return null;
-    const W = 360, H = 116, baseline = 88, slot = W / 6;
-    const peak = Math.max(1, ...readings.map((reading) => reading.value || 0));
+    const W = 360, H = 130, baseline = 88, slot = W / 6, bar = 15;
+    const peak = Math.max(1, ...readings.flatMap((reading) => [reading.value || 0, reading.booked || 0]));
     const text = "stroke:none;font-weight:400;font-size:11px;font-family:Archivo,system-ui,sans-serif";
     let body = `<line x1="0" y1="${baseline}" x2="${W}" y2="${baseline}" stroke="${COLORS.border}" stroke-width="1"/>`;
     readings.forEach((reading, index) => {
       const center = slot * (index + 0.5), hour = String(new Date(reading.t * 1000).getUTCHours()).padStart(2, "0");
+      const tall = (v) => Math.max(1, (v / peak) * 56);
+      if (reading.booked != null) {
+        const height = tall(reading.booked);
+        body += `<rect class="booking-bar" x="${center - bar - 1}" y="${baseline - height + 0.5}" width="${bar}" height="${height - 0.5}" rx="2" fill="${COLORS.active}" stroke="${COLORS.text_dim}" stroke-width="1"/>`;
+      }
       if (reading.value != null) {
-        const height = Math.max(1, (reading.value / peak) * 56), y = baseline - height;
-        body += `<rect class="nomination-bar" x="${center - 15}" y="${y}" width="30" height="${height}" rx="2" fill="${COLORS.active}" opacity="${index === 0 ? 1 : 0.72}"/>`;
-        body += `<text x="${center}" y="${Math.max(11, y - 4)}" text-anchor="middle" fill="${COLORS.text_dim}" style="${text}">${esc(fmt(reading.value, reading.value < 10 ? 1 : 0))}</text>`;
+        const height = tall(reading.value), y = baseline - height, lvl = bookingLevel(reading.value, reading.booked);
+        const fill = lvl ? muted(lvl) : COLORS.peak; // a calm grey-blue, apart from the light booking
+        body += `<rect class="nomination-bar${lvl ? " over" : ""}" x="${center + 1}" y="${y}" width="${bar}" height="${height}" rx="2" fill="${fill}" opacity="${index === 0 || lvl ? 1 : 0.72}"/>`;
+        const top = Math.min(y, reading.booked != null ? baseline - tall(reading.booked) : y);
+        body += `<text x="${center}" y="${Math.max(11, top - 4)}" text-anchor="middle" fill="${COLORS.text_dim}" style="${text}">${esc(fmt(reading.value, reading.value < 10 ? 1 : 0))}</text>`;
       }
       body += `<text x="${center}" y="106" text-anchor="middle" fill="${COLORS.text_dim}" style="${text}">${hour}</text>`;
     });
+    // A key: booked outlined, nominated filled.
+    body += `<rect x="0.5" y="117" width="10" height="9" rx="1.5" fill="${COLORS.active}" stroke="${COLORS.text_dim}"/><text x="14" y="125" fill="${COLORS.text_dim}" style="${text}">Booked</text>`;
+    body += `<rect x="64" y="117" width="10" height="9" rx="1.5" fill="${COLORS.peak}"/><text x="78" y="125" fill="${COLORS.text_dim}" style="${text}">Nominated</text>`;
+    body += `<rect x="146" y="117" width="10" height="9" rx="1.5" fill="${muted(1)}"/><text x="160" y="125" fill="${COLORS.text_dim}" style="${text}">over booking</text>`;
     return svg(`0 0 ${W} ${H}`, body, "nomination-histogram");
   }
 
@@ -1909,22 +1916,6 @@ const App = (() => {
     const volume = (msm3) => `${fmt(msm3, msm3 < 1 ? 2 : 1)} MSm³`;
     if (!m) return { title: "Left the network", sub: "", body: h("div", { class: "side-detail" }, h("p", { class: "empty" }, "This pig or peak has left the network, or the data moved past it. Click another on the map or in the Flow.")) };
     if (m.kind === "pig") return pigDetail(m, { row, box, note });
-    if (m.kind === "peak") {
-      const peak = m.ref, place = peakPlace(peak), pad = step / 2, d = assets[place.pid];
-      const next = place.forward ? d.to : d.from, end = peakEnd(peak);
-      const rose = place.delta > 0;
-      return { title: `Flow ${rose ? "increase" : "drop"} of ${fmt(Math.abs(place.delta), 1)} MSm³/d`, sub: `Peak on ${nameOf(place.pid)}`,
-        body: h("div", { class: "side-detail" },
-          box("Head and tail",
-            row("Head reaches", at(next, place.exitAt - pad)),
-            row("Tail reaches", at(next, place.exitAt + pad)),
-            end ? row(end.leaves ? "Leaves the network" : "Fades out", `${at(end.node, end.t)}, head to tail ${fmt(step / 3600, step % 3600 ? 1 : 0)} h`) : []),
-          box("Volume and origin",
-            row("Total volume", `${volume((Math.abs(place.delta) * step) / 86400)} ${rose ? "more" : "less"} gas`),
-            row("Origin", `${nameOf(peak.id)}, first seen ${formatTime(peak.t0)}`),
-            row("At the origin", `${signed(peak.delta, 1)} MSm³/d in one data step`)),
-          note(`Estimate: a change in flow travels with the gas at ${fmt(v)} m/s, spread over the gas of one data step, and fades where other gas joins it.`)) };
-    }
     return qualityDetail(m, { row, box, note, volume });
   }
   /* An H₂S or CO₂ peak (Ray, 29 Oct: "volume (MSm3), Head KP, Tail KP, Sent (CET), ETA
@@ -2041,14 +2032,6 @@ const App = (() => {
           row("Notified", notified),
           row("Origo ref", h("span", { class: "origo-field" }, origo, origoNote))),
         note(`Estimate: gas travels at ${fmt(C.pipelines.gas_velocity_mps)} m/s along the line taking most of the flow; where gas joins, it is assumed to carry the median field reading. The volume is the field's gas while its reading stayed over the follow level. Notified and the Origo reference are entered here and kept in this browser.`)) };
-  }
-  // Where a peak's route ends: its last line, from the flows the data will have then.
-  function peakEnd(peak) {
-    peakPlace(peak, Infinity); // works out the rest of its hops, kept on the peak
-    const last = peak.hops[peak.hops.length - 1];
-    if (!last) return null;
-    const node = last.forward ? assets[last.pid].to : assets[last.pid].from;
-    return { node, t: last.t + lineMetres(last.pid) / C.pipelines.gas_velocity_mps, leaves: isExit(node) };
   }
   // A pig's run: the next node, the receiver at the end of its route, and when.
   function pigTrip(pig, time) {
@@ -2274,7 +2257,6 @@ const App = (() => {
             item(h("span", null, "⋯"), "Right-click: add, connect or remove"))),
         section("Moving", false, h("ul", null,
           item(svg("0 0 26 14", `<path d="M17 7l-8-4.5v9z" fill="${COLORS.pig}" stroke="${COLORS.casing}"/>`), "Pig"),
-          item(svg("0 0 26 14", `<line x1="3" y1="7" x2="23" y2="7" stroke="${COLORS.peak}" stroke-width="4"/><circle cx="13" cy="7" r="5" fill="${COLORS.peak}" stroke="${COLORS.casing}"/>`), "Peak"),
           item(svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.h2s}" stroke="${COLORS.casing}"/>`), "H₂S · ppm"),
           item(svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.co2}" stroke="${COLORS.casing}"/>`), "CO₂ · mol %"))),
         section("Status", false, h("ul", null,
@@ -3177,7 +3159,7 @@ const App = (() => {
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
-    pressureMark, inkOn,
+    pressureMark,
     rampAhead, // the next 6 hours of nominations at an exit point
     pipeStyle, pipeMapName, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.

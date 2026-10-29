@@ -85,6 +85,27 @@ test("exit nominations: six hourly bars with hour-only labels", () => {
   assert.ok(!chart.includes(":00"), "hour labels do not repeat minutes");
 });
 
+/* Ray, 29 Oct: "in this view we also need booking hourly level so see if the hourly
+   nomination level is above or below. if its above it should have some color like
+   yellow or red but not strong color"; "two bars next to eachother for each hour". */
+test("the next 6 hours: booking and nomination side by side, over booking in a muted colour", () => {
+  const { App } = load();
+  const id = "dunkirk", t0 = 1_790_000_000, noms = [40, 41, 49.5, 52, 45, 40], booked = 49;
+  App.live.frames = noms.map((n, i) => ({ t: t0 + i * 3600, flows: {}, metrics: { nomination_msm3d: { [id]: n }, booked_msm3d: { [id]: booked } }, plan: null }));
+  App.live.index = 0;
+  App.live.time = t0;
+  const chart = App.nominationHistogram(id).innerHTML;
+  assert.equal((chart.match(/class="booking-bar"/g) || []).length, 6, "a booking bar each hour");
+  assert.equal((chart.match(/class="nomination-bar( over)?"/g) || []).length, 6, "a nomination bar each hour");
+  assert.equal((chart.match(/class="nomination-bar over"/g) || []).length, 2, "the two hours over 49 booked");
+  const fills = [...chart.matchAll(/class="nomination-bar over"[^>]*fill="(#[0-9a-f]{6})"/g)].map((m) => m[1]);
+  assert.notEqual(fills[0], fills[1], "just over is yellow; 6 % over is red");
+  for (const fill of fills) {
+    assert.ok(![App.colors.warning, App.colors.critical].includes(fill), "muted, not the strong alarm colours");
+  }
+  assert.match(chart, />Booked</);
+});
+
 test("the scale reaches the page as --ui-scale and a data-display attribute", () => {
   const props = {};
   const nora = loadPayload();

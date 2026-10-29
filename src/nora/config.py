@@ -86,7 +86,7 @@ DEFAULTS: dict = {
         "h2s": "#8a7616",
         "co2": "#93463e",
         "pig": "#9c8465",  # muted tan: a pig creeping along the line
-        "peak": "#5f6d7a",  # neutral grey-blue: a change in flow moving with the gas
+        "peak": "#5f6d7a",  # neutral grey-blue: nominations in the next-6-hours chart
     },
     "colors_dark": {
         "paper": "#2a2e32",

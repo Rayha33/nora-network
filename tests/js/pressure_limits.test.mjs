@@ -26,18 +26,24 @@ const luminance = (hex) => {
 };
 const contrast = (a, b) => { const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
 
-test("pressure limits: high is yellow, high-high red, integrity dark red, each readable", () => {
-  const { App, NORA } = loadApp();
-  const [high, highHigh, integrity] = NORA.config.pressure_limits.hub;
-  assert.equal(App.pressureMark("draupner_e", high - 0.1), null, "below high: a plain tag");
-  const marks = [high, highHigh, integrity].map((p) => App.pressureMark("draupner_e", p));
-  assert.deepEqual(marks.map((m) => m.code), ["H", "HH", "INT"]);
-  assert.deepEqual(marks.map((m) => m.fill), [App.colors.warning, App.colors.critical, App.colors.integrity]);
-  assert.equal(App.colors.warning, NORA.config.colors.warning, "yellow (amber) at high");
-  assert.notEqual(App.colors.integrity, App.colors.critical, "integrity is its own, darker red");
-  assert.ok(luminance(App.colors.integrity) < luminance(App.colors.critical), "darker than the high-high red");
-  for (const m of marks) assert.ok(contrast(m.fill, m.ink) >= 3.5, `${m.code}: its number reads on the fill (${contrast(m.fill, m.ink).toFixed(1)}:1)`);
-  assert.equal(App.pressureMark("draupner_e", integrity + 20).code, "INT", "above integrity it stays at integrity");
+test("pressure limits: the number turns yellow, red, dark red, readable on its tag in both themes", () => {
+  // Ray, 29 Oct: "only the number itself should turn yellow when we go above on pressure
+  // not the whole square"; "we want to use strong colors sparingly".
+  for (const theme of ["light", "dark"]) {
+    const { App, NORA } = loadApp({ search: `?theme=${theme}` });
+    const [high, highHigh, integrity] = NORA.config.pressure_limits.hub;
+    assert.equal(App.pressureMark("draupner_e", high - 0.1), null, "below high: a plain tag");
+    const marks = [high, highHigh, integrity].map((p) => App.pressureMark("draupner_e", p));
+    assert.deepEqual(marks.map((m) => m.code), ["H", "HH", "INT"]);
+    assert.ok(marks.every((m) => !("fill" in m)), "the tag itself is not coloured");
+    assert.equal(new Set(marks.map((m) => m.ink)).size, 3, "three distinct colours");
+    const tag = theme === "dark" ? NORA.config.colors_dark.paper : App.colors.card.active.fill;
+    for (const m of marks) assert.ok(contrast(m.ink, tag) >= 3, `${theme} ${m.code}: ${contrast(m.ink, tag).toFixed(1)}:1 on its tag`);
+    const hue = (hex) => { const [r, g] = [1, 3].map((i) => parseInt(hex.slice(i, i + 2), 16)); return r >= g; };
+    assert.ok(marks.every((m) => hue(m.ink)), "yellow to red, warm hues");
+    assert.ok(luminance(marks[2].ink) < luminance(marks[1].ink), "integrity darker than high-high");
+    assert.equal(App.pressureMark("draupner_e", integrity + 20).code, "INT", "above integrity it stays at integrity");
+  }
 });
 
 test("pressure limits: the tags fill with the colour, and zoomed in say which limit", () => {
@@ -63,7 +69,7 @@ test("pressure limits: the tags fill with the colour, and zoomed in say which li
   assert.deepEqual([...seen].sort(), ["H", "HH", "INT"], "the synthetic week shows all three");
 });
 
-test("pressure limits: a tag at a limit is drawn on its colour, its number in that ink", () => {
+test("pressure limits: a tag at a limit keeps its own fill; only its number is coloured", () => {
   const { App } = loadApp();
   const fills = [], texts = [];
   const ctx = new Proxy({}, {
@@ -80,8 +86,8 @@ test("pressure limits: a tag at a limit is drawn on its colour, its number in th
     { box: [0, 0, 60, 16], text: "150 bar", small: false, mark: null },
     { box: [0, 20, 60, 36], text: "INT 200 bar", small: false, mark },
   ], look);
-  assert.deepEqual(fills, [look.fill, App.colors.integrity], "a plain tag on the card, the other on dark red");
-  assert.deepEqual(texts.map((t) => t.color), [look.ink, mark.ink]);
+  assert.deepEqual(fills, [look.fill, look.fill], "both tags on the card's own fill");
+  assert.deepEqual(texts.map((t) => t.color), [look.ink, mark.ink], "the number at the limit in its colour");
 });
 
 test("pressure limits: a node's alarm badge takes a corner no tag covers", () => {
