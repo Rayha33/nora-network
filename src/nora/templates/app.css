@@ -272,7 +272,7 @@ table.data.quality td:nth-child(2) { white-space: nowrap; }
 .facts dt { color: var(--text-dim); }
 .facts dd { margin: 0; }
 .nomination-outlook { border-top: 1px solid var(--rule); margin-top: 14px; padding-top: 2px; }
-.nomination-histogram { display: block; width: 100%; height: auto; margin-top: 4px; }
+.nomination-histogram, .gasday-chart { display: block; width: 100%; height: auto; margin-top: 4px; }
 
 /* Guide and settings are consistent floating sheets. */
 .pop {

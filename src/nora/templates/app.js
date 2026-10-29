@@ -827,20 +827,29 @@ const App = (() => {
      what was nominated for the same hours, as a share (0 = on plan, -0.05 = 5 % short).
      The gas day starts at thresholds.gas_day_start_utc. */
   const dayDelivery = (id) => cached("day", id, () => dayDeliveryNow(id));
+  /* The gas day so far at an exit: delivered against nominated, and how that stood after
+     each hour of the day (`trail`, oldest first; Ray, 29 Oct: "the end of day target to
+     exit points changes over time and this need to be illustrated as well"). `hours`
+     keeps each hour's MSm³ for the panel's chart. */
   function dayDeliveryNow(id) {
     const start = T.gas_day_start_utc == null ? 5 : T.gas_day_start_utc, now = frame();
     if (now.t == null || metric("nomination_msm3d", id, now) == null) return null;
     const dayStart = Math.floor((now.t - start * 3600) / 86400) * 86400 + start * 3600;
+    let first = live.index;
+    while (first > 0 && live.frames[first - 1] && live.frames[first - 1].t >= dayStart) first--;
     let actual = 0, nominated = 0;
-    for (let i = live.index; i >= 0 && live.frames[i] && live.frames[i].t >= dayStart; i--) {
+    const trail = [], hours = [];
+    for (let i = first; i <= live.index; i++) {
       const f = live.frames[i], nom = metric("nomination_msm3d", id, f), got = throughput(id, f.flows);
       if (nom == null || got == null) continue;
       actual += got;
       nominated += nom;
+      hours.push({ t: f.t, nominated: nom, delivered: got });
+      if (nominated > 0) trail.push((actual - nominated) / nominated);
     }
     if (nominated <= 0) return null;
     const share = (actual - nominated) / nominated;
-    return { share, level: level(Math.abs(share), T.nomination) };
+    return { share, level: level(Math.abs(share), T.nomination), trail: trail.slice(0, -1), hours, dayStart };
   }
   // How fast gas through a node is changing, MSm³/d per hour, over the last 2 hours.
   const flowRate = (id) => rate(window4h(id).past);
@@ -1838,6 +1847,37 @@ const App = (() => {
     if (nominated == null || !(booked > 0) || nominated <= booked) return 0;
     return nominated / booked >= T.booking[2] ? 3 : 1;
   }
+  /* The gas day at an exit, cumulative: the nominated gas as a dashed line to the end of
+     the day (its end-of-day target; later hours from the data's nominations, else the last
+     one held), the delivered gas solid up to now (Ray, 29 Oct: "the end of day target to
+     exit points changes over time and this need to be illustrated as well"). */
+  function gasDayChart(id) {
+    const day = dayDelivery(id);
+    if (!day || !day.hours.length) return null;
+    const step = stepHours(), per = step / 24; // MSm³ per data step at a rate in MSm³/d
+    const n = Math.round(24 / step), past = day.hours.length;
+    const noms = day.hours.map((r) => r.nominated);
+    for (let k = 1; noms.length < n; k++) {
+      const f = live.frames[live.index + k], ahead = live.feed ? (((frame().ahead || {}).nomination_msm3d || {})[id] || [])[k - 1] : null;
+      const v = f ? metric("nomination_msm3d", id, f) : ahead;
+      noms.push(v ?? noms[noms.length - 1]);
+    }
+    const cum = (values) => values.reduce((out, v) => [...out, (out.length ? out[out.length - 1] : 0) + v * per], []);
+    const nominated = cum(noms), delivered = cum(day.hours.map((r) => r.delivered));
+    const target = nominated[n - 1], top = Math.max(target, ...delivered) * 1.06 || 1;
+    const W = 360, H = 104, plot = 76, x = (k) => ((k + 1) / n) * (W - 4) + 2, y = (v) => 8 + plot - (v / top) * plot;
+    const text = "stroke:none;font-weight:400;font-size:11px;font-family:Archivo,system-ui,sans-serif";
+    const path = (values) => values.map((v, k) => `${k ? "L" : "M"}${x(k).toFixed(1)},${y(v).toFixed(1)}`).join("");
+    let body = `<line x1="0" y1="${8 + plot}" x2="${W}" y2="${8 + plot}" stroke="${COLORS.border}"/>`;
+    body += `<path class="gasday-nominated" d="M2,${8 + plot}L${path(nominated).slice(1)}" fill="none" stroke="${COLORS.peak}" stroke-width="1.4" stroke-dasharray="4 3"/>`;
+    body += `<path class="gasday-delivered" d="M2,${8 + plot}L${path(delivered).slice(1)}" fill="none" stroke="${COLORS.text}" stroke-width="1.8"/>`;
+    body += `<line x1="${x(past - 1)}" y1="6" x2="${x(past - 1)}" y2="${8 + plot}" stroke="${COLORS.text_dim}" stroke-width="1"/>`;
+    body += `<text x="${W}" y="${Math.max(11, y(target) - 4)}" text-anchor="end" fill="${COLORS.text_dim}" style="${text}">Target ${esc(fmt(target, 1))}</text>`;
+    const start = String(new Date(day.dayStart * 1000).getUTCHours()).padStart(2, "0");
+    body += `<text x="2" y="${H - 4}" fill="${COLORS.text_dim}" style="${text}">${start}:00</text><text x="${W}" y="${H - 4}" text-anchor="end" fill="${COLORS.text_dim}" style="${text}">${start}:00</text>`;
+    body += `<text x="${x(past - 1)}" y="${H - 4}" text-anchor="middle" fill="${COLORS.text_dim}" style="${text}">now ${esc(fmt(delivered[past - 1], 1))} of ${esc(fmt(nominated[past - 1], 1))}</text>`;
+    return svg(`0 0 ${W} ${H}`, body, "gasday-chart");
+  }
   function nominationHistogram(id) {
     const readings = nominationWindow(id);
     if (!readings.some((reading) => reading.value != null)) return null;
@@ -1888,6 +1928,7 @@ const App = (() => {
       h("div", { class: "cols" },
         h("div", { class: "box" }, h("h2", { title: "Flowing in above the asset, out below it" }, "In context"), schematic(id)),
         h("div", { class: "box" }, h("h2", { title: "Live readings in their ranges, from the data being played" }, "Values"), bank(indicators, "No live readings for this asset in the dataset.", { byMeasure: true }),
+          exitPoints.includes(id) && dayDelivery(id) ? h("div", { class: "nomination-outlook" }, h("h2", { style: "margin-top:14px" }, "Gas day · MSm³ delivered against nominated"), gasDayChart(id)) : null,
           exitPoints.includes(id) ? h("div", { class: "nomination-outlook" }, h("h2", { style: "margin-top:14px" }, "Next 6 hours · MSm³/d"), nominationHistogram(id)) : null,
           inSidebar ? null : h("h2", { style: "margin-top:14px" }, "State"),
           conds.length ? alarmList(conds)
@@ -3224,7 +3265,7 @@ const App = (() => {
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
-    pressureMark, flowMark, drawFlowDirection,
+    pressureMark, flowMark, drawFlowDirection, gasDayChart,
     rampAhead, // the next 6 hours of nominations at an exit point
     pipeStyle, pipeMapName, pipeDetail, detailZoom: DETAIL_ZOOM, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
