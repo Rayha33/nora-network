@@ -1,0 +1,723 @@
+{
+ "cases": [
+  {
+   "name": "steady",
+   "launch": 36000,
+   "arrival": 108000,
+   "notify": 21600,
+   "checks": [
+    0,
+    3600,
+    7200,
+    10800,
+    14400,
+    18000,
+    21600,
+    25200,
+    28800,
+    32400,
+    36000,
+    39600,
+    43200,
+    46800,
+    50400,
+    54000,
+    57600,
+    61200,
+    64800,
+    68400,
+    72000,
+    75600,
+    79200,
+    82800,
+    86400,
+    90000,
+    93600,
+    97200,
+    100800,
+    104400,
+    108000,
+    111600,
+    115200,
+    118800,
+    122400,
+    126000,
+    129600,
+    133200,
+    136800,
+    140400
+   ],
+   "eta": [
+    [
+     0,
+     108000
+    ]
+   ],
+   "receiver": "easington",
+   "messages": [
+    {
+     "t": 28800,
+     "kind": "launch",
+     "eta": 108000,
+     "to": "easington"
+    },
+    {
+     "t": 57600,
+     "kind": "update",
+     "eta": 108000,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 79200,
+     "kind": "update",
+     "eta": 108000,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 100800,
+     "kind": "update",
+     "eta": 108000,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 108000,
+     "kind": "arrival",
+     "eta": 108000,
+     "to": "easington"
+    }
+   ]
+  },
+  {
+   "name": "drift 45 min",
+   "launch": 36000,
+   "arrival": 110700,
+   "notify": 21600,
+   "checks": [
+    0,
+    3600,
+    7200,
+    10800,
+    14400,
+    18000,
+    21600,
+    25200,
+    28800,
+    32400,
+    36000,
+    39600,
+    43200,
+    46800,
+    50400,
+    54000,
+    57600,
+    61200,
+    64800,
+    68400,
+    72000,
+    75600,
+    79200,
+    82800,
+    86400,
+    90000,
+    93600,
+    97200,
+    100800,
+    104400,
+    108000,
+    111600,
+    115200,
+    118800,
+    122400,
+    126000,
+    129600,
+    133200,
+    136800,
+    140400
+   ],
+   "eta": [
+    [
+     0,
+     108000
+    ],
+    [
+     50400,
+     110700
+    ]
+   ],
+   "receiver": "easington",
+   "messages": [
+    {
+     "t": 28800,
+     "kind": "launch",
+     "eta": 108000,
+     "to": "easington"
+    },
+    {
+     "t": 51300,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "drift"
+    },
+    {
+     "t": 57600,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 79200,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 100800,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 110700,
+     "kind": "arrival",
+     "eta": 110700,
+     "to": "easington"
+    }
+   ]
+  },
+  {
+   "name": "drift under 30 min",
+   "launch": 36000,
+   "arrival": 109200,
+   "notify": 21600,
+   "checks": [
+    0,
+    3600,
+    7200,
+    10800,
+    14400,
+    18000,
+    21600,
+    25200,
+    28800,
+    32400,
+    36000,
+    39600,
+    43200,
+    46800,
+    50400,
+    54000,
+    57600,
+    61200,
+    64800,
+    68400,
+    72000,
+    75600,
+    79200,
+    82800,
+    86400,
+    90000,
+    93600,
+    97200,
+    100800,
+    104400,
+    108000,
+    111600,
+    115200,
+    118800,
+    122400,
+    126000,
+    129600,
+    133200,
+    136800,
+    140400
+   ],
+   "eta": [
+    [
+     0,
+     108000
+    ],
+    [
+     50400,
+     109200
+    ]
+   ],
+   "receiver": "easington",
+   "messages": [
+    {
+     "t": 28800,
+     "kind": "launch",
+     "eta": 108000,
+     "to": "easington"
+    },
+    {
+     "t": 57600,
+     "kind": "update",
+     "eta": 109200,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 79200,
+     "kind": "update",
+     "eta": 109200,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 100800,
+     "kind": "update",
+     "eta": 109200,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 109200,
+     "kind": "arrival",
+     "eta": 109200,
+     "to": "easington"
+    }
+   ]
+  },
+  {
+   "name": "drift on a scheduled hour",
+   "launch": 36000,
+   "arrival": 111600,
+   "notify": 21600,
+   "checks": [
+    0,
+    3600,
+    7200,
+    10800,
+    14400,
+    18000,
+    21600,
+    25200,
+    28800,
+    32400,
+    36000,
+    39600,
+    43200,
+    46800,
+    50400,
+    54000,
+    56700,
+    57600,
+    61200,
+    64800,
+    68400,
+    72000,
+    75600,
+    79200,
+    82800,
+    86400,
+    90000,
+    93600,
+    97200,
+    100800,
+    104400,
+    108000,
+    111600,
+    115200,
+    118800,
+    122400,
+    126000,
+    129600,
+    133200,
+    136800,
+    140400
+   ],
+   "eta": [
+    [
+     0,
+     108000
+    ],
+    [
+     56700,
+     111600
+    ]
+   ],
+   "receiver": "easington",
+   "messages": [
+    {
+     "t": 28800,
+     "kind": "launch",
+     "eta": 108000,
+     "to": "easington"
+    },
+    {
+     "t": 57600,
+     "kind": "update",
+     "eta": 111600,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 79200,
+     "kind": "update",
+     "eta": 111600,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 100800,
+     "kind": "update",
+     "eta": 111600,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 111600,
+     "kind": "arrival",
+     "eta": 111600,
+     "to": "easington"
+    }
+   ]
+  },
+  {
+   "name": "still under way",
+   "launch": 36000,
+   "arrival": null,
+   "notify": 21600,
+   "checks": [
+    0,
+    3600,
+    7200,
+    10800,
+    14400,
+    18000,
+    21600,
+    25200,
+    28800,
+    32400,
+    36000,
+    39600,
+    43200,
+    46800,
+    50400,
+    54000,
+    57600,
+    61200,
+    64800,
+    68400,
+    72000,
+    75600,
+    79200
+   ],
+   "eta": [
+    [
+     0,
+     108000
+    ]
+   ],
+   "receiver": "easington",
+   "messages": [
+    {
+     "t": 28800,
+     "kind": "launch",
+     "eta": 108000,
+     "to": "easington"
+    },
+    {
+     "t": 57600,
+     "kind": "update",
+     "eta": 108000,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 79200,
+     "kind": "update",
+     "eta": 108000,
+     "to": "easington",
+     "reason": "scheduled"
+    }
+   ]
+  }
+ ],
+ "alarms": [
+  {
+   "name": "before the notice",
+   "now": 25200,
+   "launch": 36000,
+   "arrival": 110700,
+   "notify": 21600,
+   "messages": [
+    {
+     "t": 28800,
+     "kind": "launch",
+     "eta": 108000,
+     "to": "easington"
+    },
+    {
+     "t": 51300,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "drift"
+    },
+    {
+     "t": 57600,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 79200,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 100800,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 110700,
+     "kind": "arrival",
+     "eta": 110700,
+     "to": "easington"
+    }
+   ],
+   "eta_now": 108000,
+   "level": 0,
+   "what": "",
+   "drift": 0.0
+  },
+  {
+   "name": "drift waiting for its update",
+   "now": 50400,
+   "launch": 36000,
+   "arrival": 110700,
+   "notify": 21600,
+   "messages": [
+    {
+     "t": 28800,
+     "kind": "launch",
+     "eta": 108000,
+     "to": "easington"
+    },
+    {
+     "t": 51300,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "drift"
+    },
+    {
+     "t": 57600,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 79200,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 100800,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 110700,
+     "kind": "arrival",
+     "eta": 110700,
+     "to": "easington"
+    }
+   ],
+   "eta_now": 110700,
+   "level": 1,
+   "what": "drift",
+   "drift": 2700
+  },
+  {
+   "name": "drift sent",
+   "now": 51300,
+   "launch": 36000,
+   "arrival": 110700,
+   "notify": 21600,
+   "messages": [
+    {
+     "t": 28800,
+     "kind": "launch",
+     "eta": 108000,
+     "to": "easington"
+    },
+    {
+     "t": 51300,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "drift"
+    },
+    {
+     "t": 57600,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 79200,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 100800,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 110700,
+     "kind": "arrival",
+     "eta": 110700,
+     "to": "easington"
+    }
+   ],
+   "eta_now": 110700,
+   "level": 0,
+   "what": "",
+   "drift": 0
+  },
+  {
+   "name": "drift over 2 h",
+   "now": 50400,
+   "launch": 36000,
+   "arrival": 110700,
+   "notify": 21600,
+   "messages": [
+    {
+     "t": 28800,
+     "kind": "launch",
+     "eta": 108000,
+     "to": "easington"
+    }
+   ],
+   "eta_now": 117000,
+   "level": 3,
+   "what": "drift",
+   "drift": 9000
+  },
+  {
+   "name": "missed update",
+   "now": 58560,
+   "launch": 36000,
+   "arrival": 110700,
+   "notify": 21600,
+   "messages": [
+    {
+     "t": 28800,
+     "kind": "launch",
+     "eta": 108000,
+     "to": "easington"
+    },
+    {
+     "t": 51300,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "drift"
+    },
+    {
+     "t": 79200,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 100800,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 110700,
+     "kind": "arrival",
+     "eta": 110700,
+     "to": "easington"
+    }
+   ],
+   "eta_now": 110700,
+   "level": 3,
+   "what": "missed",
+   "drift": 0
+  },
+  {
+   "name": "arrived",
+   "now": 111600,
+   "launch": 36000,
+   "arrival": 110700,
+   "notify": 21600,
+   "messages": [
+    {
+     "t": 28800,
+     "kind": "launch",
+     "eta": 108000,
+     "to": "easington"
+    },
+    {
+     "t": 51300,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "drift"
+    },
+    {
+     "t": 57600,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 79200,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 100800,
+     "kind": "update",
+     "eta": 110700,
+     "to": "easington",
+     "reason": "scheduled"
+    },
+    {
+     "t": 110700,
+     "kind": "arrival",
+     "eta": 110700,
+     "to": "easington"
+    }
+   ],
+   "eta_now": 110700,
+   "level": 0,
+   "what": "",
+   "drift": 0.0
+  }
+ ]
+}

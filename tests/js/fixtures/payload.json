@@ -51926,7 +51926,11 @@
      "launch": 1792371600,
      "speed": 4.5,
      "every": 388800,
-     "id": 3420
+     "id": 3420,
+     "tag": "PIG-LGS-014",
+     "kind": "cleaning",
+     "receiver": "easington",
+     "notify": 21600
     },
     {
      "label": "Inspection pig, Europipe I",
@@ -51934,7 +51938,11 @@
      "launch": 1792378800,
      "speed": 4.0,
      "every": 453600,
-     "id": 3511
+     "id": 3511,
+     "tag": "PIG-EP1-031",
+     "kind": "inspection",
+     "receiver": "dornum",
+     "notify": 14400
     },
     {
      "label": "Cleaning pig, Statpipe (rich gas)",
@@ -51942,15 +51950,23 @@
      "launch": 1792368000,
      "speed": 4.0,
      "every": 259200,
-     "id": 2874
+     "id": 2874,
+     "tag": "PIG-STR-003",
+     "kind": "cleaning",
+     "receiver": "karsto",
+     "notify": 21600
     },
     {
-     "label": "Cleaning pig, Vesterled",
+     "label": "Gauging pig, Vesterled",
      "pipeline": "vesterled",
      "launch": 1792389600,
      "speed": 5.0,
      "every": 259200,
-     "id": 3166
+     "id": 3166,
+     "tag": "PIG-VES-004",
+     "kind": "gauging",
+     "receiver": "st_fergus",
+     "notify": 21600
     },
     {
      "label": "Pig on \u00c5sgard Transport",
@@ -51958,7 +51974,11 @@
      "launch": 1792368000,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-AST-005",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Baltic Pipe (Denmark - Poland)",
@@ -51966,7 +51986,11 @@
      "launch": 1792422981,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-BPE-006",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Baltic Pipe (North Sea leg)",
@@ -51974,7 +51998,11 @@
      "launch": 1792477963,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-BPN-007",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Europipe II (K\u00e5rst\u00f8 - Baltic tie-in)",
@@ -51982,7 +52010,11 @@
      "launch": 1792532945,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-E2N-008",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Europipe II (Baltic tie-in - Dornum)",
@@ -51990,7 +52022,11 @@
      "launch": 1792587927,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-E2S-009",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on FLAGS",
@@ -51998,7 +52034,11 @@
      "launch": 1792642909,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-FLA-010",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Franpipe",
@@ -52006,7 +52046,11 @@
      "launch": 1792697890,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-FRA-011",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Frigg UK System (FUKA)",
@@ -52014,7 +52058,11 @@
      "launch": 1792752872,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-FUK-012",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Haltenpipe",
@@ -52022,7 +52070,11 @@
      "launch": 1792807854,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-HAL-013",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Heimskringla (Draupner leg to the Jotun tie-in)",
@@ -52030,7 +52082,11 @@
      "launch": 1792862836,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-HMJ-014",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Heimskringla (St Fergus leg to the Mariner tie-in)",
@@ -52038,7 +52094,11 @@
      "launch": 1792917818,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-HMM-015",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Langeled (north)",
@@ -52046,7 +52106,11 @@
      "launch": 1792972800,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-LNN-016",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Norpipe Gas",
@@ -52054,7 +52118,11 @@
      "launch": 1793027781,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-NOR-017",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Polarled",
@@ -52062,7 +52130,11 @@
      "launch": 1793082763,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-POL-018",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Polarled (Aasta Hansteen - Dvalin tie-in)",
@@ -52070,7 +52142,11 @@
      "launch": 1793137745,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-PLN-019",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on SAGE",
@@ -52078,7 +52154,11 @@
      "launch": 1793192727,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-SAG-020",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Statpipe (dry gas)",
@@ -52086,7 +52166,11 @@
      "launch": 1793247709,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-STD-021",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Statpipe (Draupner S - Ekofisk tie-in)",
@@ -52094,7 +52178,11 @@
      "launch": 1793302690,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-STE-022",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Heimskringla (Draupner leg)",
@@ -52102,7 +52190,11 @@
      "launch": 1793357672,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-STH-023",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Zeepipe I",
@@ -52110,7 +52202,11 @@
      "launch": 1793412654,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-ZP1-024",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Zeepipe IIA",
@@ -52118,7 +52214,11 @@
      "launch": 1793467636,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-Z2A-025",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     },
     {
      "label": "Pig on Zeepipe IIB",
@@ -52126,7 +52226,11 @@
      "launch": 1793522618,
      "speed": 4.0,
      "every": 1209600,
-     "id": null
+     "id": null,
+     "tag": "PIG-Z2B-026",
+     "kind": "cleaning",
+     "receiver": null,
+     "notify": 21600
     }
    ],
    "times": [

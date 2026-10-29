@@ -1030,6 +1030,8 @@ const App = (() => {
         add(slugAlarm(s), s.q.origin, "quality", `${qualityText(s.q.metric, s.q.conc)} from ${nameOf(s.q.origin)}${s.exit ? `, diluted to ${fmt(s.exit.conc, QUALITY[s.q.metric].digits)} by ${nameOf(s.exit.node)}` : ""}`);
       }
     }
+    // A pig's ETA drifting from the last update its receiver had, or a missed update.
+    for (const c of pigConditions(live.time)) add(c.level, c.id, "pig", c.text);
     const events = (live.stream && live.stream.events) || live.feedEvents || [];
     for (const event of events) {
       if (live.time >= event.start && live.time < event.end && !event.planned) add(2, event.asset, "event", event.label, { t: event.start, before: false });
@@ -1146,7 +1148,9 @@ const App = (() => {
   // Pick the next line out of a node: random, weighted by the flow it carries, and
   // deterministic for the same seed - so a pig or a peak always takes the same way.
   function nextOut(node, flows, seed) {
-    const out = linesOut(node, flows);
+    return pickOut(linesOut(node, flows), seed);
+  }
+  function pickOut(out, seed) {
     if (!out.length) return null;
     if (out.length === 1) return out[0];
     const rand = seeded(seed);
@@ -1155,39 +1159,240 @@ const App = (() => {
     return out[out.length - 1];
   }
   const lineMetres = (pid) => Math.max(1, assets[pid].km || 1) * 1000;
-  /* A pig's route for one run (a relaunch is a new run): it starts down its line the
-     way the gas flows at launch, and each further hop is chosen with the flows of the
-     moment it reaches that node. Hops are added as the pig gets there, then kept. */
-  const pigRoutes = new Map();
-  function pigRoute(pig, run, distance) {
-    const key = `${pig.label}|${pig.launch}|${run}`, start = pig.launch + run * (pig.every || 0);
-    let route = pigRoutes.get(key);
-    if (!route) {
-      const v = frameAt(start).flows[pig.pipeline];
-      pigRoutes.set(key, route = [{ pid: pig.pipeline, forward: !(v < 0), m: 0 }]);
-    }
-    let last = route[route.length - 1];
-    while (last.m + lineMetres(last.pid) <= distance && route.length < 40) {
-      const node = last.forward ? assets[last.pid].to : assets[last.pid].from;
-      const at = start + (last.m + lineMetres(last.pid)) / pig.speed;
-      const hop = isExit(node) ? null : nextOut(node, frameAt(at).flows, `${key}|${route.length}`);
-      if (!hop) break;  // arrived at its receiver (or the network edge): off screen
-      route.push(last = { pid: hop.pid, forward: hop.forward, m: last.m + lineMetres(last.pid) });
-    }
-    return route;
+  const farEnd = (seg) => (seg.forward ? assets[seg.pid].to : assets[seg.pid].from);
+
+  /* ------------------------------------------------------------------ pigs
+     A pig moves with the gas (Ray, 27 Oct): its set speed times its line's flow now
+     against the line's typical (median) flow, bounded 0.3 to 1.5 times. The rules
+     mirror stream.py (pig_speed, pig_messages, pig_alarm); tests/data/pig_messages.json
+     holds cases both must pass. */
+  const PIG = { slowest: 0.3, fastest: 1.5, notice: 2 * 3600, drift: 30 * 60, driftAlarm: 2 * 3600, response: 15 * 60, grace: 15 * 60, look: 15 * 60 };
+  function pigSpeed(speed, flow, typical) {
+    if (flow == null || !(typical > 0)) return speed;
+    return speed * Math.min(PIG.fastest, Math.max(PIG.slowest, Math.abs(flow) / typical));
   }
+  const lineSpeed = (pig, pid, f) => pigSpeed(pig.speed, f.flows[pid], live.typical[pid]);
+  // When the data next changes after t; Infinity past the last frame.
+  function nextFrameTime(t) {
+    const frames = live.frames;
+    let lo = 0, hi = frames.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (frames[mid].t <= t) lo = mid + 1; else hi = mid; }
+    return lo < frames.length ? frames[lo].t : Infinity;
+  }
+  // Hops from every node to a receiving station, along any line.
+  const hopsTo = new Map();
+  function hopsToStation(station) {
+    if (hopsTo.has(station)) return hopsTo.get(station);
+    const hops = new Map([[station, 0]]), queue = [station];
+    while (queue.length) {
+      const node = queue.shift();
+      for (const pid of pipeIds) {
+        const p = assets[pid], other = p.from === node ? p.to : p.to === node ? p.from : null;
+        if (other != null && !hops.has(other)) { hops.set(other, hops.get(node) + 1); queue.push(other); }
+      }
+    }
+    hopsTo.set(station, hops);
+    return hops;
+  }
+  /* The line a pig takes out of a node, with the gas: toward its receiver when it has
+     one, else at random weighted by the flow; null where it is received. */
+  function pigHop(pig, node, flows, seed) {
+    if (pig.receiver) {
+      if (node === pig.receiver) return null;
+      const hops = hopsToStation(pig.receiver), here = hops.has(node) ? hops.get(node) : Infinity;
+      const closer = linesOut(node, flows).filter((o) => {
+        const far = o.forward ? assets[o.pid].to : assets[o.pid].from;
+        return hops.has(far) && hops.get(far) < here;
+      });
+      if (closer.length) return pickOut(closer, seed);
+    }
+    return isExit(node) ? null : nextOut(node, flows, seed);
+  }
+  /* One run of a pig (a relaunch is a new run), worked out once from the data: it starts
+     down its line the way the gas flows at launch and takes each further line with the
+     flows of the moment it reaches that node; between data steps it keeps the speed of
+     that step. `knots` are (time, metres) where the speed changes, so the place at any
+     time is one search: replay and seek agree. */
+  const pigRuns = new Map();
+  function pigRun(pig, run) {
+    const key = `${pig.label}|${pig.launch}|${run}`;
+    if (pigRuns.has(key)) return pigRuns.get(key);
+    const start = pig.launch + run * (pig.every > 0 ? pig.every : 0);
+    const v0 = frameAt(start).flows[pig.pipeline];
+    const route = [{ pid: pig.pipeline, forward: !(v0 < 0), m: 0, t: start }], knots = [{ t: start, d: 0 }];
+    let t = start, d = 0, arrives = null;
+    for (let guard = 0; guard < 20000; guard++) {
+      const seg = route[route.length - 1], end = seg.m + lineMetres(seg.pid);
+      const reach = t + (end - d) / lineSpeed(pig, seg.pid, frameAt(t)), next = nextFrameTime(t);
+      if (reach > next) { d += (end - d) * (next - t) / (reach - t); t = next; knots.push({ t, d }); continue; }
+      t = reach; d = end; seg.out = t; knots.push({ t, d });
+      const hop = route.length >= 40 ? null : pigHop(pig, farEnd(seg), frameAt(t).flows, `${key}|${route.length}`);
+      if (!hop) { arrives = t; break; } // received (or the network's edge): off screen
+      route.push({ pid: hop.pid, forward: hop.forward, m: end, t });
+    }
+    const last = route[route.length - 1];
+    const r = { key, run, start, route, knots, arrives, total: last.m + lineMetres(last.pid), receiver: farEnd(last) };
+    pigRuns.set(key, r);
+    return r;
+  }
+  // Metres travelled at `time`.
+  function pigDistance(r, time) {
+    const k = r.knots;
+    if (time <= k[0].t) return 0;
+    if (time >= k[k.length - 1].t) return k[k.length - 1].d;
+    let lo = 0, hi = k.length - 1;
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (k[mid].t <= time) lo = mid; else hi = mid; }
+    return k[lo].d + (k[hi].d - k[lo].d) * (time - k[lo].t) / (k[hi].t - k[lo].t);
+  }
+  // The run on screen at `time`: the latest launched (null before the first launch).
+  const pigRunIndex = (pig, time) => (time < pig.launch ? null : pig.every > 0 ? Math.floor((time - pig.launch) / pig.every) : 0);
   // Where a pig is now: on one line at a time, handing over at the nodes, never jumping.
   function pigPlace(pig, time) {
     if (time == null || time < pig.launch) return null;
-    const since = time - pig.launch, every = pig.every > 0 ? pig.every : 0;
-    const run = every ? Math.floor(since / every) : 0, distance = (since - run * every) * pig.speed;
-    const route = pigRoute(pig, run, distance);
-    const last = route[route.length - 1];
-    if (distance >= last.m + lineMetres(last.pid)) return null;  // at the receiver, waiting for relaunch
-    const seg = route.find((s) => distance < s.m + lineMetres(s.pid)) || last;
-    const along = (distance - seg.m) / lineMetres(seg.pid);
-    const runStart = pig.launch + run * every, next = seg.forward ? assets[seg.pid].to : assets[seg.pid].from;
-    return { pid: seg.pid, along: seg.forward ? along : 1 - along, exitAt: runStart + (seg.m + lineMetres(seg.pid)) / pig.speed, next };
+    const r = pigRun(pig, pigRunIndex(pig, time));
+    if (r.arrives != null && time >= r.arrives) return null; // received, waiting for a relaunch
+    const d = pigDistance(r, time);
+    const seg = r.route.find((s) => d < s.m + lineMetres(s.pid)) || r.route[r.route.length - 1];
+    const along = (d - seg.m) / lineMetres(seg.pid);
+    return { pid: seg.pid, along: seg.forward ? along : 1 - along, exitAt: seg.out, next: farEnd(seg), speed: lineSpeed(pig, seg.pid, frameAt(time)) };
+  }
+  /* The live ETA at the receiver: the stretch still ahead on each line at the speed of
+     that line's flow over the last 24 hours (a gas day, so the daily swing in the flows
+     does not move an ETA days away; a lasting change does). Before the launch, the
+     whole route from the launch. */
+  const ETA_WINDOW = 24 * 3600;
+  /* Running sums of each line's |flow| over the frames, so the mean over any window is
+     two lookups (the message log looks at the ETA every 15 minutes of every run). */
+  let flowSums = null;
+  function lineSums(pid) {
+    const frames = live.frames, first = frames.length ? frames[0].t : null;
+    if (!flowSums || flowSums.frames !== frames || flowSums.n !== frames.length || flowSums.first !== first) {
+      flowSums = { frames, n: frames.length, first, byLine: new Map() };
+    }
+    let sums = flowSums.byLine.get(pid);
+    if (!sums) {
+      const total = [0], count = [0];
+      for (const f of frames) {
+        const v = f.flows[pid];
+        total.push(total[total.length - 1] + (v == null ? 0 : Math.abs(v)));
+        count.push(count[count.length - 1] + (v == null ? 0 : 1));
+      }
+      flowSums.byLine.set(pid, sums = { total, count });
+    }
+    return sums;
+  }
+  const framesUpTo = (time) => { // how many frames are at or before `time`
+    const frames = live.frames;
+    let lo = 0, hi = frames.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (frames[mid].t <= time) lo = mid + 1; else hi = mid; }
+    return lo;
+  };
+  // A line's mean |flow| over the 24 hours to `time`; its flow then when there is none.
+  function dayFlow(pid, time) {
+    const { total, count } = lineSums(pid), hi = framesUpTo(time), lo = framesUpTo(time - ETA_WINDOW);
+    const n = count[hi] - count[lo];
+    return n ? (total[hi] - total[lo]) / n : frameAt(time).flows[pid];
+  }
+  function pigEta(pig, r, time) {
+    if (r.arrives != null && time >= r.arrives) return r.arrives;
+    const d = pigDistance(r, time);
+    let eta = Math.max(time, r.start);
+    for (const seg of r.route) {
+      const end = seg.m + lineMetres(seg.pid);
+      if (end > d) eta += (end - Math.max(d, seg.m)) / pigSpeed(pig.speed, dayFlow(seg.pid, time), live.typical[seg.pid]);
+    }
+    return eta;
+  }
+  /* The messages to the receiving station over a run (synthetic: NORA writes them as a
+     dispatcher would). A launch notice 2 h before the launch; an ETA update every
+     `notify` after it; one more, 15 min later, whenever the live ETA, looked at at each
+     of `checks`, has moved more than 30 min from the last one sent; the arrival
+     confirmation. As stream.pig_messages. */
+  function pigMessages(launch, arrival, notify, checks, eta, to) {
+    const first = launch - PIG.notice, end = arrival == null ? Infinity : arrival;
+    const out = [{ t: first, kind: "launch", eta: eta(first), to }];
+    let scheduled = [];
+    for (let k = 1; launch + k * notify < end && (arrival != null || k <= 1000); k++) scheduled.push(launch + k * notify);
+    if (arrival == null) scheduled = scheduled.filter((t) => !checks.length || t <= checks[checks.length - 1]);
+    const planned = new Set(scheduled);
+    const times = [...new Set([...scheduled, ...checks])].filter((t) => t > first && t < end).sort((a, b) => a - b);
+    const send = (t, reason) => out.push({ t, kind: "update", eta: eta(t), to, reason });
+    let due = null;
+    for (const t of times) {
+      if (due != null && due <= t) {
+        if (!(due === t && planned.has(t))) send(due, "drift"); // else the scheduled one goes instead
+        due = null;
+      }
+      if (planned.has(t)) { send(t, "scheduled"); due = null; }
+      else if (due == null && Math.abs(eta(t) - out[out.length - 1].eta) > PIG.drift) due = t + PIG.response;
+    }
+    if (due != null && due < end) send(due, "drift");
+    if (arrival != null) out.push({ t: arrival, kind: "arrival", eta: arrival, to });
+    return out;
+  }
+  /* A run's state at `now`: 1 when the live ETA is more than 30 min from the last one
+     sent, 3 past 2 h or when a scheduled update is 15 min late. As stream.pig_alarm. */
+  function pigAlarm(now, launch, arrival, notify, messages, etaNow) {
+    if (now < launch - PIG.notice || (arrival != null && now >= arrival)) return { level: 0, what: "", drift: 0 };
+    const sent = messages.filter((m) => m.t <= now);
+    if (!sent.length) return { level: 0, what: "", drift: 0 };
+    const drift = etaNow - sent[sent.length - 1].eta, k = Math.floor((now - PIG.grace - launch) / notify);
+    if (k >= 1 && sent[sent.length - 1].t < launch + k * notify) return { level: 3, what: "missed", drift };
+    if (Math.abs(drift) > PIG.driftAlarm) return { level: 3, what: "drift", drift };
+    if (Math.abs(drift) > PIG.drift) return { level: 1, what: "drift", drift };
+    return { level: 0, what: "", drift };
+  }
+  const pigNotify = (pig) => (pig.notify > 0 ? pig.notify : 6 * 3600);
+  const pigTag = (pig) => pig.tag || pig.label;
+  /* The run's messages, worked out once. The dispatcher looks at the live ETA every
+     15 minutes from the launch notice to the arrival (to the end of the data while the
+     pig is still under way). */
+  function pigLog(pig, r) {
+    if (r.messages) return r.messages;
+    const first = r.start - PIG.notice, last = live.frames.length ? live.frames[live.frames.length - 1].t : r.start;
+    const end = r.arrives == null ? Math.max(last, r.start) : r.arrives, checks = [];
+    for (let t = Math.floor(first / PIG.look) * PIG.look + PIG.look; t < end; t += PIG.look) checks.push(t);
+    r.messages = pigMessages(r.start, r.arrives, pigNotify(pig), checks, (t) => pigEta(pig, r, t), r.receiver);
+    return r.messages;
+  }
+  /* What the receiving station has been told by `time`, against the live ETA. For the
+     run on screen, and for the next one once its launch notice has gone. */
+  function pigStatus(pig, r, time) {
+    const log = pigLog(pig, r), sent = log.filter((m) => m.t <= time), eta = pigEta(pig, r, time);
+    const updates = sent.filter((m) => m.kind === "update");
+    return {
+      run: r, eta, sent, log,
+      launch: sent.find((m) => m.kind === "launch") || null,
+      last: updates.length ? updates[updates.length - 1] : null,
+      lastEta: sent.length ? sent[sent.length - 1].eta : null,
+      arrival: sent.find((m) => m.kind === "arrival") || null,
+      nextUpdate: log.find((m) => m.t > time && m.kind === "update" && m.reason === "scheduled") || null,
+      alarm: pigAlarm(time, r.start, r.arrives, pigNotify(pig), log, eta),
+    };
+  }
+  function pigRunsAt(pig, time) {
+    const runs = [], now = pigRunIndex(pig, time);
+    if (now != null) runs.push(pigRun(pig, now));
+    const next = now == null ? 0 : pig.every > 0 ? now + 1 : null;
+    if (next != null && time >= pig.launch + next * (pig.every || 0) - PIG.notice) runs.push(pigRun(pig, next));
+    return runs;
+  }
+  const allPigs = () => (live.stream && live.stream.pigs) || live.feedPigs || [];
+  const minutes = (s) => (Math.abs(s) < 5400 ? `${Math.round(Math.abs(s) / 60)} min` : `${fmt(Math.abs(s) / 3600, 1)} h`);
+  // The pig alarms for evaluate(): an ETA that moved since the last update, or a missed one.
+  function pigConditions(time) {
+    const out = [];
+    for (const pig of allPigs()) {
+      for (const r of pigRunsAt(pig, time)) {
+        const s = pigStatus(pig, r, time), a = s.alarm;
+        if (!a.level) continue;
+        const text = a.what === "missed"
+          ? `Pig ${pigTag(pig)}: scheduled ETA update to ${nameOf(r.receiver)} not sent`
+          : `Pig ${pigTag(pig)}: ETA moved ${minutes(a.drift)} ${a.drift > 0 ? "later" : "earlier"} since the last update to ${nameOf(r.receiver)}`;
+        out.push({ level: a.level, id: pig.pipeline, text });
+      }
+    }
+    return out;
   }
   /* Where a peak is now: it keeps travelling downstream, attenuated by its share of
      the gas at each node, and disappears at an exit or when it fades below step_min.
@@ -1232,7 +1437,7 @@ const App = (() => {
       const trip = pigTrip(pig, live.time);
       out.push({ kind: "pig", id: place.pid, along: place.along, label: "", level: 0, title: pig.label,
         eta: clock(place.exitAt), to: nameOf(place.next), key: `pig:${pig.label}|${pig.launch}`, ref: pig,
-        pigId: pig.id != null ? pig.id + trip.run : null, arrives: trip.arrives, speed: pig.speed });
+        pigId: pig.id != null ? pig.id + trip.run : null, arrives: trip.arrives, speed: place.speed });
     }
     // No marker for a change in flow (Ray, 29 Oct: "mainly stick to illustrating H2S, CO2
     // and pigs"); a large one is still an alarm.
@@ -2244,6 +2449,30 @@ const App = (() => {
         : h("p", { class: "empty" }, `No H₂S or CO₂ peaks in the network. Limits: ${limits}.`),
       h("p", { class: "dim small" }, `Estimate. Gas travels at ${fmt(C.pipelines.gas_velocity_mps)} m/s along the line taking most of the flow; where gas joins, it is assumed to carry the median field reading. Limits from nora.toml.`));
   }
+  /* The pigs under way (Ray, 27 Oct): each pig's tag, its line, its ETA at the receiver
+     and what the receiving station was last told. A row opens the pig. */
+  function pigsBox() {
+    if (live.time == null) return null;
+    const hm = (t) => timeFormat(t, { timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit" });
+    const rows = allPigs().map((pig) => {
+      if (!pigPlace(pig, live.time)) return null;
+      const r = pigRun(pig, pigRunIndex(pig, live.time));
+      return { pig, r, st: pigStatus(pig, r, live.time) };
+    }).filter(Boolean).sort((a, b) => b.st.alarm.level - a.st.alarm.level || a.st.eta - b.st.eta);
+    if (!rows.length && !allPigs().length) return null;
+    const told = ({ st }) => (st.alarm.what === "missed" ? "Update missed" : st.alarm.level ? `ETA moved ${minutes(st.alarm.drift)}` : st.last ? `ETA sent ${hm(st.last.t)}` : st.launch ? `Notice sent ${hm(st.launch.t)}` : "–");
+    const open = (pig) => () => { go({ screen: "unit", unit: "all" }); openMarker(`pig:${pig.label}|${pig.launch}`); };
+    return h("div", { class: "box" }, h("h2", null, "Pigs under way"),
+      rows.length ? h("table", { class: "data pigs" },
+        h("thead", null, h("tr", null, ["Pig", "Pipeline", "ETA (CET)", "Last message", ""].map((t) => h("th", null, t)))),
+        h("tbody", null, rows.map((row) => h("tr", pressable(`pig:${row.pig.label}|${row.pig.launch}`, open(row.pig), { title: "Open the pig" }),
+          h("td", null, pigTag(row.pig)),
+          h("td", null, nameOf(row.pig.pipeline)),
+          h("td", null, `${nameOf(row.r.receiver)} ${hm(row.st.eta)}`),
+          h("td", null, told(row)),
+          h("td", null, badge(row.st.alarm.level, ""))))))
+        : h("p", { class: "empty" }, "No pig under way."));
+  }
   function renderOverview() {
     const f = frame(), plan = f.plan;
     const exits = exitPoints.filter((id) => metric("nomination_msm3d", id) != null || throughput(id, f.flows) > 0.05);
@@ -2280,6 +2509,7 @@ const App = (() => {
         h("div", { class: "box" }, h("h2", null, "Pressures at plants, hubs and terminals"),
           bank(pressures.slice(0, 10).map(pressureIndicator), "No pressure readings in this dataset.")),
         h("div", { class: "box" }, h("h2", null, "Busiest pipelines"), bank(loaded.map(loadIndicator), "No flow readings yet.")),
+        pigsBox(),
         h("div", { class: "box" }, h("h2", null, "Units"), h("div", { class: "units" }, units))))));
   }
 
@@ -2651,7 +2881,7 @@ const App = (() => {
     const v = C.pipelines.gas_velocity_mps, step = (live.stream && live.stream.step) || 3600;
     const volume = (msm3) => `${fmt(msm3, msm3 < 1 ? 2 : 1)} MSm³`;
     if (!m) return { title: "Left the network", sub: "", body: h("div", { class: "side-detail" }, h("p", { class: "empty" }, "This pig or peak has left the network, or the data moved past it. Click another on the map or in the Flow.")) };
-    if (m.kind === "pig") return pigDetail(m, { row, box, note });
+    if (m.kind === "pig") return pigDetail(m, { row, box });
     return qualityDetail(m, { row, box, note, volume });
   }
   /* An H₂S or CO₂ peak (Ray, 29 Oct: "volume (MSm3), Head KP, Tail KP, Sent (CET), ETA
@@ -2681,36 +2911,61 @@ const App = (() => {
   }
   /* A pig set out like a peak (Ray, 29 Oct: "a pig needs the same kind of setup for
      information as a peak"): its ID, ETA and speed first, its run as Launched → now →
-     ETA, a line in words, then where it is and when. */
-  function pigDetail(m, { row, box, note }) {
-    const pig = m.ref, trip = pigTrip(pig, live.time), d = assets[m.id];
+     ETA, a line in words; then what its receiving station has been told (Ray, 27 Oct:
+     "ETA, tag number, if message has been sent to receiving station, last updated ETA
+     sent to receiving station"), the pig, where it is and when. */
+  const PIG_MESSAGE = { launch: "Launch notice", update: "ETA update", arrival: "Arrival confirmed" };
+  function pigDetail(m, { row, box }) {
+    const pig = m.ref, trip = pigTrip(pig, live.time), d = assets[m.id], st = pigStatus(pig, trip.r, live.time);
     const hm = (t) => timeFormat(t, { timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit" });
+    const dayHm = (t) => timeFormat(t, { timeZone: "Europe/Oslo", weekday: "short", hour: "2-digit", minute: "2-digit" });
     const kp = (d.km || 0) * Math.max(0, Math.min(1, m.along));
     const stat = (label, value, sub) => h("div", { class: "stat" }, h("span", { class: "label" }, label), h("strong", null, value), sub ? h("span", { class: "sub" }, sub) : null);
-    const origin = trip.start != null ? (assets[pig.pipeline] || {}).from : null;
-    const id = m.pigId != null ? String(m.pigId) : "–";
-    return { title: m.pigId != null ? `Pig ${m.pigId}` : pig.label, sub: `${pig.label} · ${nameOf(origin)} to ${nameOf(trip.receiver)}`,
+    const origin = (assets[pig.pipeline] || {}).from, to = nameOf(trip.receiver), tag = pigTag(pig);
+    const kind = pig.kind ? pig.kind[0].toUpperCase() + pig.kind.slice(1) : "Cleaning";
+    const id = m.pigId != null ? String(m.pigId) : "–", hours = (trip.arrives - live.time) / 3600;
+    const link = (asset) => (assets[asset] ? h("button", { type: "button", class: "link", "data-key": `pig-link:${asset}`,
+      onclick: () => (route.screen === "unit" ? openSidebar(asset) : go({ screen: "asset", asset })) }, nameOf(asset)) : nameOf(asset));
+    const drift = st.lastEta == null ? null : st.eta - st.lastEta;
+    const driftText = drift == null ? "–" : Math.abs(drift) < 60 ? "as sent" : `${minutes(drift)} ${drift > 0 ? "later" : "earlier"} than sent`;
+    const log = st.sent.slice().reverse().map((msg) => h("tr", null,
+      h("td", null, dayHm(msg.t)),
+      h("td", null, msg.reason === "drift" ? "ETA update, ETA moved" : PIG_MESSAGE[msg.kind]),
+      h("td", null, hm(msg.eta))));
+    return { title: m.pigId != null ? `Pig ${m.pigId}` : tag, sub: `${tag} · ${kind} pig · ${nameOf(origin)} to ${to}`,
       body: h("div", { class: "side-detail peak-detail" },
         h("div", { class: "peak-stats" },
           stat("Pig ID", id, pig.every ? `run ${trip.run + 1}` : ""),
-          stat("ETA", hm(trip.arrives), `CET · ${nameOf(trip.receiver)}`),
-          stat("Speed", `${fmt(pig.speed, 1)} m/s`, `${fmt(pig.speed * 3.6, 1)} km/h`)),
+          stat("ETA", hm(trip.arrives), `CET · in ${fmt(Math.max(0, hours), 1)} h`),
+          stat("Speed", `${fmt(trip.speed, 1)} m/s`, `with the flow · set ${fmt(pig.speed, 1)}`)),
         h("ol", { class: "journey" },
           h("li", null, h("span", { class: "label" }, "Launched"), h("strong", null, nameOf(origin)), h("span", { class: "sub" }, cet(trip.start))),
           h("li", { class: "now" }, h("span", { class: "label" }, "Now"), h("strong", null, nameOf(m.id)), h("span", { class: "sub" }, `KP ${fmt(kp, 0)}`)),
-          h("li", null, h("span", { class: "label" }, "ETA"), h("strong", null, nameOf(trip.receiver)), h("span", { class: "sub" }, cet(trip.arrives)))),
-        h("p", { class: "peak-description" }, `${pig.label}, launched ${cet(trip.start)}, now on ${nameOf(m.id)} at KP ${fmt(kp, 0)}. Next ${nameOf(trip.next)} ${cet(trip.nextAt)}; expected at ${nameOf(trip.receiver)} ${cet(trip.arrives)}.`),
+          h("li", null, h("span", { class: "label" }, "ETA"), h("strong", null, to), h("span", { class: "sub" }, cet(trip.arrives)))),
+        h("p", { class: "peak-description" }, `${kind} pig ${tag}, launched ${cet(trip.start)}, now on ${nameOf(m.id)} at KP ${fmt(kp, 0)}. ${trip.next !== trip.receiver ? `Next ${nameOf(trip.next)} ${cet(trip.nextAt)}; e` : "E"}xpected at ${to} ${cet(trip.arrives)}.`),
+        box(`Messages to ${to} (synthetic, CET)`,
+          row("Launch notice", st.launch ? `sent ${hm(st.launch.t)}` : "–"),
+          row("Last ETA update", st.last ? `sent ${hm(st.last.t)} (ETA ${hm(st.last.eta)})` : "none yet"),
+          row("ETA now", h("span", { class: "pig-drift" }, `${hm(st.eta)}, ${driftText}`, st.alarm.level ? badge(st.alarm.level, "") : null)),
+          row("Next update", st.nextUpdate ? hm(st.nextUpdate.t) : "–"),
+          row("Arrival confirmation", st.arrival ? `sent ${hm(st.arrival.t)}` : "pending"),
+          log.length ? [h("dt", { class: "pig-log-head" }, "Sent"), h("dd", { class: "pig-log-cell" }, h("table", { class: "data pig-log" },
+            h("thead", null, h("tr", null, ["Time", "Message", "ETA"].map((t) => h("th", null, t)))), h("tbody", null, log)))] : []),
+        box("Pig",
+          row("Tag", tag),
+          row("Kind", kind),
+          row("Pipeline", link(pig.pipeline)),
+          row("Receiver", link(trip.receiver)),
+          row("Launched", cet(trip.start))),
         box("Position",
           row("Location", nameOf(m.id)),
           row("KP", `${fmt(kp, 1)} of ${fmt(d.km || 0)} km`),
           row("Next stop", `${nameOf(trip.next)}, ${cet(trip.nextAt)}`),
           row("Network", unitOf[m.id] ? unitById[unitOf[m.id]].name : origin && unitOf[origin] ? unitById[unitOf[origin]].name : "–")),
         box("Timing (CET)",
-          row("Launched", cet(trip.start)),
-          row("ETA", `${cet(trip.arrives)}, ${nameOf(trip.receiver)}`),
+          row("ETA", `${cet(trip.arrives)}, ${to}`),
           row("Run", `${fmt((trip.arrives - trip.start) / 3600, 1)} h`),
-          pig.every ? row("Relaunched", `every ${fmt(pig.every / 3600)} h`) : []),
-        note("Estimate from the pig's speed and the route the gas takes through each node.")) };
+          pig.every ? row("Relaunched", `every ${fmt(pig.every / 3600)} h`) : [])) }; // no closing note (Ray, 29 Oct)
   }
   function qualityDetail(m, { row, box, volume }) {
     const slug = live.slugs.get(m.ref), parcels = live.quality.filter((q) => q.slug === m.ref), q0 = QUALITY[m.gas];
@@ -2840,14 +3095,12 @@ const App = (() => {
       h("p", { class: "dim small" }, "Solid: the peak now. Dashed: expected ahead, diluted where other gas joins. An estimate from the gas speed and today's flows."));
   }
   // A pig's run: the next node, the receiver at the end of its route, and when.
+  // A pig's run now: where it goes next, its receiver, the live ETA and its speed.
   function pigTrip(pig, time) {
-    const since = time - pig.launch, every = pig.every > 0 ? pig.every : 0;
-    const run = every ? Math.floor(since / every) : 0, start = pig.launch + run * every;
-    const place = pigPlace(pig, time), route = pigRoute(pig, run, Infinity), last = route[route.length - 1];
+    const r = pigRun(pig, pigRunIndex(pig, time)), place = pigPlace(pig, time);
     return {
-      run, start, next: place.next, nextAt: place.exitAt,
-      receiver: last.forward ? assets[last.pid].to : assets[last.pid].from,
-      arrives: start + (last.m + lineMetres(last.pid)) / pig.speed,
+      run: r.run, start: r.start, next: place ? place.next : r.receiver, nextAt: place ? place.exitAt : r.arrives,
+      receiver: r.receiver, arrives: pigEta(pig, r, time), speed: place ? place.speed : pig.speed, r,
     };
   }
   function facts(id) {
@@ -3835,7 +4088,7 @@ const App = (() => {
     live.peaks = [];
     live.onset = new Map();
     live.jumped = true;
-    pigRoutes.clear();
+    pigRuns.clear();
     replayQuality(live.index);
     trackTrips(frame());
     step();
@@ -4193,7 +4446,7 @@ const App = (() => {
     if (last && f.t < last.t) {
       live.frames = []; live.peaks = []; live.quality = []; live.slugs = new Map(); live.down = {};
       live.onset = new Map(); live.jumped = true;
-      pigRoutes.clear();
+      pigRuns.clear();
     }
     for (const [id, v] of Object.entries(f.values)) {
       live.typical[id] = Math.max((live.typical[id] || 0) * 0.995, Math.abs(v));
@@ -4208,6 +4461,7 @@ const App = (() => {
     if (same) live.frames[live.frames.length - 1] = entry;
     else live.frames.push(entry);
     if (live.frames.length > 240) live.frames.shift();
+    pigRuns.clear(); // the runs are worked out again with this step; what is past stays as it was
     live.index = live.frames.length - 1;
     live.values = f.values;
     live.time = f.t;
@@ -4825,6 +5079,7 @@ const App = (() => {
       card: whatifCard,
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
+    pigs: { pigSpeed, pigMessages, pigAlarm, pigRun, pigEta, pigStatus, pigConditions },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, alarmHandling, buildAlarms, fmt, esc, nameOf, unitOf, units: unitById,
     linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
     pressureMark, flowMark, limitInk, drawFlowDirection, gasDayChart, gasQuality, pressureOutlook, pressureChart,

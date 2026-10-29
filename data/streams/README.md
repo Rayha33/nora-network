@@ -204,9 +204,32 @@ speed_mps = 4.0
 every_hours = 36
 ```
 
+A pig also has, all optional:
+
+| key | meaning | default |
+| --- | --- | --- |
+| `id` | the pig ID operators use (1 to 5 digits); each relaunch counts up | none |
+| `tag` | the tag on the pig, such as `PIG-LGS-014` | `PIG-<line code>-<nnn>`, its number in the stream |
+| `kind` | `cleaning`, `inspection` or `gauging` | `cleaning` |
+| `receiver` | the receiving station, a node id; the pig heads there and stops there | the end of its route |
+| `notify_every_hours` | how often an ETA update goes to the receiver | 6 |
+
+A pig moves with the gas: its `speed_mps` times its line's flow against that line's
+typical (median) flow in the data, bounded to 0.3 to 1.5 times. Its live ETA is the time
+still ahead on each line at the speed of that line's mean flow over the last 24 hours, so
+the daily swing does not move an ETA days away while a lasting change does.
+
+NORA writes the messages to the receiving station as a dispatcher would, and labels
+them synthetic: a launch notice 2 hours before the launch, an ETA update every
+`notify_every_hours`, another 15 minutes after the live ETA (looked at every 15 minutes)
+moves more than 30 minutes from the last one sent, and the arrival confirmation. A live ETA more than 30 minutes
+from the last one sent is a warning; more than 2 hours, or a scheduled update more than
+15 minutes late, is an alarm. All of it follows from the data, so replay and seek agree.
+
 For a synthetic stream, `pig_programme = { every_hours = 48, speed_mps = 4.0 }` creates
-a staggered programme on every trunk, export line and interconnector. An explicit
-`[[pigs]]` entry takes precedence on its pipeline.
+a staggered programme on every trunk, export line and interconnector (`kind` and
+`notify_every_hours` can be set for it too). An explicit `[[pigs]]` entry takes
+precedence on its pipeline.
 
 ## Units
 
