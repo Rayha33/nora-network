@@ -34,7 +34,7 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 | `src/nora/analysis.py` | max flow, min-cost routing, N-1 outages, plant capacity, `analyse()` for the site |
 | `src/nora/ops.py` | plan check (are the nominations deliverable?), look-ahead, decision support |
 | `src/nora/stream.py` | load, import, synthesise (flows, operations, gas quality, pigs) and scaffold streams |
-| `src/nora/live.py` | serve a stream, or poll a live source, as Server-Sent Events (`/stream`) |
+| `src/nora/live.py` | serve a stream, a polled source or readings pushed to `/ingest` as Server-Sent Events (`/stream`); [docs/live-data.md](docs/live-data.md) |
 | `src/nora/integrations.py` | live connectors: Gassco real-time, Origo and Gassco Booking (skeletons) |
 | `src/nora/layout.py` | Flow view positions: layered stages, ordered and spaced to minimise crossings |
 | `src/nora/icons.py` | one icon per asset type, shared by both views |
@@ -105,8 +105,9 @@ calmer, never louder.
 - *Add a dataset:* `nora stream new NAME --from file.csv`, fix the mapping, `nora stream show NAME`.
 - *New analysis:* add a function to `analysis.py`, include its result in `analyse()`,
   show it in the app (a mode in `app.js`: pipeStyle / nodeStyle, or a panel), and test it.
-- *Connect a real live source:* write a generator yielding `(datetime, {asset: flow})`
-  frames and serve it the way `live.serve` serves `replay`; the browser needs no change.
+- *Connect live data:* push JSON to `nora live --ingest` from any system, poll a source
+  with a `Connector`, or replay files as a stream; see [docs/live-data.md](docs/live-data.md).
+  The browser needs no change.
 
 ## Workflow
 
