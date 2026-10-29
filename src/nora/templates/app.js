@@ -2848,6 +2848,176 @@ const App = (() => {
     return svg(`0 0 ${W} ${rows.length ? H : mid + R + 26}`, m, "schematic");
   }
 
+  /* Level 4 trends (hub 3614): the exact history behind the values. One chart per
+     reading the asset has, up to the playhead, with its limits (amber for a warning,
+     red for an alarm, labelled at the right), outages shaded (planned ones dashed) and a
+     crosshair with the exact numbers. 2 h / 12 h / 24 h / All, or drag across a chart to
+     zoom; "Compare with" draws a second asset on the same axes; Export CSV writes the
+     window shown. Inline SVG, no library. */
+  const diagView = { asset: null, span: 0, from: null, to: null, cursor: null, compare: "", drag: null };
+  const DIAG_SERIES = [
+    { key: "flow", name: (d) => (d.kind === "pipeline" ? "Flow" : "Throughput"), unit: "MSm³/d", digits: 2 },
+    { key: "pressure_bar", name: () => "Pressure", unit: "bar", digits: 1 },
+    { key: "nomination_msm3d", name: () => "Nomination", unit: "MSm³/d", digits: 2 },
+    { key: "booked_msm3d", name: () => "Booked", unit: "MSm³/d", digits: 2 },
+    { key: "h2s_ppm", name: () => "H₂S", unit: "ppm", digits: 2 },
+    { key: "co2_molpct", name: () => "CO₂", unit: "mol %", digits: 2 },
+  ];
+  function diagRead(series, id, f) {
+    if (series.key !== "flow") return metric(series.key, id, f);
+    const v = assets[id].kind === "pipeline" ? f.flows[id] : throughput(id, f.flows);
+    return v == null ? null : v;
+  }
+  // Limits drawn on a chart: [label, value, level], level 1 a warning (amber), 2 or 3 an alarm (red).
+  function diagLimits(series, id) {
+    const d = assets[id];
+    if (series.key === "pressure_bar") {
+      const limits = (C.pressure_limits || {})[d.type];
+      if (!limits) return [];
+      const [ll, low, high, hh, top] = limits;
+      return [["LL", ll, 2], ["L", low, 1], ["H", high, 1], ["HH", hh, 2], ["INT", top, 3]];
+    }
+    if (series.key === "flow" && d.kind === "pipeline" && d.capacity) return [["Capacity", d.capacity, 1], ["Over", d.capacity * T.load[2], 3]];
+    if (C.quality && C.quality[series.key]) return [["Warning", C.quality[series.key][0], 1], ["Alarm", C.quality[series.key][2], 3]];
+    return [];
+  }
+  // The frames shown: up to the playhead, within the chosen window.
+  function diagFrames() {
+    const upto = live.frames.slice(0, live.index + 1).filter(Boolean);
+    if (!upto.length) return [];
+    const end = diagView.to ?? upto[upto.length - 1].t;
+    const start = diagView.from ?? (diagView.span ? end - diagView.span : upto[0].t);
+    return upto.filter((f) => f.t >= start && f.t <= end);
+  }
+  function diagChart(series, id, other, frames) {
+    // Drawn at the screen's own width, so the 11 px type stays 11 px.
+    const W = Math.round(Math.max(320, Math.min(1600, (screens.diag.clientWidth || 720) - 96))), H = 132, left = 8, right = W - 8, top = 10, plot = 92;
+    const mine = frames.map((f) => [f.t, diagRead(series, id, f)]).filter(([, v]) => v != null);
+    const theirs = other ? frames.map((f) => [f.t, diagRead(series, other, f)]).filter(([, v]) => v != null) : [];
+    if (!mine.length && !theirs.length) return null;
+    const t0 = frames[0].t, t1 = frames[frames.length - 1].t, span = Math.max(1, t1 - t0);
+    const values = [...mine, ...theirs].map(([, v]) => v);
+    let lo = Math.min(...values), hi = Math.max(...values);
+    // Limits within 15 % of the readings are drawn, so the chart shows how far away they are.
+    const room = Math.max((hi - lo) * 0.5, Math.abs(hi) * 0.15, 0.5);
+    const limits = diagLimits(series, id).filter(([, v]) => v >= lo - room && v <= hi + room);
+    lo = Math.min(lo, ...limits.map(([, v]) => v));
+    hi = Math.max(hi, ...limits.map(([, v]) => v));
+    // A steady reading stays a steady line: never less than 4 % of its size top to bottom.
+    const least = Math.max(Math.abs(hi + lo) * 0.02, 0.01);
+    if (hi - lo < 2 * least) { const mid = (hi + lo) / 2; lo = mid - least; hi = mid + least; }
+    const pad = (hi - lo) * 0.08;
+    lo -= pad; hi += pad;
+    const x = (t) => left + ((t - t0) / span) * (right - left);
+    const y = (v) => top + plot - ((v - lo) / (hi - lo)) * plot;
+    const path = (rows) => rows.map(([t, v], k) => `${k ? "L" : "M"}${x(t).toFixed(1)},${y(v).toFixed(1)}`).join("");
+    // Labels carry a halo in the box's colour, so no limit line runs through a number.
+    const text = `stroke:${COLORS.surface};stroke-width:3px;paint-order:stroke;font-weight:400;font-size:11px;font-family:Archivo,system-ui,sans-serif`;
+    let body = "";
+    const events = (live.stream && live.stream.events) || live.feedEvents || [];
+    for (const e of events) {
+      if (e.asset !== id || e.end < t0 || e.start > t1) continue;
+      const a = x(Math.max(e.start, t0)), b = x(Math.min(e.end, t1));
+      body += `<rect x="${a.toFixed(1)}" y="${top}" width="${Math.max(1, b - a).toFixed(1)}" height="${plot}" fill="${COLORS.band}" stroke="${COLORS.text_dim}" stroke-width="0.6"${e.planned ? ' stroke-dasharray="3 3"' : ""}><title>${esc(e.label)}${e.planned ? " (planned)" : ""}</title></rect>`;
+    }
+    for (const [label, v, lvl] of limits) {
+      body += `<line x1="${left}" x2="${right}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="${limitInk(lvl >= 2 ? 2 : 1)}" stroke-width="1" stroke-dasharray="2 3"/>`;
+      body += `<text x="${right}" y="${(y(v) - 3).toFixed(1)}" text-anchor="end" fill="${COLORS.text_dim}" style="${text}">${esc(label)} ${esc(fmt(v, series.digits > 1 ? 1 : 0))}</text>`;
+    }
+    body += `<text x="${left}" y="${top + 9}" fill="${COLORS.text_dim}" style="${text}">${esc(fmt(hi, series.digits))}</text>`;
+    body += `<text x="${left}" y="${top + plot - 2}" fill="${COLORS.text_dim}" style="${text}">${esc(fmt(lo, series.digits))}</text>`;
+    if (theirs.length) body += `<path class="compare" d="${path(theirs)}" fill="none" stroke="${COLORS.text_dim}" stroke-width="1.4" stroke-dasharray="5 3"/>`;
+    if (mine.length) body += `<path class="measured" d="${path(mine)}" fill="none" stroke="${COLORS.text}" stroke-width="1.6"/>`;
+    if (diagView.cursor != null && diagView.cursor >= t0 && diagView.cursor <= t1) {
+      body += `<line class="crosshair" x1="${x(diagView.cursor).toFixed(1)}" x2="${x(diagView.cursor).toFixed(1)}" y1="${top}" y2="${top + plot}" stroke="${COLORS.text}" stroke-width="0.8"/>`;
+    }
+    if (diagView.drag && diagView.drag.at != null) {
+      const a = x(Math.min(diagView.drag.from, diagView.drag.at)), b = x(Math.max(diagView.drag.from, diagView.drag.at));
+      body += `<rect x="${a.toFixed(1)}" y="${top}" width="${Math.max(1, b - a).toFixed(1)}" height="${plot}" fill="${COLORS.text_dim}" fill-opacity="0.15"/>`;
+    }
+    body += `<text x="${left}" y="${H - 4}" fill="${COLORS.text_dim}" style="${text}">${esc(shortTime(t0))}</text>`;
+    body += `<text x="${right}" y="${H - 4}" text-anchor="end" fill="${COLORS.text_dim}" style="${text}">${esc(shortTime(t1))}</text>`;
+    // Pointer: a press and a drag picks a window, a move sets the crosshair.
+    const at = (e) => {
+      const r = e.currentTarget && e.currentTarget.getBoundingClientRect ? e.currentTarget.getBoundingClientRect() : null;
+      const share = r && r.width ? (e.clientX - r.left) / r.width : (e.offsetX ?? 0) / W;
+      return t0 + Math.min(1, Math.max(0, (share * W - left) / (right - left))) * span;
+    };
+    const nearest = (t) => frames.reduce((best, f) => (Math.abs(f.t - t) < Math.abs(best.t - t) ? f : best), frames[0]).t;
+    return h("div", { class: "diag-chart", "data-series": series.key,
+      onpointerdown: (e) => { diagView.drag = { from: at(e), at: null }; },
+      onpointermove: (e) => {
+        const t = at(e);
+        if (diagView.drag) diagView.drag.at = t;
+        else diagView.cursor = nearest(t);
+        renderDiag();
+      },
+      onpointerup: (e) => {
+        const drag = diagView.drag, t = at(e);
+        diagView.drag = null;
+        if (drag && Math.abs(t - drag.from) > span / 40) {
+          diagView.from = Math.min(drag.from, t);
+          diagView.to = Math.max(drag.from, t);
+          diagView.span = 0;
+        } else diagView.cursor = nearest(t);
+        renderDiag();
+      },
+      onpointerleave: () => { if (diagView.drag) { diagView.drag = null; renderDiag(); } } },
+    h("div", { class: "diag-chart-title" }, `${series.name(assets[id])} · ${series.unit}`),
+    svg(`0 0 ${W} ${H}`, body, "diag-trend"));
+  }
+  function diagCsv(id, other, series, frames) {
+    const cols = [];
+    for (const s of series) {
+      cols.push([`${nameOf(id)} ${s.name(assets[id])} (${s.unit})`, (f) => diagRead(s, id, f)]);
+      if (other) cols.push([`${nameOf(other)} ${s.name(assets[other])} (${s.unit})`, (f) => diagRead(s, other, f)]);
+    }
+    const cell = (v) => (/[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
+    const lines = [["time_utc", ...cols.map(([name]) => name)].map(cell).join(",")];
+    for (const f of frames) lines.push([new Date(f.t * 1000).toISOString(), ...cols.map(([, read]) => { const v = read(f); return v == null ? "" : v; })].map(cell).join(","));
+    return `${lines.join("\n")}\n`;
+  }
+  function diagDownload(name, text) {
+    const url = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
+    const a = h("a", { href: url, download: name });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function trendsBox(id) {
+    if (diagView.asset !== id) Object.assign(diagView, { asset: id, span: 0, from: null, to: null, cursor: null, compare: "", drag: null });
+    const d = assets[id], frames = diagFrames();
+    if (frames.length < 2) return null;
+    const other = diagView.compare && assets[diagView.compare] ? diagView.compare : null;
+    const series = DIAG_SERIES.filter((s) => frames.some((f) => diagRead(s, id, f) != null));
+    if (!series.length) return null;
+    const preset = (label, seconds) => h("button", { type: "button", role: "tab", "data-key": `diag-span:${seconds}`,
+      "aria-selected": String(!diagView.from && diagView.span === seconds),
+      onclick: () => { Object.assign(diagView, { span: seconds, from: null, to: null }); renderDiag(); } }, label);
+    const peers = (d.kind === "pipeline" ? pipeIds : nodeIds).filter((p) => p !== id).sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
+    const cursorFrame = diagView.cursor != null ? frames.find((f) => f.t === diagView.cursor) : null;
+    const charts = series.map((s) => diagChart(s, id, other, frames)).filter(Boolean);
+    return h("div", { class: "box wide diag-trends" },
+      h("h2", null, "Trends"),
+      h("div", { class: "diag-controls" },
+        h("div", { class: "seg", role: "tablist", "aria-label": "Window" },
+          preset("2 h", 2 * 3600), preset("12 h", 12 * 3600), preset("24 h", 24 * 3600), preset("All", 0)),
+        h("select", { "aria-label": "Compare with", "data-key": "diag-compare", onchange: (e) => { diagView.compare = e.target.value; renderDiag(); } },
+          h("option", { value: "", selected: other ? null : "" }, "Compare with…"),
+          ...peers.map((p) => h("option", { value: p, selected: p === other ? "" : null }, nameOf(p)))),
+        h("button", { type: "button", class: "text", "data-key": "diag-csv",
+          onclick: () => diagDownload(`${id}${other ? `-vs-${other}` : ""}.csv`, diagCsv(id, other, series, frames)) }, "Export CSV")),
+      h("p", { class: "dim small" }, `Drag across a chart to zoom. ${other ? `Dashed: ${nameOf(other)}. ` : ""}Shaded: outages on this asset, planned ones dashed.`),
+      charts,
+      cursorFrame ? h("table", { class: "data diag-cursor" },
+        h("thead", null, h("tr", null, h("th", null, "At the crosshair"), ...series.map((s) => h("th", null, `${s.name(d)} (${s.unit})`)))),
+        h("tbody", null,
+          h("tr", null, h("td", null, formatTime(cursorFrame.t)), ...series.map((s) => h("td", null, fmt(diagRead(s, id, cursorFrame), s.digits)))),
+          other ? h("tr", null, h("td", null, nameOf(other)), ...series.map((s) => h("td", null, fmt(diagRead(s, other, cursorFrame), s.digits)))) : null))
+        : h("p", { class: "dim small" }, "Point at a chart for the exact values."));
+  }
+
   // Level 4: the readings behind the values, newest first, and where they come from.
   function renderDiag() {
     const id = route.asset, d = assets[id];
@@ -2865,7 +3035,8 @@ const App = (() => {
     const lastSeen = [...upto].reverse().find((f) => read(f) != null);
     const stream = live.stream || {}, links = NORA.links || {};
     const file = `${d.kind === "node" ? "nodes" : "pipelines"}.csv`;
-    screens.diag.replaceChildren(h("div", { class: "screen-body" },
+    // In place, as the Overview: the charts keep the pointer and the select its focus while the data plays.
+    keepFocus(screens.diag, () => patch(screens.diag, h("div", { class: "screen-body" },
       h("h1", null, `${d.name}: diagnostics`),
       h("p", { class: "sub" }, `Dataset: ${stream.title || "live feed"}${stream.synthetic ? " (synthetic)" : ""}.`),
       h("div", { class: "cols" },
@@ -2876,10 +3047,11 @@ const App = (() => {
           h("dt", null, "Source of the asset"), h("dd", null, d.source && /^https?:\/\//.test(d.source) ? h("a", { href: d.source, target: "_blank", rel: "noopener" }, new URL(d.source).hostname) : d.source || "None recorded"),
           h("dt", null, "Data row"), h("dd", null, links.blob ? h("a", { href: `${links.blob}/data/${file}#L${d.line}`, target: "_blank", rel: "noopener" }, `${file} line ${d.line}`) : `${file} line ${d.line}`),
           h("dt", null, "Dataset source"), h("dd", null, stream.source || "–"))),
+        trendsBox(id),
         h("div", { class: "box wide" }, h("h2", null, "Readings, newest first (MSm³/d unless noted)"),
           h("table", { class: "data" },
             h("thead", null, h("tr", null, h("th", null, "Time"), h("th", null, d.kind === "pipeline" ? "Flow" : "Throughput"), ...here.map((m) => h("th", null, names[m])))),
-            h("tbody", null, rows))))));
+            h("tbody", null, rows)))))));
   }
 
   // ------------------------------------------------------------------ navigation
