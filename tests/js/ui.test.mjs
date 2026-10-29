@@ -100,9 +100,10 @@ test("what-if: no 0.0 on dead lines, and the chip never cuts twice", () => {
   App.go({ screen: "unit", unit: "all" });
   const bar = document.body.children.find((c) => /whatif-bar/.test(c.className || ""));
   const text = (bar.children || []).map((c) => c.textContent).join(" ");
-  assert.match(text, /^What-if: [\d.,]+ of [\d.,]+ MSm³\/d 1 offline Restore all$/, text);
+  assert.match(text, /In [\d.,]+, out [\d.,]+ MSm³\/d/, `the balance: ${text}`);
+  assert.match(text, /1 of your values/, text);
   bar.children.at(-1)._listeners.click[0]();
-  assert.equal(App.whatif.offline().length, 0, "Restore all brings every asset back");
+  assert.equal(App.whatif.offline().length, 0, "Reset brings every asset back");
 });
 
 /* Ray, 29 Oct, of the plan chip ("In 4 h: Short 36.0 MSm³/d at Easington"): "remove

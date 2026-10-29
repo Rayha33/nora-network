@@ -151,6 +151,14 @@ def save(
             updated = edit_stream(current.decode("utf-8"), removed).encode("utf-8")
             if updated != current:
                 changes[path] = updated
+        # A removed pipeline's regression goes too (the What-if's pipeline models).
+        models_path = data_dir / "pipeline_models.csv"
+        gone = {p.id for p in original.pipelines} - {p.id for p in net.pipelines}
+        if gone and models_path.exists():
+            current = models_path.read_bytes()
+            updated = drop_model_rows(current.decode("utf-8"), gone).encode("utf-8")
+            if updated != current:
+                changes[models_path] = updated
         for filename, columns, before, after, values in (
             (
                 "nodes.csv",
@@ -216,6 +224,13 @@ def edit_layout(text: str, net: Network, layout: dict[str, list[float]]) -> str:
 def _number(value) -> str:
     value = round(float(value), 2)
     return str(int(value)) if value == int(value) else str(value)
+
+
+def drop_model_rows(text: str, removed: set[str]) -> str:
+    """pipeline_models.csv without the rows of `removed` pipelines; every other byte kept
+    (one row per line, the pipeline id first and never quoted)."""
+    lines = text.splitlines(keepends=True)
+    return "".join(lines[:1] + [line for line in lines[1:] if line.split(",", 1)[0] not in removed])
 
 
 def edit_stream(text: str, removed: set[str]) -> str:
@@ -651,7 +666,13 @@ def _same_asset(left, right, columns) -> bool:
 
 def _data_revision(data_dir: Path) -> str:
     digest = hashlib.sha256()
-    for filename in ("nodes.csv", "pipelines.csv", "units.toml", "flow_layout.toml"):
+    for filename in (
+        "nodes.csv",
+        "pipelines.csv",
+        "units.toml",
+        "flow_layout.toml",
+        "pipeline_models.csv",
+    ):
         path = Path(data_dir) / filename
         if path.exists():
             digest.update(filename.encode("ascii") + b"\0")

@@ -468,7 +468,16 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 }
 .edits-bar button:hover { background: var(--raised); }
 .edits-bar button.danger { border-color: var(--critical); }
-.whatif-bar { left: auto; right: 16px; } /* the What-if mode's status, over the network */
+.whatif-bar { left: 16px; right: auto; transform: none; gap: 12px; } /* clear of the panel on the right */
+.whatif-bar .seg { height: 30px; }
+.whatif-card .whatif-inputs { display: grid; gap: 10px; margin: 6px 0 12px; }
+.whatif-card label { display: grid; grid-template-columns: 1fr 9em; align-items: center; gap: 10px; font-size: 12.5px; color: var(--text-dim); }
+.whatif-card input {
+  height: var(--ctl); padding: 0 8px; border: 1px solid var(--rule-strong); border-radius: 6px;
+  background: var(--raised); color: var(--text); font: inherit; font-size: 13px; text-align: right; font-variant-numeric: tabular-nums;
+}
+.whatif-card input.yours { border-color: var(--text); font-weight: 600; }
+.whatif-card .actions { margin: 4px 0 0; } /* the What-if mode's status, over the network */
 
 /* data-bar (app.js barLayout): the room the bar has at its UI scale. */
 :root[data-bar="tight"] .bar, :root[data-bar="two"] .bar { gap: 12px; }
