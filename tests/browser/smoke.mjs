@@ -270,6 +270,13 @@ async function main() {
     await page.waitForTimeout(2000); // a few data steps play
     check(!errors.length, "no console errors or uncaught exceptions on load", errors.join("\n     "));
     if (!started) throw new Error("the app did not start; later checks would only repeat this");
+    // The ruler's bitmap fills its box exactly; a stale one squeezes the day names.
+    await page.waitForTimeout(300);
+    const ruler = await page.evaluate(() => {
+      const s = document.getElementById("spark"), scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ui-scale")) || 1;
+      return { bitmap: s.width, box: Math.round(s.clientWidth * scale * devicePixelRatio) };
+    });
+    check(Math.abs(ruler.bitmap - ruler.box) <= 2, "the timeline ruler is drawn at its own size", `${ruler.bitmap} px bitmap for a ${ruler.box} px box`);
 
     // ---- the Guide opens on a first visit only (and would cover the screenshots)
     const guideOpen = () => page.evaluate(() => !document.getElementById("key").hidden);
