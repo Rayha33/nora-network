@@ -77,15 +77,19 @@ test("peak panel: a change in flow shows head and tail ETAs, volume and origin",
   assert.match(text, new RegExp(`Origin${NORA.assets[pid].name}, first seen`));
 });
 
-test("pig panel: the next stop, the receiver and when it gets there", () => {
+/* Ray, 29 Oct: "a pig needs the same kind of setup for information as a peak on the
+   screens ... Pig ID: 3420 / ETA: 23:21 / Speed: 5,3 m/s". */
+test("pig panel: ID, ETA and speed first, then where it is and when", () => {
   const { App, document } = playToASlug();
-  const pig = App.markers().find((m) => m.kind === "pig");
-  assert.ok(pig, "a pig is under way");
+  const pig = App.markers().find((m) => m.kind === "pig" && m.pigId != null);
+  assert.ok(pig, "a pig with an ID is under way");
   App.selectMarker(pig.key);
   const text = panel(document);
-  assert.match(text, /Next stop/);
-  assert.match(text, /Receiver/);
-  assert.match(text, /Launched/);
+  for (const field of ["Pig ID", "ETA", "Speed", "Launched", "Next stop", "KP", "Network", "Run"]) {
+    assert.ok(text.includes(field), `${field} is in the panel`);
+  }
+  assert.ok(text.includes(String(pig.pigId)), "its ID");
+  assert.match(text, /\d[\d.]* m\/s/, "its speed");
   App.go({ screen: "overview" });
   assert.equal(App.sidebar.marker(), null, "leaving the unit screen closes it");
 });
@@ -117,4 +121,22 @@ test("gas peaks: three lines, the gas in its calm colour, no alarm tag", () => {
   const badge = calls.filter((c) => c.op === "fillRect" || c.op === "lineTo").length;
   App.drawMarker(ctx, { ...marker, level: 0 }, 100, 100, 0, 7, 2, []);
   assert.equal(calls.filter((c) => c.op === "fillRect" || c.op === "lineTo").length, badge * 2, "an alarm level adds no tag");
+});
+
+test("pigs: three lines on the drawing, like a gas peak", () => {
+  const { App } = loadApp();
+  const calls = [];
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
+      return (...args) => calls.push({ op: key, args, fill: target.fillStyle });
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  App.drawMarker(ctx, { kind: "pig", pigId: 3420, arrives: 1793229660, speed: 5.3, level: 0 }, 100, 100, 0, 16, 1, []);
+  const texts = calls.filter((c) => c.op === "fillText").map((c) => c.args[0]);
+  assert.equal(texts[0], "Pig 3420");
+  assert.match(texts[1], /^ETA \d\d:\d\d$/);
+  assert.equal(texts[2], "5.3 m/s");
 });

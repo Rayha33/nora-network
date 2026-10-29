@@ -105,3 +105,22 @@ test("the bar is one row while it fits at its UI scale", () => {
   assert.equal(bar({ width: 1440, search: "?scale=150" }), "two", "960 px of room at 1.5: the switches wrap");
   assert.equal(bar({ width: 3840 }), "one", "a 4K wall at 1.5 has room for one row");
 });
+
+/* Ray, 29 Oct: "hourly nominations from the shippers at each exitpoint ... in both
+   absolute numbers but in a visual minimalistic way. what is important are rate of
+   change at each exit point for the next 6 hours". */
+test("nominations: the next 6 hours at an exit point, with its steepest hourly change", () => {
+  const { App } = load({ width: 1440 });
+  const values = [10, 10, 13, 13, 12, 12];
+  App.live.stream = { step: 3600 };
+  App.live.frames = values.map((v, k) => ({ t: 3600 * k, flows: {}, metrics: { nomination_msm3d: { emden: v } }, plan: null }));
+  App.live.index = 0;
+  const ramp = App.rampAhead("emden");
+  assert.equal(ramp.now, 10);
+  assert.equal(ramp.last, 12, "in six hours");
+  assert.equal(ramp.steepest.change, 3, "the steepest hourly change");
+  assert.equal(ramp.steepest.t, 7200, "and when it starts");
+  assert.equal(ramp.level, 2, "30% of the nomination in an hour is a fast ramp (step thresholds)");
+  App.live.frames = [10, 10.2, 10.1, 10, 10, 10].map((v, k) => ({ t: 3600 * k, flows: {}, metrics: { nomination_msm3d: { emden: v } }, plan: null }));
+  assert.equal(App.rampAhead("emden").level, 0, "a small change is no alarm");
+});

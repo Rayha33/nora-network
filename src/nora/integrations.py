@@ -82,6 +82,7 @@ class Connector:
     name = "connector"
     metric = ""
     env = ("",)  # environment variables holding the endpoint and credentials
+    flows = True  # its readings are flows; nominations and bookings are not
 
     def configured(self) -> bool:
         return all(os.environ.get(variable) for variable in self.env)
@@ -98,11 +99,61 @@ class Connector:
 
 
 class Origo(Connector):
-    """Nominations and dispatch. Fill in `fetch` with Origo's API when available."""
+    """The shippers' hourly nominations at each exit point, from Origo (Ray, 29 Oct:
+    "origo integration for hourly nominations from the shippers at each exitpoint ...
+    what is important are rate of change at each exit point for the next 6 hours").
+
+    `fetch` reads NORA_ORIGO_URL with NORA_ORIGO_TOKEN as a bearer token and yields one
+    reading per exit point and hour, the coming hours included: the live feed sends
+    the hours ahead with each frame, so the page shows the next 6 hours. Origo's API is
+    not public: `parse` reads the shape below; adapt it to the real one.
+
+        {"nominations": [{"point": "Emden", "hour": "2026-10-29T06:00:00Z", "msm3d": 44.0}]}
+
+    `point` is Gassco's exit-point name (EXIT_POINTS) or a NORA node id.
+    """
 
     name = "Origo"
     metric = "nomination_msm3d"
     env = ("NORA_ORIGO_URL", "NORA_ORIGO_TOKEN")
+    flows = False
+
+    def meta(self) -> dict:
+        return {
+            "name": "origo",
+            "title": "Origo nominations",
+            "description": (
+                "The shippers' hourly nominations at each exit point, from Origo, with the "
+                "coming hours. Values in MSm3/d."
+            ),
+            "source": "Origo",
+            "synthetic": False,
+        }
+
+    def fetch(self, start: datetime, end: datetime) -> Iterator[Reading]:
+        if not self.configured():
+            raise NotConfigured(f"{self.name}: {self.status()}")
+        request = urllib.request.Request(
+            os.environ["NORA_ORIGO_URL"],
+            headers={
+                "Authorization": f"Bearer {os.environ['NORA_ORIGO_TOKEN']}",
+                "Accept": "application/json",
+            },
+        )
+        with urllib.request.urlopen(request, timeout=30) as response:
+            payload = json.load(response)
+        yield from self.parse(payload)
+
+    def parse(self, payload: dict) -> Iterator[Reading]:
+        for item in payload.get("nominations", []):
+            point = str(item.get("point", ""))
+            # Gassco's name for the exit point, or already a NORA node id
+            node_id = point if re.fullmatch(r"[a-z0-9_]+", point) else None
+            asset = EXIT_POINTS.get(point) or node_id
+            if not asset or item.get("msm3d") is None:
+                continue
+            when = datetime.fromisoformat(str(item["hour"]).replace("Z", "+00:00"))
+            yield Reading(when, asset, self.metric, float(item["msm3d"]))
 
 
 class GassocoBooking(Connector):
@@ -111,6 +162,7 @@ class GassocoBooking(Connector):
     name = "Gassco Booking (GBS)"
     metric = "booked_msm3d"
     env = ("NORA_GBS_URL", "NORA_GBS_TOKEN")
+    flows = False
 
 
 class GasscoRealTime(Connector):
@@ -246,7 +298,9 @@ class NationalGasInterconnector(Connector):
 gassco = GasscoRealTime()
 interconnector = NationalGasInterconnector()
 
-# Live sources `nora live --source <name>` can poll.
-SOURCES = {"gassco": gassco, "interconnector": interconnector}
+origo = Origo()
 
-CONNECTORS = (Origo(), GassocoBooking(), gassco, interconnector)
+# Live sources `nora live --source <name>` can poll.
+SOURCES = {"gassco": gassco, "interconnector": interconnector, "origo": origo}
+
+CONNECTORS = (origo, GassocoBooking(), gassco, interconnector)

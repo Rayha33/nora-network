@@ -70,6 +70,7 @@ capacity_factor = 0.5
 # map and the Flow view. `every_hours` relaunches them: a pigging programme.
 [[pigs]]
 label = "Cleaning pig, Langeled (south)"
+id = 3420
 pipeline = "langeled_south"
 launch = 2026-10-19T01:00:00Z
 speed_mps = 4.5
@@ -77,6 +78,7 @@ every_hours = 108
 
 [[pigs]]
 label = "Inspection pig, Europipe I"
+id = 3511
 pipeline = "europipe_1"
 launch = 2026-10-19T03:00:00Z
 speed_mps = 4.0
@@ -84,6 +86,7 @@ every_hours = 126
 
 [[pigs]]
 label = "Cleaning pig, Statpipe (rich gas)"
+id = 2874
 pipeline = "statpipe_rich"
 launch = 2026-10-19T00:00:00Z
 speed_mps = 4.0
@@ -91,6 +94,7 @@ every_hours = 72
 
 [[pigs]]
 label = "Cleaning pig, Vesterled"
+id = 3166
 pipeline = "vesterled"
 launch = 2026-10-19T06:00:00Z
 speed_mps = 5.0
@@ -98,6 +102,7 @@ every_hours = 72
 
 [[pigs]]
 label = "Cleaning pig, IUK"
+id = 4052
 pipeline = "iuk"
 launch = 2026-10-19T02:00:00Z
 speed_mps = 4.5

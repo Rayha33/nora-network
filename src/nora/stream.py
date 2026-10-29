@@ -88,6 +88,7 @@ class Pig:
     launch: datetime
     speed_mps: float
     every_hours: float = 0.0
+    ident: int | None = None  # the pig ID operators use (stream.toml `id`); each relaunch counts up
 
 
 @dataclass(frozen=True)
@@ -147,6 +148,7 @@ class Stream:
                     "launch": int(pig.launch.timestamp()),
                     "speed": pig.speed_mps,
                     "every": round(pig.every_hours * 3600),
+                    "id": pig.ident,
                 }
                 for pig in self.pigs
             ],
@@ -623,11 +625,14 @@ def _pigs(meta: dict, net: Network, where: str, problems: list[str]) -> tuple[Pi
                 launch=parse_time(spec["launch"]),
                 speed_mps=float(spec.get("speed_mps", 4.0)),
                 every_hours=float(spec.get("every_hours", 0.0)),
+                ident=int(spec["id"]) if "id" in spec else None,
             )
         except (KeyError, ValueError) as error:
             problems.append(f"{where}/stream.toml pig {i}: needs a launch time ({error})")
             continue
-        if pig.speed_mps <= 0:
+        if pig.ident is not None and not 1 <= pig.ident <= 99999:
+            problems.append(f"{where}/stream.toml pig {i}: id must be a number of 1 to 5 digits")
+        elif pig.speed_mps <= 0:
             problems.append(f"{where}/stream.toml pig {i}: speed_mps must be above 0")
         elif pig.every_hours < 0:
             problems.append(f"{where}/stream.toml pig {i}: every_hours must be 0 or more")

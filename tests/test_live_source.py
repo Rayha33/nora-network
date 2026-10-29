@@ -162,8 +162,15 @@ def test_cli_offers_the_source_flag():
     assert boom.value.code == 2
 
 
-def test_sources_registry_only_contains_ready_connectors():
-    assert set(SOURCES) == {"gassco", "interconnector"}
+def test_sources_registry_only_contains_ready_connectors(monkeypatch):
+    assert set(SOURCES) == {"gassco", "interconnector", "origo"}
+    # Origo is wired; without its endpoint and token it says what to set
+    from nora.integrations import NotConfigured
+
+    monkeypatch.delenv("NORA_ORIGO_URL", raising=False)
+    monkeypatch.delenv("NORA_ORIGO_TOKEN", raising=False)
+    with pytest.raises(NotConfigured, match="NORA_ORIGO_URL"):
+        list(SOURCES["origo"].fetch(datetime.now(tz=UTC), datetime.now(tz=UTC)))
 
 
 def test_a_nan_from_a_polled_source_becomes_null_not_invalid_json(api_url, monkeypatch, tmp_path):
@@ -246,3 +253,40 @@ def test_interconnector_takes_the_newest_reading_after_midnight():
     exported.update({"23:58": 9.0, "00:02": 11.0})  # the gas day runs on past midnight
     _, value = interconnector.parse(fixture)
     assert value == pytest.approx(11.0 - 4.5)  # the 00:02 export, less the 09:44 import
+
+
+def test_origo_reads_hourly_nominations_by_exit_point():
+    """Ray, 29 Oct: Origo's hourly nominations at each exit point; the next 6 hours."""
+    from nora.integrations import origo
+
+    payload = {
+        "nominations": [
+            {"point": "Emden", "hour": "2026-10-29T06:00:00Z", "msm3d": 44.0},
+            {"point": "dornum", "hour": "2026-10-29T07:00:00Z", "msm3d": 113.5},
+            {"point": "Somewhere else", "hour": "2026-10-29T07:00:00Z", "msm3d": 9.0},
+            {"point": "Zeebrugge", "hour": "2026-10-29T07:00:00Z", "msm3d": None},
+        ]
+    }
+    readings = list(origo.parse(payload))
+    assert [(r.asset, r.value) for r in readings] == [("emden", 44.0), ("dornum", 113.5)]
+    assert all(r.metric == "nomination_msm3d" and r.when.tzinfo for r in readings)
+    assert origo.flows is False, "nominations are not flows"
+
+
+def test_a_poller_sends_the_hours_ahead_with_each_frame(monkeypatch):
+    """Origo knows the coming hours: the frame carries them as `ahead`, and nominations
+    never pose as flows."""
+    from nora.integrations import Reading, origo
+
+    now = datetime.now(tz=UTC).replace(minute=0, second=0, microsecond=0)
+    hours = [now + timedelta(hours=k) for k in range(-1, 6)]
+    monkeypatch.setattr(
+        type(origo),
+        "fetch",
+        lambda self, start, end: iter(
+            Reading(t, "emden", self.metric, 40.0 + i) for i, t in enumerate(hours)
+        ),
+    )
+    _, (when, flows, metrics, index, ahead) = next(poll(origo, poll_seconds=0))
+    assert flows == {} and metrics == {"nomination_msm3d": {"emden": 41.0}}
+    assert ahead == {"nomination_msm3d": {"emden": [42.0, 43.0, 44.0, 45.0, 46.0]}}

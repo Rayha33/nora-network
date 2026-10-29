@@ -155,20 +155,23 @@
   /* Three lines: the minimum and maximum end-of-day target bounds in gray, and the
      current delivery position in a stronger line. The current line takes the alarm
      colour only outside the target bounds. */
-  function drawDayBar(ctx, x, y, day, look) {
-    const T = App.thresholds.nomination, half = 11, full = T[2] * 1.2;
+  // `u` is canvas units per screen pixel: 1 zoomed in, 1 / zoom in the overview, where
+  // it keeps its screen size (Ray, 29 Oct: "we are still missing the end of day target
+  // bar inside the exit point nodes").
+  function drawDayBar(ctx, x, y, day, look, u = 1) {
+    const T = App.thresholds.nomination, half = 11 * u, full = T[2] * 1.2;
     const at = (share) => x + Math.max(-1, Math.min(1, share / full)) * half;
     ctx.save();
     ctx.lineCap = "butt";
     ctx.strokeStyle = look.dim;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = u;
     ctx.beginPath(); ctx.moveTo(x - half, y); ctx.lineTo(x + half, y); ctx.stroke(); // the track
     for (const share of [-T[0], T[0]]) {
-      ctx.beginPath(); ctx.moveTo(at(share), y - 4); ctx.lineTo(at(share), y + 4); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(at(share), y - 4 * u); ctx.lineTo(at(share), y + 4 * u); ctx.stroke();
     }
     ctx.strokeStyle = day.level ? App.levelColor[day.level] : look.ink;
-    ctx.lineWidth = 2.4;
-    ctx.beginPath(); ctx.moveTo(at(day.share), y - 6); ctx.lineTo(at(day.share), y + 6); ctx.stroke();
+    ctx.lineWidth = 2.4 * u;
+    ctx.beginPath(); ctx.moveTo(at(day.share), y - 6 * u); ctx.lineTo(at(day.share), y + 6 * u); ctx.stroke();
     ctx.restore();
   }
   /* Four quadrants inside each circle. Every visible line contributes to the side
@@ -489,7 +492,7 @@
      above and out below"), as lines arrive from above and leave below. Numbers alone
      ("only keep the flow numbers themselves"): in dim, out in full ink, as zoomed in. A
      field only sends and an exit only receives, so each keeps its one row in place. */
-  function drawOverviewFlows(ctx, x, y, id, look, { half, total, tag = null, positions = framePos, scale = network ? network.getScale() : 1 }) {
+  function drawOverviewFlows(ctx, x, y, id, look, { half, total, tag = null, day = null, positions = framePos, scale = network ? network.getScale() : 1 }) {
     let incoming = 0, outgoing = 0;
     for (const line of lineReadings(id, positions)) {
       if (line.value == null || line.value < 0.05) continue;
@@ -501,6 +504,8 @@
     const rows = [];
     if (incoming >= 0.05) rows.push({ value: incoming, ink: look.dim, at: top + span * 0.3 });
     if (outgoing >= 0.05) rows.push({ value: outgoing, ink: look.ink, at: top + span * 0.72 });
+    // An exit point sends nothing on: its lower half holds the end-of-day target bar.
+    if (day && outgoing < 0.05 && span * scale >= 30) drawDayBar(ctx, x, top + span * 0.74, day, look, 1 / scale);
     if (!rows.length && total != null) rows.push({ value: total, ink: look.ink, at: top + span / 2 });
     ctx.save();
     ctx.textAlign = "center";
@@ -565,7 +570,7 @@
           : App.state.mode === "risk" && d.lost ? `−${App.fmt(d.lost)}` : "";
         const tags = tagsAt(id);
         if (live && !detailed) {
-          drawOverviewFlows(ctx, x, y, id, look, { half, total: now.flow, tag: tags[0] });
+          drawOverviewFlows(ctx, x, y, id, look, { half, total: now.flow, tag: tags[0], day: App.dayDelivery(id) });
         } else if (live && detailed) {
           drawSquare(ctx, x, y, id, look, { half, now, day: App.dayDelivery(id) });
         } else if (big) {
@@ -895,10 +900,17 @@
     // No zooming out far past the whole network: it would only shrink it to a speck;
     // nor in past a square about 220 px wide (Ray, 29 Oct: "i shouldnt be able to zoom
     // in more than about this").
-    network.on("zoom", () => {
-      const min = minScale(), scale = network.getScale();
-      if (scale < min) network.moveTo({ scale: min, animation: false });
-      else if (scale > MAX_SCALE) network.moveTo({ scale: MAX_SCALE, animation: false });
+    network.on("zoom", ({ pointer } = {}) => {
+      const scale = network.getScale(), target = Math.min(MAX_SCALE, Math.max(minScale(), scale));
+      if (target === scale) return;
+      // vis zooms about the pointer: hold the point under it where it is at the limit's
+      // scale, so a zoom past either limit changes nothing instead of sliding the
+      // drawing aside (Ray, 29 Oct: "we get the same sliding issue").
+      const at = pointer || { x: el.clientWidth / 2, y: el.clientHeight / 2 }, held = network.DOMtoCanvas(at);
+      network.moveTo({
+        scale: target, animation: false,
+        position: { x: held.x + (el.clientWidth / 2 - at.x) / target, y: held.y + (el.clientHeight / 2 - at.y) / target },
+      });
     });
     if (App.embed) network.setOptions({ interaction: { zoomView: false } });
     nodes.update(App.nodeIds.map((id) => ({ id, shape: "custom", ctxRenderer: card(id), label: "" })));
