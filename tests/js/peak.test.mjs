@@ -140,3 +140,31 @@ test("pigs: three lines on the drawing, like a gas peak", () => {
   assert.match(texts[1], /^ETA \d\d:\d\d$/);
   assert.equal(texts[2], "5.3 m/s");
 });
+
+/* Ray, 29 Oct: "the circle (center) of the peak H2S or CO2 should be at the point that
+   is midway between the head and the tail of the peak". */
+test("peak: the H₂S or CO₂ dot sits midway between the head and the tail", () => {
+  const { App, NORA, document } = loadApp();
+  document.getElementById("speed").options = [{ value: "600" }];
+  const week = NORA.streams.find((s) => s.synthetic);
+  document.getElementById("stream-select")._listeners.change[0]({ target: { value: week.name } });
+  App.state.mode = "live";
+  App.go({ screen: "unit", unit: "all" });
+  const scrub = document.getElementById("scrub"), v = NORA.config.pipelines.gas_velocity_mps;
+  let checked = 0;
+  for (let i = 0; i < week.times.length; i += 1) {
+    scrub.value = String(i);
+    scrub._listeners.input[0]();
+    for (const dot of App.markers().filter((m) => m.kind === "quality" && m.lead)) {
+      const parcels = App.live.quality.filter((q) => q.slug === dot.ref);
+      if (parcels.length < 2 || parcels.some((q) => q.arrived || q.pid !== dot.id)) continue; // on one line
+      const at = (q) => { const t = (App.live.time - q.t0) / ((NORA.assets[q.pid].km * 1000) / v); return q.forward ? t : 1 - t; };
+      const head = parcels.reduce((a, b) => (a.born <= b.born ? a : b)), tail = parcels.reduce((a, b) => (a.born >= b.born ? a : b));
+      assert.ok(Math.abs(dot.along - (at(head) + at(tail)) / 2) < 1e-9, `${dot.ref} at ${dot.along}, not midway`);
+      const [a, b] = dot.extent;
+      assert.ok(Math.abs(dot.along - (a + b) / 2) < 1e-9 || a <= 0 || b <= 0 || a >= 1 || b >= 1, "the middle of its band too");
+      checked += 1;
+    }
+  }
+  assert.ok(checked > 3, `checked ${checked} positions`);
+});

@@ -250,9 +250,50 @@ def test_failed_site_rebuild_restores_csvs(tiny_dir, tmp_path, monkeypatch):
         server.server_close()
 
 
-def test_edit_api_refuses_non_loopback_bind(capsys):
+def test_edit_api_refuses_non_loopback_bind(capsys, monkeypatch):
+    monkeypatch.delenv("NORA_EDIT_TOKEN", raising=False)
     assert main(["serve", "--edit", "--host", "0.0.0.0", "--no-browser"]) == 1
-    assert "must bind to 127.0.0.1" in capsys.readouterr().err
+    assert "binds to 127.0.0.1 unless NORA_EDIT_TOKEN is set" in capsys.readouterr().err
+
+
+def test_hosted_edit_api_saves_only_with_its_key(tiny_dir, tmp_path, monkeypatch):
+    """Ray, 29 Oct: "i will later host this solution". Hosted, Save writes data/ like
+    `make edit` does, but only for a request carrying the server's edit key."""
+    monkeypatch.setattr(edit, "build_site", lambda out, data: None)
+    server = ThreadingHTTPServer(
+        ("127.0.0.1", 0), edit.make_handler(tiny_dir, tmp_path / "site", token="s3cret")
+    )
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    port = server.server_address[1]
+
+    def request(method, path, payload=None, **headers):
+        connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        body = None if payload is None else json.dumps(payload).encode()
+        connection.request(method, path, body=body, headers={"Host": "nora.example", **headers})
+        response = connection.getresponse()
+        result = response.status, json.loads(response.read())
+        connection.close()
+        return result
+
+    try:
+        _, payload = request("GET", "/api/network")
+        payload["nodes"][0]["name"] = "Saved on the hosted NORA"
+        post = {"Content-Type": "application/json", "Origin": "https://nora.example"}
+        assert request("POST", "/api/save", payload, **post)[0] == 401
+        wrong = {**post, "Authorization": "Bearer guess"}
+        assert request("POST", "/api/save", payload, **wrong)[0] == 401
+        keyed = {**post, "Authorization": "Bearer s3cret"}
+        other = {**keyed, "Origin": "https://evil.example"}
+        assert request("POST", "/api/save", payload, **other)[0] == 403
+        assert load_network(tiny_dir).node_by_id["gas"].name == "Gas field"
+        status, saved = request("POST", "/api/save", payload, **keyed)
+        assert status == 200 and saved["saved"]
+        assert load_network(tiny_dir).node_by_id["gas"].name == "Saved on the hosted NORA"
+    finally:
+        server.shutdown()
+        thread.join(timeout=5)
+        server.server_close()
 
 
 UNITS = """# Two desks for the tiny network.

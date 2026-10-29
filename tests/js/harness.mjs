@@ -41,7 +41,7 @@ export function loadApp({ search = "", globals = {} } = {}) {
   // Top-level `const App` lives in the context's lexical scope, not on the global
   // object, so read it back out through the context rather than sandbox.App.
   const App = vm.runInContext("App", context);
-  return { App, NORA: nora, document, nora };
+  return { App, NORA: nora, document, nora, window: sandbox.window };
 }
 
 /* The smoke check every test file can lean on: the templates evaluate without

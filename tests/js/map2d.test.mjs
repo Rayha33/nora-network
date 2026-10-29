@@ -287,21 +287,19 @@ test("flow pressures: a tag on the square's edge at every line end, zoomed in", 
   assert.ok(flow.pressureTags(id, pos, 1.1, half).length >= 5, "a busy hub has a tag at each of its lines");
 });
 
-test("flow pressures: zoomed out, one tag on the square's top edge, the number alone", () => {
+test("flow pressures: zoomed out, a tag at every line end too, the number alone", () => {
+  // Ray, 29 Oct: "we need these small squares with pressure values at each end the node
+  // is connected to a line, and where the line comes and enter"
   const loaded = loadApp();
   const { App, NORA } = loaded;
   loadFirstHour(App, NORA);
   App.state.mode = "live";
   const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 258, y: stage * 204 }]));
-  const id = App.nodeIds.find((node) => App.reading(node).pressure != null), p = pos[id];
-  const half = 64, scale = 0.6;
-  const tags = App.views.flow.pressureTags(id, pos, scale, half);
-  assert.equal(tags.length, 1, "one pressure per node in the overview");
-  const [x0, y0, x1, y1] = tags[0].box;
-  assert.ok(x0 > p.x - half && x1 < p.x + half, "no wider than the square");
-  assert.ok(Math.abs((y0 + y1) / 2 - (p.y - half)) < 1e-6, "on the middle of its top edge, where lines arrive");
-  assert.equal(tags[0].text, App.fmt(App.reading(id).pressure), "the number alone; the tag says bar on zoom in");
-  assert.equal(App.views.flow.pressureTags(id, pos, 0.2, 20).length, 0, "no tag where it would not fit");
+  const id = App.nodeIds.find((node) => App.reading(node).pressure != null && App.views.flow.lineReadings(node, pos).length >= 2 && !NORA.config.flow.watch.includes(node));
+  const tags = App.views.flow.pressureTags(id, pos, 0.6, 64);
+  assert.equal(tags.length, App.views.flow.lineReadings(id, pos).length, "one per line end");
+  assert.ok(tags.every((t) => t.text === App.fmt(App.reading(id).pressure) && t.small), "the number alone, in the smaller type");
+  assert.equal(App.views.flow.pressureTags(id, pos, 0.2, 20).length, 0, "none on a square too small to read");
 });
 
 test("flow pressures: a line ends at its tag, so the arrow touches it", () => {
@@ -564,33 +562,32 @@ test("exit nodes: within-day delivery against the nominations, as a share", () =
   assert.equal(App.dayDelivery(exit).share, 0, "only this gas day counts");
 });
 
-test("exit nodes: gray target bounds and one prominent current-delivery line", () => {
+/* Ray, 29 Oct, with a photo of exit cards: "this is an example of how the bars could
+   look like when it comes to end of day target". A track, the target band on it, and a
+   mark where the day stands, coloured only outside the band. */
+test("exit nodes: the end-of-day bar is a track, a target band and a mark", () => {
   const { App } = loadApp();
-  const strokes = [];
-  let path = [];
+  const rects = [];
   const ctx = new Proxy({}, {
     get(target, key) {
       if (key in target) return target[key];
-      if (key === "beginPath") return () => { path = []; };
-      if (key === "moveTo") return (x, y) => path.push([x, y]);
-      if (key === "lineTo") return (x, y) => path.push([x, y]);
-      if (key === "stroke") return () => strokes.push({ path, color: target.strokeStyle, width: target.lineWidth });
+      if (key === "fillRect") return (x, y, w, h) => rects.push({ x, y, w, h, fill: target.fillStyle, alpha: target.globalAlpha });
       return () => {};
     },
     set(target, key, value) { target[key] = value; return true; },
   });
-  const look = { dim: "gray", ink: "black" };
-  App.views.flow.drawDayBar(ctx, 100, 50, { share: 0.02, level: 0 }, look);
-  const vertical = strokes.filter((s) => s.path.length === 2 && s.path[0][0] === s.path[1][0]);
-  assert.equal(vertical.length, 3, "minimum, maximum and current are the three vertical markers");
-  const tolerance = App.thresholds.nomination[0];
-  const half = 11, full = App.thresholds.nomination[2] * 1.2;
-  const positions = vertical.map((s) => s.path[0][0]).sort((a, b) => a - b);
-  const expected = [100 - tolerance / full * half, 100 + 0.02 / full * half, 100 + tolerance / full * half].sort((a, b) => a - b);
-  positions.forEach((x, i) => assert.ok(Math.abs(x - expected[i]) < 1e-9));
-  assert.equal(vertical.filter((s) => s.color === "gray").length, 2, "the target bounds are gray");
-  const current = vertical.find((s) => s.color === "black");
-  assert.ok(current && current.width > Math.max(...vertical.filter((s) => s.color === "gray").map((s) => s.width)), "the current line is more prominent");
+  const look = { dim: "gray", ink: "black" }, half = 40;
+  App.views.flow.drawDayBar(ctx, 100, 50, { share: 0.02, level: 0 }, look, 1, half);
+  const [track, band, mark] = rects;
+  assert.equal(track.w, 2 * half, "the track spans the bar");
+  const tolerance = App.thresholds.nomination[0], full = App.thresholds.nomination[2] * 1.2;
+  assert.ok(Math.abs(band.x - (100 - (tolerance / full) * half)) < 1e-9 && Math.abs(band.w - 2 * (tolerance / full) * half) < 1e-9, "the target band is the tolerance");
+  assert.ok(band.alpha > track.alpha, "the band stands out from the track");
+  assert.equal(mark.fill, "black", "inside the band the mark is plain ink");
+  assert.ok(Math.abs(mark.x + mark.w / 2 - (100 + (0.02 / full) * half)) < 1e-9, "where the day stands");
+  rects.length = 0;
+  App.views.flow.drawDayBar(ctx, 100, 50, { share: 0.2, level: 2 }, look, 1, half);
+  assert.equal(rects[2].fill, App.levelColor[2], "outside the band it takes the alarm colour");
 });
 
 /* One real hour of the first stream with pressures, the way `start()` loads it. */
@@ -853,8 +850,8 @@ test("flow: the camera stays over the network (Ray, 29 Oct)", () => {
 
 test("markers grow as the view zooms in, to twice their size (Ray, 29 Oct)", () => {
   const { App } = loadApp();
-  assert.equal(App.markerSize("pig"), 16, "zoomed out: the dense-view size");
-  assert.equal(App.markerSize("pig", 1), 32, "zoomed all the way in: twice");
-  assert.equal(App.markerSize("pig", 5), 32, "never more");
-  assert.equal(App.markerSize("pig", -1), 16, "never less");
+  const base = App.markerSize("pig");
+  assert.equal(App.markerSize("pig", 1), 2 * base, "zoomed all the way in: twice");
+  assert.equal(App.markerSize("pig", 5), 2 * base, "never more");
+  assert.equal(App.markerSize("pig", -1), base, "never less");
 });

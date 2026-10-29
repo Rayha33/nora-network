@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import functools
+import os
 import sys
 import webbrowser
 from functools import partial
@@ -97,13 +98,19 @@ def cmd_build(args) -> int:
 
 
 def cmd_serve(args) -> int:
-    if args.edit and args.host != "127.0.0.1":
-        raise DataError(["`nora serve --edit` must bind to 127.0.0.1"])
+    token = os.environ.get("NORA_EDIT_TOKEN") or None
+    if args.edit and args.host != "127.0.0.1" and not token:
+        raise DataError(
+            [
+                "`nora serve --edit` binds to 127.0.0.1 unless NORA_EDIT_TOKEN is set: "
+                "hosted, every save must carry that key (serve it over HTTPS)"
+            ]
+        )
     cmd_build(args)
     if args.edit:
         from .edit import make_handler
 
-        handler = make_handler(args.data, args.out)
+        handler = make_handler(args.data, args.out, token)
     else:
         handler = functools.partial(SimpleHTTPRequestHandler, directory=str(args.out))
     server = ThreadingHTTPServer((args.host, args.port), handler)
@@ -216,7 +223,9 @@ def main(argv: list[str] | None = None) -> int:
     serve = commands.add_parser("serve", help="build, then serve the site locally")
     site_options(serve, 8000)
     serve.add_argument(
-        "--edit", action="store_true", help="enable the loopback-only network CSV editor API"
+        "--edit",
+        action="store_true",
+        help="enable the network editor API (loopback only unless NORA_EDIT_TOKEN is set)",
     )
     serve.set_defaults(run=cmd_serve)
     live = commands.add_parser("live", help="build, then replay a stream as a live feed")

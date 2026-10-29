@@ -12,8 +12,9 @@ def problems_for(tmp_path, nodes=NODES, pipelines=PIPELINES) -> list[str]:
 
 
 def test_the_north_sea_data_is_valid(north_sea):
-    assert len(north_sea.nodes) > 40
-    assert len(north_sea.pipelines) > 40
+    # Trimmed to what a North Sea operator watches (Ray, 29 Oct): 40 nodes, 40 lines
+    assert len(north_sea.nodes) >= 35
+    assert len(north_sea.pipelines) >= 35
 
 
 def test_every_pipeline_connects_known_nodes(north_sea):

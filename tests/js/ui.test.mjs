@@ -98,22 +98,21 @@ test("what-if: no 0.0 on dead lines, and the chip never cuts twice", () => {
   App.whatif.toggle("kollsnes");
   for (const id of App.pipeIds) assert.notEqual(App.pipeStyle(id).label, "0.0", `${id} carries no 0.0`);
   App.go({ screen: "unit", unit: "all" });
-  const chip = document.getElementById("plan-chip");
-  const text = (chip.children || []).map((c) => c.textContent).join("");
-  assert.match(text, /^What-if: [\d.,]+ of [\d.,]+ MSm³\/d · 1 offline · Restore all$/, text);
+  const bar = document.body.children.find((c) => /whatif-bar/.test(c.className || ""));
+  const text = (bar.children || []).map((c) => c.textContent).join(" ");
+  assert.match(text, /^What-if: [\d.,]+ of [\d.,]+ MSm³\/d 1 offline Restore all$/, text);
+  bar.children.at(-1)._listeners.click[0]();
+  assert.equal(App.whatif.offline().length, 0, "Restore all brings every asset back");
 });
 
-/* The top bar never changes (Ray). The plan chip used to vanish for datasets without
-   nominations and come back in What-if; it now says there is no plan to check. */
-test("top bar: the plan chip is always there, also without nominations", () => {
+/* Ray, 29 Oct, of the plan chip ("In 4 h: Short 36.0 MSm³/d at Easington"): "remove
+   this. it serves no purpose". The plan is on the Overview; What-if has its own bar. */
+test("top bar: no plan chip; What-if keeps its status in its own bar", () => {
   const { App, document } = loadApp();
-  App.live.frames = [{ t: 3600, flows: {}, metrics: {}, plan: null }];
-  App.live.index = 0;
+  assert.equal(document.getElementById("plan-chip"), null);
   App.state.mode = "live";
   App.go({ screen: "unit", unit: "all" });
-  const chip = document.getElementById("plan-chip");
-  assert.equal(chip.hidden, false, "the chip stays");
-  assert.match(chip.textContent, /No plan to check/);
+  assert.ok(!document.body.children.some((c) => /whatif-bar/.test(c.className || "")), "no What-if bar outside What-if");
 });
 
 test("overview: an hour without nominations says so, never 'null'", () => {

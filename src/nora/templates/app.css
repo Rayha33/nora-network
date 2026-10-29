@@ -150,14 +150,6 @@ body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer 
 .search:focus-within input, .search input:not(:placeholder-shown) { width: 170px; margin-left: 7px; }
 
 /* Status is a readable operating component, not another toolbar icon. */
-.plan-chip {
-  display: flex; align-items: center; justify-content: center; gap: 7px; height: var(--ctl); padding: 0 12px;
-  border: 1px solid var(--rule); border-radius: 7px; background: var(--surface); cursor: pointer; min-width: 0;
-  white-space: nowrap; max-width: 400px; font-size: var(--ctl-font); font-weight: 400;
-}
-.plan-chip:hover { border-color: var(--rule-strong); background: var(--raised); }
-.plan-chip span { overflow: hidden; text-overflow: ellipsis; }
-.plan-chip span + span { flex: none; } /* only the first part may shorten: never two ellipses */
 .alarm-counts { display: flex; gap: 8px; align-items: center; height: var(--ctl); padding: 0 4px; font-size: var(--ctl-font); }
 .alarm-counts span { display: flex; align-items: center; gap: 3px; font-weight: 500; }
 .badge { display: inline-flex; align-items: center; gap: 4px; font-weight: 500; white-space: nowrap; }
@@ -463,11 +455,11 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 }
 .edits-bar button:hover { background: var(--raised); }
 .edits-bar button.danger { border-color: var(--critical); }
+.whatif-bar { left: auto; right: 16px; } /* the What-if mode's status, over the network */
 
 /* data-bar (app.js barLayout): the room the bar has at its UI scale. */
 :root[data-bar="tight"] .bar, :root[data-bar="two"] .bar { gap: 12px; }
 :root[data-bar="tight"] .brand-name, :root[data-bar="two"] .brand-name { display: none; }
-:root[data-bar="tight"] .plan-chip { max-width: 220px; }
 :root[data-bar="tight"] .seg button { min-width: 44px; padding: 0 10px; }
 /* Too narrow for one row: the view and mode switches move to a second row. */
 :root[data-bar="two"] { --bar-h: 104px; }
@@ -505,7 +497,6 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
   .crumbs button { max-width: 145px; padding: 0 5px; }
   .crumbs .level { display: none; }
   .primary-actions { gap: 4px; }
-  .plan-chip { padding: 0 9px; }
   .utility-actions { padding-left: 2px; }
   .search { padding: 0 7px; }
   .search:focus-within { position: absolute; left: 14px; right: 14px; top: 66px; width: auto; z-index: 2; }

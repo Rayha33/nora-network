@@ -428,28 +428,29 @@ const App = (() => {
     if (value == null || Number.isNaN(value)) return 0;
     return rising ? thresholds.filter((t) => value >= t).length : thresholds.filter((t) => value <= t).length;
   }
-  // Each priority has its own shape and number as well as its colour.
+  /* Each priority has its own shape and number as well as its colour; a warning (3) has
+     none (Ray, 29 Oct: "remove all warning triangles") and reads as words only. */
   function shapeMarkup(lvl, x = 8, y = 8, s = 7) {
+    if (lvl < 2) return "";
     const fill = LEVEL_COLOR[lvl], ink = COLORS.text;
     const outline = `fill="${fill}" stroke="${ink}" stroke-width="1.3" stroke-linejoin="round"`;
     const shape = lvl === 3 ? `<rect x="${x - s}" y="${y - s}" width="${2 * s}" height="${2 * s}" rx="1" ${outline}/>`
-      : lvl === 2 ? `<path d="M${x} ${y - s - 1}L${x + s + 1} ${y}L${x} ${y + s + 1}L${x - s - 1} ${y}Z" ${outline}/>`
-      : `<path d="M${x} ${y - s}L${x + s} ${y + s - 1}L${x - s} ${y + s - 1}Z" ${outline}/>`;
-    const number = `<text x="${x}" y="${y + (lvl === 1 ? 4.2 : 3.6)}" text-anchor="middle" font-size="${s * 1.35}" font-weight="600" font-family="Archivo, sans-serif" fill="${ink}">${4 - lvl}</text>`;
+      : `<path d="M${x} ${y - s - 1}L${x + s + 1} ${y}L${x} ${y + s + 1}L${x - s - 1} ${y}Z" ${outline}/>`;
+    const number = `<text x="${x}" y="${y + 3.6}" text-anchor="middle" font-size="${s * 1.35}" font-weight="600" font-family="Archivo, sans-serif" fill="${ink}">${4 - lvl}</text>`;
     return shape + number;
   }
   function badge(lvl, text) {
     if (!lvl) return h("span", { class: "badge text-only dim" }, text ?? LEVEL[0]);
+    if (lvl === 1) return h("span", { class: "badge text-only", title: LEVEL[1] }, text ?? LEVEL[1]);
     return h("span", { class: "badge", title: LEVEL[lvl] }, svg("0 0 16 16", shapeMarkup(lvl)), text ?? LEVEL[lvl]);
   }
   // The same badge on a canvas (the views): shape, colour, dark outline and number.
   function drawBadge(ctx, lvl, x, y, size = 8) {
-    if (!lvl) return;
+    if (lvl < 2) return; // a warning: no triangle
     ctx.save();
     ctx.beginPath();
     if (lvl === 3) ctx.rect(x - size, y - size, 2 * size, 2 * size);
-    else if (lvl === 2) { ctx.moveTo(x, y - size - 1); ctx.lineTo(x + size + 1, y); ctx.lineTo(x, y + size + 1); ctx.lineTo(x - size - 1, y); ctx.closePath(); }
-    else { ctx.moveTo(x, y - size); ctx.lineTo(x + size, y + size - 1); ctx.lineTo(x - size, y + size - 1); ctx.closePath(); }
+    else { ctx.moveTo(x, y - size - 1); ctx.lineTo(x + size + 1, y); ctx.lineTo(x, y + size + 1); ctx.lineTo(x - size - 1, y); ctx.closePath(); }
     ctx.fillStyle = LEVEL_COLOR[lvl];
     ctx.fill();
     ctx.lineWidth = Math.max(1, size / 6);
@@ -459,7 +460,7 @@ const App = (() => {
     ctx.font = `600 ${size * 1.3}px Archivo, sans-serif`; // nothing heavier than semibold
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(String(4 - lvl), x, y + (lvl === 1 ? size * 0.28 : size * 0.08));
+    ctx.fillText(String(4 - lvl), x, y + size * 0.08);
     ctx.restore();
   }
   /* A pig (a dot-sized solid triangle pointing downstream) or a peak (a calm circle)
@@ -470,7 +471,7 @@ const App = (() => {
      size, or pigs read as specks beside the squares (Ray, 29 Oct: "when i zoom into a
      pipeline the pigs become extremely small and difficult to see"). */
   function markerSize(kind, closeness = 0) {
-    const base = kind === "pig" ? 16 : 6.5; // pigs must remain visible in a dense operating view
+    const base = kind === "pig" ? 13 : 6.5; // visible in a dense view, not dominant (Ray, 29 Oct: "a bit smaller")
     return base * (1 + Math.max(0, Math.min(1, closeness)));
   }
   function drawMarker(ctx, marker, x, y, angle, size = 7, detail = 1, taken = null) {
@@ -1061,22 +1062,37 @@ const App = (() => {
         key: `peak:${peak.id}|${peak.t0}`, ref: peak });
     }
     /* A slug of H₂S or CO₂ is drawn as one band per line it covers, from its rear parcel
-       to its front parcel; the dot (and the label) sits on its strongest parcel. */
-    const leads = new Map(slugs().map((s) => [s.q, s])), spans = new Map();
+       to its front parcel. The dot and its label sit midway between the head and the tail
+       (Ray, 29 Oct): where the gas that left the field halfway between them is now. The
+       label still gives the slug's strongest reading and when that reaches its next stop. */
+    const leads = new Map(slugs().map((s) => [s.q.slug, s])), spans = new Map(), sent = new Map();
     for (const q of live.quality) {
       const t = q.arrived ? 1 : Math.min(1, (live.time - q.t0) / travelSeconds(q.pid)), at = q.forward ? t : 1 - t;
-      const key = `${q.slug}|${q.pid}`, span = spans.get(key) || { q, lo: at, hi: at, lead: null };
+      const key = `${q.slug}|${q.pid}`, span = spans.get(key) || { q, lo: at, hi: at, first: q.born, last: q.born, moving: null };
       span.lo = Math.min(span.lo, at); span.hi = Math.max(span.hi, at);
-      if (leads.has(q)) span.lead = { q, at, s: leads.get(q) };
+      span.first = Math.min(span.first, q.born); span.last = Math.max(span.last, q.born);
+      if (!q.arrived) span.moving = { q, at };
       spans.set(key, span);
+      const [first, last] = sent.get(q.slug) || [q.born, q.born];
+      sent.set(q.slug, [Math.min(first, q.born), Math.max(last, q.born)]);
     }
-    for (const { q, lo, hi, lead } of spans.values()) {
-      const base = { kind: "quality", gas: q.metric, id: q.pid, extent: extentOf(q.pid, lo, hi, q.forward), key: `quality:${q.slug}`, ref: q.slug };
-      if (!lead) { out.push({ ...base, along: (lo + hi) / 2, lead: false, noDot: true, level: 0, value: "" }); continue; }
-      const { s } = lead;
-      out.push({ ...base, along: lead.at, lead: true, level: slugAlarm(s),
-        value: `${QUALITY[q.metric].name} ${fmt(lead.q.conc, QUALITY[q.metric].digits)}`, amount: fmt(lead.q.conc, QUALITY[q.metric].digits),
-        eta: lead.q.arrived ? "" : clock(s.next.t), to: nameOf(lead.q.arrived ? lead.q.arrived.node : s.next.node) });
+    // The line holding a slug's middle: the one carrying the gas sent nearest the middle time.
+    const middles = new Map();
+    for (const span of spans.values()) {
+      const [first, last] = sent.get(span.q.slug), mid = (first + last) / 2, off = Math.max(0, span.first - mid, mid - span.last);
+      const best = middles.get(span.q.slug);
+      if (!best || off < best.off) middles.set(span.q.slug, { span, mid, off });
+    }
+    for (const span of spans.values()) {
+      const { q, lo, hi } = span, extent = extentOf(q.pid, lo, hi, q.forward), s = leads.get(q.slug), middle = middles.get(q.slug);
+      const base = { kind: "quality", gas: q.metric, id: q.pid, extent, key: `quality:${q.slug}`, ref: q.slug };
+      if (!s || middle.span !== span) { out.push({ ...base, along: (lo + hi) / 2, lead: false, noDot: true, level: 0, value: "" }); continue; }
+      // Gas sent later is further back: one second later is one second of travel behind.
+      const { moving } = span, a = Math.min(...extent), b = Math.max(...extent);
+      const along = moving ? moving.at + ((moving.q.born - middle.mid) / travelSeconds(q.pid)) * (q.forward ? 1 : -1) : (a + b) / 2;
+      out.push({ ...base, along: Math.max(a, Math.min(b, along)), lead: true, level: slugAlarm(s),
+        value: `${QUALITY[q.metric].name} ${fmt(s.q.conc, QUALITY[q.metric].digits)}`, amount: fmt(s.q.conc, QUALITY[q.metric].digits),
+        eta: s.q.arrived ? "" : clock(s.next.t), to: nameOf(s.q.arrived ? s.q.arrived.node : s.next.node) });
     }
     return out.sort((a, b) => Number(Boolean(a.lead)) - Number(Boolean(b.lead)));
   }
@@ -1281,25 +1297,27 @@ const App = (() => {
     restyle();
     renderWhatif();
   }
-  /* The header chip while the What-if mode is on: what the network can still
-     deliver, which the user clears when done. Says so plainly when that is
-     nothing, rather than showing an empty number. */
-  /* The what-if status lives in the SAME chip as the plan status (one constant
-     top bar: no element appears or disappears when the mode changes). */
+  /* The What-if mode's own bar, over the network while the mode is on: what the
+     network can still deliver, and Restore all. It used to share the top bar's plan
+     chip, which Ray removed (29 Oct: "remove this. it serves no purpose"); the plan
+     status is on the Overview. Says so plainly when nothing can be delivered. */
+  let whatifBar = null;
   function renderWhatif() {
-    if (state.mode !== "whatif") { renderTop(); return; }
-    const chip = $("plan-chip");
-    chip.hidden = false; // the chip is always there; only its words change
+    renderTop();
+    if (state.mode !== "whatif") { if (whatifBar) { whatifBar.remove(); whatifBar = null; } return; }
+    if (!whatifBar) {
+      whatifBar = h("div", { class: "edits-bar whatif-bar", role: "status", "aria-live": "polite" });
+      document.body.append(whatifBar);
+    }
     const base = NORA.deliverable || 0, n = whatif.offline.size;
     if (!n) {
-      replaceIfChanged(chip, "whatif|none", () => [h("span", { class: "dim" }, "What-if: click assets to take them offline")]);
-      chip.title = "Click assets to take them offline; the flows and the deliverable gas update";
+      whatifBar.replaceChildren(h("span", { class: "dim" }, "What-if: click assets to take them offline"));
       return;
     }
     const value = whatifResult().value;
     const said = value < 0.05 ? "What-if: no gas can be delivered" : `What-if: ${fmt(value)} of ${fmt(base)} MSm³/d`;
-    replaceIfChanged(chip, `whatif|${said}|${n}`, () => [h("span", null, said), h("span", { class: "dim" }, ` · ${n} offline · Restore all`)]);
-    chip.title = "Restore every asset: the what-if becomes the intact network again";
+    whatifBar.replaceChildren(h("span", { class: "count" }, said), h("span", { class: "dim" }, `${n} offline`),
+      h("button", { type: "button", onclick: () => { whatif.offline.clear(); whatif.cache = null; restyle(); renderWhatif(); renderSidebar(); } }, "Restore all"));
   }
 
   // ------------------------------------------------------------------ styling rules (both views)
@@ -2158,25 +2176,12 @@ const App = (() => {
     renderTop();
   }
   function renderTop() {
-    if (state.mode === "whatif") { renderWhatif(); return; } // one chip, no layout change
     const counts = [3, 2, 1].map((l) => [l, live.conditions.filter((c) => c.level === l).length]).filter(([, n]) => n);
     // Both are live regions, refreshed with every data step: rebuilt only when they change.
     replaceIfChanged($("alarm-counts"), counts.map(([l, n]) => `${l}:${n}`).join(","),
-      () => counts.map(([l, n]) => h("span", { title: `${n} ${LEVEL[l].toLowerCase()}` }, badge(l, String(n)))));
-    const plan = frame().plan, chip = $("plan-chip");
-    chip.hidden = false; // always there: the top bar never changes between modes or datasets
-    if (!plan || !plan.nominated) {
-      replaceIfChanged(chip, "none", () => [h("span", { class: "dim" }, "No plan to check")]);
-      chip.title = plan ? "No nominations at this hour. Opens the overview" : "This dataset has no exit-point nominations, so there is no plan to check. Opens the overview";
-      return;
-    }
-    const [lvl, text] = plan.now, [aheadLvl, aheadText, , hours] = plan.ahead;
-    const ahead = `In ${fmt(hours)} h: ${aheadText}`;
-    replaceIfChanged(chip, lvl ? `now|${lvl}|${text}` : aheadLvl ? `ahead|${aheadLvl}|${ahead}` : "holds",
-      () => (lvl ? [badge(lvl, ""), h("span", null, text)]
-        : aheadLvl ? [badge(Math.min(aheadLvl, 2), ""), h("span", null, ahead)]
-        : [h("span", { class: "dim" }, "✓ Plan holds")]));
-    chip.title = "Open the overview";
+      () => counts.map(([l, n]) => h("span", { title: `${n} ${LEVEL[l].toLowerCase()}` }, badge(l, l === 1 ? `${n} warning${n === 1 ? "" : "s"}` : String(n)))));
+    // No plan chip (Ray, 29 Oct: "remove this. it serves no purpose"): the plan's state
+    // is on the Overview, and its shortfalls are alarms in the counts.
   }
 
   // ------------------------------------------------------------------ key and settings
@@ -2925,10 +2930,23 @@ const App = (() => {
       if (response.ok) current = await response.json();
     } catch (error) { current = null; }
     if (!current) { downloadEdits(); return; }
+    // Hosted (NORA_EDIT_TOKEN on the server), a save carries the edit key: asked for once
+    // and kept in this browser (Ray: "i will later host this solution").
+    const send = (key) => fetch("api/save", {
+      method: "POST", body: JSON.stringify(editedNetwork(current)),
+      headers: { "Content-Type": "application/json", ...(key ? { Authorization: `Bearer ${key}` } : {}) },
+    });
     try {
-      const response = await fetch("api/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editedNetwork(current)) });
+      let key = null;
+      try { key = localStorage.getItem("nora-edit-key"); } catch (error) { key = null; }
+      let response = await send(key);
+      if (response.status === 401 && typeof window.prompt === "function") {
+        key = window.prompt("This NORA server needs its edit key to save:") || "";
+        if (key) { try { localStorage.setItem("nora-edit-key", key); } catch (error) { /* asked again next time */ } response = await send(key); }
+      }
       const result = await response.json().catch(() => ({}));
       if (response.ok && result.saved) { edits.length = 0; storeEdits(edits); reloadKeepingView(); return; }
+      if (response.status === 401) { try { localStorage.removeItem("nora-edit-key"); } catch (error) { /* nothing kept */ } }
       editNote(`Not saved: ${(result.problems || [result.error || response.statusText]).join("; ")}`);
     } catch (error) { editNote(`Not saved: ${error.message}`); }
   }
@@ -2967,13 +2985,6 @@ const App = (() => {
   function start() {
     $("crumb-overview").addEventListener("click", () => go({ screen: "overview" }));
     $("crumb-asset").addEventListener("click", () => go({ screen: "asset", asset: route.asset }));
-    $("plan-chip").addEventListener("click", () => {
-      // In What-if the chip is the restore-all control; otherwise it opens the overview.
-      if (state.mode === "whatif" && whatif.offline.size) {
-        whatif.offline.clear(); whatif.cache = null; restyle(); renderWhatif(); renderSidebar(); return;
-      }
-      go({ screen: "overview" });
-    });
     $("theme-toggle").addEventListener("click", () => setTheme(theme === "light" ? "dark" : "light"));
     $("side-close").addEventListener("click", closeSidebar);
     addEventListener("keydown", (e) => { if (e.key === "Escape" && (side.id || side.marker || side.form)) closeSidebar(); });
@@ -3112,6 +3123,7 @@ const App = (() => {
       list: () => edits.slice(),
       files: editedFiles,
       network: editedNetwork,
+      save: saveEdits,
       viewport: () => (restored && restored.flow) || null,
     },
   };

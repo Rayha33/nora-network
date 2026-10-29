@@ -32,7 +32,7 @@ asset = "gudrun"
 metric = "co2_molpct"
 peak = 3.1
 start = 2026-10-19T04:00:00Z
-hours = 4
+hours = 2   # the CO2 slugs were too long at 4 h (Ray, 29 Oct)
 every_hours = 36
 
 [[synthetic.excursions]]
@@ -48,7 +48,7 @@ asset = "johan_sverdrup"
 metric = "co2_molpct"
 peak = 2.8
 start = 2026-10-20T06:00:00Z
-hours = 4
+hours = 2
 every_hours = 40
 
 [[events]]

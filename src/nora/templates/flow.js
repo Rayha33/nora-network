@@ -158,20 +158,42 @@
   // `u` is canvas units per screen pixel: 1 zoomed in, 1 / zoom in the overview, where
   // it keeps its screen size (Ray, 29 Oct: "we are still missing the end of day target
   // bar inside the exit point nodes").
-  function drawDayBar(ctx, x, y, day, look, u = 1) {
-    const T = App.thresholds.nomination, half = 11 * u, full = T[2] * 1.2;
+  /* The end-of-day target, as in Ray's example (29 Oct): a track, the target band on it
+     (within the nomination tolerance), and a mark where the day's delivery stands,
+     coloured only outside the band. `half` is half the track's width. */
+  function drawDayBar(ctx, x, y, day, look, u = 1, half = 11 * u) {
+    const T = App.thresholds.nomination, full = T[2] * 1.2;
     const at = (share) => x + Math.max(-1, Math.min(1, share / full)) * half;
     ctx.save();
-    ctx.lineCap = "butt";
-    ctx.strokeStyle = look.dim;
-    ctx.lineWidth = u;
-    ctx.beginPath(); ctx.moveTo(x - half, y); ctx.lineTo(x + half, y); ctx.stroke(); // the track
-    for (const share of [-T[0], T[0]]) {
-      ctx.beginPath(); ctx.moveTo(at(share), y - 4 * u); ctx.lineTo(at(share), y + 4 * u); ctx.stroke();
-    }
-    ctx.strokeStyle = day.level ? App.levelColor[day.level] : look.ink;
-    ctx.lineWidth = 2.4 * u;
-    ctx.beginPath(); ctx.moveTo(at(day.share), y - 6 * u); ctx.lineTo(at(day.share), y + 6 * u); ctx.stroke();
+    ctx.fillStyle = look.dim;
+    ctx.globalAlpha = 0.22;
+    ctx.fillRect(x - half, y - 3 * u, 2 * half, 6 * u); // the track
+    ctx.globalAlpha = 0.45;
+    ctx.fillRect(at(-T[0]), y - 3 * u, at(T[0]) - at(-T[0]), 6 * u); // the target band
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = day.level ? App.levelColor[day.level] : look.ink;
+    ctx.fillRect(at(day.share) - 1.2 * u, y - 6 * u, 2.4 * u, 12 * u);
+    ctx.restore();
+  }
+  // The next 6 hours of nominations at an exit, as hourly steps (Ray: "the trend at the
+  // bottom is the nominations next 6 hours").
+  function drawNominationSteps(ctx, id, x0, y0, w, h, look) {
+    const ramp = App.rampAhead(id);
+    if (!ramp) return;
+    const values = ramp.hours.map((r) => r.value), known = values.filter((v) => v != null);
+    const lo = Math.min(...known), hi = Math.max(...known), span = hi - lo || Math.max(1, hi * 0.1);
+    const yy = (v) => y0 + h - ((v - lo) / span) * h, step = w / values.length;
+    ctx.save();
+    ctx.strokeStyle = look.ink;
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    let started = false;
+    values.forEach((v, k) => {
+      if (v == null) return;
+      if (started) ctx.lineTo(x0 + k * step, yy(v)); else { ctx.moveTo(x0, yy(v)); started = true; }
+      ctx.lineTo(x0 + (k + 1) * step, yy(v));
+    });
+    ctx.stroke();
     ctx.restore();
   }
   /* Four quadrants inside each circle. Every visible line contributes to the side
@@ -295,15 +317,13 @@
   function pressureTags(id, positions = framePos, scale = network ? network.getScale() : 1, half = nodeHalf()) {
     const p = positions[id];
     if (!p || !NORA.assets[id]) return [];
-    const text = pressureText(id, detailedFlow(scale));
-    if (!detailedFlow(scale)) {
-      const w = (textWidth(text, TAG.small) + 2 * TAG.pad) / scale, h = TAG.hSmall / scale;
-      // Only when it is no wider than the square (a watched node's, with its rate, may
-      // be a little wider), which keeps room for in and out.
-      if (w > 2 * half * (watched.has(id) ? 1.6 : 1) - 4 / scale || 2 * half * scale < 36) return [];
-      return [{ pid: null, side: "top", box: [p.x - w / 2, p.y - half - h / 2, p.x + w / 2, p.y - half + h / 2], text, small: true }];
-    }
-    const w = (textWidth(text, TAG.font) + 2 * TAG.pad) / scale, h = TAG.h / scale;
+    // Zoomed out too, a tag at every line end (Ray, 29 Oct: "we need these small squares
+    // with pressure values at each end the node is connected to a line"): the number
+    // alone in the smaller type; not on squares too small to read.
+    const detailed = detailedFlow(scale), text = pressureText(id, detailed);
+    if (!detailed && 2 * half * scale < 24) return [];
+    const font = detailed ? TAG.font : TAG.small;
+    const w = (textWidth(text, font) + 2 * TAG.pad) / scale, h = (detailed ? TAG.h : TAG.hSmall) / scale;
     const sides = { N: [], S: [], E: [], W: [] };
     for (const line of lineReadings(id, positions)) {
       const gap = edgeGap(half, line.ux, line.uy), cx = p.x + line.ux * gap, cy = p.y + line.uy * gap;
@@ -320,7 +340,7 @@
           : side === "S" ? [c - w / 2, p.y + half, c + w / 2, p.y + half + h]
           : side === "E" ? [p.x + half, c - h / 2, p.x + half + w, c + h / 2]
           : [p.x - half - w, c - h / 2, p.x - half, c + h / 2];
-        tags.push({ pid: item.pid, side, box, text });
+        tags.push({ pid: item.pid, side, box, text, small: !detailed });
       });
     }
     // A side tag near a corner can meet a tag above or below: it moves along its edge.
@@ -505,7 +525,7 @@
     if (incoming >= 0.05) rows.push({ value: incoming, ink: look.dim, at: top + span * 0.3 });
     if (outgoing >= 0.05) rows.push({ value: outgoing, ink: look.ink, at: top + span * 0.72 });
     // An exit point sends nothing on: its lower half holds the end-of-day target bar.
-    if (day && outgoing < 0.05 && span * scale >= 30) drawDayBar(ctx, x, top + span * 0.74, day, look, 1 / scale);
+    if (day && outgoing < 0.05 && span * scale >= 30) drawDayBar(ctx, x, top + span * 0.74, day, look, 1 / scale, half - 5 / scale);
     if (!rows.length && total != null) rows.push({ value: total, ink: look.ink, at: top + span / 2 });
     ctx.save();
     ctx.textAlign = "center";
@@ -533,9 +553,14 @@
       ctx.fillStyle = fast ? look.ink : look.dim;
       reading(ctx, `${rate > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(rate), 1)}/h`, x + half - pad, top, look, "right");
     }
+    // An exit point as in Ray's example: the end-of-day bar across the top, the flows,
+    // and the next 6 hours of nominations along the foot.
+    const exit = NORA.assets[id].exit;
+    if (exit && day) drawDayBar(ctx, x, y - half * 0.52, day, look, 1, half - pad);
     drawQuadrants(ctx, x, y, id, look, { total: now ? now.flow : null, r: half });
-    if (maxColumn <= 2) drawTrend(ctx, id, x - half + pad, y + half * 0.42, (half - pad) * 2, half * 0.26, look);
-    if (day) drawDayBar(ctx, x, y + half * 0.84, day, look);
+    if (exit && App.rampAhead(id)) drawNominationSteps(ctx, id, x - half + pad, y + half * 0.48, (half - pad) * 2, half * 0.3, look);
+    else if (maxColumn <= 2) drawTrend(ctx, id, x - half + pad, y + half * 0.42, (half - pad) * 2, half * 0.26, look);
+    if (day && !exit) drawDayBar(ctx, x, y + half * 0.84, day, look);
     ctx.restore();
   }
   // vis-network custom shape: the square for one node, its readings inside, its name below.
@@ -570,7 +595,7 @@
           : App.state.mode === "risk" && d.lost ? `−${App.fmt(d.lost)}` : "";
         const tags = tagsAt(id);
         if (live && !detailed) {
-          drawOverviewFlows(ctx, x, y, id, look, { half, total: now.flow, tag: tags[0], day: App.dayDelivery(id) });
+          drawOverviewFlows(ctx, x, y, id, look, { half, total: now.flow, day: App.dayDelivery(id) }); // the tags sit outside
         } else if (live && detailed) {
           drawSquare(ctx, x, y, id, look, { half, now, day: App.dayDelivery(id) });
         } else if (big) {
@@ -584,6 +609,10 @@
           drawnBoxes[id] = [[x - half, y - half, x + half, y + half], ...pressureBoxes].reduce((all, box) => [
             Math.min(all[0], box[0]), Math.min(all[1], box[1]), Math.max(all[2], box[2]), Math.max(all[3], box[3]),
           ]);
+          for (const box of pressureBoxes) { // names keep clear of the tags
+            const a = network.canvasToDOM({ x: box[0], y: box[1] }), b = network.canvasToDOM({ x: box[2], y: box[3] });
+            overviewBoxes.push([a.x, a.y, b.x, b.y]);
+          }
           drawOverviewName(ctx, id, x, y, half);
           ctx.restore();
           if (s.level) App.drawBadge(ctx, s.level, x + half - 2, y - half + 2, 8);

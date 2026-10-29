@@ -62,13 +62,13 @@ the browser until saved; a bar lists them with Undo, Save and Discard. With `mak
 (`nora serve --edit`) running, Save validates them, writes `nodes.csv`,
 `pipelines.csv`, `units.toml` (a new node joins the unit chosen in its form) and
 `flow_layout.toml` (a dragged or new node keeps its place), and
-rebuilds the site. Opened anywhere else, Save downloads the four files to put here and
-commit. A new row says "Added in the NORA editor" in `notes`: add its `source`.
+rebuilds the site; a hosted NORA (below) saves the same way. Opened as a plain file or on
+GitHub Pages, Save downloads the four files to put here and commit. A new row says "Added in the NORA editor" in `notes`: add its `source`.
 
 ### Local edit API
 
 For a local editing workflow, start `nora serve --edit`. It binds only to
-`127.0.0.1`; the JSON API is not available through `nora live` or a public interface.
+`127.0.0.1`; the JSON API is not available through `nora live`.
 `GET /api/network` returns the nodes and pipelines in CSV-column form. Send that full
 object to `POST /api/check` to validate without writing, or to `POST /api/save` to
 validate, update the CSVs, and rebuild the served site. POST requests require
@@ -91,6 +91,22 @@ curl -X POST http://127.0.0.1:8000/api/save \
   -H 'Content-Type: application/json' -H 'Origin: http://127.0.0.1:8000' \
   --data-binary @network.json
 ```
+
+### Hosting the editor
+
+To save from a hosted NORA without downloading files, give the server an edit key and
+put it behind HTTPS (a reverse proxy such as Caddy or nginx that passes the `Host`
+header through):
+
+```bash
+NORA_EDIT_TOKEN="$(openssl rand -hex 24)" nora serve --edit --host 0.0.0.0 --no-browser
+```
+
+Without `NORA_EDIT_TOKEN`, `--host` other than `127.0.0.1` is refused. With it, every
+`/api/check` and `/api/save` must send `Authorization: Bearer <key>` and an `Origin`
+that matches the page's host; the page asks for the key at the first Save and keeps it
+in that browser. Anyone with the key can change `data/`, so share it like a password,
+and commit the saved files from the server's checkout as usual.
 
 ## pipelines.csv
 

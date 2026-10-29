@@ -23,10 +23,7 @@ nodes = ["st_fergus", "elgin_franklin", "easington", "sns_fields", "bacton"]
 
 [units.continent]
 name = "Continental landings"
-nodes = [
-    "l10a", "k13a", "den_helder", "uithuizen", "dornum", "emden",
-    "zeebrugge", "dunkirk",
-]
+nodes = ["dornum", "emden", "zeebrugge", "dunkirk"]
 
 [units.denmark_poland]
 name = "Denmark and Poland"
