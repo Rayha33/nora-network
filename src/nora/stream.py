@@ -533,7 +533,10 @@ def apply_events(base: nx.DiGraph, events: tuple[Event, ...], when: datetime) ->
                 graph.remove_node(event.asset)
             else:
                 # A processing node's capacity travels on the node, not its edges:
-                # scale it too, or a partial derate is silently ignored.
+                # scale it too, or a partial derate is silently ignored. A terminal or
+                # hub without a capacity of its own takes what its lines can bring it.
+                if not attrs.get("capacity_msm3d"):
+                    attrs["capacity_msm3d"] = _intake(graph, event.asset)
                 if attrs.get("capacity_msm3d"):
                     attrs["capacity_msm3d"] *= factor
                 for _, _, edge in graph.out_edges(event.asset, data=True):
@@ -547,6 +550,14 @@ def apply_events(base: nx.DiGraph, events: tuple[Event, ...], when: datetime) ->
             if "capacity" in graph.edges[u, v]:
                 graph.edges[u, v]["capacity"] *= factor
     return graph
+
+
+def _intake(graph: nx.DiGraph, node: str) -> float | None:
+    """What the lines into `node` can carry together; None when one has no capacity."""
+    capacities = [edge.get("capacity") for _, _, edge in graph.in_edges(node, data=True)]
+    if not capacities or None in capacities:
+        return None
+    return sum(capacities)
 
 
 def _events(meta: dict, net: Network, where: str, problems: list[str]) -> tuple[Event, ...]:
