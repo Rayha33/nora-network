@@ -253,3 +253,100 @@ def test_failed_site_rebuild_restores_csvs(tiny_dir, tmp_path, monkeypatch):
 def test_edit_api_refuses_non_loopback_bind(capsys):
     assert main(["serve", "--edit", "--host", "0.0.0.0", "--no-browser"]) == 1
     assert "must bind to 127.0.0.1" in capsys.readouterr().err
+
+
+UNITS = """# Two desks for the tiny network.
+
+[units.offshore]
+name = "Offshore"
+nodes = ["gas", "hub"]
+
+[units.landings]
+name = "Landings"
+nodes = ["a_terminal", "b_terminal", "market"]
+"""
+
+
+def test_save_keeps_every_node_in_one_unit(tiny_dir, tiny):
+    """The editor in the page (Ray, 29 Oct) removes and adds nodes: units.toml follows,
+    comments kept, so the site still builds."""
+    (tiny_dir / "units.toml").write_text(UNITS, encoding="utf-8")
+    network = edit.remove_pipeline(tiny, "b_entry")
+    network = edit.remove_pipeline(network, "pipe_b")
+    network = edit.remove_node(network, "b_terminal")
+    network = edit.add_node(
+        network,
+        {
+            "id": "c_field",
+            "name": "C field",
+            "type": "field",
+            "country": "NO",
+            "lat": 61,
+            "lon": 3,
+            "capacity_msm3d": 5,
+            "status": "operating",
+        },
+    )
+    network = edit.add_pipeline(
+        network,
+        {
+            "id": "c_feed",
+            "name": "C feed",
+            "from": "c_field",
+            "to": "hub",
+            "type": "feeder",
+            "status": "operating",
+        },
+    )
+    edit.save(network, tiny_dir, {"c_field": "offshore"})
+    text = (tiny_dir / "units.toml").read_text(encoding="utf-8")
+    assert text.startswith("# Two desks for the tiny network.")
+    assert 'nodes = ["gas", "hub", "c_field"]' in text
+    assert 'nodes = ["a_terminal", "market"]' in text
+
+
+def test_save_refuses_a_new_node_without_a_unit(tiny_dir, tiny):
+    (tiny_dir / "units.toml").write_text(UNITS, encoding="utf-8")
+    network = edit.add_node(
+        tiny,
+        {
+            "id": "loose",
+            "name": "Loose",
+            "type": "hub",
+            "country": "NO",
+            "lat": 60,
+            "lon": 2,
+            "status": "operating",
+        },
+    )
+    with pytest.raises(DataError) as caught:
+        edit.save(network, tiny_dir, {})
+    assert any("loose" in problem for problem in caught.value.problems)
+    with pytest.raises(DataError):
+        edit.save(network, tiny_dir, {"loose": "nowhere"})
+    assert (tiny_dir / "units.toml").read_text(encoding="utf-8") == UNITS  # nothing written
+
+
+def test_removing_a_streamed_asset_keeps_the_data_valid(tmp_path):
+    """Found in the browser: removing Gudrun in the editor failed to save, because the
+    SODIR stream maps a column to it and the synthetic week has a CO2 excursion there.
+    Saving drops those references, so the data still validates and the site builds."""
+    import shutil
+
+    from nora.data import DATA_DIR
+    from nora.stream import list_streams, load_stream
+
+    data = tmp_path / "data"
+    shutil.copytree(DATA_DIR, data)
+    net = load_network(data)
+    for pipe in [p.id for p in net.pipelines if "gudrun" in (p.from_id, p.to_id)]:
+        net = edit.remove_pipeline(net, pipe)
+    net = edit.remove_node(net, "gudrun")
+    edit.save(net, data, {})
+    saved = load_network(data)
+    for name in list_streams(data / "streams"):
+        load_stream(name, saved, data / "streams")  # raises on a reference left behind
+    sodir = (data / "streams" / "sodir-field-production" / "stream.toml").read_text()
+    assert '"GUDRUN" = ""  # gudrun was removed from the network' in sodir
+    synthetic = (data / "streams" / "synthetic-week" / "stream.toml").read_text()
+    assert 'asset = "gudrun"' not in synthetic and 'asset = "troll"' in synthetic

@@ -7,9 +7,11 @@ import hashlib
 import io
 import json
 import os
+import re
 import stat
 import tempfile
 import threading
+import tomllib
 from dataclasses import replace
 from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
@@ -26,6 +28,7 @@ from .data import (
     load_network,
 )
 from .site import build_site
+from .units import load_units
 
 _EDIT_LOCK = threading.RLock()
 _MAX_BODY = 1_000_000
@@ -97,8 +100,13 @@ def check(net: Network) -> list[str]:
     return []
 
 
-def save(net: Network, data_dir: Path = DATA_DIR) -> dict[Path, bytes]:
-    """Validate and persist only changed CSV rows; return old bytes for rollback."""
+def save(
+    net: Network, data_dir: Path = DATA_DIR, placements: dict[str, str] | None = None
+) -> dict[Path, bytes]:
+    """Validate and persist only changed CSV rows; return old bytes for rollback.
+
+    units.toml follows (when the data has one): removed nodes leave their unit, and a new
+    node joins the unit `placements` names for it, so every node stays in exactly one."""
     data_dir = Path(data_dir)
     with _EDIT_LOCK:
         problems = check(net)
@@ -106,6 +114,26 @@ def save(net: Network, data_dir: Path = DATA_DIR) -> dict[Path, bytes]:
             raise DataError(problems)
         original = load_network(data_dir)
         changes = {}
+        units_path = data_dir / "units.toml"
+        if units_path.exists():
+            current = units_path.read_bytes()
+            updated = edit_units(current.decode("utf-8"), net, placements or {}).encode("utf-8")
+            with tempfile.TemporaryDirectory(prefix="nora-units-") as folder:
+                trial = Path(folder) / "units.toml"
+                trial.write_bytes(updated)
+                load_units(net, trial)  # raises DataError: a node in no unit, or in two
+            if updated != current:
+                changes[units_path] = updated
+        # A stream that names a removed asset would stop the site building: its column
+        # is no longer mapped, and its excursions, events and pigs there go.
+        removed = {a.id for a in (*original.nodes, *original.pipelines)} - {
+            a.id for a in (*net.nodes, *net.pipelines)
+        }
+        for path in sorted((data_dir / "streams").glob("*/stream.toml")) if removed else ():
+            current = path.read_bytes()
+            updated = edit_stream(current.decode("utf-8"), removed).encode("utf-8")
+            if updated != current:
+                changes[path] = updated
         for filename, columns, before, after, values in (
             (
                 "nodes.csv",
@@ -132,6 +160,75 @@ def save(net: Network, data_dir: Path = DATA_DIR) -> dict[Path, bytes]:
         return snapshot
 
 
+def edit_units(text: str, net: Network, placements: dict[str, str]) -> str:
+    """units.toml with nodes no longer in `net` dropped and each new node added to the
+    unit `placements` names. Only the touched `nodes = [...]` arrays are rewritten; the
+    comments and the rest of the file stay as they are."""
+    try:
+        units = tomllib.loads(text).get("units", {})
+    except tomllib.TOMLDecodeError as error:
+        raise DataError([f"units.toml: {error}"]) from None
+    placed = {node for unit in units.values() for node in unit.get("nodes", [])}
+    unknown = sorted({unit for unit in placements.values() if unit not in units})
+    if unknown:
+        raise DataError([f"units.toml: no unit {', '.join(unknown)}"])
+    for unit_id, unit in units.items():
+        before = list(unit.get("nodes", []))
+        after = [node for node in before if node in net.node_by_id]
+        after += sorted(n for n, u in placements.items() if u == unit_id and n not in placed)
+        if after != before:
+            text = _replace_nodes_array(text, unit_id, after)
+    return text
+
+
+def edit_stream(text: str, removed: set[str]) -> str:
+    """A stream.toml with no reference left to the `removed` asset ids: an [import.assets]
+    column mapped to one maps to nothing (the column is skipped, as for assets not
+    modelled), and an excursion, event or pig on one is dropped with its blank line."""
+    lines = text.splitlines(keepends=True)
+    out, section, i = [], "", 0
+    mapping = re.compile(r'^(\s*"[^"]*"\s*=\s*)"-?([^"]+)"[^\r\n]*(\r?\n?)$')
+    while i < len(lines):
+        line = lines[i]
+        if line.startswith("["):
+            section = line.strip()
+        if line.startswith("[["):
+            end = i + 1
+            while end < len(lines) and lines[end].strip() and not lines[end].startswith(("[", "#")):
+                end += 1
+            block = "".join(lines[i:end])
+            named = re.findall(r'^\s*(?:asset|pipeline)\s*=\s*"([^"]+)"', block, re.MULTILINE)
+            if any(name in removed for name in named):
+                i = end + (1 if end < len(lines) and not lines[end].strip() else 0)
+                continue
+        match = mapping.match(line) if section == "[import.assets]" else None
+        if match and match.group(2) in removed:
+            key, asset, end = match.groups()
+            line = f'{key}""  # {asset} was removed from the network{end}'
+        out.append(line)
+        i += 1
+    return "".join(out)
+
+
+def _replace_nodes_array(text: str, unit_id: str, nodes: list[str]) -> str:
+    header = re.search(rf"^\[units\.{re.escape(unit_id)}\][ \t]*$", text, re.MULTILINE)
+    array = re.compile(r"^nodes\s*=\s*\[.*?\]", re.MULTILINE | re.DOTALL).search(text, header.end())
+    items = [f'"{node}"' for node in nodes]
+    one_line = f"nodes = [{', '.join(items)}]"
+    if len(one_line) <= 100:
+        rendered = one_line
+    else:  # wrapped like the rest of the file: four-space indent, about 90 columns
+        lines, line = [], "   "
+        for item in items:
+            if len(line) + len(item) + 2 > 92:
+                lines.append(line.rstrip())
+                line = "   "
+            line += f" {item},"
+        lines.append(line.rstrip())
+        rendered = "nodes = [\n" + "\n".join(lines) + "\n]"
+    return text[: array.start()] + rendered + text[array.end() :]
+
+
 def restore(snapshot: dict[Path, bytes]) -> None:
     """Atomically restore files changed by save(), for a failed site rebuild."""
     with _EDIT_LOCK:
@@ -151,8 +248,14 @@ def network_payload(net: Network, revision: str) -> dict:
 
 
 def network_from_payload(payload) -> Network:
-    """Decode a full GET /api/network payload; reject client-supplied paths and fields."""
-    if not isinstance(payload, dict) or set(payload) != {"revision", "nodes", "pipelines"}:
+    """Decode a full GET /api/network payload; reject client-supplied paths and fields.
+    An optional `units` object places new nodes ({node id: unit id}, see units_from_payload)."""
+    keys = set(payload) if isinstance(payload, dict) else set()
+    if (
+        not {"revision", "nodes", "pipelines"}
+        <= keys
+        <= {"revision", "nodes", "pipelines", "units"}
+    ):
         raise DataError(["request: expected a revision and 'nodes' and 'pipelines' arrays"])
     revision = payload["revision"]
     if (
@@ -167,6 +270,16 @@ def network_from_payload(payload) -> Network:
         tuple(_node(item) for item in payload["nodes"]),
         tuple(_pipeline(item) for item in payload["pipelines"]),
     )
+
+
+def units_from_payload(payload: dict) -> dict[str, str]:
+    """{node id: unit id} for the new nodes of a save request."""
+    units = payload.get("units", {})
+    if not isinstance(units, dict) or not all(
+        isinstance(k, str) and isinstance(v, str) for k, v in units.items()
+    ):
+        raise DataError(["request: 'units' must map node ids to unit ids"])
+    return units
 
 
 def make_handler(data_dir: Path, out_dir: Path):
@@ -221,6 +334,7 @@ def make_handler(data_dir: Path, out_dir: Path):
             try:
                 payload = json.loads(self.rfile.read(int(length)).decode("utf-8"))
                 net = network_from_payload(payload)
+                placements = units_from_payload(payload)
             except DataError as error:
                 self._json(400, {"problems": error.problems})
                 return
@@ -250,7 +364,7 @@ def make_handler(data_dir: Path, out_dir: Path):
                     )
                     return
                 try:
-                    snapshot = save(net, data_dir)
+                    snapshot = save(net, data_dir, placements)
                 except DataError as error:
                     self._json(422, {"saved": False, "problems": error.problems})
                     return
@@ -282,11 +396,14 @@ def make_handler(data_dir: Path, out_dir: Path):
                 )
 
         def _same_origin(self) -> bool:
+            # The page may be open as 127.0.0.1 or as localhost; either way the Host must
+            # be this loopback server and the Origin the page it served.
             port = self.server.server_address[1]
-            host = "127.0.0.1" if port == 80 else f"127.0.0.1:{port}"
-            return (
-                self.headers.get("Host") == host and self.headers.get("Origin") == f"http://{host}"
-            )
+            hosts = {
+                f"{name}:{port}" if port != 80 else name for name in ("127.0.0.1", "localhost")
+            }
+            host = self.headers.get("Host")
+            return host in hosts and self.headers.get("Origin") == f"http://{host}"
 
         def _json(self, status: int, value: dict) -> None:
             body = json.dumps(value, ensure_ascii=False, allow_nan=False).encode("utf-8")
@@ -467,9 +584,11 @@ def _same_asset(left, right, columns) -> bool:
 
 def _data_revision(data_dir: Path) -> str:
     digest = hashlib.sha256()
-    for filename in ("nodes.csv", "pipelines.csv"):
-        digest.update(filename.encode("ascii") + b"\0")
-        digest.update((Path(data_dir) / filename).read_bytes())
+    for filename in ("nodes.csv", "pipelines.csv", "units.toml"):
+        path = Path(data_dir) / filename
+        if path.exists():
+            digest.update(filename.encode("ascii") + b"\0")
+            digest.update(path.read_bytes())
     return digest.hexdigest()
 
 

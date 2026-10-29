@@ -72,6 +72,86 @@ const App = (() => {
     node.innerHTML = markup; // built from numbers, palette colours and esc()'d names only
     return node;
   }
+  // ------------------------------------------------------------------ network edits
+  /* Ray, 29 Oct: "there should be a editing version of the flow map where i can add
+     nodes, remove nodes, connect edges and remove edges"; "i should be able to right
+     click to remove a node, i should also be able to add a new node and attach it where
+     i want". Each edit is one step in a list kept in this browser. The page applies the
+     list to NORA, and to the Flow view's vis data, before anything reads them, so every
+     view, the what-if and the search agree. Undo drops the last step; Save writes the
+     result to data/ (see saveEdits). */
+  const EDITS_KEY = "nora-edits";
+  function storedEdits() {
+    try {
+      const list = JSON.parse(localStorage.getItem(EDITS_KEY) || "[]");
+      return Array.isArray(list) ? list : [];
+    } catch (error) { return []; }
+  }
+  function storeEdits(list) {
+    try {
+      if (list.length) localStorage.setItem(EDITS_KEY, JSON.stringify(list));
+      else localStorage.removeItem(EDITS_KEY);
+      return true;
+    } catch (error) { return false; }
+  }
+  const visData = () => (typeof nodes !== "undefined" && typeof edges !== "undefined" ? { nodes, edges } : null);
+  const kmBetween = (a, b) => { // great circle, as graph.great_circle_km
+    const rad = Math.PI / 180, dLat = (b.lat - a.lat) * rad, dLon = (b.lon - a.lon) * rad;
+    const s = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLon / 2) ** 2;
+    return Math.round(2 * 6371 * Math.asin(Math.sqrt(s)) * 10) / 10;
+  };
+  function dropLine(pid) {
+    delete NORA.assets[pid];
+    NORA.geo.pipes.features = NORA.geo.pipes.features.filter((f) => f.properties.asset !== pid);
+    for (const unit of NORA.units) unit.pipelines = (unit.pipelines || []).filter((p) => p !== pid);
+    const vis = visData(); if (vis && vis.edges.get(pid)) vis.edges.remove(pid);
+  }
+  function dropNode(id) {
+    for (const [pid, p] of Object.entries(NORA.assets)) if (p.kind === "pipeline" && (p.from === id || p.to === id)) dropLine(pid);
+    delete NORA.assets[id];
+    delete NORA.grid[id];
+    NORA.geo.nodes.features = NORA.geo.nodes.features.filter((f) => f.properties.asset !== id);
+    for (const unit of NORA.units) unit.nodes = unit.nodes.filter((n) => n !== id);
+    const vis = visData(); if (vis && vis.nodes.get(id)) vis.nodes.remove(id);
+  }
+  const nextFeatureId = (collection) => Math.max(-1, ...collection.features.map((f) => f.id)) + 1;
+  function putNode(n) {
+    NORA.assets[n.id] = {
+      kind: "node", name: n.name, type: n.type, country: n.country, lat: n.lat, lon: n.lon,
+      operator: "", capacity: n.capacity ?? null, status: "operating", startup: null, shutdown: null,
+      source: "", notes: "Added in the editor", line: 0, lost: 0, share: 0, modelFlow: null,
+      supply: NORA.supplyTypes.includes(n.type), exit: n.type === "terminal" || n.type === "market", edited: true,
+    };
+    NORA.grid[n.id] = n.grid;
+    const unit = NORA.units.find((u) => u.id === n.unit) || NORA.units[0];
+    unit.nodes.push(n.id);
+    NORA.geo.nodes.features.push({ type: "Feature", id: nextFeatureId(NORA.geo.nodes), properties: { asset: n.id, name: n.name, type: n.type }, geometry: { type: "Point", coordinates: [n.lon, n.lat] } });
+    // pyvis's default shape needs an icon image; the Flow view draws every node as its square anyway
+    const vis = visData(); if (vis) vis.nodes.add({ id: n.id, label: "", shape: "dot" });
+  }
+  function putLine(l) {
+    const a = NORA.assets[l.from], b = NORA.assets[l.to];
+    NORA.assets[l.id] = {
+      kind: "pipeline", name: l.name, type: l.type, from: l.from, to: l.to, capacity: l.capacity ?? null,
+      length: null, diameter: null, commissioned: null, bidirectional: Boolean(l.bidirectional), status: "operating",
+      operator: "", source: "", notes: "Added in the editor", line: 0, lost: 0, share: 0, modelFlow: null,
+      utilization: null, km: kmBetween(a, b), edited: true,
+    };
+    const unit = NORA.units.find((u) => u.nodes.includes(l.from));
+    if (unit) (unit.pipelines = unit.pipelines || []).push(l.id);
+    NORA.geo.pipes.features.push({ type: "Feature", id: nextFeatureId(NORA.geo.pipes), properties: { asset: l.id, onshore: l.type === "onshore" }, geometry: { type: "LineString", coordinates: [[a.lon, a.lat], [b.lon, b.lat]] } });
+    const vis = visData(); if (vis) vis.edges.add({ id: l.id, from: l.from, to: l.to, arrows: l.bidirectional ? "to, from" : "to" });
+  }
+  // One step onto NORA; false when it no longer applies (the data changed under it).
+  function applyEdit(step) {
+    const A = NORA.assets, has = (id, kind) => A[id] && A[id].kind === kind;
+    if (step.op === "removeNode" && has(step.id, "node")) { dropNode(step.id); return true; }
+    if (step.op === "removeLine" && has(step.id, "pipeline")) { dropLine(step.id); return true; }
+    if (step.op === "addNode" && step.node && !A[step.node.id]) { putNode(step.node); return true; }
+    if (step.op === "addLine" && step.line && !A[step.line.id] && has(step.line.from, "node") && has(step.line.to, "node")) { putLine(step.line); return true; }
+    return false;
+  }
+  const edits = storedEdits().filter(applyEdit);
   const assets = NORA.assets;
   const nameOf = (id) => (assets[id] || {}).name || id;
 
@@ -1470,7 +1550,7 @@ const App = (() => {
 
   /* The asset sidebar: a calm column that slides in from the right when a field,
      plant or line is clicked on the unit screen, and follows the data as it plays. */
-  const side = { id: null, marker: null };
+  const side = { id: null, marker: null, form: false }; // form: a new node or line (the editor)
   function openSidebar(id) {
     if (!assets[id]) return;
     side.id = id;
@@ -1491,6 +1571,7 @@ const App = (() => {
   function closeSidebar() {
     side.id = null;
     side.marker = null;
+    side.form = false;
     $("asset-side").classList.remove("open");
     $("asset-side").setAttribute("aria-hidden", "true");
   }
@@ -1817,7 +1898,7 @@ const App = (() => {
             item(h("span", null, "▶"), "Play / scrub"),
             item(h("span", null, "↗"), "Click for details"),
             item(h("span", null, "⌁"), "What-if: click offline"),
-            item(h("span", null, "↔"), "Year: past / future"))),
+            item(h("span", null, "⋯"), "Right-click: add, connect or remove"))),
         section("Moving", false, h("ul", null,
           item(svg("0 0 26 14", `<path d="M17 7l-8-4.5v9z" fill="${COLORS.pig}" stroke="${COLORS.casing}"/>`), "Pig"),
           item(svg("0 0 26 14", `<line x1="3" y1="7" x2="23" y2="7" stroke="${COLORS.peak}" stroke-width="4"/><circle cx="13" cy="7" r="5" fill="${COLORS.peak}" stroke="${COLORS.casing}"/>`), "Peak"),
@@ -2275,7 +2356,236 @@ const App = (() => {
     });
     items.push({ label: "Open the full page", act: () => go({ screen: "asset", asset: id }) });
     if (d.kind === "node") items.push({ label: "Diagnostics", act: () => go({ screen: "diag", asset: id }) });
+    if (!embed) {
+      items.push("-");
+      if (d.kind === "node" && ctx.connect) items.push({ label: "Connect to another node…", act: ctx.connect });
+      items.push(d.kind === "node"
+        ? { label: "Remove from the network", act: () => commitEdit({ op: "removeNode", id }) }
+        : { label: "Remove this line", act: () => commitEdit({ op: "removeLine", id }) });
+    }
     return items;
+  }
+
+  // ------------------------------------------------------------------ editing the network
+  /* The edits themselves are at the top (applyEdit): here are the right-click actions,
+     the forms for a new node or line, and the bar that lists the changes with Undo,
+     Save and Discard. An edit reloads the page with the view kept, so every index is
+     rebuilt from the edited NORA. */
+  const slug = (text) => text.toLowerCase().replace(/ø/g, "o").replace(/æ/g, "ae").normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "asset";
+  function uniqueId(name) {
+    const base = slug(name);
+    let id = base;
+    for (let n = 2; assets[id]; n++) id = `${base}_${n}`;
+    return id;
+  }
+  function reloadKeepingView() {
+    try {
+      const flow = views.flow && views.flow.ready && views.flow.viewport ? views.flow.viewport() : null;
+      sessionStorage.setItem("nora-restore", JSON.stringify({ view: state.view, mode: state.mode, flow }));
+    } catch (error) { /* a plain reload then */ }
+    if (location.reload) location.reload();
+  }
+  function takeRestore() {
+    try {
+      const restore = JSON.parse(sessionStorage.getItem("nora-restore") || "null");
+      sessionStorage.removeItem("nora-restore");
+      return restore;
+    } catch (error) { return null; }
+  }
+  let restored = null; // read once at start; the Flow view takes its viewport
+  function commitEdit(step) {
+    edits.push(step);
+    if (!storeEdits(edits)) { edits.pop(); editNote("This browser does not keep edits: its storage is blocked."); return; }
+    reloadKeepingView();
+  }
+  function undoEdit() { edits.pop(); storeEdits(edits); reloadKeepingView(); }
+  function discardEdits() { edits.length = 0; storeEdits(edits); reloadKeepingView(); }
+
+  function openForm(title, sub, form) {
+    side.id = null;
+    side.marker = null;
+    side.form = true;
+    $("side-title").textContent = title;
+    $("side-sub").textContent = sub;
+    $("side-body").replaceChildren(form);
+    $("asset-side").classList.add("open");
+    $("asset-side").setAttribute("aria-hidden", "false");
+    const first = form.querySelector && form.querySelector("input");
+    if (first && first.focus) first.focus();
+  }
+  const field = (label, input, hint) => h("label", { class: "field" }, h("span", null, label), input, hint ? h("small", null, hint) : null);
+  const formActions = (submit) => h("div", { class: "actions" },
+    h("button", { type: "submit", class: "primary" }, submit),
+    h("button", { type: "button", onclick: closeSidebar }, "Cancel"));
+  /* A new node where the Flow view was right-clicked (`grid`: its stage and rank). The
+     nearest node lends its unit, country and position as a start: the Map needs real
+     coordinates, so they are asked for. */
+  function openNodeForm({ grid, near }) {
+    const anchor = near && assets[near];
+    const name = h("input", { name: "name", autocomplete: "off", placeholder: "e.g. Snorre" });
+    const type = h("select", { name: "type" }, ...Object.entries(NORA.nodeTypes).map(([key, label]) => h("option", { value: key }, label)));
+    const unit = h("select", { name: "unit" }, ...NORA.units.map((u) => h("option", { value: u.id }, u.name)));
+    if (anchor) unit.value = unitOf[near] || NORA.units[0].id;
+    const lat = h("input", { name: "lat", type: "number", step: "0.001" });
+    const lon = h("input", { name: "lon", type: "number", step: "0.001" });
+    const country = h("input", { name: "country", maxlength: "2" });
+    lat.value = anchor ? anchor.lat.toFixed(3) : "";
+    lon.value = anchor ? anchor.lon.toFixed(3) : "";
+    country.value = anchor ? anchor.country : "NO";
+    const capacity = h("input", { name: "capacity", type: "number", step: "0.1", min: "0", placeholder: "MSm³/d" });
+    const note = h("p", { class: "form-note", role: "alert" });
+    const form = h("form", {
+      class: "edit-form",
+      onsubmit: (event) => {
+        event.preventDefault();
+        const node = {
+          name: name.value.trim(), type: type.value, unit: unit.value, country: country.value.trim().toUpperCase(),
+          lat: Number(lat.value), lon: Number(lon.value), capacity: capacity.value === "" ? null : Number(capacity.value), grid,
+        };
+        const problem = !node.name ? "Give the node a name."
+          : lat.value === "" || !(node.lat >= -90 && node.lat <= 90) ? "Latitude is in °N, from -90 to 90."
+          : lon.value === "" || !(node.lon >= -180 && node.lon <= 180) ? "Longitude is in °E (west is negative), from -180 to 180."
+          : !/^[A-Z]{2}$/.test(node.country) ? "The country is two letters, such as NO or GB."
+          : NORA.supplyTypes.includes(node.type) && !(node.capacity > 0) ? `${NORA.nodeTypes[node.type]}: give its capacity in MSm³/d.`
+          : null;
+        if (problem) { note.textContent = problem; return; }
+        commitEdit({ op: "addNode", node: { id: uniqueId(node.name), ...node } });
+      },
+    },
+    field("Name", name), field("Type", type), field("Unit", unit),
+    h("div", { class: "field-pair" }, field("Latitude °N", lat), field("Longitude °E", lon, "West is negative")),
+    h("div", { class: "field-pair" }, field("Country", country), field("Capacity MSm³/d", capacity, "Needed for fields")),
+    note, formActions("Add node"));
+    openForm("New node", anchor ? `Placed near ${anchor.name}; connect it with a right-click` : "Connect it with a right-click", form);
+  }
+  // A new line between two nodes (from the Flow view's "Connect to another node…").
+  function openLineForm(from, to) {
+    const name = h("input", { name: "name", autocomplete: "off" });
+    name.value = `${nameOf(from)} – ${nameOf(to)}`;
+    const type = h("select", { name: "type" }, ...Object.entries(NORA.pipelineTypes).map(([key, label]) => h("option", { value: key }, label)));
+    type.value = "feeder";
+    const capacity = h("input", { name: "capacity", type: "number", step: "0.1", min: "0", placeholder: "MSm³/d" });
+    const twoWay = h("input", { name: "bidirectional", type: "checkbox" });
+    const note = h("p", { class: "form-note", role: "alert" });
+    const existing = pipeIds.find((pid) => [assets[pid].from, assets[pid].to].sort().join() === [from, to].sort().join());
+    if (existing) note.textContent = `${nameOf(existing)} already joins these two.`;
+    const form = h("form", {
+      class: "edit-form",
+      onsubmit: (event) => {
+        event.preventDefault();
+        const line = { name: name.value.trim(), from, to, type: type.value, capacity: capacity.value === "" ? null : Number(capacity.value), bidirectional: twoWay.checked };
+        if (!line.name) { note.textContent = "Give the line a name."; return; }
+        if (from === to) { note.textContent = "A line joins two different nodes."; return; }
+        commitEdit({ op: "addLine", line: { id: uniqueId(line.name), ...line } });
+      },
+    },
+    field("Name", name), field("Type", type), field("Capacity MSm³/d", capacity, "Leave empty if unknown"),
+    h("label", { class: "field check" }, twoWay, h("span", null, "Gas can flow both ways")),
+    note, formActions("Add line"));
+    openForm("New line", `${nameOf(from)} to ${nameOf(to)}`, form);
+  }
+
+  /* The data files with the edits in: the rows nobody touched stay exactly as they are
+     (NORA.sources is the files as built), removed rows go, new rows are appended. */
+  const csvField = (value) => {
+    const text = value == null ? "" : String(value);
+    return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  };
+  function editedCsv(name, kind, row) {
+    const source = NORA.sources[name] || "";
+    const lines = source.split(/\r?\n/), header = lines[0].split(",");
+    const kept = lines.slice(1).filter((line) => line.trim() && assets[line.split(",")[0]] && assets[line.split(",")[0]].kind === kind);
+    const added = Object.keys(assets).filter((id) => assets[id].kind === kind && assets[id].edited)
+      .map((id) => header.map((column) => csvField(row(id)[column])).join(","));
+    return [lines[0], ...kept, ...added].join("\n") + "\n";
+  }
+  const nodeRow = (id) => {
+    const d = assets[id];
+    return { id, name: d.name, type: d.type, country: d.country, lat: d.lat, lon: d.lon, operator: "", capacity_msm3d: d.capacity,
+      status: "operating", startup: null, shutdown: null, source: "", notes: "Added in the NORA editor" };
+  };
+  const lineRow = (id) => {
+    const d = assets[id];
+    return { id, name: d.name, from: d.from, to: d.to, type: d.type, length_km: null, diameter_in: null, capacity_msm3d: d.capacity,
+      bidirectional: d.bidirectional ? "true" : "false", commissioned: null, status: "operating", operator: "", source: "", notes: "Added in the NORA editor" };
+  };
+  function editedUnits() {
+    const source = NORA.sources["units.toml"] || "", start = source.indexOf("[units.");
+    const head = start >= 0 ? source.slice(0, start) : "";
+    const list = (ids) => { // one line when it fits, else wrapped as the file is (edit.py)
+      const items = ids.map((n) => JSON.stringify(n)), line = `nodes = [${items.join(", ")}]`;
+      if (line.length <= 100) return line;
+      const rows = [];
+      let row = "   ";
+      for (const item of items) {
+        if (row.length + item.length + 2 > 92) { rows.push(row.trimEnd()); row = "   "; }
+        row += ` ${item},`;
+      }
+      rows.push(row.trimEnd());
+      return `nodes = [\n${rows.join("\n")}\n]`;
+    };
+    return head + NORA.units.map((u) => `[units.${u.id}]\nname = ${JSON.stringify(u.name)}\n${list(u.nodes)}\n`).join("\n");
+  }
+  const editedFiles = () => ({ "nodes.csv": editedCsv("nodes.csv", "node", nodeRow), "pipelines.csv": editedCsv("pipelines.csv", "pipeline", lineRow), "units.toml": editedUnits() });
+  // The full network for `nora serve --edit` (POST api/save): its rows, with the edits.
+  function editedNetwork(current) {
+    let nodeRows = current.nodes.slice(), lineRows = current.pipelines.slice();
+    const units = {};
+    for (const step of edits) {
+      if (step.op === "removeNode") {
+        nodeRows = nodeRows.filter((n) => n.id !== step.id);
+        lineRows = lineRows.filter((p) => p.from !== step.id && p.to !== step.id);
+      } else if (step.op === "removeLine") lineRows = lineRows.filter((p) => p.id !== step.id);
+      else if (step.op === "addNode" && assets[step.node.id]) { nodeRows.push(nodeRow(step.node.id)); units[step.node.id] = unitOf[step.node.id]; }
+      else if (step.op === "addLine" && assets[step.line.id]) lineRows.push(lineRow(step.line.id));
+    }
+    for (const id of Object.keys(units)) if (!nodeRows.some((n) => n.id === id)) delete units[id];
+    return { revision: current.revision, nodes: nodeRows, pipelines: lineRows, units };
+  }
+  /* Save: served by `nora serve --edit` (make edit), the edits go straight into data/
+     and the site rebuilds; anywhere else (a file, GitHub Pages) the three files download,
+     ready to put in data/ and commit. */
+  async function saveEdits() {
+    editNote("Saving…");
+    let current = null;
+    try {
+      const response = await fetch("api/network", { cache: "no-store" });
+      if (response.ok) current = await response.json();
+    } catch (error) { current = null; }
+    if (!current) { downloadEdits(); return; }
+    try {
+      const response = await fetch("api/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editedNetwork(current)) });
+      const result = await response.json().catch(() => ({}));
+      if (response.ok && result.saved) { edits.length = 0; storeEdits(edits); reloadKeepingView(); return; }
+      editNote(`Not saved: ${(result.problems || [result.error || response.statusText]).join("; ")}`);
+    } catch (error) { editNote(`Not saved: ${error.message}`); }
+  }
+  function downloadEdits() {
+    for (const [name, text] of Object.entries(editedFiles())) {
+      const link = h("a", { href: URL.createObjectURL(new Blob([text], { type: "text/plain" })), download: name });
+      document.body.append(link);
+      link.click();
+      link.remove();
+    }
+    editNote("Downloaded nodes.csv, pipelines.csv and units.toml for data/. `make edit` saves straight to data/ and also clears removed assets from the streams.");
+  }
+  let editsBar = null, editMessage = "", confirmDiscard = false;
+  function editNote(text) { editMessage = text; renderEditsBar(); }
+  function renderEditsBar() {
+    if (!edits.length) { if (editsBar) { editsBar.remove(); editsBar = null; } return; }
+    if (!editsBar) {
+      editsBar = h("div", { class: "edits-bar", role: "status", "aria-live": "polite" });
+      document.body.append(editsBar);
+    }
+    const button = (label, act, cls) => h("button", { type: "button", class: cls, onclick: act }, label);
+    editsBar.replaceChildren(
+      h("span", { class: "count" }, `${edits.length} ${edits.length === 1 ? "change" : "changes"} to the network`),
+      h("span", { class: "dim" }, editMessage || "kept in this browser until saved"),
+      button("Undo", undoEdit),
+      button("Save", saveEdits, "primary"),
+      confirmDiscard ? button("Discard all?", discardEdits, "danger") : button("Discard", () => { confirmDiscard = true; renderEditsBar(); }),
+    );
   }
 
   function markTabs() {
@@ -2295,7 +2605,7 @@ const App = (() => {
     });
     $("theme-toggle").addEventListener("click", () => setTheme(theme === "light" ? "dark" : "light"));
     $("side-close").addEventListener("click", closeSidebar);
-    addEventListener("keydown", (e) => { if (e.key === "Escape" && side.id) closeSidebar(); });
+    addEventListener("keydown", (e) => { if (e.key === "Escape" && (side.id || side.marker || side.form)) closeSidebar(); });
     addEventListener("click", closeMenu);
     addEventListener("resize", closeMenu);
     addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(); });
@@ -2331,6 +2641,12 @@ const App = (() => {
     if (views[params.get("view")]) state.view = params.get("view");
     if (["live", "load", "risk", "whatif", "plain"].includes(params.get("mode"))) state.mode = params.get("mode");
     state.year = new Date().getFullYear();
+    restored = takeRestore(); // after an edit: the same view and mode as before the reload
+    if (restored) {
+      if (views[restored.view]) state.view = restored.view;
+      if (["live", "load", "risk", "whatif", "plain"].includes(restored.mode)) state.mode = restored.mode;
+    }
+    renderEditsBar();
     markTabs();
     renderWhatif();
     buildKey();
@@ -2412,5 +2728,15 @@ const App = (() => {
     selectMarker: openMarker, // a click on a pig or a peak, from any view
     feed: { frame: receiveFrame, trouble: feedTrouble }, // the live feed's handlers, for tests
     menu: { open: openMenu, close: closeMenu, for: menuFor },
+    // The editor: the Flow view's right-click on empty paper, its connect step, the
+    // edited data files and network, and the viewport to restore after an edit.
+    edit: {
+      canvasMenu: (ctx) => (embed ? [] : [{ label: "Add a node here", act: () => openNodeForm(ctx) }]),
+      lineForm: openLineForm,
+      list: () => edits.slice(),
+      files: editedFiles,
+      network: editedNetwork,
+      viewport: () => (restored && restored.flow) || null,
+    },
   };
 })();

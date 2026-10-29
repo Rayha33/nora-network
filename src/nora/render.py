@@ -291,6 +291,7 @@ def page_payload(
     links: dict | None,
     config: dict,
     units: list[dict],
+    data_dir: Path = DATA_DIR,
 ) -> dict:
     """The `NORA` global the page embeds: everything both views and the screens read.
     One function, so the page and the JS test fixture can never disagree."""
@@ -325,6 +326,14 @@ def page_payload(
             stream.payload() | {"plan": plan_timeline(stream, net, config)} for stream in streams
         ],
         "links": links or {},
+        "supplyTypes": list(SUPPLY_TYPES),
+        # The data files as they are, for the editor's download: an edited network goes
+        # back as the same files with only the edited rows changed (templates/app.js).
+        "sources": {
+            name: (Path(data_dir) / name).read_text(encoding="utf-8")
+            for name in ("nodes.csv", "pipelines.csv", "units.toml")
+            if (Path(data_dir) / name).exists()
+        },
     }
 
 
@@ -335,6 +344,7 @@ def network_html(
     links: dict | None = None,
     config: dict | None = None,
     units: list[dict] | None = None,
+    data_dir: Path = DATA_DIR,
 ) -> str:
     """The app as a single HTML document."""
     config = config or load_config()
@@ -353,5 +363,7 @@ def network_html(
         "flow_js": (TEMPLATES / "flow.js").read_text(encoding="utf-8"),
     }
     view.templateEnv.globals["maplibre"] = MAPLIBRE
-    view.templateEnv.globals["nora"] = page_payload(net, analysis, streams, links, config, units)
+    view.templateEnv.globals["nora"] = page_payload(
+        net, analysis, streams, links, config, units, data_dir
+    )
     return view.generate_html()

@@ -19,11 +19,13 @@
      square is one size, so the drawing reads as a tidy grid. No icons: space is for numbers. */
   const CIRC = { r: 30, name: 14, sub: 12, trend: 12, pad: 8 };
   const SQUARE = { live: 64, plain: 30, corner: 4 }; // half a side, in canvas units
+  const MAX_SCALE = 1.75; // the closest zoom: a live square about 220 px wide
   /* Zoomed out, a square keeps its zoom-1 size or at least 22 px a half on screen, so its
      numbers stay readable, but never outgrows its cell: the name below it and the next
      row need their room (squares overlapped in the fitted overview). `cell` is the
      spacing of the rows and columns of nodes, in canvas units, set by layout(). */
   let cell = { down: Infinity, across: Infinity };
+  let gaps = { stage: 1, rank: 1 }; // canvas units per stage and per rank, from layout()
   function overviewSquareHalf(scale, grid = cell) {
     if (scale >= 1) return SQUARE.live;
     const s = Math.max(0.01, scale);
@@ -77,6 +79,7 @@
     framePos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id,
       direction === "vertical" ? { x: rank * rankGap, y: stage * stageGap } : { x: stage * stageGap, y: rank * rankGap }]));
     cell = direction === "vertical" ? { down: stageGap, across: rankGap } : { down: rankGap, across: stageGap };
+    gaps = { stage: stageGap, rank: rankGap };
     nodes.update(Object.entries(framePos).map(([id, p]) => ({ id, x: p.x, y: p.y })));
   }
 
@@ -653,15 +656,66 @@
     }
     return true;
   }
+  /* The editor (App.edit): where a new node goes, and joining two nodes. A right-click
+     on empty paper gives the stage and rank under the pointer and the nearest node,
+     whose unit and position the new node's form starts from. */
+  function placeAt(point) {
+    const [stage, rank] = direction === "vertical" ? [point.y / gaps.stage, point.x / gaps.rank] : [point.x / gaps.stage, point.y / gaps.rank];
+    let near = null, best = Infinity;
+    for (const [id, p] of Object.entries(network.getPositions())) {
+      const d = Math.hypot(p.x - point.x, p.y - point.y);
+      if (d < best && !nodeHidden(id)) { best = d; near = id; }
+    }
+    return { grid: [Math.round(stage * 100) / 100, Math.round(rank * 100) / 100], near };
+  }
+  let connecting = null; // { from, at }: "Connect to another node…" is waiting for a click
+  function startConnect(from) {
+    connecting = { from, at: null };
+    el.style.cursor = "crosshair";
+    network.redraw();
+  }
+  function finishConnect(to) {
+    const from = connecting && connecting.from;
+    connecting = null;
+    el.style.cursor = "";
+    network.redraw();
+    if (from && to && to !== from && NORA.assets[to] && NORA.assets[to].kind === "node") App.edit.lineForm(from, to);
+  }
+  // The line about to be made, from the node to the pointer, with what to do next.
+  function drawConnecting(ctx) {
+    if (!connecting) return;
+    const ratio = (network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
+    const a = network.canvasToDOM(network.getPositions([connecting.from])[connecting.from]);
+    const b = connecting.at || { x: a.x, y: a.y + 40 };
+    ctx.save();
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.strokeStyle = C.text;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = "12px Archivo, system-ui, sans-serif";
+    ctx.textBaseline = "top";
+    ctx.lineJoin = "round"; ctx.lineWidth = 3; ctx.strokeStyle = C.paper; ctx.fillStyle = C.text;
+    const hint = "Click the node to connect to · Esc cancels";
+    ctx.strokeText(hint, b.x + 12, b.y + 12);
+    ctx.fillText(hint, b.x + 12, b.y + 12);
+    ctx.restore();
+  }
+  view.viewport = () => (network ? { position: network.getViewPosition(), scale: network.getScale() } : null);
   function overlay(ctx) {
     try { overlayNow(ctx); } finally { App.frame.end(); }
   }
   function overlayNow(ctx) {
     const positions = network.getPositions();
     lineValueBoxes = drawLineValues(ctx, positions);
+    drawConnecting(ctx);
     for (const id of App.pipeIds) {
       const s = App.pipeStyle(id), e = edges.get(id);
-      if (s.level && !lineHidden(id) && e) { const m = pointAlong(e, 0.5, positions); App.drawBadge(ctx, s.level, m.x + 12, m.y, 7); }
+      if (s.level && !lineHidden(id) && e) {
+        const m = pointAlong(e, 0.5, positions), end = valueEnds[id], scale = network.getScale();
+        App.drawBadge(ctx, s.level, end ? end.x + 10 / scale : m.x + 12, end ? end.y : m.y, 7); // beside the value, never on it
+      }
     }
     drawMarks(); // the moving layer follows every redraw: a pan, a zoom, a dragged node
   }
@@ -687,6 +741,9 @@
       ctx.clearRect(0, 0, marks.width, marks.height);
       if (App.state.mode !== "live") return;
       const scale = network.getScale();
+      ctx.save();
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      clipValues(ctx, w, h);
       // At low zoom a stub outside its own node can cross a neighbour. Keep the fitted
       // overview calm; these decorative strokes only appear once the drawing has room.
       if (animateStubs(scale)) {
@@ -696,7 +753,18 @@
       }
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       drawMoving(ctx, framePos, scale);
+      ctx.restore();
     });
+  }
+  /* A line's value stays readable while a peak, a slug or a pig passes it (Ray, 29 Oct:
+     "i cant see the settle out pressure when a peak is passing"): the moving layer is
+     drawn everywhere except on the values' paper patches (screen pixels). */
+  function clipValues(ctx, w, h) {
+    if (!lineValueBoxes.length) return;
+    ctx.beginPath();
+    ctx.rect(0, 0, w, h);
+    for (const [x0, y0, x1, y1] of lineValueBoxes) ctx.rect(x0, y0, x1 - x0, y1 - y0);
+    ctx.clip("evenodd");
   }
   /* Simulated flow at the nodes, not on the lines (same as the Map view): short solid
      bands sliding into the icon where gas arrives and out of it where gas leaves, scaled
@@ -812,10 +880,13 @@
     marks.setAttribute("aria-hidden", "true");
     container.append(marks);
     marksCtx = marks.getContext("2d");
-    // No zooming out far past the whole network: it would only shrink it to a speck.
+    // No zooming out far past the whole network: it would only shrink it to a speck;
+    // nor in past a square about 220 px wide (Ray, 29 Oct: "i shouldnt be able to zoom
+    // in more than about this").
     network.on("zoom", () => {
-      const min = minScale();
-      if (network.getScale() < min) network.moveTo({ scale: min, animation: false });
+      const min = minScale(), scale = network.getScale();
+      if (scale < min) network.moveTo({ scale: min, animation: false });
+      else if (scale > MAX_SCALE) network.moveTo({ scale: MAX_SCALE, animation: false });
     });
     if (App.embed) network.setOptions({ interaction: { zoomView: false } });
     nodes.update(App.nodeIds.map((id) => ({ id, shape: "custom", ctxRenderer: card(id), label: "" })));
@@ -839,6 +910,7 @@
     network.on("hoverNode", ({ node }) => nodes.update({ id: node, title: tooltip(node) }));
     network.on("click", (event) => {
       const at = event.pointer && event.pointer.DOM;
+      if (connecting) { finishConnect(event.nodes[0] || (at && hitTest(at, network.getPositions(), (p) => network.canvasToDOM(p), network.getScale()))); return; }
       const mark = at && markAt(at.x, at.y); // a pig or a peak under the pointer wins
       if (mark) { App.selectMarker(mark.key); return; }
       const id = event.nodes[0] || event.edges[0] || (at && hitTest(at, network.getPositions(), (p) => network.canvasToDOM(p), network.getScale()));
@@ -849,16 +921,31 @@
     container.addEventListener("contextmenu", (e) => {  // capture: vis may stop the event at its canvas
       if (!view.ready) return;
       const rect = container.getBoundingClientRect();
-      const best = hitTest({ x: e.clientX - rect.left, y: e.clientY - rect.top }, network.getPositions(), (p) => network.canvasToDOM(p), network.getScale());
-      if (!best) return; // empty canvas: leave the browser's own menu
+      const at = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      const best = hitTest(at, network.getPositions(), (p) => network.canvasToDOM(p), network.getScale());
       e.preventDefault();
-      App.menu.open(e.clientX, e.clientY, App.menu.for(best));
+      if (!best) { // empty paper: a new node here, in the stage and rank under the pointer
+        const items = App.edit.canvasMenu(placeAt(network.DOMtoCanvas(at)));
+        if (items.length) App.menu.open(e.clientX, e.clientY, items);
+        return;
+      }
+      const connect = NORA.assets[best].kind === "node" ? () => startConnect(best) : null;
+      App.menu.open(e.clientX, e.clientY, App.menu.for(best, { connect }));
     }, true); // capture phase: vis stops the event at its canvas
     view.ready = true;
     layout();
     view.restyle();
     // the canvas has its real size only after the first draw: fit then
+    kept = App.edit.viewport(); // after an edit, the drawing as it was, until it is moved
+    for (const moved of ["dragStart", "zoom"]) network.on(moved, () => { kept = null; });
     network.once("afterDrawing", () => { layout(); view.setUnit(App.route.unit); });
+    container.addEventListener("pointermove", (e) => {
+      if (!connecting) return;
+      const rect = container.getBoundingClientRect();
+      connecting.at = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      network.redraw();
+    });
+    addEventListener("keydown", (e) => { if (e.key === "Escape" && connecting) finishConnect(null); });
   };
 
   /* What a node or line looks like to vis-network. The player restyles four times a
@@ -905,31 +992,36 @@
   };
   view.changes = () => ({ nodes: changes(App.nodeIds, nodeLook), lines: changes(App.pipeIds, lineLook) }); // for tests
 
-  /* Line values, drawn over the lines at their middle on a paper patch, as vis drew its
-     labels (11 px in canvas units, so they scale with the zoom; hidden when too small to
-     read). Returns their screen boxes, so marker labels keep clear of them. */
+  /* Line values, drawn over the lines at their middle on a paper patch, at one screen
+     size whatever the zoom, like every other number (Ray, 29 Oct: "when i zoom in some
+     of the numbers become smaller than others"); hidden zoomed far out, where they
+     would crowd. Returns their screen boxes, so marker labels and badges keep clear. */
   function drawLineValues(ctx, positions) {
     const scale = network.getScale(), boxes = [];
-    if (11 * scale < 5) return boxes;
+    valueEnds = {};
+    if (scale < 0.45) return boxes;
+    const ratio = (network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
     ctx.save();
-    ctx.font = "11px Archivo, system-ui, sans-serif";
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.font = modelFont("12px Archivo, system-ui, sans-serif");
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     for (const id of App.pipeIds) {
       const s = App.pipeStyle(id), p = NORA.assets[id], a = positions[p.from], b = positions[p.to];
       if (!s.label || lineHidden(id) || !a || !b) continue;
-      const x = (a.x + b.x) / 2, y = (a.y + b.y) / 2, w = ctx.measureText(s.label).width;
+      const at = network.canvasToDOM({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }), w = ctx.measureText(s.label).width;
       ctx.globalAlpha = s.dim ? 0.35 : 1;
       ctx.fillStyle = C.paper;
-      ctx.fillRect(x - w / 2 - 2, y - 7, w + 4, 14);
+      ctx.fillRect(at.x - w / 2 - 3, at.y - 8, w + 6, 16);
       ctx.fillStyle = C.text_dim;
-      ctx.fillText(s.label, x, y);
-      const lo = network.canvasToDOM({ x: x - w / 2 - 2, y: y - 7 }), hi = network.canvasToDOM({ x: x + w / 2 + 2, y: y + 7 });
-      boxes.push([lo.x, lo.y, hi.x, hi.y]);
+      ctx.fillText(s.label, at.x, at.y);
+      boxes.push([at.x - w / 2 - 3, at.y - 8, at.x + w / 2 + 3, at.y + 8]);
+      valueEnds[id] = network.DOMtoCanvas({ x: at.x + w / 2 + 3, y: at.y });
     }
     ctx.restore();
     return boxes;
   }
+  let valueEnds = {}; // where each line's value ends (canvas units): its alarm badge goes beside it
 
   // Every frame while playing: only the moving layer. The circles follow each data step.
   view.draw = () => { if (App.state.mode === "live" && App.live.playing) drawMarks(); };
@@ -949,8 +1041,10 @@
     const w = Math.max(...xs) - Math.min(...xs) + margin, h = Math.max(...ys) - Math.min(...ys) + margin;
     return Math.min(el.clientWidth / w, el.clientHeight / h) * 0.8;
   }
+  let kept = null; // the viewport an edit's reload restores (App.edit.viewport)
   view.setUnit = (unit) => {
     if (!view.ready) return;
+    if (kept) { network.moveTo({ position: kept.position, scale: kept.scale, animation: false }); return; }
     const members = (unit === "all" ? App.nodeIds : App.units[unit].nodes).filter((id) => !nodeHidden(id));
     network.fit({ nodes: members, animation: false });
     network.moveTo({ scale: network.getScale() * 0.92, animation: false }); // room for row names
@@ -964,7 +1058,7 @@
   view.focus = (id, animate) => {
     if (!view.ready) return;
     const animation = animate && !App.reduceMotion ? { duration: 500 } : false;
-    const scale = Math.max(network.getScale(), 1.1);
+    const scale = Math.min(MAX_SCALE, Math.max(network.getScale(), 1.1));
     if (nodes.get(id)) network.focus(id, { scale, animation });
     else if (edges.get(id)) {
       const e = edges.get(id), p = network.getPositions([e.from, e.to]);
@@ -1003,5 +1097,6 @@
   view.card = card; // for tests: the renderer of one node
   view.hitTest = hitTest;
   view.markAt = (x, y) => markAt(x, y); // for tests: the pig or peak at a screen point
+  view.maxScale = MAX_SCALE;
   App.register("flow", view);
 })();

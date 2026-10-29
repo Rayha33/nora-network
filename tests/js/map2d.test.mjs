@@ -832,3 +832,11 @@ test("flow: Poland VTP is on the Map only (Ray, 29 Oct: \"remove poland vtp from
   const pos = { nybro: { x: 0, y: 0 }, pl_vtp: { x: 0, y: 300 } };
   assert.ok(!App.views.flow.lineReadings("nybro", pos).some((l) => l.otherId === "pl_vtp"), "Nybro has no reading or tag for it");
 });
+
+test("flow: no zooming in past a square about 220 px wide (Ray, 29 Oct)", () => {
+  const { App } = loadApp();
+  const side = 2 * App.views.flow.circleRadius() * App.views.flow.maxScale;
+  App.state.mode = "live";
+  assert.ok(App.views.flow.maxScale >= 1.5 && App.views.flow.maxScale <= 2, "about the zoom Ray showed");
+  assert.ok(side > 150, "a live square still has room for its readings");
+});

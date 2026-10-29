@@ -4,14 +4,36 @@
     {
       "name": "nora-site",
       "runtimeExecutable": ".venv/bin/nora",
-      "runtimeArgs": ["serve", "--no-browser", "--port", "8000"],
+      "runtimeArgs": [
+        "serve",
+        "--no-browser",
+        "--port",
+        "8000"
+      ],
       "port": 8000
     },
     {
       "name": "nora-live",
       "runtimeExecutable": ".venv/bin/nora",
-      "runtimeArgs": ["live", "--no-browser", "--port", "8765"],
+      "runtimeArgs": [
+        "live",
+        "--no-browser",
+        "--port",
+        "8765"
+      ],
       "port": 8765
+    },
+    {
+      "name": "nora-edit",
+      "runtimeExecutable": ".venv/bin/nora",
+      "runtimeArgs": [
+        "serve",
+        "--edit",
+        "--no-browser",
+        "--port",
+        "8766"
+      ],
+      "port": 8766
     }
   ]
 }

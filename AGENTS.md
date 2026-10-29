@@ -13,6 +13,7 @@ make setup     # once: .venv with NORA and dev tools
 make check     # what CI runs: lint, validate, Python and JS tests, build. Run before every commit.
 make fix       # auto-format and fix lint
 make serve     # build and open the site at http://127.0.0.1:8000
+make edit      # the same, and the network editor's Save writes data/ (right-click in Flow)
 make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 .venv/bin/nora stats            # deliverable gas and the worst single outages
 .venv/bin/nora stream show NAME # what a stream contains

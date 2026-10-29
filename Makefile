@@ -5,7 +5,7 @@ PYTHON ?= $(shell for p in python3.14 python3.13 python3.12 python3.11 python3; 
 	command -v $$p >/dev/null 2>&1 && $$p -c 'import sys; sys.exit(sys.version_info < (3, 11))' 2>/dev/null \
 	&& { echo $$p; break; }; done)
 
-.PHONY: help setup check test test-js lint fix build serve live clean
+.PHONY: help setup check test test-js lint fix build serve edit live clean
 
 help:             ## list the commands
 	@grep -E '^[a-z-]+:.*## ' Makefile | sed 's/:.*## /\t/' | expand -t 12
@@ -42,6 +42,9 @@ build:            ## build the site into ./site
 
 serve:            ## build and open the site on http://127.0.0.1:8000
 	$(NORA) serve
+
+edit:             ## the site with the network editor saving to data/ (right-click in Flow)
+	$(NORA) serve --edit
 
 live:             ## replay the first stream as a live feed on http://127.0.0.1:8765
 	$(NORA) live
