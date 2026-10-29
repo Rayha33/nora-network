@@ -610,3 +610,18 @@ table.data.alarm-table th, table.data.alarm-table td { text-align: left; }
 .pressure-pop h4 { margin: 0 0 4px; font-size: 12.5px; font-weight: 600; color: var(--text); }
 .pressure-pop svg { display: block; width: 100%; height: auto; }
 .pressure-pop p { margin: 4px 0 0; font-size: 11.5px; color: var(--text-dim); line-height: 1.4; }
+
+/* Alarm handling: an acknowledged alarm dims, nothing flashes (hub 3612) */
+.alarm-summary { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin: 0 0 8px; font-size: 12px; }
+.alarm-list li .alarm-end { display: flex; align-items: center; gap: 8px; }
+.alarm-list li.acked .badge, .alarm-table tr.acked .badge, .alarm-counts span.acked .badge { opacity: .5; }
+.alarm-list li.acked > span, .alarm-table tr.acked td.note { color: var(--text-dim); }
+button.ack { height: 22px; padding: 0 8px; border: 1px solid var(--rule); border-radius: 5px; background: none; color: var(--text); font: inherit; font-size: 11px; cursor: pointer; }
+button.ack:hover, button.ack:focus-visible { background: var(--band); }
+.alarm-table td.alarm-do { white-space: nowrap; }
+.alarm-actions { display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+table.data.alarm-table td.note { min-width: 180px; }
+table.data.alarm-table td.network { white-space: normal; min-width: 90px; }
+table.data.alarm-table td.id { font-size: 11px; }
+.alarm-table tr.shelving td { padding-top: 0; }
+.alarm-table tr.shelving select { height: 22px; font-size: 11px; }
