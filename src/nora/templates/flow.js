@@ -984,9 +984,6 @@
     network.on("afterDrawing", overlay);
     /* vis's own hit test does not see the custom circle shape: what vis hit (edges)
        wins, else hitTest finds the circle or line under the pointer. */
-    // The tooltip says what the node is doing now: filled in when the pointer arrives,
-    // not on every step of the player (that re-sent every node to vis).
-    network.on("hoverNode", ({ node }) => nodes.update({ id: node, title: tooltip(node) }));
     network.on("click", (event) => {
       const at = event.pointer && event.pointer.DOM;
       if (connecting) { finishConnect(event.nodes[0] || (at && hitTest(at, network.getPositions(), (p) => network.canvasToDOM(p), network.getScale()))); return; }
@@ -1037,7 +1034,7 @@
      second, and vis re-reads every item it is handed, changed or not: all 144 nodes
      and 75 lines took about 28 ms, a visible stutter four times a second. So only items
      whose look changed are handed over. A node's look is just whether it shows (the
-     circle draws its live numbers itself; the tooltip is filled in on hover); a line's
+     circle draws its live numbers itself, and there is no hover popup); a line's
      value is drawn by the overlay, not as a vis label, and its width is rounded to a
      quarter pixel, so playing the data hands vis almost nothing. */
   const sent = new Map(); // id -> the look last handed to vis
@@ -1058,13 +1055,6 @@
       if (sent.get(id) !== key) { sent.set(id, key); out.push({ id, ...look }); }
     }
     return out;
-  }
-  function tooltip(id) {
-    const s = App.nodeStyle(id);
-    const details = App.state.mode === "live"
-      ? [s.flow ? `${s.flow} MSm³/d` : "", s.pressure].filter(Boolean).join("\n")
-      : s.sub;
-    return `${NORA.assets[id].name}${details ? `\n${details}` : ""}`;
   }
   view.restyle = () => {
     if (!view.ready) return;
