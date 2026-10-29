@@ -395,7 +395,9 @@ const App = (() => {
   function applyPalette() {
     Object.assign(COLORS, PALETTES[theme]);
     const c = COLORS;
-    const card = (fill, ink, dim, edge) => ({ fill, ink, dim, edge });
+    // `soft`: a second ink for numbers that matter less (incoming flows), still easy to read
+    // on the card (Ray, 29 Oct: "the numbers are sometimes difficult to see").
+    const card = (fill, ink, dim, edge) => ({ fill, ink, dim, edge, soft: mix(ink, fill, 0.15) });
     Object.assign(COLORS, theme === "dark" ? {
       surface: c.panel, raised: mix(c.panel, c.active, 0.14), band: mix(c.panel, c.active, 0.22),
       casing: mix(c.paper, "#000000", 0.55),
