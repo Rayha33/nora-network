@@ -14,7 +14,8 @@
    draw(), focus(id, animate), highlight(id), setUnit(id), fit() and resize().
    In the browser console, App.views.map.map and App.views.flow.network are the live
    objects. URL: #/overview, #/unit/<id>, #/asset/<id>, #/diag/<id>; ?view=map|flow,
-   ?mode=live|load|risk|plain, ?stream=<name>, ?autoplay=1, ?live=<event-stream url>. */
+   ?mode=live|load|risk|plain, ?stream=<name>, ?autoplay=1, ?live=<event-stream url on this site
+   or this computer>. */
 const App = (() => {
   "use strict";
 
@@ -2441,6 +2442,17 @@ const App = (() => {
   }
 
   // ------------------------------------------------------------------ live feed
+  /* The feeds ?live= may connect to: this site (`nora live` serves the page and its
+     feed together) or this computer. Any other site is refused, so a link to the public
+     page cannot show someone else's numbers and alarms as NORA's live data. */
+  const LOCAL_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
+  function liveFeedUrl(value) {
+    let url;
+    try { url = new URL(value, location.href); } catch (error) { return null; }
+    if (!/^https?:$/.test(url.protocol)) return null;
+    const here = new URL(location.href);
+    return url.origin === here.origin || LOCAL_HOSTS.includes(url.hostname) ? url.href : null;
+  }
   function connectFeed(url) {
     live.feed = new EventSource(url);
     live.stream = null;
@@ -2886,11 +2898,13 @@ const App = (() => {
     buildKey();
     buildSettings();
     if (!embed && !storedFlag("nora-guide-seen")) openGuide();
-    if (NORA.streams.length || params.has("live")) {
+    const feed = params.has("live") ? liveFeedUrl(params.get("live")) : null;
+    if (params.has("live") && !feed) console.warn(`NORA: live feed ${params.get("live")} refused: only this site or this computer can feed the page`);
+    if (NORA.streams.length || feed) {
       document.body.classList.add("has-player");
       $("player").hidden = false;
     }
-    if (params.has("live")) connectFeed(params.get("live"));
+    if (feed) connectFeed(feed);
     else if (NORA.streams.length) {
       const select = $("stream-select");
       select.replaceChildren(...NORA.streams.map((s) => h("option", { value: s.name }, `${s.title}${s.synthetic ? " (synthetic)" : ""}`)));
@@ -2900,7 +2914,7 @@ const App = (() => {
       setStream(wanted);
     }
     go(fromHash() || (C.screen.start === "network" ? { screen: "unit", unit: "all" } : { screen: "overview" }), false);
-    if (params.get("autoplay") === "1" || (C.screen.autoplay && params.get("autoplay") !== "0" && !params.has("live"))) play();
+    if (params.get("autoplay") === "1" || (C.screen.autoplay && params.get("autoplay") !== "0" && !feed)) play();
     kiosk();
     requestAnimationFrame(tick);
   }
