@@ -2536,7 +2536,7 @@ const App = (() => {
           pig.every ? row("Relaunched", `every ${fmt(pig.every / 3600)} h`) : []),
         note("Estimate from the pig's speed and the route the gas takes through each node.")) };
   }
-  function qualityDetail(m, { row, box, note, volume }) {
+  function qualityDetail(m, { row, box, volume }) {
     const slug = live.slugs.get(m.ref), parcels = live.quality.filter((q) => q.slug === m.ref), q0 = QUALITY[m.gas];
     const head = parcels.reduce((a, b) => (a && a.born <= b.born ? a : b), null), tail = parcels.reduce((a, b) => (a && a.born >= b.born ? a : b), null);
     const headGo = head ? project(head) : null, conc = (value) => (value == null ? "–" : `${fmt(value, q0.digits)} ${q0.unit}`);
@@ -2590,8 +2590,7 @@ const App = (() => {
         box("Handling",
           row("Peak ID", slug ? peakId(slug) : "–"),
           row("Notified", notified),
-          row("Origo ref", h("span", { class: "origo-field" }, origo, origoNote))),
-        note(`Estimate: gas travels at ${fmt(C.pipelines.gas_velocity_mps)} m/s along the line taking most of the flow; where gas joins, it is assumed to carry the median field reading. The volume is the field's gas while its reading stayed over the follow level. Notified and the Origo reference are entered here and kept in this browser.`)) };
+          row("Origo ref", h("span", { class: "origo-field" }, origo, origoNote)))) }; // no closing note (Ray, 29 Oct: "it doesnt add any value")
   }
   // A pig's run: the next node, the receiver at the end of its route, and when.
   function pigTrip(pig, time) {
@@ -2771,11 +2770,14 @@ const App = (() => {
     $("crumb-asset").setAttribute("aria-current", s === "asset" ? "page" : "false");
     $("crumb-diag").setAttribute("aria-current", s === "diag" ? "page" : "false");
     if (s === "unit") {
-      const view = views[state.view];
+      const view = views[state.view], fresh = !view.mounted || view.shownUnit !== route.unit;
       if (!view.mounted) { view.mounted = true; view.mount(containers[state.view]); }
       else view.resize();
       if (view.ready) {
-        view.setUnit(route.unit);
+        // Back to a view, it is where you left it; another unit fits that unit (Ray, 29 Oct:
+        // "the page should stay in the exact same location and not zoom out every time").
+        if (fresh) view.setUnit(route.unit);
+        view.shownUnit = route.unit;
         view.restyle();
         if (route.focus) { view.highlight(route.focus); view.focus(route.focus, true); }
       }
@@ -3763,7 +3765,7 @@ const App = (() => {
     return { revision: current.revision, nodes: nodeRows, pipelines: lineRows, units, layout };
   }
   /* Save: served by `nora serve --edit` (make edit), the edits go straight into data/
-     and the site rebuilds; anywhere else (a file, GitHub Pages) the three files download,
+     and the site rebuilds; anywhere else (a file, the hosted site) the three files download,
      ready to put in data/ and commit. */
   async function saveEdits() {
     editNote("Saving…");

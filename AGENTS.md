@@ -44,7 +44,7 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 | `src/nora/templates/map2d.js` | the same Map view on a plain 2D canvas, used when the browser has no WebGL (or `?map=simple`) |
 | `src/nora/templates/flow.js` | Flow view: the pyvis network on dotted paper, top to bottom |
 | `src/nora/templates/index.html.j2` | the home page: it opens the app (no essay) |
-| `src/nora/site.py` | writes the site folder that GitHub Pages serves |
+| `src/nora/site.py` | writes the site folder that factorlab.app/nora-network/ serves |
 | `src/nora/cli.py` | the `nora` command |
 | `src/nora/edit.py` | the editor's JSON API (`nora serve --edit`) and lossless editing of the data files |
 | `scripts/fetch_*.py` | download real data (ENTSOG, Energinet, SODIR, National Gas) into a stream's raw file |
@@ -110,12 +110,12 @@ calmer, never louder.
 
 ## Workflow
 
-Branch from `main`, open a pull request, and the CI and preview workflows run. A preview
-of the site is posted on the PR. Merging to `main` publishes the site automatically.
+Branch from `main`, open a pull request, and CI runs; its run keeps the built site as an
+artifact. Check a change locally with `make serve`. Merging to `main` publishes the site
+automatically.
 
-The site is published twice from the same build: GitHub Pages
-(https://rayha33.github.io/nora-network/) and a mirror at
-https://factorlab.app/nora-network/ that pulls the `gh-pages` branch every 10 minutes.
-Nothing has to be deployed by hand. [HANDOVER.md](HANDOVER.md) records what has been
+NORA is published in one place only: https://factorlab.app/nora-network/, which copies
+the `gh-pages` branch (built on every merge) every 10 minutes. There are no other NORA
+sites and no PR preview sites (Ray, 29 Oct). Nothing has to be deployed by hand. [HANDOVER.md](HANDOVER.md) records what has been
 done and decided so far; unmerged work in progress from earlier sessions is kept on
 `archive/*` branches.

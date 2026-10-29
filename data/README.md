@@ -65,7 +65,7 @@ the browser until saved; a bar lists them with Undo, Save and Discard. With `mak
 `pipelines.csv`, `units.toml` (a new node joins the unit chosen in its form) and
 `flow_layout.toml` (a dragged or new node keeps its place), and
 rebuilds the site; a hosted NORA (below) saves the same way. Opened as a plain file or on
-GitHub Pages, Save downloads the four files to put here and commit. A new row says "Added in the NORA editor" in `notes`: add its `source`.
+the hosted site, Save downloads the four files to put here and commit. A new row says "Added in the NORA editor" in `notes`: add its `source`.
 
 ### Local edit API
 

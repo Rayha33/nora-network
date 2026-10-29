@@ -4,9 +4,7 @@ An open model of the North Sea gas network that anyone can improve: the fields,
 platforms, processing plants, terminals and pipelines that carry Norwegian, British,
 Dutch and Danish gas to Europe's markets.
 
-**[Open the live site](https://rayha33.github.io/nora-network/)** ·
-[the app on its own](https://rayha33.github.io/nora-network/network.html) ·
-[mirror](https://factorlab.app/nora-network/) ·
+**[Open NORA](https://factorlab.app/nora-network/)** ·
 [contribute](CONTRIBUTING.md)
 
 [![CI](https://github.com/Rayha33/nora-network/actions/workflows/ci.yml/badge.svg)](https://github.com/Rayha33/nora-network/actions/workflows/ci.yml)
@@ -73,8 +71,8 @@ data/streams/ ─► stream.py (import, synthesise) ───────┼─�
                                     live.py ─► /stream (Server-Sent Events) ─► network.html?live=/stream
 ```
 
-Every pull request is checked, built and given its own preview link. Merging to `main`
-publishes the site to GitHub Pages. Details for contributors and AI assistants are in
+Every pull request is checked and built. Merging to `main` publishes the site at
+https://factorlab.app/nora-network/. Details for contributors and AI assistants are in
 [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md).
 
 ## Roadmap

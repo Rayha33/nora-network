@@ -69,14 +69,14 @@ git push origin main
 ## How a change reaches the site
 
 ```
-branch -> pull request -> CI checks + preview link -> review -> merge -> site updates
+branch -> pull request -> CI checks + built site -> review -> merge -> site updates
 ```
 
 - **CI** runs lint, data validation, tests and a full build (`make check` locally).
-- **Preview**: pull requests from branches in this repository get their own copy of the
-  site at `https://rayha33.github.io/nora-network/pr-preview/pr-<number>/`. Pull requests
-  from forks get the built site as a downloadable artifact on the CI run instead.
-- **Merge**: anything merged to `main` is published within a few minutes.
+- **Preview**: every pull request's CI run keeps the built site as a downloadable
+  artifact; `make serve` shows it locally. There are no hosted preview sites.
+- **Merge**: anything merged to `main` is published at https://factorlab.app/nora-network/
+  within about 10 minutes.
 
 ## Good pull requests
 
