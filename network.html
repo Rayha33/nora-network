@@ -2094,8 +2094,10 @@ const App = (() => {
         out.color = m < 0.05 ? COLORS.inactive : COLORS.active;
         // On the line its settle-out pressure (Ray read the line values as "settle out
         // pressure", and his Area D screen shows them there); its flow is in the squares.
+        // The number alone (Ray, 29 Oct: "everyone knows what it is as it is in the center
+        // of the pipeline").
         const sop = settleOut(id);
-        out.label = sop == null ? "" : `sop ${fmt(sop, 1)}`;
+        out.label = sop == null ? "" : fmt(sop, 1);
         const pack = packRate(id); // shown only when the line packs or unpacks
         out.pack = pack != null && Math.abs(pack) >= 0.5 ? `pack ${signed(pack, 1)}` : "";
         out.level = levelOf(id);
@@ -2936,7 +2938,7 @@ const App = (() => {
           item(sample(COLORS.normal, 3), "Normal"),
           item(sample(COLORS.inactive, 3), "Inactive"),
           item(sample(COLORS.inactive, 1.5, ' stroke-dasharray="3 3"'), "No data"))),
-        section("Flow", true, flow, h("p", { class: "key-caption" }, "Flow in MSm³/d: incoming faint, outgoing full · line ends: pressure, ▲▼ bar per hour · on a line: sop, its settle-out pressure (bar), and pack, its line pack change (MSm³/d)"), exit, h("p", { class: "key-caption" }, "Exit delivery")),
+        section("Flow", true, flow, h("p", { class: "key-caption" }, "Flow in MSm³/d: incoming faint, outgoing full · line ends: pressure, ▲▼ bar per hour · mid-line: settle-out pressure (bar), and pack, its line pack change (MSm³/d)"), exit, h("p", { class: "key-caption" }, "Exit delivery")),
         section("Indicators", true, rangeBar({ min: 0, max: 10, value: 6, band: [3, 7], ticks: [{ at: 1.5, level: 3 }, { at: 8.5, level: 3 }], target: 5 }),
           h("p", { class: "key-caption" }, "Band: normal · ◇ target · pointer: now"),
           h("p", { class: "key-caption" }, "Solid: history · dashed: model"))));
