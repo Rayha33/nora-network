@@ -62,6 +62,17 @@ flow quadrants and asset readings use that sign directly. Zeebrugge/IUK is opera
 Interconnector/Fluxys, not GTS. The static GitHub Pages replay cannot poll this API
 because it does not allow cross-origin browser requests; use the local live server above.
 
+The site replays a recorded year of the same pipeline instead: `iuk-flows`, the daily
+physical flow from National Gas's data portal (Bacton into IUK, PUBOB2038, less IUK
+into Bacton, PUBOBJ592). Refresh it with
+
+```bash
+python scripts/fetch_nationalgas.py 2025-10-01 2026-10-28 data/streams/iuk-flows/raw.csv
+```
+
+`--ids` takes other publication ids from the portal's Find gas data list, for any
+other UK entry or exit point.
+
 ## stream.toml reference
 
 ```toml
