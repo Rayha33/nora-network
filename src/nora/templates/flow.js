@@ -714,17 +714,21 @@
   function overlay(ctx) {
     try { overlayNow(ctx); } finally { App.frame.end(); }
   }
+  /* The view the network was last drawn with. Pigs and peaks move on their own canvas
+     every frame; drawn with a view the lines were not (a zoom, or the camera limit,
+     lands between two network frames) they jumped off their line (Ray, 29 Oct: "head
+     and tail peak lines glitches sometimes and moves outside the pipeline"). */
+  let drawnView = null;
+  const sameView = () => {
+    const v = network.body.view;
+    return drawnView && v.scale === drawnView.scale && v.translation.x === drawnView.x && v.translation.y === drawnView.y;
+  };
   function overlayNow(ctx) {
+    const v = network.body.view;
+    drawnView = { scale: v.scale, x: v.translation.x, y: v.translation.y };
     const positions = network.getPositions();
     lineValueBoxes = drawLineValues(ctx, positions);
-    drawConnecting(ctx);
-    for (const id of App.pipeIds) {
-      const s = App.pipeStyle(id), e = edges.get(id);
-      if (s.level && !lineHidden(id) && e) {
-        const m = pointAlong(e, 0.5, positions), end = valueEnds[id], scale = network.getScale();
-        App.drawBadge(ctx, s.level, end ? end.x + 10 / scale : m.x + 12, end ? end.y : m.y, 7); // beside the value, never on it
-      }
-    }
+    drawConnecting(ctx); // no alarm badges on lines (Ray, 29 Oct: "remove the small red squares they serve no purpose")
     drawMarks(); // the moving layer follows every redraw: a pan, a zoom, a dragged node
   }
 
@@ -830,7 +834,7 @@
     for (const m of marksNow) {
       const p = pointAlong(edges.get(m.id), Math.max(0, Math.min(1, m.along)), positions);
       const dom = network.canvasToDOM(p);
-      App.drawMarker(ctx, m, dom.x, dom.y, p.angle, App.markerSize(m.kind), detail, taken);
+      App.drawMarker(ctx, m, dom.x, dom.y, p.angle, App.markerSize(m.kind, (scale - 1) / (MAX_SCALE - 1)), detail, taken);
       if (!m.noDot) drawnMarks.push({ x: dom.x, y: dom.y, m });
     }
   }
@@ -1016,7 +1020,6 @@
      boxes, so marker labels and badges keep clear. */
   function drawLineValues(ctx, positions) {
     const scale = network.getScale(), boxes = [], taken = [...nodeBoxes(), ...(scale < 1 ? overviewBoxes : [])];
-    valueEnds = {};
     const ratio = (network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
     ctx.save();
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -1044,15 +1047,18 @@
       });
       boxes.push(spot.box);
       taken.push(spot.box);
-      valueEnds[id] = network.DOMtoCanvas({ x: spot.box[2], y: spot.at.y });
     }
     ctx.restore();
     return boxes;
   }
-  let valueEnds = {}; // where each line's value ends (canvas units): its alarm badge goes beside it
 
-  // Every frame while playing: only the moving layer. The circles follow each data step.
-  view.draw = () => { if (App.state.mode === "live" && App.live.playing) drawMarks(); };
+  // Every frame while playing: only the moving layer, with the view the lines were
+  // drawn with; after a zoom or a pan the network draws first (and the layer with it).
+  view.draw = () => {
+    if (App.state.mode !== "live" || !App.live.playing || !network) return;
+    if (sameView()) drawMarks();
+    else network.redraw();
+  };
   view.applySettings = () => { if (view.ready) { layout(); view.restyle(); view.setUnit(App.route.unit); } };
   view.theme = () => {
     if (!view.ready) return;
@@ -1062,10 +1068,12 @@
 
   /* The camera stays over the network (Ray, 29 Oct: "i should not be able to move the
      camera way beyond what it shown on the screen"). Before every frame: a drawing
-     larger than the window keeps the window inside its edges, a smaller one stays
-     wholly in view, each with a margin for names and tags. A drag stops at the edge. */
+     larger than the window keeps the window inside its edges (with a margin for names
+     and tags), and one that fits is held in the middle, so zooming out past the whole
+     network no longer slides it to one side (Ray: "that should not happen"). */
   function viewBounds(lo, hi, size, pad) {
-    return [Math.min(lo + size / 2, hi - size / 2) - pad, Math.max(lo + size / 2, hi - size / 2) + pad];
+    if (hi - lo + 2 * pad <= size) return [(lo + hi) / 2, (lo + hi) / 2];
+    return [lo + size / 2 - pad, hi - size / 2 + pad];
   }
   function keepOnNetwork() {
     const view = network.body.view, w = el.clientWidth, h = el.clientHeight, scale = view.scale;

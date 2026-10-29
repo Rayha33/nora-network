@@ -103,7 +103,6 @@ NSTA_ROUTES = {
     "sage": "PL762",
     "seal": "PL1570",
     "iuk": "PL1339",
-    "bbl": "PL2225",
 }
 
 # Dutch routes: NORA pipeline id -> EMODnet pipeline ids, in flow order.

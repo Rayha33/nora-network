@@ -396,6 +396,24 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 .sidebar .box { margin: 0; padding: 20px 0; background: none; border: 0; border-radius: 0; border-bottom: 1px solid var(--rule); box-shadow: none; }
 .sidebar .box:last-of-type { border-bottom: 0; }
 .sidebar .box h2 { margin: 0 0 8px; font-size: 12px; font-weight: 600; color: var(--text-dim); }
+/* An H₂S or CO₂ peak: three figures first, then its route as Sent → Now → ETA, a line
+   that says it in words, and the facts in small groups. Regular weights: no bold. */
+.peak-detail .peak-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin: 18px 0 14px; background: var(--rule); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+.peak-detail .stat { display: grid; gap: 2px; padding: 10px 12px; background: var(--surface); }
+.peak-detail .stat .label, .peak-detail .journey .label { font-size: 11px; color: var(--text-dim); }
+.peak-detail .stat strong { font-size: 18px; font-weight: 500; color: var(--text); white-space: nowrap; }
+.peak-detail .stat .sub, .peak-detail .journey .sub, .peak-detail .origo-field .sub { font-size: 11px; color: var(--text-dim); }
+.peak-detail .journey { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 12px; padding: 0; list-style: none; position: relative; }
+.peak-detail .journey::before { content: ""; position: absolute; left: 6px; right: 6px; top: 6px; border-top: 1px dashed var(--rule-strong); }
+.peak-detail .journey li { position: relative; display: grid; gap: 2px; padding-top: 18px; }
+.peak-detail .journey li::before { content: ""; position: absolute; top: 2px; left: 0; width: 9px; height: 9px; border-radius: 50%; background: var(--panel); border: 1.5px solid var(--text-dim); }
+.peak-detail .journey li.now::before { background: var(--text); border-color: var(--text); }
+.peak-detail .journey strong { font-weight: 500; font-size: 13px; }
+.peak-detail .peak-description { margin: 0 0 4px; font-size: 13px; line-height: 1.45; color: var(--text); }
+.peak-detail .toggle { height: 26px; min-width: 52px; padding: 0 10px; border: 1px solid var(--rule-strong); border-radius: 13px; background: var(--raised); color: var(--text); font-size: 12px; cursor: pointer; }
+.peak-detail .toggle.on { background: var(--selected-bg); color: var(--selected-text); border-color: var(--selected-bg); }
+.peak-detail .origo-field { display: inline-grid; gap: 3px; }
+.peak-detail .origo { width: 90px; height: 28px; padding: 0 8px; border: 1px solid var(--rule-strong); border-radius: 6px; background: var(--raised); color: var(--text); font: 12.5px var(--mono); letter-spacing: 0.08em; }
 .sidebar .state-quiet { margin: 0; font-size: 12px; color: var(--text-dim); }
 .sidebar .facts { gap: 5px 16px; }
 .sidebar .facts dt { font-size: 11.5px; }

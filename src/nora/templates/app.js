@@ -435,8 +435,12 @@ const App = (() => {
      at x, y, turned along the line by `angle`. Each kind has its own shape AND its
      own calm colour, so nothing reads as an alarm badge (triangle/diamond/square in
      amber/orange/red). */
-  function markerSize(kind) {
-    return kind === "pig" ? 16 : 6.5; // pigs must remain visible in a dense operating view
+  /* `closeness` (0 to 1) is how far the view is zoomed in: a marker grows to twice its
+     size, or pigs read as specks beside the squares (Ray, 29 Oct: "when i zoom into a
+     pipeline the pigs become extremely small and difficult to see"). */
+  function markerSize(kind, closeness = 0) {
+    const base = kind === "pig" ? 16 : 6.5; // pigs must remain visible in a dense operating view
+    return base * (1 + Math.max(0, Math.min(1, closeness)));
   }
   function drawMarker(ctx, marker, x, y, angle, size = 7, detail = 1, taken = null) {
     size *= display.scale; // markers are drawn in screen pixels in every view
@@ -1715,23 +1719,89 @@ const App = (() => {
             row("At the origin", `${signed(peak.delta, 1)} MSm³/d in one data step`)),
           note(`Estimate: a change in flow travels with the gas at ${fmt(v)} m/s, spread over the gas of one data step, and fades where other gas joins it.`)) };
     }
-    // An H₂S or CO₂ slug: its head is the parcel that left the field first, its tail the last.
+    return qualityDetail(m, { row, box, note, volume });
+  }
+  /* An H₂S or CO₂ peak (Ray, 29 Oct: "volume (MSm3), Head KP, Tail KP, Sent (CET), ETA
+     (CET), Duration, Max/Min value, Avg value, Notified (yes/no), Origo ref number (5
+     digits), also Network, Location and peakID as well description. make it look nice
+     and easy to understand"). Its head is the parcel that left the field first, its
+     tail the last; a KP is the distance from the start of the line it is on. Notified
+     and the Origo reference are the operator's: kept in this browser per peak. */
+  const cet = (t) => timeFormat(t, { timeZone: "Europe/Oslo", weekday: "short", hour: "2-digit", minute: "2-digit", timeZoneName: "short" });
+  function kpOf(q, time = live.time) {
+    if (!q) return null;
+    const km = assets[q.pid].km || 0;
+    if (q.arrived) return { pid: q.pid, km: q.forward ? km : 0 };
+    const gone = Math.min(km, Math.max(0, ((time - q.t0) * C.pipelines.gas_velocity_mps) / 1000));
+    return { pid: q.pid, km: q.forward ? gone : km - gone };
+  }
+  function peakId(slug) {
+    const gas = slug.metric.split("_")[0].toUpperCase(), place = nameOf(slug.origin).replace(/[^A-Za-zÆØÅæøå]/g, "").slice(0, 3).toUpperCase();
+    return `${gas}-${place}-${timeFormat(slug.first, { timeZone: "Europe/Oslo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(/[^0-9]/g, "")}`;
+  }
+  const PEAK_NOTES = "nora-peak-notes";
+  function peakNotes() { try { return JSON.parse(localStorage.getItem(PEAK_NOTES) || "{}"); } catch (error) { return {}; } }
+  function savePeakNote(slug, change) {
+    const all = peakNotes();
+    all[slug] = { ...(all[slug] || {}), ...change };
+    try { localStorage.setItem(PEAK_NOTES, JSON.stringify(all)); } catch (error) { /* kept for this view only */ }
+  }
+  function qualityDetail(m, { row, box, note, volume }) {
     const slug = live.slugs.get(m.ref), parcels = live.quality.filter((q) => q.slug === m.ref), q0 = QUALITY[m.gas];
     const head = parcels.reduce((a, b) => (a && a.born <= b.born ? a : b), null), tail = parcels.reduce((a, b) => (a && a.born >= b.born ? a : b), null);
-    const ahead = (q) => (q ? project(q) : null), headGo = ahead(head), tailGo = ahead(tail);
-    const conc = (value) => `${fmt(value, q0.digits)} ${q0.unit}`;
-    return { title: `${q0.name} peak`, sub: `${m.value ? `${m.value} ${q0.unit} ` : ""}on ${nameOf(m.id)}${slug ? ` · from ${nameOf(slug.origin)}` : ""}`,
-      body: h("div", { class: "side-detail" },
-        box("Head and tail",
-          headGo ? row("Head reaches", head.arrived ? `${nameOf(head.arrived.node)}: arrived` : at(headGo.next.node, headGo.next.t)) : [],
-          tailGo ? row("Tail reaches", tail.arrived ? `${nameOf(tail.arrived.node)}: arrived` : at(tailGo.next.node, tailGo.next.t)) : [],
-          headGo && headGo.exit ? row("Head leaves at", `${at(headGo.exit.node, headGo.exit.t)}, ${conc(headGo.exit.conc)}`) : [],
-          tailGo && tailGo.exit ? row("Tail leaves at", `${at(tailGo.exit.node, tailGo.exit.t)}, ${conc(tailGo.exit.conc)}`) : []),
-        slug ? box("Volume and origin",
-          row("Total volume", `${volume(slug.volume)} of gas over ${conc(C.quality[m.gas][0] * C.quality.follow_from)}`),
-          row("Origin", `${nameOf(slug.origin)}, first seen ${formatTime(slug.first)}`),
-          row("Strongest at the origin", `${conc(slug.max)}; limit ${conc(C.quality[m.gas][2])}`)) : [],
-        note(`Estimate: gas travels at ${fmt(v)} m/s along the line taking most of the flow; where gas joins, it is assumed to carry the median field reading. The volume is the field's gas while its reading stayed over the follow level.`)) };
+    const headGo = head ? project(head) : null, conc = (value) => (value == null ? "–" : `${fmt(value, q0.digits)} ${q0.unit}`);
+    const values = parcels.map((q) => q.conc), limit = C.quality[m.gas][2];
+    const max = values.length ? Math.max(...values) : null, min = values.length ? Math.min(...values) : null;
+    const avg = values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
+    const headKp = kpOf(head), tailKp = kpOf(tail), step = (live.stream && live.stream.step) || 3600;
+    const exit = headGo && headGo.exit, origin = slug ? slug.origin : null, notes = slug ? peakNotes()[slug.slug] || {} : {};
+    const kp = (place) => (place ? `KP ${fmt(place.km, 1)} on ${nameOf(place.pid)}` : "–");
+    const stat = (label, value, sub) => h("div", { class: "stat" }, h("span", { class: "label" }, label), h("strong", null, value), sub ? h("span", { class: "sub" }, sub) : null);
+    // The route at a glance: sent from the field, where the peak is now, where and when it lands.
+    const journey = h("ol", { class: "journey" },
+      h("li", null, h("span", { class: "label" }, "Sent"), h("strong", null, origin ? nameOf(origin) : "–"), h("span", { class: "sub" }, slug ? cet(slug.first) : "")),
+      h("li", { class: "now" }, h("span", { class: "label" }, "Head now"), h("strong", null, headKp ? nameOf(headKp.pid) : nameOf(m.id)), h("span", { class: "sub" }, headKp ? `KP ${fmt(headKp.km, 0)}` : "")),
+      h("li", null, h("span", { class: "label" }, exit ? "ETA" : "Next"), h("strong", null, exit ? nameOf(exit.node) : headGo ? nameOf(headGo.next.node) : "–"),
+        h("span", { class: "sub" }, exit ? cet(exit.t) : headGo ? cet(headGo.next.t) : "")));
+    // Notified and the Origo reference: set by the operator, kept per peak in this browser.
+    const notified = h("button", { type: "button", class: `toggle${notes.notified ? " on" : ""}`, "aria-pressed": String(Boolean(notes.notified)),
+      onclick: () => { if (!slug) return; savePeakNote(slug.slug, { notified: !notes.notified }); renderSidebar(); } }, notes.notified ? "Yes" : "No");
+    const origo = h("input", { class: "origo", inputmode: "numeric", maxlength: "5", placeholder: "5 digits", "aria-label": "Origo reference number" });
+    origo.value = notes.origo || "";
+    const origoNote = h("span", { class: "sub", role: "alert" });
+    origo.addEventListener("change", () => {
+      const value = origo.value.trim();
+      if (value && !/^\d{5}$/.test(value)) { origoNote.textContent = "Five digits, such as 40217"; return; }
+      origoNote.textContent = "";
+      if (slug) savePeakNote(slug.slug, { origo: value });
+    });
+    const description = slug ? `${q0.name} from ${nameOf(origin)}, sent ${cet(slug.first)}, its head now on ${nameOf(headKp ? headKp.pid : m.id)}.`
+      + (exit ? ` Expected at ${nameOf(exit.node)} ${cet(exit.t)} at about ${conc(exit.conc)}${exit.conc >= limit ? ", over the limit" : ""}.` : "") : "";
+    return { title: `${q0.name} peak`, sub: slug ? `${peakId(slug)} · ${nameOf(origin)} to ${exit ? nameOf(exit.node) : "the network"}` : `on ${nameOf(m.id)}`,
+      body: h("div", { class: "side-detail peak-detail" },
+        h("div", { class: "peak-stats" },
+          stat("Max", conc(max), `limit ${conc(limit)}`),
+          stat("Volume", slug ? volume(slug.volume) : "–", "gas over the follow level"),
+          stat("ETA", exit ? timeFormat(exit.t, { timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit" }) : "–", exit ? `CET · ${nameOf(exit.node)}` : "")),
+        journey,
+        description ? h("p", { class: "peak-description" }, description) : null,
+        box("Position",
+          row("Location", headKp && tailKp && headKp.pid !== tailKp.pid ? `${nameOf(tailKp.pid)} to ${nameOf(headKp.pid)}` : nameOf(headKp ? headKp.pid : m.id)),
+          row("Head", kp(headKp)),
+          row("Tail", kp(tailKp)),
+          row("Network", origin && unitOf[origin] ? unitById[unitOf[origin]].name : "–")),
+        box("Timing (CET)",
+          row("Sent", slug ? cet(slug.first) : "–"),
+          row("ETA", exit ? `${cet(exit.t)}, ${nameOf(exit.node)}` : "–"),
+          row("Duration", slug ? `${fmt((slug.last - slug.first + step) / 3600, 1)} h` : "–")),
+        box(`${q0.name} along the peak`,
+          row("Max", conc(max)), row("Min", conc(min)), row("Average", conc(avg)),
+          row("At the origin", slug ? `${conc(slug.max)} at its strongest` : "–")),
+        box("Handling",
+          row("Peak ID", slug ? peakId(slug) : "–"),
+          row("Notified", notified),
+          row("Origo ref", h("span", { class: "origo-field" }, origo, origoNote))),
+        note(`Estimate: gas travels at ${fmt(C.pipelines.gas_velocity_mps)} m/s along the line taking most of the flow; where gas joins, it is assumed to carry the median field reading. The volume is the field's gas while its reading stayed over the follow level. Notified and the Origo reference are entered here and kept in this browser.`)) };
   }
   // Where a peak's route ends: its last line, from the flows the data will have then.
   function peakEnd(peak) {

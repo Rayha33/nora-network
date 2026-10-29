@@ -174,11 +174,7 @@ function NoraCanvasMap(view) {
       }
       ctx.textBaseline = "top";
     }
-    // Alarm badges on lines, at their middle.
-    for (const p of pipes) {
-      const s = App.pipeStyle(p.id);
-      if (s.level && !s.hidden) { const m = along(p.id, 0.5); App.drawBadge(ctx, s.level, m.x + 8 * u, m.y - 7 * u, 7 * u); }
-    }
+    // No alarm badges on lines (Ray, 29 Oct: "remove the small red squares they serve no purpose").
     // Pigs, peaks and gas quality: bands first, then the pipeline names and markers.
     const z = zoom(), detail = z >= 6.5 ? 2 : z >= 5 ? 1 : 0, marks = live ? App.markers() : [];
     for (const m of marks) {
@@ -195,7 +191,7 @@ function NoraCanvasMap(view) {
     for (const m of marks) {
       if (!pipeById[m.id] || App.pipeStyle(m.id).hidden) continue;
       const p = along(m.id, m.along);
-      App.drawMarker(ctx, m, p.x, p.y, p.angle, App.markerSize(m.kind), detail, taken);
+      App.drawMarker(ctx, m, p.x, p.y, p.angle, App.markerSize(m.kind, (z - 6) / 4), detail, taken);
       if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
     }
   }
