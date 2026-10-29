@@ -967,7 +967,7 @@
     for (const m of marksNow) {
       const p = pointAlong(edges.get(m.id), Math.max(0, Math.min(1, m.along)), positions);
       const dom = network.canvasToDOM(p);
-      App.drawMarker(ctx, m, dom.x, dom.y, p.angle, App.markerSize(m.kind, (scale - 1) / (MAX_SCALE - 1)), detail, taken);
+      App.drawMarker(ctx, m, dom.x, dom.y, p.angle, App.markerSize(m.kind, (scale - 1) / (MAX_SCALE - 1)), detail, taken, true); // a soft backing on the grey paper
       if (!m.noDot) drawnMarks.push({ x: dom.x, y: dom.y, m });
     }
   }
@@ -1097,14 +1097,50 @@
     });
     network.once("afterDrawing", () => { layout(); view.setUnit(App.route.unit); });
     container.addEventListener("pointermove", (e) => {
-      if (!connecting) return;
-      const rect = container.getBoundingClientRect();
-      connecting.at = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-      network.redraw();
+      const rect = container.getBoundingClientRect(), at = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      if (connecting) { connecting.at = at; network.redraw(); return; }
+      showOutlook(tagUnder(network.DOMtoCanvas(at)), at);
     });
+    container.addEventListener("pointerleave", () => showOutlook(null));
     addEventListener("keydown", (e) => { if (e.key === "Escape" && connecting) finishConnect(null); });
   };
 
+  /* Over a pressure tag: the node's pressure, the last 6 hours measured and the next 6
+     modelled (App.pressureChart), in a small card by the pointer. Rebuilt only when the
+     node or the data step changes. */
+  let outlook = null, outlookFor = "";
+  function tagUnder(c) {
+    if (!App.stateShown()) return null;
+    for (const id of App.nodeIds) {
+      if (nodeHidden(id)) continue;
+      if (tagsAt(id).some(({ box }) => c.x >= box[0] && c.x <= box[2] && c.y >= box[1] && c.y <= box[3])) return id;
+    }
+    return null;
+  }
+  function showOutlook(id, at) {
+    if (!id) { if (outlook) outlook.hidden = true; outlookFor = ""; return; }
+    if (!outlook) {
+      outlook = document.createElement("div");
+      outlook.className = "pressure-pop";
+      outlook.setAttribute("role", "tooltip");
+      if (getComputedStyle(el).position === "static") el.style.position = "relative";
+      el.appendChild(outlook);
+    }
+    const key = `${id}|${App.live.index}|${App.theme()}`;
+    if (key !== outlookFor) {
+      const card = App.pressureChart(id);
+      if (!card) { outlook.hidden = true; return; }
+      const title = document.createElement("h4"), note = document.createElement("p");
+      title.textContent = card.title;
+      note.textContent = card.note;
+      outlook.replaceChildren(title, card.chart, note);
+      outlookFor = key;
+    }
+    outlook.hidden = false;
+    const box = el.getBoundingClientRect(), w = 324, h = 190;
+    outlook.style.left = `${Math.min(at.x + 16, box.width - w - 8)}px`;
+    outlook.style.top = `${at.y + 16 + h > box.height ? at.y - h - 12 : at.y + 16}px`;
+  }
   /* What a node or line looks like to vis-network. The player restyles four times a
      second, and vis re-reads every item it is handed, changed or not: all 144 nodes
      and 75 lines took about 28 ms, a visible stutter four times a second. So only items

@@ -571,3 +571,10 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 table.data.alarm-table td.note { white-space: normal; min-width: 220px; }
 table.data.alarm-table th, table.data.alarm-table td { text-align: left; }
 .alarm-table button.link { border: 0; padding: 0; background: none; color: var(--text); font: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+
+/* A pressure tag's outlook, by the pointer (Flow view) */
+.pressure-pop { position: absolute; z-index: 6; width: 300px; padding: 10px 12px; pointer-events: none;
+  background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; box-shadow: var(--shadow-lg); }
+.pressure-pop h4 { margin: 0 0 4px; font-size: 12.5px; font-weight: 600; color: var(--text); }
+.pressure-pop svg { display: block; width: 100%; height: auto; }
+.pressure-pop p { margin: 4px 0 0; font-size: 11.5px; color: var(--text-dim); line-height: 1.4; }

@@ -316,7 +316,7 @@ const App = (() => {
     const parts = [marker.value, marker.eta, detail >= 2 ? marker.to : ""].filter(Boolean);
     return [[parts.join("  "), COLORS.text]];
   }
-  function markerLabel(ctx, marker, x, y, size, detail, taken) {
+  function markerLabel(ctx, marker, x, y, size, detail, taken, backing = false) {
     if (marker.kind !== "pig" && (!marker.value || (!detail && !marker.level && marker.kind !== "quality"))) return;
     const k = display.scale; // labels never under 11 px, larger on a wall
     const font = 11 * k, line = font + 3 * k, rows = markerRows(marker, detail);
@@ -327,9 +327,21 @@ const App = (() => {
     if (!spot) { ctx.restore(); return; }
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
+    /* The Flow view's grey paper is darker than the map's land and sea, so there a label
+       gets a soft backing a little lighter than the paper (darker in the dark theme): the
+       same text, easier to read (Ray, 29 Oct: "the CO2 ... text is easier to see on the
+       map view than the Flow view ... only make slight changes"). */
+    if (backing) {
+      const pad = 4 * k, hh = (line * rows.length) / 2;
+      ctx.fillStyle = theme === "dark" ? mix(COLORS.paper, "#000000", 0.3) : mix(COLORS.paper, COLORS.active, 0.6);
+      ctx.beginPath();
+      const bx = spot[0] - pad, by = spot[1] - hh - pad / 2, bw = w + 2 * pad, bh = 2 * hh + pad;
+      if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 4 * k); else ctx.rect(bx, by, bw, bh);
+      ctx.fill();
+    }
     ctx.lineJoin = "round";
     ctx.lineWidth = 3 * k;
-    ctx.strokeStyle = COLORS.paper;
+    ctx.strokeStyle = backing ? (theme === "dark" ? mix(COLORS.paper, "#000000", 0.3) : mix(COLORS.paper, COLORS.active, 0.6)) : COLORS.paper;
     rows.forEach(([text, color], i) => {
       const ly = spot[1] + (i - (rows.length - 1) / 2) * line;
       ctx.strokeText(text, spot[0], ly);
@@ -339,7 +351,7 @@ const App = (() => {
     ctx.restore();
   }
   // A gas quality parcel: a calm-coloured dot; the strongest parcel of a slug is labelled.
-  function drawParcel(ctx, marker, x, y, size, detail, taken) {
+  function drawParcel(ctx, marker, x, y, size, detail, taken, backing = false) {
     if (marker.noDot) return; // the band shows this stretch; the dot is on the strongest part
     ctx.save();
     ctx.beginPath();
@@ -350,7 +362,7 @@ const App = (() => {
     ctx.strokeStyle = COLORS.casing;
     ctx.stroke();
     ctx.restore();
-    if (marker.lead) markerLabel(ctx, marker, x, y, size, detail, taken);
+    if (marker.lead) markerLabel(ctx, marker, x, y, size, detail, taken, backing);
   }
 
   /* The stretch of gas a peak covers, from tail (a) to head (b), in screen pixels: an
@@ -582,9 +594,9 @@ const App = (() => {
     const base = kind === "pig" ? 13 : 6.5; // visible in a dense view, not dominant (Ray, 29 Oct: "a bit smaller")
     return base * (1 + Math.max(0, Math.min(1, closeness)));
   }
-  function drawMarker(ctx, marker, x, y, angle, size = 7, detail = 1, taken = null) {
+  function drawMarker(ctx, marker, x, y, angle, size = 7, detail = 1, taken = null, backing = false) {
     size *= display.scale; // markers are drawn in screen pixels in every view
-    if (marker.kind === "quality") { drawParcel(ctx, marker, x, y, size, detail, taken); return; }
+    if (marker.kind === "quality") { drawParcel(ctx, marker, x, y, size, detail, taken, backing); return; }
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
@@ -601,7 +613,7 @@ const App = (() => {
     ctx.strokeStyle = COLORS.casing;
     ctx.stroke();
     ctx.restore();
-    markerLabel(ctx, marker, x, y, size, detail, taken);
+    markerLabel(ctx, marker, x, y, size, detail, taken, backing);
   }
 
   // ------------------------------------------------------------------ settings
@@ -1188,51 +1200,41 @@ const App = (() => {
         eta: clock(place.exitAt), to: nameOf(place.next), key: `pig:${pig.label}|${pig.launch}`, ref: pig,
         pigId: pig.id != null ? pig.id + trip.run : null, arrives: trip.arrives, speed: pig.speed });
     }
-    /* Head and tail: a peak is a stretch of gas, not a point. A change in flow spreads
-       over the gas that passed in one data step (velocity × step); the band is centred
-       on the dot. `extent` is [tail, head] in the line's 0..1, clipped to the line. */
-    const v = C.pipelines.gas_velocity_mps, stepSeconds = (live.stream && live.stream.step) || 3600;
-    const clip01 = (x) => Math.max(0, Math.min(1, x));
-    const extentOf = (pid, lo, hi, forward) => {
-      const pad = (v * stepSeconds) / 2 / lineMetres(pid);
-      const a = clip01(lo - pad), b = clip01(hi + pad);
-      return forward ? [a, b] : [b, a];
-    };
     // No marker for a change in flow (Ray, 29 Oct: "mainly stick to illustrating H2S, CO2
     // and pigs"); a large one is still an alarm.
-    /* A slug of H₂S or CO₂ is drawn as one band per line it covers, from its rear parcel
-       to its front parcel. The dot and its label sit midway between the head and the tail
-       (Ray, 29 Oct): where the gas that left the field halfway between them is now. The
-       label still gives the slug's strongest reading and when that reaches its next stop. */
     if (!settings.gasQuality) return out; // Settings: H₂S and CO₂ peaks off
-    const leads = new Map(slugs().map((s) => [s.q.slug, s])), spans = new Map(), sent = new Map();
-    for (const q of live.quality) {
-      const t = q.arrived ? 1 : Math.min(1, (live.time - q.t0) / travelSeconds(q.pid)), at = q.forward ? t : 1 - t;
-      const key = `${q.slug}|${q.pid}`, span = spans.get(key) || { q, lo: at, hi: at, first: q.born, last: q.born, moving: null };
-      span.lo = Math.min(span.lo, at); span.hi = Math.max(span.hi, at);
-      span.first = Math.min(span.first, q.born); span.last = Math.max(span.last, q.born);
-      if (!q.arrived) span.moving = { q, at };
-      spans.set(key, span);
-      const [first, last] = sent.get(q.slug) || [q.born, q.born];
-      sent.set(q.slug, [Math.min(first, q.born), Math.max(last, q.born)]);
-    }
-    // The line holding a slug's middle: the one carrying the gas sent nearest the middle time.
-    const middles = new Map();
-    for (const span of spans.values()) {
-      const [first, last] = sent.get(span.q.slug), mid = (first + last) / 2, off = Math.max(0, span.first - mid, mid - span.last);
-      const best = middles.get(span.q.slug);
-      if (!best || off < best.off) middles.set(span.q.slug, { span, mid, off });
-    }
-    for (const span of spans.values()) {
-      const { q, lo, hi } = span, extent = extentOf(q.pid, lo, hi, q.forward), s = leads.get(q.slug), middle = middles.get(q.slug);
-      const base = { kind: "quality", gas: q.metric, id: q.pid, extent, key: `quality:${q.slug}`, ref: q.slug };
-      if (!s || middle.span !== span) { out.push({ ...base, along: (lo + hi) / 2, lead: false, noDot: true, level: 0, value: "" }); continue; }
-      // Gas sent later is further back: one second later is one second of travel behind.
-      const { moving } = span, a = Math.min(...extent), b = Math.max(...extent);
-      const along = moving ? moving.at + ((moving.q.born - middle.mid) / travelSeconds(q.pid)) * (q.forward ? 1 : -1) : (a + b) / 2;
-      out.push({ ...base, along: Math.max(a, Math.min(b, along)), lead: true, level: slugAlarm(s),
-        value: `${QUALITY[q.metric].name} ${fmt(s.q.conc, QUALITY[q.metric].digits)}`, amount: fmt(s.q.conc, QUALITY[q.metric].digits),
-        eta: s.q.arrived ? "" : clock(s.next.t), to: nameOf(s.q.arrived ? s.q.arrived.node : s.next.node) });
+    advanceQuality(); // the clock moves every frame, the parcels with it
+    const leads = new Map(slugs().map((s) => [s.q.slug, s])), bySlug = new Map();
+    for (const q of live.quality) bySlug.set(q.slug, [...(bySlug.get(q.slug) || []), q]);
+    for (const [slug, parcels] of bySlug) {
+      parcels.sort((a, b) => a.born - b.born);
+      // Each parcel's share of the slug: the gas sent from its birth until the next
+      // parcel's, or until now while the field still sends it.
+      const windows = parcels.map((q, k) => [q.born, Math.min(q.born + q.len, k + 1 < parcels.length ? parcels[k + 1].born : Infinity, live.time)]);
+      const bands = new Map();
+      parcels.forEach((q, k) => {
+        for (const piece of gasStretch(q, windows[k][0], windows[k][1])) {
+          const band = bands.get(piece.pid);
+          if (band) { band.tail = Math.min(band.tail, piece.tail); band.head = Math.max(band.head, piece.head); }
+          else bands.set(piece.pid, { ...piece });
+        }
+      });
+      if (!bands.size) continue;
+      // The dot: the gas sent midway between the head still in the network and the tail.
+      const inside = parcels.map((q, k) => [Math.max(windows[k][0], live.time - pathSeconds(q)), windows[k][1]]);
+      const front = inside.find(([a, b]) => b >= a), back = windows[windows.length - 1][1];
+      const mid = ((front ? front[0] : back) + back) / 2;
+      const k = Math.max(0, windows.findIndex(([, b], i) => mid <= b || i === windows.length - 1));
+      const dot = gasPlace(parcels[k], mid), s = leads.get(slug), q0 = parcels[0];
+      for (const band of bands.values()) {
+        const flip = (x) => (band.forward ? x : 1 - x), extent = [flip(band.tail), flip(band.head)];
+        const base = { kind: "quality", gas: q0.metric, id: band.pid, extent, key: `quality:${slug}`, ref: slug };
+        if (!s || !dot || dot.pid !== band.pid) { out.push({ ...base, along: (extent[0] + extent[1]) / 2, lead: false, noDot: true, level: 0, value: "" }); continue; }
+        const along = Math.max(band.tail, Math.min(band.head, dot.at));
+        out.push({ ...base, along: flip(along), lead: true, level: slugAlarm(s),
+          value: `${QUALITY[q0.metric].name} ${fmt(s.q.conc, QUALITY[q0.metric].digits)}`, amount: fmt(s.q.conc, QUALITY[q0.metric].digits),
+          eta: s.q.arrived ? "" : clock(s.next.t), to: nameOf(s.q.arrived ? s.q.arrived.node : s.next.node) });
+      }
     }
     return out.sort((a, b) => Number(Boolean(a.lead)) - Number(Boolean(b.lead)));
   }
@@ -1289,10 +1291,12 @@ const App = (() => {
             if (live.quality[k].origin === node && live.quality[k].metric === name) { slug = live.quality[k].slug; break; }
           }
         }
-        live.quality.push({ metric: name, origin: node, slug, conc: value, pid: route.pid, forward: route.forward, t0: current.t, born: current.t, arrived: null });
-        /* Each parcel is one data step of the field's gas: the slug's volume adds them
-           up as they leave the field, so it stays whole after its head has left. */
+        /* Each parcel is one data step of the field's gas (`len` seconds of it): the
+           slug's volume adds them up as they leave the field, so it stays whole after
+           its head has left. `path` is the lines it has taken, in order. */
         const step = previous ? current.t - previous.t : (live.stream && live.stream.step) || 3600;
+        live.quality.push({ metric: name, origin: node, slug, conc: value, pid: route.pid, forward: route.forward, t0: current.t, born: current.t, len: step,
+          path: [{ pid: route.pid, forward: route.forward }], arrived: null });
         const info = live.slugs.get(slug) || { slug, metric: name, origin: node, first: current.t, last: current.t, volume: 0, max: 0 };
         info.last = current.t;
         info.max = Math.max(info.max, value);
@@ -1310,11 +1314,37 @@ const App = (() => {
         q.conc = mixAt(node, q.pid, q.conc, q.metric, f);
         const next = isExit(node) ? null : onward(node, f.flows);
         if (!next || next.pid === q.pid) q.arrived = { node, t: at };
-        else Object.assign(q, { pid: next.pid, forward: next.forward, t0: at });
+        else { Object.assign(q, { pid: next.pid, forward: next.forward, t0: at }); q.path.push({ pid: next.pid, forward: next.forward }); }
       }
-      return !q.arrived || time - q.arrived.t < 3600; // shown for an hour at the exit
+      return !q.arrived || time - q.arrived.t < q.len; // until the gas sent after it has left too
     });
   }
+  /* Where the gas a field sent at `sent` is now, following the parcel ahead of it: the
+     line and how far along it (0..1 the way the gas goes); null once it has left. */
+  function gasPlace(q, sent, time = live.time) {
+    let left = Math.max(0, time - sent);
+    for (const [k, hop] of q.path.entries()) {
+      const travel = travelSeconds(hop.pid);
+      if (left < travel || (k === q.path.length - 1 && !q.arrived)) return { pid: hop.pid, forward: hop.forward, at: Math.min(1, left / travel) };
+      left -= travel;
+    }
+    return null;
+  }
+  /* The gas sent between `from` and `to` on each line of the parcel's path: [tail, head].
+     Just sent, it is a point at the field. */
+  function gasStretch(q, from, to, time = live.time) {
+    const front = time - from, back = Math.max(0, time - to), out = [];
+    let start = 0;
+    for (const [k, hop] of q.path.entries()) {
+      const travel = travelSeconds(hop.pid), lo = Math.max(back, start), hi = Math.min(front, start + travel);
+      const point = front === back && back >= start && (back < start + travel || k === q.path.length - 1);
+      if (hi > lo || point) out.push({ pid: hop.pid, forward: hop.forward, tail: (lo - start) / travel, head: (hi - start) / travel });
+      start += travel;
+    }
+    return out;
+  }
+  // How long the gas takes along a parcel's whole path, once it has reached an exit.
+  const pathSeconds = (q) => (q.arrived ? q.path.reduce((t, hop) => t + travelSeconds(hop.pid), 0) : Infinity);
   function replayQuality(index) {
     live.quality = [];
     live.slugs = new Map();
@@ -1512,8 +1542,10 @@ const App = (() => {
     if (whatif.key !== key) { whatif.key = key; whatif.state = whatifSolve(); }
     return whatif.state;
   }
-  function whatifSolve() {
-    const f = frame(), off = whatif.offline, next = whatif.scenario === "next";
+  // `opts`: other inputs than yours (the pressure outlook uses none), and nominations to
+  // meet instead of now's or the next gas day's.
+  function whatifSolve(opts = {}) {
+    const W = opts.inputs || whatif, f = frame(), off = W.offline, next = Boolean(opts.nominations) || W.scenario === "next";
     const out = (id) => off.has(id) || assets[id].status !== "operating" || !yearActive(id);
     const cut = (pid) => out(pid) || out(assets[pid].from) || out(assets[pid].to);
     const outs = {}, ins = {}, sign = {}, share = {};
@@ -1541,11 +1573,11 @@ const App = (() => {
        flow is today's, even where the data does not balance): each node passes what it
        gains or loses on in today's shares; an exit takes it. */
     const lines = {}, supply = {}, delivered = {}, stranded = {}, short = {};
-    const packed = (pid) => whatif.pack[pid] || 0, add = (o, k, v) => { o[k] = (o[k] || 0) + v; };
-    const nominations = next ? nextDayNominations(f) : Object.fromEntries(whatifExits.map((id) => [id, metric("nomination_msm3d", id, f) ?? null]));
+    const packed = (pid) => W.pack[pid] || 0, add = (o, k, v) => { o[k] = (o[k] || 0) + v; };
+    const nominations = opts.nominations || (next ? nextDayNominations(f) : null) || Object.fromEntries(whatifExits.map((id) => [id, metric("nomination_msm3d", id, f) ?? null]));
     const gain = {}, more = {}; // what each node gains (MSm³/d), what each line takes in more
     for (const id of nodeIds) if (assets[id].supply) {
-      const made = productionNow(id, f), then = out(id) ? 0 : next ? made : whatif.supply[id] ?? made;
+      const made = productionNow(id, f), then = out(id) ? 0 : next ? made : W.supply[id] ?? made;
       supply[id] = then;
       add(gain, id, then - made);
     }
@@ -1574,7 +1606,7 @@ const App = (() => {
     };
     if (next) { // the next gas day: each exit's nomination (or yours) pulls the difference up the lines
       const need = {};
-      for (const id of whatifExits) if (!out(id)) need[id] = (whatif.offtake[id] ?? nominations[id] ?? arrives(id)) - arrives(id);
+      for (const id of whatifExits) if (!out(id)) need[id] = (W.offtake[id] ?? nominations[id] ?? arrives(id)) - arrives(id);
       for (const u of [...order].reverse()) {
         if (out(u)) continue;
         let n = need[u] || 0;
@@ -1636,7 +1668,7 @@ const App = (() => {
     const target = Object.fromEntries(edges.filter((pid) => today[tail(pid)] != null && today[head(pid)] != null).map((pid) => [pid,
       today[tail(pid)] - today[head(pid)] + correction[pid] * (model(pid, mean(pid)) - model(pid, share[pid]))]));
     const anchors = {};
-    for (const [id, p] of Object.entries(whatif.pressure)) if (!out(id)) anchors[id] = absBar(p) ** 2;
+    for (const [id, p] of Object.entries(W.pressure)) if (!out(id)) anchors[id] = absBar(p) ** 2;
     const fed = new Set(), walk = Object.keys(anchors);
     while (walk.length) { const u = walk.pop(); for (const pid of outs[u] || []) if (!fed.has(head(pid))) { fed.add(head(pid)); walk.push(head(pid)); } }
     // Exits and gas plants hold today's pressure (onshore control, compressors), unless
@@ -1667,6 +1699,66 @@ const App = (() => {
       lines, supply, delivered, stranded, short, nominations, correction, from, pack, pressure, pressureNow,
       balance: { produced: sum(supply), packed: sum(Object.fromEntries(Object.entries(lines).map(([k, l]) => [k, l.into - l.out]))), delivered: sum(delivered), nominated, offNominations },
     };
+  }
+  /* A pressure's last 6 hours and the next 6 as the model sees them: one steady state an
+     hour, from that hour's nominations, without your what-if values (Ray, 29 Oct: "if i
+     mouse over one of the pressure squares it should show a comprehensive graph showing
+     the pressure last 6 hours and then modelled pressure next 6 hour if we have
+     steady-state"). Worked out once per data step for every node. */
+  const NO_INPUTS = { offline: new Set(), supply: {}, offtake: {}, pressure: {}, pack: {}, scenario: "now" };
+  let outlookCache = { key: null, hours: [] };
+  function steadyAhead() {
+    const key = `${live.index}|${live.stream ? live.stream.name : ""}`;
+    if (outlookCache.key === key) return outlookCache.hours;
+    const step = (live.stream && live.stream.step) || 3600, now = frame(), hours = [];
+    for (let k = 1; k <= 6; k++) {
+      const f = live.frames[live.index + Math.round((k * 3600) / step)], nominations = {};
+      for (const id of whatifExits) {
+        const ahead = live.feed ? (((now.ahead || {}).nomination_msm3d || {})[id] || [])[k - 1] : null;
+        nominations[id] = (f ? metric("nomination_msm3d", id, f) : ahead) ?? metric("nomination_msm3d", id, now) ?? null;
+      }
+      hours.push({ t: (now.t || 0) + k * 3600, pressure: whatifSolve({ inputs: NO_INPUTS, nominations }).pressure });
+    }
+    outlookCache = { key, hours };
+    return hours;
+  }
+  function pressureOutlook(id) {
+    const step = (live.stream && live.stream.step) || 3600, n = Math.round((6 * 3600) / step), past = [];
+    for (let i = Math.max(0, live.index - n); i <= live.index; i++) {
+      const f = live.frames[i];
+      if (f && metric("pressure_bar", id, f) != null) past.push({ t: f.t, p: metric("pressure_bar", id, f) });
+    }
+    const future = steadyAhead().map((hour) => ({ t: hour.t, p: hour.pressure[id] })).filter((r) => r.p != null);
+    return { past, future, limits: (C.pressure_limits || {})[(assets[id] || {}).type] || null };
+  }
+  function pressureChart(id) {
+    const o = pressureOutlook(id), now = frame().t, last = o.past[o.past.length - 1];
+    if (!last || now == null) return null;
+    const values = [...o.past, ...o.future].map((r) => r.p);
+    let lo = Math.min(...values), hi = Math.max(...values);
+    const room = Math.max(2, hi - lo), names = ["LL", "L", "H", "HH"];
+    const near = (o.limits || []).slice(0, 4).map((v, i) => [names[i], v, i]).filter(([, v]) => v >= lo - room && v <= hi + room);
+    lo = Math.min(lo, ...near.map(([, v]) => v)) - 0.5;
+    hi = Math.max(hi, ...near.map(([, v]) => v)) + 0.5;
+    const W = 300, H = 124, top = 10, plot = 86, x = (t) => 8 + ((t - (now - 6 * 3600)) / (12 * 3600)) * (W - 16);
+    const y = (v) => top + plot - ((v - lo) / (hi - lo || 1)) * plot;
+    const path = (rows) => rows.map((r, k) => `${k ? "L" : "M"}${x(r.t).toFixed(1)},${y(r.p).toFixed(1)}`).join("");
+    const text = "stroke:none;font-weight:400;font-size:11px;font-family:Archivo,system-ui,sans-serif";
+    // the scale: the top and bottom of the plot, on the left
+    let body = `<text x="8" y="${top + 8}" fill="${COLORS.text_dim}" style="${text}">${esc(fmt(hi, 1))}</text><text x="8" y="${top + plot - 2}" fill="${COLORS.text_dim}" style="${text}">${esc(fmt(lo, 1))}</text>`;
+    for (const [name, v, i] of near) {
+      body += `<line x1="8" x2="${W - 8}" y1="${y(v)}" y2="${y(v)}" stroke="${limitInk(i === 0 || i === 3 ? 2 : 1)}" stroke-width="1" stroke-dasharray="2 3"/>`;
+      body += `<text x="${W - 8}" y="${y(v) - 3}" text-anchor="end" fill="${COLORS.text_dim}" style="${text}">${name} ${fmt(v)}</text>`;
+    }
+    body += `<line x1="${x(now)}" x2="${x(now)}" y1="${top - 4}" y2="${top + plot}" stroke="${COLORS.text_dim}" stroke-width="1"/>`;
+    body += `<path class="measured" d="${path(o.past)}" fill="none" stroke="${COLORS.text}" stroke-width="1.8"/>`;
+    if (o.future.length) body += `<path class="modelled" d="${path([last, ...o.future])}" fill="none" stroke="${COLORS.peak}" stroke-width="1.8" stroke-dasharray="4 3"/>`;
+    const end = o.future[o.future.length - 1];
+    body += `<text x="8" y="${H - 4}" fill="${COLORS.text_dim}" style="${text}">−6 h</text>`;
+    body += `<text x="${x(now)}" y="${H - 4}" text-anchor="middle" fill="${COLORS.text}" style="${text}">now ${esc(fmt(last.p, 1))}</text>`;
+    body += `<text x="${W - 8}" y="${H - 4}" text-anchor="end" fill="${COLORS.text_dim}" style="${text}">+6 h ${end ? esc(fmt(end.p, 1)) : "–"}</text>`;
+    return { title: `${nameOf(id)}, pressure in bar`, chart: svg(`0 0 ${W} ${H}`, body, "pressure-outlook"),
+      note: "Solid: measured. Dashed: model, a steady state each hour from that hour's nominations." };
   }
   // Your values: set one, or clear it with null. Each change redraws everything.
   function setWhatif(kind, id, value) {
@@ -3728,7 +3820,7 @@ const App = (() => {
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
-    pressureMark, flowMark, drawFlowDirection, gasDayChart, gasQuality,
+    pressureMark, flowMark, drawFlowDirection, gasDayChart, gasQuality, pressureOutlook, pressureChart,
     airTemp: (id) => metric("air_temp_c", id),
     rampAhead, // the next 6 hours of nominations at an exit point
     pipeStyle, pipeMapName, pipeDetail, detailZoom: DETAIL_ZOOM, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,

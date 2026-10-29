@@ -96,3 +96,27 @@ test("pressure tags: zoomed in, the last hour's change always shows, steady too"
   App.state.mode = "whatif";
   assert.ok(App.views.flow.pressureTags(field, pos, 1.1, 64).every((t) => !t.rate), "a what-if is steady: no change line");
 });
+
+test("pressure outlook: the last 6 hours measured, the next 6 modelled as steady states", () => {
+  // Ray, 29 Oct: "if i mouse over one of the pressure squares it should show a comprehensive
+  // graph showing the pressure last 6 hours and then modelled pressure next 6 hour if we
+  // have steady-state".
+  const { App, NORA, document } = loadApp();
+  document.getElementById("speed").options = [{ value: "60" }];
+  const week = NORA.streams.find((s) => s.synthetic);
+  document.getElementById("stream-select")._listeners.change[0]({ target: { value: week.name } });
+  const scrub = document.getElementById("scrub");
+  scrub.value = String(-400 * 3600);
+  scrub._listeners.input[0]({ target: { value: scrub.value } });
+  scrub.value = String(30 * 3600);
+  scrub._listeners.input[0]({ target: { value: scrub.value } });
+  const o = App.pressureOutlook("draupner_s");
+  assert.equal(o.past.length, 7, "six hours back and now, hourly");
+  assert.equal(o.future.length, 6, "six hours ahead");
+  assert.equal(o.past.at(-1).p, App.reading("draupner_s").pressure, "it starts from now");
+  const card = App.pressureChart("draupner_s");
+  assert.match(card.title, /Draupner S/);
+  assert.match(card.chart.innerHTML, /class="measured"/);
+  assert.match(card.chart.innerHTML, /class="modelled"/);
+  assert.match(card.chart.innerHTML, />now [\d.]+</);
+});
