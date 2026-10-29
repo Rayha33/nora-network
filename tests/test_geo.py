@@ -67,3 +67,36 @@ def test_water_depth_grid_is_shipped_and_optional(tmp_path):
     assert "EMODnet" in grid["source"], "with its credit"
     assert "CC BY 4.0" in grid["source"], "and its licence"
     assert bathymetry(tmp_path / "missing.json") is None
+
+
+def _bathymetry_script():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "scripts" / "build_bathymetry.py"
+    spec = importlib.util.spec_from_file_location("build_bathymetry", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_depth_is_kept_around_the_network_and_nowhere_else(north_sea):
+    """Review #49802: the depth grid was 612 KB, the page's largest part, half of it the
+    deep basin far from any pipeline. Only the sea within 100 km of the network is kept:
+    every offshore asset still has its depth, and the file stays small."""
+    stored = bathymetry()
+    assert stored["band_km"] == 100
+    assert len(stored["data"]) < 400_000, "the band keeps the depth grid under 400 KB"
+    script = _bathymetry_script()
+    grid = script.unpack(stored)
+    step = stored["step"]
+    for node in north_sea.nodes:
+        if node.type in ("field", "hub"):
+            r = int((stored["north"] - node.lat) / step)
+            c = int((node.lon - stored["west"]) / step)
+            assert grid[r][c] > 0, f"{node.id}: the readout knows the water depth there"
+    # Up to date with the network: cutting the band again changes nothing. A new asset
+    # outside the band fails the check above: rerun `python scripts/build_bathymetry.py`.
+    again = [row[:] for row in grid]
+    script.band(again, stored["west"], stored["north"])
+    assert again == grid
