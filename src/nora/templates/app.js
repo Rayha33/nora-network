@@ -370,6 +370,43 @@ const App = (() => {
     ctx.restore();
   }
 
+  /* Which way an interconnector's gas goes, and how much (Ray, 29 Oct: "should be able to
+     subtle see which way the gas is flowing for the interconnector and what quantities are
+     going which way"): small chevrons along the line pointing with the flow, and under its
+     middle the flow and where it goes ("12.3 to Zeebrugge"). `at(t)` gives a point and its
+     angle along the line's drawn part; both maps draw it. */
+  function drawFlowDirection(ctx, id, at, u = 1, taken = []) {
+    const d = assets[id], v = live.values[id];
+    if (!d || d.type !== "interconnector" || state.mode !== "live" || v == null) return;
+    const m = Math.abs(v), forward = v >= 0;
+    ctx.save();
+    ctx.strokeStyle = COLORS.text_dim;
+    ctx.lineWidth = 1.3 * u;
+    ctx.lineCap = "round";
+    if (m >= 0.05) for (const t of [0.2, 0.35, 0.65, 0.8]) {
+      const p = at(t), a = p.angle + (forward ? 0 : Math.PI), s = 4 * u;
+      ctx.beginPath();
+      ctx.moveTo(p.x - Math.cos(a - 0.6) * s, p.y - Math.sin(a - 0.6) * s);
+      ctx.lineTo(p.x, p.y);
+      ctx.lineTo(p.x - Math.cos(a + 0.6) * s, p.y - Math.sin(a + 0.6) * s);
+      ctx.stroke();
+    }
+    const mid = at(0.5), text = m < 0.05 ? "no flow" : `${fmt(m, 1)} to ${nameOf(forward ? d.to : d.from)}`;
+    ctx.font = `${11 * u}px Archivo, system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const w = ctx.measureText(text).width, y = mid.y + 11 * u, box = [mid.x - w / 2 - 2 * u, y - 7 * u, mid.x + w / 2 + 2 * u, y + 7 * u];
+    if (!taken.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) {
+      taken.push(box);
+      ctx.lineJoin = "round";
+      ctx.lineWidth = 3 * u;
+      ctx.strokeStyle = COLORS.paper; // a paper halo: no line runs through the text
+      ctx.strokeText(text, mid.x, y);
+      ctx.fillStyle = COLORS.text_dim;
+      ctx.fillText(text, mid.x, y);
+    }
+    ctx.restore();
+  }
   /* What a marker is, for a mouse-over: the value and when it reaches its next stop. */
   function markerTip(m) {
     const when = m.eta && m.to ? `: reaches ${m.to} at ${m.eta}` : m.to ? ` at ${m.to}` : "";
@@ -3178,7 +3215,7 @@ const App = (() => {
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
-    pressureMark, flowMark,
+    pressureMark, flowMark, drawFlowDirection,
     rampAhead, // the next 6 hours of nominations at an exit point
     pipeStyle, pipeMapName, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
