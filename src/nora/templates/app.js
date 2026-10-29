@@ -428,6 +428,28 @@ const App = (() => {
     if (value == null || Number.isNaN(value)) return 0;
     return rising ? thresholds.filter((t) => value >= t).length : thresholds.filter((t) => value <= t).length;
   }
+  // Dark or light ink, whichever reads better on a fill (WCAG contrast).
+  function inkOn(fill) {
+    const lum = (hex) => {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+        .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const dark = "#22272b", light = "#f1f2f3", l = lum(fill);
+    return (l + 0.05) / (lum(dark) + 0.05) >= (lum(light) + 0.05) / (l + 0.05) ? dark : light;
+  }
+  /* A pressure at an upper limit (nora.toml [pressure_limits]): Ray, 29 Oct, "pressure
+     number inside rectangles should change color when meeting a limit, high = yellow,
+     high high = red, integrity = dark red". The tag fills with that colour and its
+     number takes the ink that reads on it; never colour alone: zoomed in the tag also
+     says H, HH or INT, and the alarm list says which limit in words. */
+  const LIMITS = [null, { code: "H", name: "high" }, { code: "HH", name: "high-high" }, { code: "INT", name: "integrity" }];
+  function pressureMark(id, p = metric("pressure_bar", id)) {
+    const limits = (C.pressure_limits || {})[(assets[id] || {}).type], lvl = limits ? level(p, limits) : 0;
+    if (!lvl) return null;
+    const fill = [null, COLORS.warning, COLORS.critical, COLORS.integrity][lvl];
+    return { level: lvl, ...LIMITS[lvl], limit: limits[lvl - 1], fill, ink: inkOn(fill) };
+  }
   /* Each priority has its own shape and number as well as its colour; a warning (3) has
      none (Ray, 29 Oct: "remove all warning triangles") and reads as words only. */
   function shapeMarkup(lvl, x = 8, y = 8, s = 7) {
@@ -825,8 +847,14 @@ const App = (() => {
     for (const id of nodeIds) {
       const p = metric("pressure_bar", id, f), window = C.pressure[assets[id].type];
       if (p == null || !window) continue;
-      const [low, high] = window, span = high - low;
-      const margin = Math.min(p - low, high - p) / span;
+      const [low, high] = window, span = high - low, mark = pressureMark(id, p);
+      if (mark) { // at an upper limit: warning at high, critical at high-high and integrity
+        add(mark.level === 1 ? 1 : 3, id, "pressure", `${nameOf(id)} ${fmt(p, 1)} bar, at its ${mark.name} limit (${fmt(mark.limit)} bar)`);
+        continue;
+      }
+      // Below the limits the window still warns as the pressure nears its minimum (and its
+      // maximum, for a type with no limits).
+      const margin = (C.pressure_limits || {})[assets[id].type] ? (p - low) / span : Math.min(p - low, high - p) / span;
       add(level(margin, T.pressure_margin, false), id, "pressure",
         `${nameOf(id)} ${fmt(p, 1)} bar, near the ${p - low < high - p ? "minimum" : "maximum"} (${fmt(low)}–${fmt(high)} bar)`);
     }
@@ -2002,7 +2030,8 @@ const App = (() => {
     const depth = d.lat != null ? depthAt(d.lon, d.lat) : null;
     const rows = d.kind === "node"
       ? [["Operator", d.operator], ["Capacity", d.capacity == null ? null : `${fmt(d.capacity)} MSm³/d`], ["If it trips", lost],
-        ["Pressure window", C.pressure[d.type] ? `${C.pressure[d.type][0]}–${C.pressure[d.type][1]} bar` : null], ["Status", d.status],
+        ["Pressure window", C.pressure[d.type] ? `${C.pressure[d.type][0]}–${C.pressure[d.type][1]} bar` : null],
+        ["Pressure limits", (C.pressure_limits || {})[d.type] ? `high ${C.pressure_limits[d.type][0]}, high-high ${C.pressure_limits[d.type][1]}, integrity ${C.pressure_limits[d.type][2]} bar` : null], ["Status", d.status],
         ["Position", h("a", { href: `https://www.google.com/maps?q=${d.lat},${d.lon}`, target: "_blank", rel: "noopener", title: "Open this exact location in Google Maps" }, position)],
         ["Water depth", depth != null ? `${fmt(depth)} m (EMODnet seabed model)` : null]]
       : [["Capacity", d.capacity == null ? "Not modelled" : `${fmt(d.capacity)} MSm³/d`], ["Length", `${fmt(d.km)} km`],
@@ -3103,6 +3132,7 @@ const App = (() => {
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
+    pressureMark, inkOn,
     rampAhead, // the next 6 hours of nominations at an exit point
     pipeStyle, pipeMapName, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.

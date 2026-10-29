@@ -56,6 +56,17 @@ DEFAULTS: dict = {
         "storage": [50, 150],
         "market": [45, 80],
     },
+    # Upper limits by asset type, [high, high-high, integrity] in bar: a pressure tag turns
+    # yellow at high, red at high-high and dark red at the integrity limit (Ray, 29 Oct).
+    "pressure_limits": {
+        "field": [160, 168, 175],
+        "hub": [157, 163, 170],
+        "processing": [152, 158, 165],
+        "terminal": [76, 80, 85],
+        "lng": [82, 86, 90],
+        "storage": [135, 142, 150],
+        "market": [70, 75, 80],
+    },
     "colors": {
         "paper": "#c6c9cc",
         "dots": "#b4b8bc",
@@ -69,6 +80,7 @@ DEFAULTS: dict = {
         "warning": "#ffbf00",
         "medium": "#ff7a1a",
         "critical": "#e5322d",
+        "integrity": "#8e1b1b",  # dark red: a pressure at its integrity limit
         "h2s": "#8a7616",
         "co2": "#93463e",
         "pig": "#9c8465",  # muted tan: a pig creeping along the line
@@ -87,6 +99,7 @@ DEFAULTS: dict = {
         "warning": "#ffbf00",
         "medium": "#ff7a1a",
         "critical": "#ff4d47",
+        "integrity": "#b0242a",
         "h2s": "#d2bd5c",
         "co2": "#d48c83",
         "pig": "#c4ae91",
@@ -134,7 +147,7 @@ def load_config(path: Path = CONFIG_PATH) -> dict:
             continue
         for key, value in values.items():
             where = f"{path.name} [{section}] {key}"
-            if section != "pressure" and key not in DEFAULTS[section]:
+            if section not in ("pressure", "pressure_limits") and key not in DEFAULTS[section]:
                 problems.append(
                     f"{path.name}: unknown key {key} in [{section}]"
                     + suggest(key, DEFAULTS[section])
@@ -170,6 +183,16 @@ def _check(section: str, key: str, value) -> str | None:
             and all(isinstance(v, int | float) for v in value)
         )
         return None if ok and value[0] < value[1] else "must be [min, max] in bar, min below max"
+    if section == "pressure_limits":
+        if key not in NODE_TYPES:
+            return "is not an asset type" + suggest(key, NODE_TYPES)
+        ok = (
+            isinstance(value, list)
+            and len(value) == 3
+            and all(isinstance(v, int | float) for v in value)
+            and value[0] <= value[1] <= value[2]
+        )
+        return None if ok else "must be [high, high-high, integrity] in bar, rising"
     if section in ("thresholds", "quality") and isinstance(default, list):
         ok = (
             isinstance(value, list)

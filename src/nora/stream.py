@@ -362,7 +362,9 @@ def synthesize(
                         it until an event intervenes
       booked_msm3d      booked capacity at each terminal, one exit booked tight
       pressure_bar      pressure at each node, following the gas actually moving
-                        through it with a lag, inside its operating window
+                        through it with a lag, inside its operating window, plus
+                        the `pressure_excursions` the spec lists (a node's pressure
+                        rising by `rise_bar` for `hours`, to show its limits)
     With `quality = true`, H2S (ppm) and CO2 (mol %) at each field: a steady level
     with a little noise, plus the `excursions` the spec lists.
     The same spec and seed always give the same rows.
@@ -404,7 +406,8 @@ def synthesize(
                 _throughput(net, flow if graph is base else routed_flow(base, plan_supply))
             )
     if operations:
-        rows += _operations_rows(net, times, actual, planned, pressure_windows, rng)
+        rises = _pressure_rises(net, times, spec.get("pressure_excursions", []))
+        rows += _operations_rows(net, times, actual, planned, pressure_windows, rng, rises)
     if spec.get("quality", False):
         rows += _quality_rows(net, times, spec.get("excursions", []), spec.get("seed", 1))
     return rows
@@ -467,7 +470,32 @@ def _throughput(net: Network, flow) -> dict[str, float]:
     return through
 
 
-def _operations_rows(net, times, actual, planned, windows, rng) -> list[Row]:
+def _pressure_rises(net: Network, times: list[datetime], excursions: list) -> list:
+    """A node's pressure rising by `rise_bar` (a restriction downstream, a compressor
+    trip): ramps like a quality excursion, and the pressure follows at its usual pace.
+    Scripted so the Flow view shows its limits in a demo (Ray, 29 Oct: high yellow,
+    high-high red, integrity dark red)."""
+    problems, rises = [], []
+    for i, spec in enumerate(excursions, start=1):
+        asset, where = spec.get("asset", ""), f"synthetic pressure excursion {i}"
+        if asset not in net.node_by_id:
+            problems.append(f"{where}: '{asset}' is not a node" + suggest(asset, net.node_by_id))
+        try:
+            rise, hours = float(spec["rise_bar"]), float(spec.get("hours", 3))
+            start, every = parse_time(spec["start"]), float(spec.get("every_hours", 0))
+            while start <= times[-1]:
+                rises.append((asset, rise, start, hours))
+                if every <= 0:
+                    break
+                start += timedelta(hours=every)
+        except (KeyError, ValueError) as error:
+            problems.append(f"{where}: needs a rise_bar and a start time ({error})")
+    if problems:
+        raise DataError(problems)
+    return rises
+
+
+def _operations_rows(net, times, actual, planned, windows, rng, rises=()) -> list[Row]:
     if windows is None:
         from .config import load_config
 
@@ -510,6 +538,7 @@ def _operations_rows(net, times, actual, planned, windows, rng) -> list[Row]:
             share = 0.2 + 0.3 * ratio if arrival else 0.55 + 0.15 * ratio  # same means, calmer
             noise = 0.95 * noise + rng.gauss(0, 0.0012)
             target = low + span * (share + noise)
+            target += sum(r * _plateau(when, s, h) for a, r, s, h in rises if a == node)
             if pressure is None:
                 pressure = target
             else:

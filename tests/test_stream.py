@@ -191,6 +191,37 @@ def test_synthetic_co2_slugs_are_short(north_sea):
         assert longest <= 4, f"{asset}: CO2 over {follow:.2f} mol % for {longest} h"
 
 
+def test_synthetic_week_meets_each_pressure_limit(north_sea):
+    """The synthetic week's pressure excursions reach high (Draupner E), high-high
+    (Kårstø) and integrity (Dunkirk), so the Flow view shows each colour (Ray, 29 Oct)."""
+    from nora.config import load_config
+
+    limits, kinds = load_config()["pressure_limits"], {n.id: n.type for n in north_sea.nodes}
+    assets, values = load_stream("synthetic-week", north_sea).metrics["pressure_bar"]
+    reached = {}
+    for column, asset in enumerate(assets):
+        top = max(row[column] for row in values if row[column] is not None)
+        reached[asset] = sum(top >= limit for limit in limits[kinds[asset]])
+    assert reached["draupner_e"] >= 1 and reached["karsto"] >= 2 and reached["dunkirk"] == 3
+    assert sum(1 for level in reached.values() if level) == 3, "only the scripted ones"
+
+
+def test_a_pressure_excursion_at_an_unknown_node_is_reported(tiny, tmp_path):
+    toml = """
+[synthetic]
+steps = 2
+operations = true
+[[synthetic.pressure_excursions]]
+asset = "hubb"
+rise_bar = 5
+start = 2026-01-05T00:00:00Z
+"""
+    make_stream(tmp_path / "bad", toml)
+    with pytest.raises(DataError) as caught:
+        load_stream("bad", tiny, tmp_path)
+    assert any("'hubb' is not a node" in p for p in caught.value.problems)
+
+
 def test_unknown_excursion_field_is_reported(tiny, tmp_path):
     toml = """
 [synthetic]
