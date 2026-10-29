@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta name="nora-build" content="421a73016a2d">
+<meta name="nora-build" content="5d5b0b815c02">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>NORA operations</title>
@@ -623,6 +623,21 @@ table.data.alarm-table th, table.data.alarm-table td { text-align: left; }
 .pressure-pop h4 { margin: 0 0 4px; font-size: 12.5px; font-weight: 600; color: var(--text); }
 .pressure-pop svg { display: block; width: 100%; height: auto; }
 .pressure-pop p { margin: 4px 0 0; font-size: 11.5px; color: var(--text-dim); line-height: 1.4; }
+
+/* Alarm handling: an acknowledged alarm dims, nothing flashes (hub 3612) */
+.alarm-summary { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin: 0 0 8px; font-size: 12px; }
+.alarm-list li .alarm-end { display: flex; align-items: center; gap: 8px; }
+.alarm-list li.acked .badge, .alarm-table tr.acked .badge, .alarm-counts span.acked .badge { opacity: .5; }
+.alarm-list li.acked > span, .alarm-table tr.acked td.note { color: var(--text-dim); }
+button.ack { height: 22px; padding: 0 8px; border: 1px solid var(--rule); border-radius: 5px; background: none; color: var(--text); font: inherit; font-size: 11px; cursor: pointer; }
+button.ack:hover, button.ack:focus-visible { background: var(--band); }
+.alarm-table td.alarm-do { white-space: nowrap; }
+.alarm-actions { display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+table.data.alarm-table td.note { min-width: 180px; }
+table.data.alarm-table td.network { white-space: normal; min-width: 90px; }
+table.data.alarm-table td.id { font-size: 11px; }
+.alarm-table tr.shelving td { padding-top: 0; }
+.alarm-table tr.shelving select { height: 22px; font-size: 11px; }
 </style>
 </head>
 <body>
@@ -1524,7 +1539,8 @@ const App = (() => {
     peaks: [], // flow changes travelling down pipelines
     quality: [], // parcels of H₂S or CO₂-rich gas travelling with the flow
     slugs: new Map(), // slug -> {origin, metric, first, last, volume, max}: what each slug is
-    conditions: [], // active abnormal conditions, worst first
+    conditions: [], // active abnormal conditions, worst first (shelved ones left out)
+    shelved: [], // active conditions an operator has shelved for a while
     levelOf: {}, // asset -> worst active level
     onset: new Map(), // `${kind}|${id}` -> when that alarm began ({t, before})
     jumped: true, // the playhead jumped (a seek, a new stream): onsets start over
@@ -1704,6 +1720,47 @@ const App = (() => {
     });
   }
 
+  // ------------------------------------------------------------------ alarm handling
+  /* Acknowledge and shelve (ISA-18.2 style; hub 3612). An alarm is raised unacknowledged.
+     Acknowledging one occurrence dims its badge; it stays listed until it clears, and if
+     it comes back it is a new occurrence, unacknowledged again (an acknowledgement is
+     kept per kind, asset and onset). Shelving takes an alarm out of the counts and the
+     views for 1, 8 or 12 hours, with a reason; it returns by itself at the expiry and
+     stays listed under Shelved meanwhile. Operator actions run on the wall clock and are
+     kept in this browser only (localStorage), not shared with anyone else. */
+  const ALARM_STATE = "nora-alarm-handling";
+  const SHELVE_REASONS = ["Known cause", "Maintenance", "Nuisance"];
+  const SHELVE_HOURS = [1, 8, 12];
+  const alarmKey = (c) => `${c.kind}|${c.id}`;
+  const occurrence = (c) => `${alarmKey(c)}|${c.since && c.since.t != null ? c.since.t : ""}`;
+  const alarmHandling = (() => {
+    const state = { acked: {}, shelved: {} };
+    try { Object.assign(state, JSON.parse(localStorage.getItem(ALARM_STATE) || "{}")); } catch (error) { /* start empty */ }
+    const save = () => {
+      const acked = Object.entries(state.acked).sort((a, b) => b[1] - a[1]).slice(0, 500); // the newest 500 are plenty
+      state.acked = Object.fromEntries(acked);
+      try { localStorage.setItem(ALARM_STATE, JSON.stringify(state)); } catch (error) { /* kept for this page only */ }
+    };
+    return {
+      acked: (c) => state.acked[occurrence(c)] != null,
+      ack(conditions, now = Date.now()) {
+        for (const c of conditions) state.acked[occurrence(c)] ??= now;
+        save();
+      },
+      shelf: (c, now = Date.now()) => { const s = state.shelved[alarmKey(c)]; return s && s.until > now ? s : null; },
+      shelve(c, reason, hours, now = Date.now()) {
+        state.shelved[alarmKey(c)] = { reason, since: now, until: now + hours * 3600e3 };
+        save();
+      },
+      unshelve(c) { delete state.shelved[alarmKey(c)]; save(); },
+      expire(now = Date.now()) {
+        const gone = Object.keys(state.shelved).filter((k) => state.shelved[k].until <= now);
+        for (const k of gone) delete state.shelved[k];
+        if (gone.length) save();
+      },
+    };
+  })();
+
   // ------------------------------------------------------------------ conditions
   /* Everything abnormal right now, as {level, id, kind, text, since}. The views, the
      alarm counts, the overview and the asset screens all read this one list. `since`
@@ -1767,9 +1824,13 @@ const App = (() => {
     }
     live.onset = onset;
     live.jumped = false;
-    live.conditions = out;
+    // Shelved alarms leave the counts, the views and the lists; they are listed apart.
+    alarmHandling.expire();
+    for (const c of out) { c.acked = alarmHandling.acked(c); c.shelf = alarmHandling.shelf(c); }
+    live.conditions = out.filter((c) => !c.shelf);
+    live.shelved = out.filter((c) => c.shelf);
     live.levelOf = {};
-    for (const c of out) live.levelOf[c.id] = Math.max(live.levelOf[c.id] || 0, c.level);
+    for (const c of live.conditions) live.levelOf[c.id] = Math.max(live.levelOf[c.id] || 0, c.level);
   }
   // When the plan began to fall short: the first of the frames in a row that do.
   function planSince() {
@@ -2834,11 +2895,37 @@ const App = (() => {
       ? h("time", { title: "Already active when the playhead arrived: it may have begun earlier" }, `by ${shortTime(since.t)}`)
       : h("time", { title: "When this alarm began" }, shortTime(since.t));
   }
+  // Acknowledge: the operator has seen it. The button never opens the asset under it.
+  function ackButton(conditions, label = "Ack") {
+    const open = conditions.filter((c) => !c.acked);
+    if (!open.length) return null;
+    return h("button", { type: "button", class: "ack", "data-key": `ack:${open.map(alarmKey).join(",")}`,
+      title: open.length === 1 ? "Acknowledge this alarm" : `Acknowledge ${open.length} alarms`,
+      onkeydown: (e) => { if (e && e.stopPropagation) e.stopPropagation(); }, // Enter acks; it never opens the row
+      onclick: (e) => { if (e && e.stopPropagation) e.stopPropagation(); alarmHandling.ack(open); evaluate(); refreshScreens(); } }, label);
+  }
   function alarmList(conditions) {
     if (!conditions.length) return h("p", { class: "empty" }, "No active alarms. Everything is in its normal range.");
     return h("ul", { class: "alarm-list" }, conditions.map((c) =>
-      h("li", assets[c.id] ? pressable(`alarm:${c.kind}|${c.id}`, () => go({ screen: "asset", asset: c.id }), { role: "link", title: `Open ${nameOf(c.id)}` }) : null,
-        badge(c.level, ""), h("span", null, c.text), sinceTime(c.since))));
+      h("li", { ...(assets[c.id] ? pressable(`alarm:${c.kind}|${c.id}`, () => go({ screen: "asset", asset: c.id }), { role: "link", title: `Open ${nameOf(c.id)}` }) : {}),
+        class: c.acked ? "acked" : null },
+        badge(c.level, ""), h("span", null, c.text), h("span", { class: "alarm-end" }, sinceTime(c.since), c.acked ? h("span", { class: "dim small" }, "Acked") : ackButton([c])))));
+  }
+  /* The alarm summary on the Overview: how many wait for an acknowledgement, the oldest
+     of them, and the rate over the last hour of data, with a flood above 10 in 10
+     minutes (ISA-18.2's benchmark for one operator). */
+  function alarmSummary() {
+    const all = live.conditions, open = all.filter((c) => !c.acked), now = live.time;
+    if (!all.length && !live.shelved.length) return null;
+    const began = (c, s) => c.since && !c.since.before && c.since.t != null && now - c.since.t <= s;
+    const hour = all.filter((c) => began(c, 3600)).length, ten = all.filter((c) => began(c, 600)).length;
+    const oldest = open.map((c) => c.since && c.since.t).filter((t) => t != null).sort((a, b) => a - b)[0];
+    return h("div", { class: "alarm-summary" },
+      h("span", null, open.length ? `${open.length} unacknowledged${oldest != null ? `, oldest ${shortTime(oldest)}` : ""}` : "All acknowledged"),
+      h("span", { class: "dim" }, `${hour} raised in the last hour`),
+      ten > 10 ? h("span", { class: "flood" }, badge(2, `Alarm flood: ${ten} in 10 min`)) : null,
+      live.shelved.length ? h("span", { class: "dim" }, `${live.shelved.length} shelved`) : null,
+      ackButton(all, "Acknowledge all"));
   }
 
   // ------------------------------------------------------------------ decision support
@@ -2937,7 +3024,7 @@ const App = (() => {
         h("div", { class: "box" }, h("h2", null, "Exit points: actual flow against the hourly nomination"),
           bank(exits.map(exitIndicator), "No exit-point readings in this dataset.")),
         nominationsBox(exits),
-        h("div", { class: "box" }, h("h2", null, "Active alarms"), alarmList(live.conditions.slice(0, 12))),
+        h("div", { class: "box" }, h("h2", null, "Active alarms"), alarmSummary(), alarmList(live.conditions.slice(0, 12))),
         qualityBox(),
         h("div", { class: "box" }, h("h2", null, "Pressures at plants, hubs and terminals"),
           bank(pressures.slice(0, 10).map(pressureIndicator), "No pressure readings in this dataset.")),
@@ -3628,10 +3715,14 @@ const App = (() => {
     renderTop();
   }
   function renderTop() {
-    const counts = [3, 2, 1].map((l) => [l, live.conditions.filter((c) => c.level === l).length]).filter(([, n]) => n);
+    const counts = [3, 2, 1].map((l) => {
+      const at = live.conditions.filter((c) => c.level === l);
+      return [l, at.length, at.filter((c) => !c.acked).length];
+    }).filter(([, n]) => n);
     // Both are live regions, refreshed with every data step: rebuilt only when they change.
-    replaceIfChanged($("alarm-counts"), counts.map(([l, n]) => `${l}:${n}`).join(",") || "none",
-      () => (counts.length ? counts.map(([l, n]) => h("span", { title: `${n} ${LEVEL[l].toLowerCase()}` }, badge(l, l === 1 ? `${n} warning${n === 1 ? "" : "s"}` : String(n))))
+    replaceIfChanged($("alarm-counts"), counts.map(([l, n, open]) => `${l}:${n}:${open}`).join(",") || "none",
+      () => (counts.length ? counts.map(([l, n, open]) => h("span", { class: open ? null : "acked", title: `${n} ${LEVEL[l].toLowerCase()}, ${open ? `${open} unacknowledged` : "all acknowledged"}` },
+        badge(l, l === 1 ? `${n} warning${n === 1 ? "" : "s"}` : String(n))))
         : [h("span", { class: "dim" }, "No alarms")]));
     buildAlarms();
     // No plan chip (Ray, 29 Oct: "remove this. it serves no purpose"): the plan's state
@@ -3648,6 +3739,7 @@ const App = (() => {
   const INTEGRITY = new Set(["pressure", "load"]);
   const ALARM_TAG = { pressure: "PI", load: "FI", trip: "FT", quality: "QI", peak: "FS", nomination: "NOM", booking: "BKG" };
   const alarmFilter = { level: 0, unit: "all" };
+  let shelving = null; // the alarm whose shelve form is open
   const alarmUnit = (id) => unitOf[id] || (assets[id] && assets[id].kind === "pipeline" ? unitOf[assets[id].from] : null);
   const alarmId = (c) => `${ALARM_TAG[c.kind] || c.kind.slice(0, 3).toUpperCase()}-${c.id.toUpperCase()}`;
   function alarmNote(c) {
@@ -3659,35 +3751,71 @@ const App = (() => {
     if (!panel || panel.hidden) return;
     const all = live.conditions, shown = all.filter((c) => (!alarmFilter.level || c.level === alarmFilter.level)
       && (alarmFilter.unit === "all" || alarmUnit(c.id) === alarmFilter.unit));
-    const key = `${alarmFilter.level}|${alarmFilter.unit}|${all.map((c) => `${c.kind}:${c.id}:${c.level}:${c.text}:${c.since ? c.since.t : ""}`).join(";")}`;
+    const sig = (c) => `${c.kind}:${c.id}:${c.level}:${c.text}:${c.since ? c.since.t : ""}:${c.acked ? 1 : 0}`;
+    const key = `${alarmFilter.level}|${alarmFilter.unit}|${shelving}|${all.map(sig).join(";")}|${live.shelved.map((c) => `${sig(c)}:${c.shelf.until}`).join(";")}`;
     replaceIfChanged(panel, key, () => {
       const chip = (lvl, label) => h("button", { type: "button", role: "tab", "aria-selected": String(alarmFilter.level === lvl),
         onclick: () => { alarmFilter.level = lvl; buildAlarms(); } }, label);
       const count = (lvl) => all.filter((c) => c.level === lvl).length;
+      const location = (c) => (assets[c.id] ? h("button", { type: "button", class: "link", "data-key": `alarm:${c.kind}|${c.id}`,
+        onclick: () => { closePops(); if (route.screen === "unit") openSidebar(c.id); else go({ screen: "asset", asset: c.id }); } }, nameOf(c.id)) : c.id);
+      const redo = () => { evaluate(); refreshScreens(); buildAlarms(); };
+      const actions = (c) => h("td", { class: "alarm-do" }, h("span", { class: "alarm-actions" },
+        c.acked ? h("span", { class: "dim" }, "Acked") : ackButton([c]),
+        shelving === alarmKey(c) ? null : h("button", { type: "button", class: "ack", "data-key": `shelve:${alarmKey(c)}`, title: "Take it out of the counts for a while, with a reason",
+          onclick: () => { shelving = alarmKey(c); buildAlarms(); } }, "Shelve")));
+      // The shelve form opens on its own row under the alarm: why, and for how long.
+      const shelveRow = (c) => {
+        if (shelving !== alarmKey(c)) return null;
+        const reason = h("select", { "aria-label": "Reason" }, ...SHELVE_REASONS.map((r) => h("option", { value: r }, r)));
+        const hours = h("select", { "aria-label": "For" }, ...SHELVE_HOURS.map((n) => h("option", { value: String(n) }, n === 12 ? "12 h (a shift)" : `${n} h`)));
+        return h("tr", { class: "shelving" }, h("td", { colspan: "7" }, h("span", { class: "alarm-actions" },
+          h("span", { class: "dim" }, `Shelve ${nameOf(c.id)}:`), reason, hours,
+          h("button", { type: "button", class: "ack", "data-key": `shelve-ok:${alarmKey(c)}`,
+            onclick: () => { alarmHandling.shelve(c, reason.value, Number(hours.value)); shelving = null; redo(); } }, "Shelve"),
+          h("button", { type: "button", class: "ack", onclick: () => { shelving = null; buildAlarms(); } }, "Cancel"))));
+      };
       const table = (title, rows) => [
         h("h3", null, `${title} · ${rows.length}`),
         rows.length ? h("table", { class: "data alarm-table" },
-          h("thead", null, h("tr", null, ...["Time", "Location", "Note", "Level", "Network", "ID"].map((t) => h("th", null, t)))),
-          h("tbody", null, ...rows.map((c) => h("tr", null,
+          h("thead", null, h("tr", null, ...["Time", "Location", "Note", "Level", "Network", "ID", ""].map((t) => h("th", null, t)))),
+          h("tbody", null, ...rows.flatMap((c) => [h("tr", { class: c.acked ? "acked" : null },
             h("td", null, sinceTime(c.since)),
-            h("td", null, assets[c.id] ? h("button", { type: "button", class: "link", "data-key": `alarm:${c.kind}|${c.id}`,
-              onclick: () => { closePops(); if (route.screen === "unit") openSidebar(c.id); else go({ screen: "asset", asset: c.id }); } }, nameOf(c.id)) : c.id),
+            h("td", null, location(c)),
             h("td", { class: "note" }, alarmNote(c)),
             h("td", null, badge(c.level, LEVEL[c.level])),
-            h("td", null, (unitById[alarmUnit(c.id)] || {}).name || "–"),
-            h("td", { class: "dim" }, alarmId(c))))))
+            h("td", { class: "network" }, (unitById[alarmUnit(c.id)] || {}).name || "–"),
+            h("td", { class: "dim id" }, alarmId(c)),
+            actions(c)), shelveRow(c)].filter(Boolean))))
           : h("p", { class: "dim" }, "None"),
       ];
+      const shelved = live.shelved.filter((c) => !alarmFilter.level || c.level === alarmFilter.level);
+      const shelf = shelved.length ? [
+        h("h3", null, `Shelved · ${shelved.length}`),
+        h("table", { class: "data alarm-table" },
+          h("thead", null, h("tr", null, ...["Location", "Note", "Level", "Reason", "Back at (your clock)", ""].map((t) => h("th", null, t)))),
+          h("tbody", null, ...shelved.map((c) => h("tr", { class: "acked" },
+            h("td", null, location(c)),
+            h("td", { class: "note" }, alarmNote(c)),
+            h("td", null, badge(c.level, LEVEL[c.level])),
+            h("td", null, c.shelf.reason),
+            h("td", null, h("time", { title: "Wall-clock time, this browser" }, new Date(c.shelf.until).toTimeString().slice(0, 5))),
+            h("td", { class: "alarm-do" }, h("button", { type: "button", class: "ack", "data-key": `unshelve:${alarmKey(c)}`,
+              onclick: () => { alarmHandling.unshelve(c); redo(); } }, "Unshelve")))))),
+      ] : [];
       const newest = (a, b) => ((b.since && b.since.t) || 0) - ((a.since && a.since.t) || 0);
       return [
         h("div", { class: "alarm-filters" },
           h("div", { class: "seg", role: "tablist", "aria-label": "Level" }, chip(0, `All ${all.length}`),
             ...[3, 2, 1].map((l) => chip(l, `${4 - l} ${LEVEL[l]} ${count(l)}`))),
+          ackButton(shown, "Acknowledge all"),
           h("select", { "aria-label": "Network", onchange: (e) => { alarmFilter.unit = e.target.value; buildAlarms(); } },
             h("option", { value: "all", selected: alarmFilter.unit === "all" ? "" : null }, "All networks"),
             ...Object.values(unitById).map((u) => h("option", { value: u.id, selected: alarmFilter.unit === u.id ? "" : null }, u.name)))),
         ...table("Integrity", shown.filter((c) => INTEGRITY.has(c.kind)).sort(newest)),
         ...table("SCADA", shown.filter((c) => !INTEGRITY.has(c.kind)).sort(newest)),
+        ...shelf,
+        h("p", { class: "dim small" }, "Acknowledgements and shelving are kept in this browser only."),
       ];
     });
   }
@@ -4926,7 +5054,7 @@ const App = (() => {
       card: whatifCard,
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
-    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
+    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, alarmHandling, buildAlarms, fmt, esc, nameOf, unitOf, units: unitById,
     linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
     pressureMark, flowMark, limitInk, drawFlowDirection, gasDayChart, gasQuality, pressureOutlook, pressureChart,
     airTemp: (id) => metric("air_temp_c", id),
