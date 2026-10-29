@@ -318,7 +318,7 @@
     map.on("move", () => showCoord(map.getCenter()));
     map.on("mouseout", () => { readout.textContent = ""; });
     map.on("resize", sizeCanvas);
-    map.on("render", () => view.ready && view.draw());
+    map.on("render", () => { renderedCamera = cameraKey(); if (view.ready) view.draw(); });
     const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12 });
     // A pig, peak or slug under the pointer wins: its value and when it reaches the next stop.
     let overMark = false;
@@ -399,6 +399,13 @@
      second while playing and 60 while paused with nothing moving. */
   let revision = 0, drawnKey = "", boxesKey = "", boxes = [];
   const changed = () => { revision++; };
+  /* The camera MapLibre last drew with. The frame loop may run between a camera move and
+     the map's own render: drawn then, peaks and pigs would sit off their lines for a
+     frame (Ray, 29 Oct: "CO2 lines are still glitching / flashing outside the
+     pipeline"). So the layer draws only with a camera the map has drawn; after a move
+     the map's render event draws it. */
+  let renderedCamera = "";
+  const cameraKey = () => { const c = map.getCenter(); return [c.lng, c.lat, map.getZoom(), map.getBearing(), map.getPitch()].join("|"); };
   function sceneKey() {
     const c = map.getCenter(), el = map.getContainer();
     return [revision, App.notes.version(), App.state.mode, c.lng, c.lat, map.getZoom(), map.getBearing(), map.getPitch(),
@@ -406,6 +413,7 @@
   }
   view.draw = () => {
     if (!ctx || !map) return;
+    if (cameraKey() !== renderedCamera) return; // the map has not drawn this camera yet: its render draws the layer
     const scene = sceneKey(), key = `${scene}|${App.live.playing ? App.live.clock : "paused"}`;
     if (key === drawnKey) return;
     App.frame.run(() => drawNow(scene));

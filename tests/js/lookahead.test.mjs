@@ -46,7 +46,11 @@ test("lookahead: with the input as now, a rising nomination draws the line pack 
 test("lookahead: shown in place, the short hour's step in the warning colour and 'short HH:MM' in the list", () => {
   const { App, NORA, document, move } = week();
   let id = null;
-  for (let k = 0; k < 168 && !id; k++, move(3600)) id = exitsOf(NORA).find((e) => App.reachAhead(e) && App.reachAhead(e).first) || null;
+  for (let k = 0; k < 168; k++) {
+    id = exitsOf(NORA).find((e) => App.reachAhead(e) && App.reachAhead(e).first) || null;
+    if (id) break; // stay on the hour that is short
+    move(3600);
+  }
   assert.ok(id, "the synthetic week has an hour that would be short");
   App.go({ screen: "overview" });
   const text = document.getElementById("screen-overview").textContent;

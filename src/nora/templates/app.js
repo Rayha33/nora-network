@@ -3579,6 +3579,28 @@ const App = (() => {
     refreshScreens();
     drawSpark();
   }
+  /* A tab left open keeps the build it was opened with, and then shows bugs fixed since as
+     if they were still there (Ray, 29 Oct). Every 5 minutes the page asks the site which
+     build it serves (version.json beside it). A newer one: the page reloads itself once
+     nobody has touched it for a minute, or the bar offers "New version · Reload" while
+     someone is at it or has What-if values that a reload would clear. Edits and notes are
+     kept in the browser and survive a reload. */
+  const BUILD = ((document.querySelector && document.querySelector('meta[name="nora-build"]')) || {}).content || "";
+  let lastInput = Date.now();
+  for (const type of ["pointerdown", "keydown", "wheel"]) addEventListener(type, () => { lastInput = Date.now(); }, { capture: true, passive: true });
+  async function checkBuild(now = Date.now()) {
+    if (!BUILD) return null; // opened from a file or a dev build: nothing to compare
+    let published = null;
+    try {
+      const response = await fetch(`version.json?at=${now}`, { cache: "no-store" });
+      published = response.ok ? (await response.json()).build : null;
+    } catch (error) { return null; } // offline, or the site has no version.json: keep this build
+    if (!published || published === BUILD) return "current";
+    const typing = document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName || "");
+    if (now - lastInput >= 60000 && !typing && !whatifChanges()) { location.reload(); return "reloaded"; }
+    $("update").hidden = false;
+    return "offered";
+  }
   /* Right-click menu: the same actions everywhere, on the Map and in the Flow.
      openMenu places it inside the viewport; any click, Esc or resize closes it. */
   const menu = { el: null };
@@ -4039,6 +4061,8 @@ const App = (() => {
   }
 
   function start() {
+    $("update").addEventListener("click", () => location.reload());
+    if (BUILD) setInterval(checkBuild, 5 * 60 * 1000);
     $("crumb-overview").addEventListener("click", () => go({ screen: "overview" }));
     $("crumb-asset").addEventListener("click", () => go({ screen: "asset", asset: route.asset }));
     $("theme-toggle").addEventListener("click", () => setTheme(theme === "light" ? "dark" : "light"));
@@ -4151,7 +4175,8 @@ const App = (() => {
     // The display profile (desk, wall or compact) and the one UI scale (1 = 100 %).
     display: () => display.profile,
     uiScale: () => display.scale,
-    mix, onPinch,
+    mix, onPinch, checkBuild, // for tests
+    build: () => BUILD,
     notes: {
       list: () => notes.list, add: addNote, remove: removeNote, snap: snapToRoute, layer: noteLayer,
       version: () => notes.version, onChange: (fn) => notes.listeners.add(fn),

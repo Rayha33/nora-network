@@ -86,6 +86,7 @@ async function mountMap() {
   const map = maplibregl.Map.last;
   map.fire("style.load");
   for (let i = 0; i < 5 && !App.views.map.ready; i++) await new Promise((resolve) => setImmediate(resolve));
+  map.fire("render"); // MapLibre draws its first frame: the layer draws only with a camera the map has drawn
   return { ...loaded, view: App.views.map, map, el, counts };
 }
 
@@ -110,7 +111,8 @@ test("map: the layer over the map is drawn when what it shows changes, at most o
   map.center = { lng: 3.5, lat: 58 };
   assert.equal(drawn(() => { map.fire("render"); view.draw(); }), 1, "a pan: drawn once, from the map's repaint");
   map.zoom = 6;
-  assert.equal(drawn(() => { view.draw(); map.fire("render"); }), 1, "a zoom: drawn once, whoever asks first");
+  assert.equal(drawn(() => view.draw()), 0, "a zoom the map has not drawn yet: the layer waits for it (never off its lines)");
+  assert.equal(drawn(() => { map.fire("render"); view.draw(); }), 1, "then drawn once, with the map's repaint");
 
   assert.equal(drawn(() => { view.restyle(); view.draw(); view.draw(); }), 1, "a restyle (new data, a filter): drawn once");
   assert.equal(drawn(() => { view.applySettings(); view.draw(); }), 1, "new settings: drawn once");

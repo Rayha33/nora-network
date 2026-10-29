@@ -100,3 +100,13 @@ def test_hostile_names_do_not_reach_the_page_as_html(tmp_path):
     # the label rides to the browser inside JSON, where `&` is \u0026; the
     # browser decodes it back to &lt; before vis-network sees the label
     assert "u0026lt;img" in html
+
+
+def test_a_build_says_which_commit_it_is(tmp_path, monkeypatch):
+    """A tab left open compares this with version.json and reloads to a newer build (Ray,
+    29 Oct: his tab showed bugs fixed hours before). The commit, never a clock time."""
+    monkeypatch.setenv("GITHUB_SHA", "0123456789abcdef0123")
+    out = tmp_path / "site"
+    build_site(out, DATA_DIR)
+    assert json.loads((out / "version.json").read_text()) == {"build": "0123456789ab"}
+    assert '<meta name="nora-build" content="0123456789ab">' in (out / "network.html").read_text()

@@ -39,7 +39,6 @@ draupner_s = [6.6, 3.1]
 draupner_e = [8.8, 3.1]
 ekofisk = [5.4, 3.75]
 ekofisk_tee = [7.4, 4.3]  # on the line from Draupner S to Emden (Area D)
-sns_fields = [4.4, 4.0]
 baltic_tie = [12.6, 3.7]
 nybro = [13.8, 3.7]
 # the landings, west to east

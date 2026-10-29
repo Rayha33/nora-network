@@ -97,10 +97,18 @@ test("what-if: a click opens the asset's card; its inputs are your values", () =
   assert.match(body.textContent, /What-if/);
 });
 
-test("what-if: with nothing changed, in and out balance over every exit, markets too", () => {
-  const { App } = play();
-  const b = App.whatif.state().balance;
-  assert.ok(Math.abs(b.produced - b.packed - b.delivered) < 0.5, `in ${b.produced}, out ${b.delivered}: Poland and Tjeldbergodden are exits too`);
+test("what-if: with nothing changed, the delivery counts every exit, markets too", () => {
+  // Not production minus delivery: the synthetic week's flow surges draw on the line pack.
+  const { App, NORA } = play();
+  const b = App.whatif.state().balance, f = App.live.frames[App.live.index];
+  const exits = Object.keys(NORA.assets).filter((id) => NORA.assets[id].exit);
+  assert.ok(["pl_vtp", "tjeldbergodden"].every((id) => exits.includes(id)), "Poland and Tjeldbergodden are exits too");
+  const into = (id) => App.pipeIds.reduce((sum, pid) => {
+    const p = NORA.assets[pid], v = f.flows[pid] || 0;
+    return sum + (p.to === id && v > 0 ? v : p.from === id && v < 0 ? -v : 0);
+  }, 0);
+  const measured = exits.reduce((sum, id) => sum + into(id), 0);
+  assert.ok(Math.abs(b.delivered - measured) < 0.5, `delivered ${b.delivered}, into the exits ${measured}`);
 });
 
 test("what-if: a line's pack now and then on the same pressures; a tie-in's from the model", () => {
