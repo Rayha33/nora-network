@@ -213,6 +213,20 @@
       ctx.lineTo(x0 + (k + 1) * step, yy(v));
     });
     ctx.stroke();
+    // An hour the exit's pressure would be short with the input as now (App.reachAhead): its
+    // step in the warning colour, a little heavier.
+    const reach = App.reachAhead(id);
+    if (reach && reach.first) {
+      ctx.strokeStyle = App.limitInk(1);
+      ctx.lineWidth = 2.2 * u;
+      reach.hours.forEach((hour, k) => {
+        if (!hour.short || values[k] == null) return;
+        ctx.beginPath();
+        ctx.moveTo(x0 + k * step, yy(values[k]));
+        ctx.lineTo(x0 + (k + 1) * step, yy(values[k]));
+        ctx.stroke();
+      });
+    }
     if (step * scale >= 24) {
       ctx.font = modelFont("400 10px Archivo, system-ui, sans-serif");
       ctx.textBaseline = "middle";
