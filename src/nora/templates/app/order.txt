@@ -1,0 +1,18 @@
+# app.js, in parts: render.py and tests/js/harness.mjs join these in this order, inside the
+# one IIFE that core.js opens and edit.js closes. Order matters (const and let), so move code
+# between files only by moving a whole section and keeping the sequence.
+core.js
+alarms.js
+state.js
+linepack.js
+conditions.js
+quality.js
+whatif.js
+styles.js
+indicators.js
+screens.js
+nav.js
+player.js
+start.js
+notes.js
+edit.js

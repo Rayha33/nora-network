@@ -93,6 +93,17 @@ FLOW_OPTIONS = {
 }  # fmt: skip
 
 
+def app_files() -> list[str]:
+    """The app's script, in parts (issue #50): templates/app/order.txt, in order."""
+    lines = (TEMPLATES / "app" / "order.txt").read_text(encoding="utf-8").splitlines()
+    return [line.strip() for line in lines if line.strip() and not line.startswith("#")]
+
+
+def app_js() -> str:
+    """The parts joined into one script: core.js opens the app's scope, edit.js closes it."""
+    return "".join((TEMPLATES / "app" / name).read_text(encoding="utf-8") for name in app_files())
+
+
 def _model_flow(net: Network, analysis: dict) -> dict[str, float]:
     """Gas through each node in the max-flow model: supplied, delivered or passed on."""
     through: dict[str, float] = {}
@@ -355,7 +366,7 @@ def page_payload(
         # Each pipeline's regression for the What-if's pressures (data/pipeline_models.csv).
         "pipeModels": load_pipeline_models(net, Path(data_dir) / "pipeline_models.csv"),
         # The data files as they are, for the editor's download: an edited network goes
-        # back as the same files with only the edited rows changed (templates/app.js).
+        # back as the same files with only the edited rows changed (templates/app/edit.js).
         "sources": {
             name: (Path(data_dir) / name).read_text(encoding="utf-8")
             for name in ("nodes.csv", "pipelines.csv", "units.toml", "flow_layout.toml")
@@ -384,7 +395,7 @@ def network_html(
         "vis_css": (vis / "vis-network.css").read_text(encoding="utf-8"),
         "vis_js": (vis / "vis-network.min.js").read_text(encoding="utf-8"),
         "css": (TEMPLATES / "app.css").read_text(encoding="utf-8"),
-        "app_js": (TEMPLATES / "app.js").read_text(encoding="utf-8"),
+        "app_js": app_js(),
         "map2d_js": (TEMPLATES / "map2d.js").read_text(encoding="utf-8"),
         "map_js": (TEMPLATES / "map.js").read_text(encoding="utf-8"),
         "flow_js": (TEMPLATES / "flow.js").read_text(encoding="utf-8"),
