@@ -2211,9 +2211,17 @@ const App = (() => {
   const views = {};
   function register(name, view) { views[name] = view; }
   const current = () => views[state.view];
+  /* Map and Flow side by side on a wide or ultra-wide screen (issue #59: aspect 2.2 or
+     more, a video wall or a 32:9 desk), not in the home page's frame or on a phone.
+     ?split=1 forces it, ?split=0 turns it off. */
+  function splitScreen() {
+    const asked = params.get("split");
+    if (asked === "0" || embed) return false;
+    return asked === "1" || (display.profile !== "compact" && window.innerWidth / Math.max(1, window.innerHeight) >= 2.2);
+  }
+  const shownViews = () => (splitScreen() ? ["map", "flow"] : [state.view]).map((key) => views[key]).filter(Boolean);
   function restyle() {
-    const view = current();
-    if (route.screen === "unit" && view && view.ready) view.restyle();
+    if (route.screen === "unit") for (const view of shownViews()) if (view.ready) view.restyle();
   }
 
   // Level 1: plan, exit points, alarms, pressures, busiest lines, units.
@@ -3389,10 +3397,14 @@ const App = (() => {
   }
   addEventListener("popstate", () => go(fromHash() || { screen: "overview" }, false));
 
+  let splitShown = false;
   function render() {
     const s = route.screen;
     for (const [key, el] of Object.entries(screens)) el.hidden = key !== s;
-    for (const [key, el] of Object.entries(containers)) el.hidden = !(s === "unit" && key === state.view);
+    const shown = shownViews();
+    splitShown = splitScreen();
+    document.body.classList.toggle("split", s === "unit" && splitShown);
+    for (const [key, el] of Object.entries(containers)) el.hidden = !(s === "unit" && shown.includes(views[key]));
     // The Map/Flow and mode tabs stay in the bar on every screen: one constant top bar.
     $("crumb-overview").setAttribute("aria-current", s === "overview" ? "page" : "false");
     const deep = s === "asset" || s === "diag";
@@ -3401,9 +3413,9 @@ const App = (() => {
     if (deep) $("crumb-asset").replaceChildren(h("span", { class: "level" }, "3"), nameOf(route.asset));
     $("crumb-asset").setAttribute("aria-current", s === "asset" ? "page" : "false");
     $("crumb-diag").setAttribute("aria-current", s === "diag" ? "page" : "false");
-    if (s === "unit") {
-      const view = views[state.view], fresh = !view.mounted || view.shownUnit !== route.unit;
-      if (!view.mounted) { view.mounted = true; view.mount(containers[state.view]); }
+    if (s === "unit") for (const view of shown) {
+      const key = Object.keys(views).find((k) => views[k] === view), fresh = !view.mounted || view.shownUnit !== route.unit;
+      if (!view.mounted) { view.mounted = true; view.mount(containers[key]); }
       else view.resize();
       if (view.ready) {
         // Back to a view, it is where you left it; another unit fits that unit (Ray, 29 Oct:
@@ -3649,8 +3661,8 @@ const App = (() => {
   }
   // After the profile or scale changed: the stage has a new size, so re-fit and redraw.
   function displayChanged() {
-    const view = current();
-    if (view && view.mounted) view.resize();
+    if (splitShown !== splitScreen()) { render(); drawSpark(); return; }
+    for (const view of shownViews()) if (view.mounted) view.resize();
     drawSpark();
   }
   function copyLink() {
@@ -4112,8 +4124,7 @@ const App = (() => {
     if (live.feed && !live.stale && live.frameGap && Date.now() - live.lastFrameWall > Math.max(60000, 3 * live.frameGap)) {
       feedTrouble(`No new data for ${spanText((Date.now() - live.lastFrameWall) / 1000)}`);
     }
-    const view = current();
-    if (route.screen === "unit" && view && view.ready) view.draw();
+    if (route.screen === "unit") for (const view of shownViews()) if (view.ready) view.draw();
     requestAnimationFrame(tick);
   }
 
@@ -4738,9 +4749,7 @@ const App = (() => {
         buildSettings();
         for (const view of Object.values(views)) if (view.ready && view.applySettings) view.applySettings();
       }
-      const view = current();
-      if (view && view.mounted) view.resize();
-      drawSpark();
+      displayChanged();
     });
     if (embed) document.body.classList.add("embed");
     if (views[params.get("view")]) state.view = params.get("view");

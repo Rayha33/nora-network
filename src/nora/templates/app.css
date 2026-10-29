@@ -648,3 +648,7 @@ table.data.diag-cursor { margin-top: 8px; }
 /* Skip link (hub 3615): off screen until it has keyboard focus */
 .skip { position: absolute; left: 8px; top: -60px; z-index: 100; padding: 8px 12px; border-radius: 6px; background: var(--selected-bg); color: var(--selected-text); }
 .skip:focus { top: 8px; }
+
+/* Map and Flow side by side on a wide screen (issue #59): each takes half the stage */
+body.split #view-map { right: 50%; }
+body.split #view-flow { left: 50%; border-left: 1px solid var(--rule); }
