@@ -60,3 +60,5 @@ def test_js_whatif_matches_python(offline):
     )
     assert sum(js["delivered"].values()) == pytest.approx(js["value"], abs=0.05)
     assert set(js["delivered"]) <= set(py["delivered"]), "JS only delivers to known markets"
+    # Booked exits are served first on both sides (Baltic Pipe to Poland).
+    assert js["delivered"].get("pl_vtp", 0) == pytest.approx(py["delivered"]["pl_vtp"], abs=0.05)

@@ -122,6 +122,7 @@ def assets_payload(net: Network, analysis: dict) -> dict[str, dict]:
             "source": node.source,
             "notes": node.notes,
             "min_zoom": node.map_min_zoom,
+            "booked": node.booked_msm3d,
             "line": node.line,
             "lost": outage.get("lost", 0.0),
             "share": outage.get("share", 0.0),

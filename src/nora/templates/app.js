@@ -1255,7 +1255,10 @@ const App = (() => {
      flow the Python analysis runs (analysis.py, `offline=`), recomputed here
      from the payload because the published site has no server to ask. The
      network is small, so Edmonds-Karp over arcs added in sorted id order is
-     fast and always gives the same answer. */
+     fast and always gives the same answer. The graph follows analysis.flow_graph:
+     only operating assets (graph.build_graph); every other capacitated node that
+     is neither a supplier nor an exit split into an entry twin; exits' booked
+     shares filled before the rest (review #49802). */
   const WHATIF_SOURCE = "__supply__", WHATIF_SINK = "__markets__", EPS = 1e-9;
   const whatif = { offline: new Set(), cache: null };
   function whatifFlow() {
@@ -1268,34 +1271,57 @@ const App = (() => {
       (adj[v] = adj[v] || []).push(i + 1);
       return i;
     };
+    // offline, not operating (graph.build_graph), or not built in the year shown
+    const inService = (id) => !whatif.offline.has(id) && assets[id].status === "operating" && yearActive(id);
     for (const id of nodeIds) {
-      // offline nodes, and nodes not built (or shut down) in the year shown: no capacity
-      if (whatif.offline.has(id) || !yearActive(id)) continue;
+      if (!inService(id)) continue;
       const d = assets[id];
       adj[id] = adj[id] || [];
       if (d.supply && d.capacity) add(WHATIF_SOURCE, id, d.capacity);
       if (d.exit) sinkArc[id] = add(id, WHATIF_SINK, d.capacity || Infinity); // as analysis.flow_graph
     }
-    /* A processing plant with a capacity is a bottleneck (the Python side splits
-       it the same way, see analysis.flow_graph): incoming arcs land on an entry
-       twin, one capacity arc joins the twin to the plant, outgoing arcs leave
-       the plant itself. */
+    /* Any other node with a capacity (a processing plant) is a bottleneck, split as
+       analysis.flow_graph does: incoming arcs land on an entry twin, one capacity
+       arc joins the twin to the node, outgoing arcs leave the node itself. */
     const plantEntry = {};
     for (const id of nodeIds) {
       const d = assets[id];
-      if (!whatif.offline.has(id) && d.type === "processing" && d.capacity)
-        plantEntry[id] = add(`${id}__in`, id, d.capacity);
+      if (inService(id) && !d.supply && !d.exit && d.capacity) plantEntry[id] = add(`${id}__in`, id, d.capacity);
     }
     for (const id of pipeIds) {
       const p = assets[id];
-      if (!adj[p.from] || !adj[p.to]) continue; // touches an offline asset
+      if (p.status !== "operating" || !adj[p.from] || !adj[p.to]) continue; // not operating, or an end is out
       const cap = p.capacity == null ? Infinity : p.capacity;
-      const to = plantEntry[p.to] !== undefined ? `${p.to}__in` : p.to;
-      add(p.from, to, cap, id, 1);
-      if (p.bidirectional) add(to, p.from, cap, id, -1);
+      // gas leaves a node from the node itself and enters a split one at its twin
+      const into = (node) => (plantEntry[node] !== undefined ? `${node}__in` : node);
+      add(p.from, into(p.to), cap, id, 1);
+      if (p.bidirectional) add(p.to, into(p.from), cap, id, -1);
+    }
+    /* Bookings first: the sink arcs open only to the exits' booked shares, then fully.
+       An augmenting path ends at the sink, so it never takes gas back from a booked
+       exit, and the total is the same maximum either way. */
+    const full = {}, booked = {};
+    for (const [id, i] of Object.entries(sinkArc)) {
+      full[id] = arcs[i].cap;
+      if (assets[id].booked) booked[id] = Math.min(assets[id].booked, full[id]);
     }
     let value = 0;
-    for (;;) { // shortest augmenting paths, in sorted order, so the split is stable
+    if (Object.keys(booked).length) {
+      for (const [id, i] of Object.entries(sinkArc)) arcs[i].cap = booked[id] || 0;
+      value += augment(arcs, adj);
+      for (const [id, i] of Object.entries(sinkArc)) arcs[i].cap = full[id];
+    }
+    value += augment(arcs, adj);
+    const pipelines = {};
+    for (const a of arcs) if (a.pipeline && Math.abs(a.f) > EPS) pipelines[a.pipeline] = (pipelines[a.pipeline] || 0) + a.f * a.sign;
+    const delivered = {};
+    for (const [id, i] of Object.entries(sinkArc)) delivered[id] = arcs[i].f;
+    return { value, delivered, pipelines, max: Math.max(1, ...Object.values(pipelines).map(Math.abs)) };
+  }
+  // Edmonds-Karp: shortest augmenting paths, in sorted order, so the split is stable.
+  function augment(arcs, adj) {
+    let value = 0;
+    for (;;) {
       const prev = { [WHATIF_SOURCE]: WHATIF_SOURCE }, prevArc = {}, queue = [WHATIF_SOURCE];
       while (queue.length && !prev[WHATIF_SINK]) {
         const u = queue.shift();
@@ -1305,17 +1331,12 @@ const App = (() => {
           if (prev[WHATIF_SINK]) break;
         }
       }
-      if (!prev[WHATIF_SINK]) break;
+      if (!prev[WHATIF_SINK]) return value;
       let push = Infinity;
       for (let v = WHATIF_SINK; v !== WHATIF_SOURCE; v = prev[v]) push = Math.min(push, arcs[prevArc[v]].cap - arcs[prevArc[v]].f);
       for (let v = WHATIF_SINK; v !== WHATIF_SOURCE; v = prev[v]) { arcs[prevArc[v]].f += push; arcs[arcs[prevArc[v]].rev].f -= push; }
       value += push;
     }
-    const pipelines = {};
-    for (const a of arcs) if (a.pipeline && Math.abs(a.f) > EPS) pipelines[a.pipeline] = (pipelines[a.pipeline] || 0) + a.f * a.sign;
-    const delivered = {};
-    for (const [id, i] of Object.entries(sinkArc)) delivered[id] = arcs[i].f;
-    return { value, delivered, pipelines, max: Math.max(1, ...Object.values(pipelines).map(Math.abs)) };
   }
   function whatifResult() {
     if (!whatif.cache) whatif.cache = whatifFlow();
