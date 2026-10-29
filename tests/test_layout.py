@@ -1,6 +1,8 @@
-from nora.data import NODE_TYPES
+import pytest
+
+from nora.data import NODE_TYPES, DataError
 from nora.icons import GLYPHS, TYPES, icon_uri
-from nora.layout import ROW_GAP, crossings, flow_positions, stages
+from nora.layout import ROW_GAP, crossings, flow_grid, flow_positions, load_flow_layout, stages
 
 
 def test_gas_flows_left_to_right(north_sea):
@@ -41,3 +43,31 @@ def test_every_asset_type_has_an_icon():
     assert set(NODE_TYPES) == set(TYPES) == set(GLYPHS)
     for kind in NODE_TYPES:
         assert icon_uri(kind).startswith("data:image/svg+xml")
+
+
+def test_the_shipped_layout_places_every_node_apart(north_sea):
+    """data/flow_layout.toml: the Area D-like overview (Ray, 29 Oct). Every node has a
+    place, and no two squares overlap: one step across or one row down apart."""
+    placed = load_flow_layout(north_sea)
+    assert set(placed) == {n.id for n in north_sea.nodes}
+    for a, b in __import__("itertools").combinations(sorted(placed), 2):
+        (ax, ay), (bx, by) = placed[a], placed[b]
+        assert abs(ax - bx) >= 1 - 1e-9 or abs(ay - by) >= 1 - 1e-9, f"{a} and {b} overlap"
+    grid = flow_grid(north_sea, placed)
+    assert grid["sleipner"] == (placed["sleipner"][1], placed["sleipner"][0])
+    terminals = {
+        placed[n.id][1] for n in north_sea.nodes if n.type == "terminal" and n.id != "st_fergus"
+    }
+    assert len(terminals) == 1, "the landings share the bottom row"
+    row = sorted((placed[n.id][0], n.lon) for n in north_sea.nodes if placed[n.id][1] in terminals)
+    assert row[0][1] < row[-1][1], "west on the left, east on the right"
+
+
+def test_a_bad_layout_entry_is_reported(north_sea, tmp_path):
+    path = tmp_path / "flow_layout.toml"
+    path.write_text('[positions]\nslepner = [1, 2]\ntroll = "top"\n', encoding="utf-8")
+    with pytest.raises(DataError) as caught:
+        load_flow_layout(north_sea, path)
+    problems = " ".join(caught.value.problems)
+    assert "no node 'slepner'" in problems and "did you mean 'sleipner'" in problems
+    assert "troll must be [across, down]" in problems

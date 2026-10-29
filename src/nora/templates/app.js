@@ -149,6 +149,7 @@ const App = (() => {
     if (step.op === "removeLine" && has(step.id, "pipeline")) { dropLine(step.id); return true; }
     if (step.op === "addNode" && step.node && !A[step.node.id]) { putNode(step.node); return true; }
     if (step.op === "addLine" && step.line && !A[step.line.id] && has(step.line.from, "node") && has(step.line.to, "node")) { putLine(step.line); return true; }
+    if (step.op === "moveNode" && has(step.id, "node") && Array.isArray(step.grid)) { NORA.grid[step.id] = step.grid; return true; }
     return false;
   }
   const edits = storedEdits().filter(applyEdit);
@@ -2407,6 +2408,17 @@ const App = (() => {
     if (!storeEdits(edits)) { edits.pop(); editNote("This browser does not keep edits: its storage is blocked."); return; }
     reloadKeepingView();
   }
+  /* A node dragged in the Flow view: its new place, kept like any edit but without a
+     reload (only the drawing moves). Dragging the same node again updates that step. */
+  function commitMove(id, grid) {
+    const last = edits[edits.length - 1], step = { op: "moveNode", id, grid };
+    if (last && last.op === "moveNode" && last.id === id) edits[edits.length - 1] = step;
+    else edits.push(step);
+    NORA.grid[id] = grid;
+    storeEdits(edits);
+    confirmDiscard = false;
+    renderEditsBar();
+  }
   function undoEdit() { edits.pop(); storeEdits(edits); reloadKeepingView(); }
   function discardEdits() { edits.length = 0; storeEdits(edits); reloadKeepingView(); }
 
@@ -2535,7 +2547,23 @@ const App = (() => {
     };
     return head + NORA.units.map((u) => `[units.${u.id}]\nname = ${JSON.stringify(u.name)}\n${list(u.nodes)}\n`).join("\n");
   }
-  const editedFiles = () => ({ "nodes.csv": editedCsv("nodes.csv", "node", nodeRow), "pipelines.csv": editedCsv("pipelines.csv", "pipeline", lineRow), "units.toml": editedUnits() });
+  /* flow_layout.toml: the lines of moved and added nodes rewritten (or added), those of
+     removed nodes dropped, everything else as it was (edit.edit_layout does the same). */
+  function editedLayout() {
+    let text = NORA.sources["flow_layout.toml"] || "[positions]\n";
+    const at = (id) => `${id} = [${NORA.grid[id][1]}, ${NORA.grid[id][0]}]`;
+    const line = (id) => new RegExp(`^${id} = \\[[^\\]]*\\][^\\n]*\\n?`, "m");
+    for (const step of edits) {
+      const id = step.op === "moveNode" ? step.id : step.op === "addNode" ? step.node.id : null;
+      if (step.op === "removeNode") text = text.replace(line(step.id), "");
+      else if (id && assets[id]) text = line(id).test(text) ? text.replace(line(id), `${at(id)}\n`) : `${text.replace(/\n*$/, "\n")}${at(id)}\n`;
+    }
+    return text;
+  }
+  const editedFiles = () => ({
+    "nodes.csv": editedCsv("nodes.csv", "node", nodeRow), "pipelines.csv": editedCsv("pipelines.csv", "pipeline", lineRow),
+    "units.toml": editedUnits(), "flow_layout.toml": editedLayout(),
+  });
   // The full network for `nora serve --edit` (POST api/save): its rows, with the edits.
   function editedNetwork(current) {
     let nodeRows = current.nodes.slice(), lineRows = current.pipelines.slice();
@@ -2549,7 +2577,12 @@ const App = (() => {
       else if (step.op === "addLine" && assets[step.line.id]) lineRows.push(lineRow(step.line.id));
     }
     for (const id of Object.keys(units)) if (!nodeRows.some((n) => n.id === id)) delete units[id];
-    return { revision: current.revision, nodes: nodeRows, pipelines: lineRows, units };
+    const layout = {}; // [across, down] of every node added or moved
+    for (const step of edits) {
+      const id = step.op === "moveNode" ? step.id : step.op === "addNode" ? step.node.id : null;
+      if (id && NORA.grid[id] && nodeRows.some((n) => n.id === id)) layout[id] = [NORA.grid[id][1], NORA.grid[id][0]];
+    }
+    return { revision: current.revision, nodes: nodeRows, pipelines: lineRows, units, layout };
   }
   /* Save: served by `nora serve --edit` (make edit), the edits go straight into data/
      and the site rebuilds; anywhere else (a file, GitHub Pages) the three files download,
@@ -2576,7 +2609,7 @@ const App = (() => {
       link.click();
       link.remove();
     }
-    editNote("Downloaded nodes.csv, pipelines.csv and units.toml for data/. `make edit` saves straight to data/ and also clears removed assets from the streams.");
+    editNote("Downloaded nodes.csv, pipelines.csv, units.toml and flow_layout.toml for data/. `make edit` saves straight to data/ and also clears removed assets from the streams.");
   }
   let editsBar = null, editMessage = "", confirmDiscard = false;
   function editNote(text) { editMessage = text; renderEditsBar(); }
@@ -2741,6 +2774,7 @@ const App = (() => {
     edit: {
       canvasMenu: (ctx) => (embed ? [] : [{ label: "Add a node here", act: () => openNodeForm(ctx) }]),
       lineForm: openLineForm,
+      move: commitMove,
       list: () => edits.slice(),
       files: editedFiles,
       network: editedNetwork,

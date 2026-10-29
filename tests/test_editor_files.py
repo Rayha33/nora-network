@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from nora.data import load_network
+from nora.layout import load_flow_layout
 from nora.units import load_units
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -33,3 +34,5 @@ def test_the_editor_writes_files_nora_accepts(tmp_path):
     assert net.pipeline_by_id["snorre_statfjord"].to_id == "statfjord"
     units = load_units(net, tmp_path / "units.toml")
     assert any("snorre" in unit["nodes"] for unit in units)
+    placed = load_flow_layout(net, tmp_path / "flow_layout.toml")
+    assert placed["sleipner"] == (5.25, 3) and placed["snorre"] == (2.5, 1)

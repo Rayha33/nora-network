@@ -27,7 +27,7 @@ from .config import load_config
 from .data import DATA_DIR, NODE_TYPES, PIPELINE_TYPES, SUPPLY_TYPES, Network
 from .graph import great_circle_km
 from .icons import TYPES, icon_uri
-from .layout import flow_grid
+from .layout import flow_grid, load_flow_layout
 from .ops import plan_timeline
 from .stream import Stream
 from .units import load_units
@@ -301,7 +301,7 @@ def page_payload(
         "geo": map_geojson(net),
         "land": coastline(),
         "depth": bathymetry(),
-        "grid": flow_grid(net),
+        "grid": flow_grid(net, load_flow_layout(net, Path(data_dir) / "flow_layout.toml")),
         "units": units,
         "iconSets": {
             theme: {
@@ -331,7 +331,7 @@ def page_payload(
         # back as the same files with only the edited rows changed (templates/app.js).
         "sources": {
             name: (Path(data_dir) / name).read_text(encoding="utf-8")
-            for name in ("nodes.csv", "pipelines.csv", "units.toml")
+            for name in ("nodes.csv", "pipelines.csv", "units.toml", "flow_layout.toml")
             if (Path(data_dir) / name).exists()
         },
     }

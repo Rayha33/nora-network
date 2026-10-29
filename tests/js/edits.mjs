@@ -9,6 +9,7 @@ export const STEPS = [
   { op: "removeLine", id: "ogt" },
   { op: "addNode", node: { id: "snorre", name: "Snorre", type: "field", unit: "northern_north_sea", country: "NO", lat: 61.45, lon: 2.14, capacity: 4, grid: [1, 2.5] } },
   { op: "addLine", line: { id: "snorre_statfjord", name: "Snorre – Statfjord", from: "snorre", to: "statfjord", type: "feeder", capacity: 4, bidirectional: false } },
+  { op: "moveNode", id: "sleipner", grid: [3, 5.25] }, // dragged in the Flow view
   { op: "removeNode", id: "no_such_node" }, // the data changed under it: skipped
 ];
 

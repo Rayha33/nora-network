@@ -26,6 +26,7 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 | `nora.toml` | display settings, alarm thresholds, `[quality]` limits, pressure windows, light and dark palettes; validated by `src/nora/config.py` |
 | `data/nodes.csv`, `data/pipelines.csv` | the network; documented in `data/README.md` |
 | `data/units.toml` | the operating units; every node in exactly one (`src/nora/units.py`) |
+| `data/flow_layout.toml` | where each node sits in the Flow view, Area D-style; dragging a node and Save updates it |
 | `data/streams/*/stream.toml` | time-series datasets; documented in `data/streams/README.md` |
 | `src/nora/data.py` | load and validate the CSVs; every problem gets file, line and a suggestion |
 | `src/nora/graph.py` | build the `networkx.DiGraph` |

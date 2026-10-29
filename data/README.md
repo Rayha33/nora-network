@@ -46,15 +46,23 @@ One row per asset.
 (NBP, TTF, THE and so on, placed schematically on the map) and large consumers such as
 the Tjeldbergodden methanol plant.
 
+### flow_layout.toml
+
+Where each node sits in the Flow view, as `node = [across, down]` in grid steps, laid
+out like the operators' Area D overview: the UK on the left, Kårstø and the Norwegian
+Sea on the right, fields at the top and the landings along the bottom. A node it does
+not list is placed by `layout.py`. Drag a node in the Flow view and Save to move it.
+
 ### Editing in the page
 
-In the Flow view, right-click empty paper to add a node there, right-click a node to
-connect it to another or remove it, and right-click a line to remove it (a node's
-removal takes its lines with it). The edits show at once in both views and are kept in
+In the Flow view, right-click empty paper to add a node there, drag a node to move it,
+right-click a node to connect it to another or remove it, and right-click a line to
+remove it (a node's removal takes its lines with it). The edits show at once in both views and are kept in
 the browser until saved; a bar lists them with Undo, Save and Discard. With `make edit`
 (`nora serve --edit`) running, Save validates them, writes `nodes.csv`,
-`pipelines.csv` and `units.toml` (a new node joins the unit chosen in its form) and
-rebuilds the site. Opened anywhere else, Save downloads the three files to put here and
+`pipelines.csv`, `units.toml` (a new node joins the unit chosen in its form) and
+`flow_layout.toml` (a dragged or new node keeps its place), and
+rebuilds the site. Opened anywhere else, Save downloads the four files to put here and
 commit. A new row says "Added in the NORA editor" in `notes`: add its `source`.
 
 ### Local edit API
