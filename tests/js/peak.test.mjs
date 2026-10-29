@@ -136,23 +136,54 @@ test("peak: the H₂S or CO₂ dot sits midway between the head and the tail", (
   document.getElementById("stream-select")._listeners.change[0]({ target: { value: week.name } });
   App.state.mode = "live";
   App.go({ screen: "unit", unit: "all" });
-  const scrub = document.getElementById("scrub"), v = NORA.config.pipelines.gas_velocity_mps;
+  const scrub = document.getElementById("scrub");
   let checked = 0;
   for (let i = 0; i < week.times.length; i += 1) {
     scrub.value = String(i);
     scrub._listeners.input[0]();
-    for (const dot of App.markers().filter((m) => m.kind === "quality" && m.lead)) {
-      const parcels = App.live.quality.filter((q) => q.slug === dot.ref);
-      if (parcels.length < 2 || parcels.some((q) => q.arrived || q.pid !== dot.id)) continue; // on one line
-      const at = (q) => { const t = (App.live.time - q.t0) / ((NORA.assets[q.pid].km * 1000) / v); return q.forward ? t : 1 - t; };
-      const head = parcels.reduce((a, b) => (a.born <= b.born ? a : b)), tail = parcels.reduce((a, b) => (a.born >= b.born ? a : b));
-      assert.ok(Math.abs(dot.along - (at(head) + at(tail)) / 2) < 1e-9, `${dot.ref} at ${dot.along}, not midway`);
+    const quality = App.markers().filter((m) => m.kind === "quality");
+    for (const dot of quality.filter((m) => m.lead)) {
+      if (quality.filter((m) => m.ref === dot.ref).length !== 1) continue; // the whole slug on one line
+      // the band runs from the gas sent first to the gas sent last (the field, while it still sends)
       const [a, b] = dot.extent;
-      assert.ok(Math.abs(dot.along - (a + b) / 2) < 1e-9 || a <= 0 || b <= 0 || a >= 1 || b >= 1, "the middle of its band too");
+      assert.ok(Math.abs(dot.along - (a + b) / 2) < 1e-9, `${dot.ref} at ${dot.along}, not midway in [${a}, ${b}]`);
       checked += 1;
     }
   }
   assert.ok(checked > 3, `checked ${checked} positions`);
+});
+
+/* Ray, 29 Oct: "peaks sometimes glitch and jump outside the pipeline". A slug is the
+   stretch of gas sent between its first and last reading, so in ten minutes its dot
+   moves as far as the gas does, and its ends do too, except the odd step where the
+   main flow at a node changes line and the gas after it takes another route. */
+test("peak: an H₂S or CO₂ band and its dot move with the gas, without jumps", () => {
+  const { App, NORA, document } = loadApp();
+  document.getElementById("speed").options = [{ value: "60" }];
+  const week = NORA.streams.find((s) => s.synthetic);
+  document.getElementById("stream-select")._listeners.change[0]({ target: { value: week.name } });
+  const scrub = document.getElementById("scrub"), move = (seconds) => { scrub.value = String(seconds); scrub._listeners.input[0](); };
+  move(-400 * 3600); // the first hour
+  const gas = (NORA.config.pipelines.gas_velocity_mps * 600) / 1000 + 1e-6, km = (pid) => NORA.assets[pid].km || 1;
+  const bands = new Map(), dots = new Map();
+  let moves = 0, jumps = 0, dotMoves = 0;
+  for (let k = 0; k < 84 * 6; k++, move(600)) {
+    for (const m of App.markers().filter((x) => x.kind === "quality")) {
+      const lo = Math.min(...m.extent), hi = Math.max(...m.extent), key = `${m.key}|${m.id}`, was = bands.get(key);
+      assert.ok(lo >= 0 && hi <= 1 && m.along >= lo - 1e-9 && m.along <= hi + 1e-9, `${key}: on its line, the dot on its band`);
+      if (was && was.k === k - 1) { moves += 1; if (Math.max(Math.abs(lo - was.lo), Math.abs(hi - was.hi)) * km(m.id) > gas) jumps += 1; }
+      bands.set(key, { lo, hi, k });
+      if (!m.lead) continue;
+      const dot = dots.get(m.key);
+      if (dot && dot.k === k - 1 && dot.id === m.id) {
+        dotMoves += 1;
+        assert.ok(Math.abs(m.along - dot.along) * km(m.id) <= gas, `${m.key} on ${m.id}: the dot jumped ${dot.along} -> ${m.along}`);
+      }
+      dots.set(m.key, { along: m.along, id: m.id, k });
+    }
+  }
+  assert.ok(moves > 500 && dotMoves > 200, `checked ${moves} band and ${dotMoves} dot moves`);
+  assert.ok(jumps <= moves / 200, `${jumps} of ${moves} band ends moved faster than the gas`);
 });
 
 /* Ray, 29 Oct, of a moving flow-change marker ("−50.7 16:31 Sleipner"): "what is this
