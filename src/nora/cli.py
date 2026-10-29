@@ -12,6 +12,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from .analysis import analyse
+from .blending import blending_routes
 from .config import load_config
 from .data import DATA_DIR, DataError, load_network, suggest
 from .integrations import (
@@ -52,6 +53,7 @@ def cmd_validate(args) -> int:
                 for k, n in unknown
             ]
         )
+    blending_routes(net, config["blending"]["stations"])
     units = load_units(net, args.data / "units.toml")
     load_flow_layout(net, args.data / "flow_layout.toml")
     models = load_pipeline_models(net, args.data / "pipeline_models.csv")

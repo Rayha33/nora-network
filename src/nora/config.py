@@ -45,6 +45,9 @@ DEFAULTS: dict = {
         "hide": [],
         "watch": [],
     },
+    # The blending stations drawn as one picture on their asset pages (nora.toml
+    # [blending]); node ids, checked by `nora validate`.
+    "blending": {"stations": []},
     "thresholds": {
         "load": [1.01, 1.05, 1.10],
         "nomination": [0.03, 0.06, 0.10],
@@ -219,6 +222,9 @@ def _check(section: str, key: str, value) -> str | None:
         bad = [t for t in value if t not in NODE_TYPES] if isinstance(value, list) else ["?"]
         return None if not bad else f"unknown asset type(s) {bad}"
     if section == "flow" and key in ("hide", "watch"):  # node ids; `nora validate` checks them
+        ok = isinstance(value, list) and all(isinstance(v, str) for v in value)
+        return None if ok else "must be a list of node ids"
+    if section == "blending" and key == "stations":  # node ids; `nora validate` checks them
         ok = isinstance(value, list) and all(isinstance(v, str) for v in value)
         return None if ok else "must be a list of node ids"
     if section == "screen" and key in ("wall_distance_m", "wall_width_m"):

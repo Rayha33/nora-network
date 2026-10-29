@@ -44,6 +44,13 @@ hide = [
 ]
 watch = ["sleipner", "draupner_s", "draupner_e"]  # their pressure's change per hour always shows (Ray: "especially in and out of SLR, DRP S and DRP E")
 
+# The blending stations: gas from the plants is mixed here before it leaves the shelf.
+# Their asset pages show one picture of the lines in, between and out of them, left to
+# right (Ray, 27 Oct: "how the main pipelines go for the gas at those two blending
+# stations"). Node ids from data/nodes.csv; Draupner is two bridge-linked platforms.
+[blending]
+stations = ["sleipner", "draupner_s", "draupner_e"]
+
 # Alarm thresholds. Three priorities: warning (amber), medium (orange), critical (red).
 [thresholds]
 load = [1.01, 1.05, 1.10]             # share of capacity in use: running full is normal
