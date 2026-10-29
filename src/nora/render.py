@@ -41,6 +41,7 @@ MAPLIBRE = "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl
 SHORT = {
     "field": "Field",
     "hub": "Riser hub",
+    "tee": "Tie-in",
     "processing": "Gas plant",
     "terminal": "Terminal",
     "lng": "LNG terminal",
@@ -52,6 +53,7 @@ SHORT = {
 PLURAL = {
     "field": "Fields",
     "hub": "Riser hubs",
+    "tee": "Tie-ins",
     "processing": "Gas plants",
     "terminal": "Terminals",
     "lng": "LNG terminals",

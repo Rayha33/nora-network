@@ -115,6 +115,8 @@
     map.addSource("nora-mids", { type: "geojson", data: mids });
     const state = (key, fallback) => ["coalesce", ["feature-state", key], fallback];
     const detailFilter = ["<=", ["coalesce", ["get", "minZoom"], 0], ["zoom"]]; // the same rule as nodeAtZoom
+    // A tie-in is where lines meet: no dot or name of its own on the map.
+    const nodeFilter = ["all", detailFilter, ["!=", ["get", "type"], "tee"]];
     // Hairlines at overview zoom, a little more weight only when zoomed in. Load and
     // Risk speak in line weight, so their lines keep it at every zoom (review #49802).
     const width = (k, extra = 0) => ["interpolate", ["linear"], ["zoom"],
@@ -135,16 +137,16 @@
        number. Names are a separate text layer that is never reloaded. */
     const radius = (extra = 0) => ["interpolate", ["linear"], ["zoom"], 3, 3.5 + extra, 6, 5.5 + extra, 9, 8 + extra];
     const nodeOpacity = ["case", ["boolean", ["feature-state", "hide"], false], 0, ["boolean", ["feature-state", "dim"], false], 0.3, 1];
-    map.addLayer({ id: "nora-selected", type: "circle", source: "nora-nodes", filter: detailFilter,
+    map.addLayer({ id: "nora-selected", type: "circle", source: "nora-nodes", filter: nodeFilter,
       paint: { "circle-radius": radius(5), "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2, "circle-stroke-color": C.text,
         "circle-stroke-opacity": ["case", ["boolean", ["feature-state", "selected"], false], 1, 0] } });
-    map.addLayer({ id: "nora-node-dots", type: "circle", source: "nora-nodes", filter: detailFilter,
+    map.addLayer({ id: "nora-node-dots", type: "circle", source: "nora-nodes", filter: nodeFilter,
       paint: {
         "circle-radius": radius(), "circle-color": ["to-color", state("fill", C.normal)],
         "circle-stroke-color": ["to-color", state("edge", C.text_dim)], "circle-stroke-width": state("edgeWidth", 1),
         "circle-opacity": nodeOpacity, "circle-stroke-opacity": nodeOpacity,
       } });
-    map.addLayer({ id: "nora-nodes", type: "symbol", source: "nora-nodes", filter: detailFilter,
+    map.addLayer({ id: "nora-nodes", type: "symbol", source: "nora-nodes", filter: nodeFilter,
       layout: {
         "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 11.5,
         "text-offset": [0, 0.8], "text-anchor": "top", "text-optional": true, "text-max-width": 9,
@@ -438,7 +440,7 @@
       ctx.lineCap = "round";
       for (const nid of App.nodeIds) {
         const node = NORA.assets[nid];
-        if (!node || !nodeAtZoom(nid)) continue;
+        if (!node || !nodeAtZoom(nid) || node.type === "tee") continue;
         const pn = map.project([node.lon, node.lat]);
         if (pn.x < -40 || pn.y < -40 || pn.x > canvas.clientWidth + 40 || pn.y > canvas.clientHeight + 40) continue;
         const k = App.uiScale();
@@ -553,7 +555,7 @@
     ctx.font = `${11.5 * k}px Archivo, system-ui, sans-serif`;
     for (const id of App.nodeIds) {
       const d = NORA.assets[id];
-      if (App.nodeStyle(id).hidden || !nodeAtZoom(id)) continue;
+      if (App.nodeStyle(id).hidden || !nodeAtZoom(id) || d.type === "tee") continue;
       const p = map.project([d.lon, d.lat]);
       if (p.x < -150 || p.y < -60 || p.x > w0 + 150 || p.y > h0 + 60) continue;
       out.push([p.x - 6 * k, p.y - 6 * k, p.x + 6 * k, p.y + 6 * k]);

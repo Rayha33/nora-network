@@ -376,8 +376,13 @@
     return tags;
   }
   // Once per node and frame: vis asks for each line end, the square draws them too.
+  /* A tie-in (type tee) is a junction on a line, not a station: a small dot where the
+     lines meet, with no square, tags or name (Ray, 29 Oct: Draupner S to NPT with
+     "Ekofisk being connected on to that pipeline somewhere along it"). */
+  const TEE_R = 6;
+  const isTee = (id) => (NORA.assets[id] || {}).type === "tee";
   function tagsAt(id, positions = framePos) {
-    if (!pressureVisibility(App.state.mode, network ? network.getScale() : 1)) return [];
+    if (isTee(id) || !pressureVisibility(App.state.mode, network ? network.getScale() : 1)) return [];
     const byId = App.cached("tags", positions, () => new Map());
     if (!byId.has(id)) byId.set(id, pressureTags(id, positions));
     return byId.get(id);
@@ -386,6 +391,7 @@
      there: the square's edge, or the outer side of a tag the line runs under. vis asks
      this to end the line and place its arrow; the moving layer starts beyond it. */
   function portDistance(id, ux, uy, positions = framePos) {
+    if (isTee(id)) return TEE_R; // lines meet at the dot
     const p = positions[id];
     let d = edgeGap(nodeHalf(), ux, uy);
     if (!p) return d;
@@ -636,6 +642,18 @@
       return ({
       drawNode() {
         const s = App.nodeStyle(id), d = NORA.assets[id];
+        if (isTee(id)) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(x, y, TEE_R, 0, Math.PI * 2);
+          ctx.fillStyle = s.inactive ? C.inactive : C.active;
+          ctx.fill();
+          ctx.lineWidth = selected ? 2 : 1;
+          ctx.strokeStyle = selected || hover ? C.text : C.text_dim;
+          ctx.stroke();
+          ctx.restore();
+          return;
+        }
         const live = App.state.mode === "live";
         const scale = network ? network.getScale() : 1, detailed = detailedFlow(scale);
         const half = nodeHalf();
@@ -946,7 +964,8 @@
       const p = positions[nid];
       if (!p || nodeHidden(nid)) continue; // not placed, or hidden
       const dom = toDOM(p);
-      const score = Math.max(Math.abs(dom.x - at.x), Math.abs(dom.y - at.y)) - nodeHalf() * scale; // to the square's edge
+      const score = isTee(nid) ? Math.hypot(dom.x - at.x, dom.y - at.y) - TEE_R * scale // to the dot's edge
+        : Math.max(Math.abs(dom.x - at.x), Math.abs(dom.y - at.y)) - nodeHalf() * scale; // to the square's edge
       if (score < bestScore) { bestScore = score; best = nid; }
     }
     for (const pid of App.pipeIds) {

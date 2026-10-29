@@ -131,7 +131,7 @@ function NoraCanvasMap(view) {
     const r = nodeRadius(), names = App.settings().names, boxes = [], dots = [];
     for (const n of nodes) {
       const s = App.nodeStyle(n.id);
-      if (s.hidden || !nodeAtZoom(n.id)) continue;
+      if (s.hidden || !nodeAtZoom(n.id) || NORA.assets[n.id].type === "tee") continue; // a tie-in: the lines meet
       const q = toScreen(n.lonlat[0], n.lonlat[1]);
       if (q.x < -40 || q.y < -40 || q.x > width + 40 || q.y > height + 40) continue;
       const look = C.card[s.inactive ? "inactive" : live ? "active" : "normal"];
@@ -271,7 +271,7 @@ function NoraCanvasMap(view) {
     const r = nodeRadius() + 5 * App.uiScale();
     let best = null, bestD = Infinity;
     for (const n of nodes) {
-      if (App.nodeStyle(n.id).hidden || !nodeAtZoom(n.id)) continue;
+      if (App.nodeStyle(n.id).hidden || !nodeAtZoom(n.id) || NORA.assets[n.id].type === "tee") continue;
       const q = toScreen(n.lonlat[0], n.lonlat[1]), d = Math.hypot(q.x - sx, q.y - sy);
       if (d <= r && d < bestD) { best = n.id; bestD = d; }
     }

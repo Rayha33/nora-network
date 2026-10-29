@@ -40,6 +40,7 @@ draupner_e = [9.5, 3]
 baltic_tie = [12.6, 3.4]
 sns_fields = [3.4, 4]
 ekofisk = [10.6, 4]
+ekofisk_tee = [9.56, 4.56]  # on the line from Draupner S to Emden (Ray, 29 Oct, Area D)
 nybro = [13.8, 4.6]
 # the landings, west to east
 easington = [1, 5.6]

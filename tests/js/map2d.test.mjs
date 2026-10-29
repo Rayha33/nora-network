@@ -1004,3 +1004,26 @@ test("map: an interconnector shows which way its gas goes, and how much", () => 
   assert.deepEqual(draw(0).texts, ["no flow"]);
   assert.equal(draw(0).chevrons.length, 0);
 });
+
+test("flow: a tie-in is a dot where the lines meet, with no square, tags or name", () => {
+  const { App, NORA } = loadApp();
+  loadFirstHour(App, NORA);
+  App.state.mode = "live";
+  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 258, y: stage * 204 }]));
+  const ops = [];
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "measureText") return (t) => ({ width: String(t).length * 6 });
+      return (...args) => ops.push({ op: key, args });
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  App.views.flow.card("ekofisk_tee")({ ctx, x: 0, y: 0, state: { selected: false, hover: false } }).drawNode();
+  assert.ok(ops.some((o) => o.op === "arc"), "a dot");
+  assert.ok(!ops.some((o) => o.op === "fillText"), "no name, no numbers");
+  assert.equal(App.views.flow.portDistance("ekofisk_tee", 1, 0, pos), 6, "lines meet at the dot");
+  const source = (name) => readFileSync(new URL(`../../src/nora/templates/${name}`, import.meta.url), "utf8");
+  assert.match(source("map.js"), /\["!=", \["get", "type"\], "tee"\]/, "no dot on the MapLibre map");
+  assert.match(source("map2d.js"), /type === "tee"/, "nor on the canvas map");
+});

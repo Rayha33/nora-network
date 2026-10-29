@@ -12,7 +12,7 @@ from urllib.parse import quote
 DISC = "#dfe2e4"  # the palette's "normal" grey
 GLYPH = "#3b4248"
 EDGE = "#50575d"
-TYPES = ("field", "hub", "processing", "terminal", "lng", "storage", "market")
+TYPES = ("field", "hub", "tee", "processing", "terminal", "lng", "storage", "market")
 
 # Glyphs drawn on a 48 x 48 canvas, in the colour GLYPH.
 GLYPHS = {
@@ -23,6 +23,9 @@ GLYPHS = {
     "hub": '<g fill="none" stroke="GLYPH" stroke-width="2.6" stroke-linecap="round" '
     'stroke-linejoin="round"><path d="M13 22h22M16 22l-2.5 13M32 22l2.5 13M24 22v13'
     'M19.5 22l4.5-10 4.5 10"/></g>',
+    # a tie-in: a line joining another along its way
+    "tee": '<g fill="none" stroke="GLYPH" stroke-width="2.8" stroke-linecap="round">'
+    '<path d="M11 30h26M24 30V15"/></g>',
     # a plant with a chimney
     "processing": '<path fill="GLYPH" d="M12 35V23l7 4.2V23l7 4.2V23l7 4.2V12h4v23z"/>',
     # gas arriving into a terminal

@@ -22,6 +22,7 @@ DATA_DIR = REPO_ROOT / "data"
 NODE_TYPES = {
     "field": "Gas field or production hub",
     "hub": "Offshore riser or junction platform",
+    "tee": "Subsea tie-in, where a line joins another along its way",
     "processing": "Gas processing plant",
     "terminal": "Receiving terminal",
     "lng": "LNG import terminal",
