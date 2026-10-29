@@ -95,6 +95,10 @@
       <input type="range" id="scrub" min="-14400" max="14400" step="3600" value="0" aria-label="Move around real time: four hours back or ahead">
     </div>
   </div>
+  <div class="inventory" id="inventory" hidden title="All the gas in the pipelines (their line pack), from their size and end pressures: a model estimate. The last 24 hours, and the model's next 4 hours dashed.">
+    <span class="player-label">Inventory</span>
+    <div class="inventory-row"><span id="inventory-value">–</span><svg id="inventory-spark" viewBox="0 0 96 22" aria-hidden="true"></svg></div>
+  </div>
   <label class="speed" title="How fast the data plays"><span class="player-label">Playback</span>
     <select id="speed" aria-label="Playback speed">
       <option value="1">Real time</option>

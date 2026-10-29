@@ -592,6 +592,64 @@ const App = (() => {
   const frame = () => live.frames[Math.max(0, live.index)] || { flows: {}, metrics: {}, plan: null };
   const metric = (name, id, f = frame()) => ((f.metrics || {})[name] || {})[id];
 
+  // ------------------------------------------------------------------ line pack
+  /* The gas held in a pipeline: its volume and the mean pressure along it, from the
+     pressures at its two ends (2/3 (p1 + p2 - p1 p2 / (p1 + p2)), absolute), at 5 °C on
+     the seabed and a compressibility of 0.85. A model estimate, as a pipeline modelling
+     system (PMS) gives, for every line with a known length and diameter. Ray, 29 Oct:
+     the pack rate "normally we want to stay close to 0"; the rate of change of
+     pressure matters "especially in and out of SLR, DRP S and DRP E"; and "a trend
+     showing total inventory in the whole system". */
+  const PACK = { pStd: 1.01325, tStd: 288.15, tSea: 278.15, z: 0.85 };
+  const lineVolume = {}; // m³
+  for (const pid of pipeIds) {
+    const d = assets[pid];
+    if (d.length && d.diameter) lineVolume[pid] = (Math.PI / 4) * (d.diameter * 0.0254) ** 2 * d.length * 1000;
+  }
+  /* Settle-out pressure (bar g): what a line settles to, shut in at both ends, with the
+     gas it holds now: the mean of its end pressures for compressible flow. Operators
+     read it on the lines (the old Area D screen's "sop"). */
+  function settleOut(pid, f = frame()) {
+    if (!f || !assets[pid]) return null;
+    const a = metric("pressure_bar", assets[pid].from, f), b = metric("pressure_bar", assets[pid].to, f);
+    if (a == null && b == null) return null;
+    const p1 = (a ?? b) + PACK.pStd, p2 = (b ?? a) + PACK.pStd;
+    return (2 / 3) * (p1 + p2 - (p1 * p2) / (p1 + p2)) - PACK.pStd;
+  }
+  function linepack(pid, f) { // MSm³
+    const sop = lineVolume[pid] ? settleOut(pid, f) : null;
+    if (sop == null) return null;
+    return ((lineVolume[pid] * (sop + PACK.pStd)) / PACK.pStd) * (PACK.tStd / PACK.tSea) / PACK.z / 1e6;
+  }
+  const frameNo = (i) => live.frames[Math.max(0, Math.min(live.frames.length - 1, i))];
+  // The frame an hour before now, and now: rates are over the last hour.
+  function hourPair() {
+    const step = (live.stream && live.stream.step) || 3600, now = frameNo(live.index);
+    const before = frameNo(live.index - Math.max(1, Math.round(3600 / step)));
+    return now && before && now !== before && now.t > before.t ? [before, now] : null;
+  }
+  function packRate(pid) { // MSm³/d
+    const pair = hourPair(), a = pair && linepack(pid, pair[0]), b = pair && linepack(pid, pair[1]);
+    return a == null || b == null ? null : ((b - a) * 86400) / (pair[1].t - pair[0].t);
+  }
+  function pressureRate(id) { // bar/h
+    const pair = hourPair(), a = pair && metric("pressure_bar", id, pair[0]), b = pair && metric("pressure_bar", id, pair[1]);
+    return a == null || b == null ? null : ((b - a) * 3600) / (pair[1].t - pair[0].t);
+  }
+  const inventories = new WeakMap(); // frame -> MSm³ (a stream's frames do not change)
+  function inventory(f) {
+    if (!f) return null;
+    if (!inventories.has(f)) {
+      let total = 0, any = false;
+      for (const pid of Object.keys(lineVolume)) {
+        const lp = linepack(pid, f);
+        if (lp != null) { total += lp; any = true; }
+      }
+      inventories.set(f, any ? total : null);
+    }
+    return inventories.get(f);
+  }
+
   /* Gas through a node (or the node's own reading), from a frame's flows: what arrives,
      or for fields and storage what they send out (storage may also take gas in). */
   function throughput(id, flows) {
@@ -1218,7 +1276,12 @@ const App = (() => {
         const m = Math.abs(v);
         out.width = 1 + 4 * Math.sqrt(m / live.maxAbs);
         out.color = m < 0.05 ? COLORS.inactive : COLORS.active;
-        out.label = m < 0.05 ? "" : fmt(m, 1); // the dark grey line already says "no flow"
+        // On the line its settle-out pressure (Ray read the line values as "settle out
+        // pressure", and his Area D screen shows them there); its flow is in the squares.
+        const sop = settleOut(id);
+        out.label = sop == null ? "" : `sop ${fmt(sop, 1)}`;
+        const pack = packRate(id); // shown only when the line packs or unpacks
+        out.pack = pack != null && Math.abs(pack) >= 0.5 ? `pack ${signed(pack, 1)}` : "";
         out.level = levelOf(id);
         if (d.bidirectional) Object.assign(out, { forward: v >= 0, backward: v < 0 });
       }
@@ -1919,7 +1982,7 @@ const App = (() => {
           item(sample(COLORS.normal, 3), "Normal"),
           item(sample(COLORS.inactive, 3), "Inactive"),
           item(sample(COLORS.inactive, 1.5, ' stroke-dasharray="3 3"'), "No data"))),
-        section("Flow", true, flow, h("p", { class: "key-caption" }, "Flow in MSm³/d: incoming faint, outgoing full · line ends: pressure"), exit, h("p", { class: "key-caption" }, "Exit delivery")),
+        section("Flow", true, flow, h("p", { class: "key-caption" }, "Flow in MSm³/d: incoming faint, outgoing full · line ends: pressure, ▲▼ bar per hour · on a line: sop, its settle-out pressure (bar), and pack, its line pack change (MSm³/d)"), exit, h("p", { class: "key-caption" }, "Exit delivery")),
         section("Indicators", true, rangeBar({ min: 0, max: 10, value: 6, band: [3, 7], ticks: [{ at: 1.5, level: 3 }, { at: 8.5, level: 3 }], target: 5 }),
           h("p", { class: "key-caption" }, "Band: normal · ◇ target · pointer: now"),
           h("p", { class: "key-caption" }, "Solid: history · dashed: model"))));
@@ -2136,6 +2199,33 @@ const App = (() => {
     refreshScreens();
     if ((side.id || side.marker) && route.screen === "unit") renderSidebar();
     drawSpark();
+    drawInventory();
+  }
+  /* Total inventory (Ray, 29 Oct: "a trend showing total inventory in the whole system
+     would be nice to see as well. it should be minimalistic"): the number now and a
+     hairline over the last 24 hours, the model's next 4 hours dashed. */
+  function drawInventory() {
+    const box = $("inventory");
+    if (!box || $("player").hidden) return;
+    const now = inventory(frameNo(live.index));
+    box.hidden = now == null;
+    if (now == null) return;
+    $("inventory-value").textContent = `${fmt(now)} MSm³`;
+    const step = (live.stream && live.stream.step) || 3600, back = Math.round((24 * 3600) / step), ahead = Math.round((4 * 3600) / step);
+    const points = [];
+    for (let i = live.index - back; i <= live.index + ahead; i++) {
+      if (i < 0 || i >= live.frames.length) continue;
+      const v = inventory(live.frames[i]);
+      if (v != null) points.push([i - live.index, v]);
+    }
+    if (points.length < 2) { $("inventory-spark").innerHTML = ""; return; }
+    const values = points.map(([, v]) => v), lo = Math.min(...values), hi = Math.max(...values), span = hi - lo || 1;
+    const x = (k) => (((k + back) / (back + ahead)) * 96).toFixed(1), y = (v) => (19 - ((v - lo) / span) * 16).toFixed(1);
+    const line = (part) => part.map(([k, v]) => `${x(k)},${y(v)}`).join(" ");
+    const past = points.filter(([k]) => k <= 0), future = points.filter(([k]) => k >= 0);
+    $("inventory-spark").innerHTML = `<polyline points="${line(past)}" fill="none" stroke="${COLORS.text}" stroke-width="1.2"/>`
+      + (future.length > 1 ? `<polyline points="${line(future)}" fill="none" stroke="${COLORS.text_dim}" stroke-width="1.2" stroke-dasharray="3 2"/>` : "")
+      + `<line x1="${x(0)}" y1="1" x2="${x(0)}" y2="21" stroke="${COLORS.text_dim}" stroke-width="1"/>`; // built from numbers and palette colours only
   }
   // The selected time is the real-time centre of an eight-hour window: four hours of
   // history on the left and four hours ahead on the right.
@@ -2745,6 +2835,7 @@ const App = (() => {
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
+    linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
     pipeStyle, pipeMapName, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
     timeState, timelineWindow,

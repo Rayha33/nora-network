@@ -313,11 +313,14 @@ table.data.quality td:nth-child(2) { white-space: nowrap; }
 /* Replay player */
 .player {
   position: fixed; inset: auto 0 0; height: var(--player-h); z-index: 20;
-  display: grid; grid-template-columns: minmax(280px, 340px) minmax(160px, 1fr) auto;
+  display: grid; grid-template-columns: minmax(280px, 340px) minmax(160px, 1fr) auto auto;
   align-items: center; gap: 22px; padding: 0 20px;
   background: var(--panel); border-top: 1px solid var(--rule); box-shadow: 0 -5px 20px rgba(18, 30, 38, 0.04);
 }
 .transport { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.inventory { display: grid; gap: 3px; line-height: 1.2; }
+.inventory-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text); white-space: nowrap; }
+.inventory svg { width: 96px; height: 22px; stroke: none; }
 .play {
   display: grid; place-items: center; flex: none; width: 40px; height: 40px; padding: 0;
   border: 0; border-radius: 50%; background: var(--selected-bg); color: var(--selected-text);
@@ -342,7 +345,7 @@ table.data.quality td:nth-child(2) { white-space: nowrap; }
 .model-time .bank .value { font-style: italic; }
 .timeline { min-width: 0; }
 .timeline-label { position: relative; display: flex; justify-content: space-between; margin-bottom: 3px; }
-#tl-now { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+#tl-now { position: absolute; top: 0; left: 50%; transform: translateX(-50%); white-space: nowrap; } /* it said "Real time4 UTC" over −4 h */
 .track { position: relative; height: 28px; min-width: 100px; }
 .track:focus-within { outline: 2px solid var(--text); outline-offset: 2px; border-radius: 4px; }
 .track canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -496,6 +499,7 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
   .timeline { grid-column: 1 / -1; grid-row: 2; align-self: start; }
   .now select { font-size: 11px; }
   .player .speed { display: none; }
+  .player .inventory { display: none; }
   .sidebar { width: calc(100vw / var(--ui-scale)); }
   .box { padding: 16px; }
   .banner { padding: 17px; }

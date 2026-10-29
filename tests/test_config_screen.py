@@ -48,3 +48,13 @@ def test_flow_hide_is_a_list_of_node_ids(tmp_path):
     with pytest.raises(DataError) as error:
         load_config(path)
     assert "hide: must be a list of node ids" in str(error.value)
+
+
+def test_flow_watch_names_nodes(tmp_path):
+    """[flow] watch: the hubs whose pressure change always shows (Ray: SLR, DRP S, DRP E)."""
+    assert load_config()["flow"]["watch"] == ["sleipner", "draupner_s", "draupner_e"]
+    path = tmp_path / "nora.toml"
+    path.write_text('[flow]\nwatch = "sleipner"\n', encoding="utf-8")
+    with pytest.raises(DataError) as error:
+        load_config(path)
+    assert "watch: must be a list of node ids" in str(error.value)

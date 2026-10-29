@@ -246,10 +246,17 @@
      in screen px; boxes in canvas units. */
   const TAG = { font: "600 12px Archivo, system-ui, sans-serif", small: "600 10px Archivo, system-ui, sans-serif", pad: 4, h: 16, hSmall: 13 };
   const overlaps = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
-  // Zoomed out the tag holds the number alone: the same framed tag reads "146 bar" on zoom in.
+  /* Zoomed out the tag holds the number alone: the same framed tag reads "146 bar" on
+     zoom in, with the pressure's change over the last hour in bar/h where it moves (Ray,
+     29 Oct: "the rate of change when it comes to pressures are important, especially in
+     and out of SLR, DRP S and DRP E"). The nodes in nora.toml [flow] watch always show
+     it, zoomed out too. */
+  const watched = new Set(NORA.config.flow.watch || []);
   function pressureText(id, unit = true) {
     const now = App.reading(id), value = now && now.pressure != null ? App.fmt(now.pressure) : "–";
-    return unit ? `${value} bar` : value;
+    const rate = App.pressureRate(id), show = rate != null && (watched.has(id) || Math.abs(rate) >= 0.1);
+    const trend = show ? ` ${rate >= 0.05 ? "▲" : rate <= -0.05 ? "▼" : "±"}${App.fmt(Math.abs(rate), 1)}` : "";
+    return unit ? `${value} bar${trend}` : watched.has(id) ? `${value}${trend}` : value;
   }
   function textWidth(text, font) {
     if (!measurer) return text.length * 6.5; // no canvas yet (tests): about Archivo's width
@@ -288,8 +295,9 @@
     const text = pressureText(id, detailedFlow(scale));
     if (!detailedFlow(scale)) {
       const w = (textWidth(text, TAG.small) + 2 * TAG.pad) / scale, h = TAG.hSmall / scale;
-      // Only when it is no wider than the square, which keeps room for in and out.
-      if (w > 2 * half - 4 / scale || 2 * half * scale < 36) return [];
+      // Only when it is no wider than the square (a watched node's, with its rate, may
+      // be a little wider), which keeps room for in and out.
+      if (w > 2 * half * (watched.has(id) ? 1.6 : 1) - 4 / scale || 2 * half * scale < 36) return [];
       return [{ pid: null, side: "top", box: [p.x - w / 2, p.y - half - h / 2, p.x + w / 2, p.y - half + h / 2], text, small: true }];
     }
     const w = (textWidth(text, TAG.font) + 2 * TAG.pad) / scale, h = TAG.h / scale;
@@ -999,14 +1007,16 @@
   };
   view.changes = () => ({ nodes: changes(App.nodeIds, nodeLook), lines: changes(App.pipeIds, lineLook) }); // for tests
 
-  /* Line values, drawn over the lines at their middle on a paper patch, at one screen
-     size whatever the zoom, like every other number (Ray, 29 Oct: "when i zoom in some
-     of the numbers become smaller than others"); hidden zoomed far out, where they
-     would crowd. Returns their screen boxes, so marker labels and badges keep clear. */
+  /* Line values (in Live, the settle-out pressure, and the pack rate under it when the
+     line packs), on a paper patch at one screen size whatever the zoom, like every
+     other number (Ray, 29 Oct: "when i zoom in some of the numbers become smaller than
+     others"; "settle out pressure become too small when i zoom out"). Each takes the
+     first spot along its line, from the middle out, clear of the squares, their names
+     and tags and the values already placed: never text on text. Returns the screen
+     boxes, so marker labels and badges keep clear. */
   function drawLineValues(ctx, positions) {
-    const scale = network.getScale(), boxes = [];
+    const scale = network.getScale(), boxes = [], taken = [...nodeBoxes(), ...(scale < 1 ? overviewBoxes : [])];
     valueEnds = {};
-    if (scale < 0.45) return boxes;
     const ratio = (network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
     ctx.save();
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -1016,14 +1026,25 @@
     for (const id of App.pipeIds) {
       const s = App.pipeStyle(id), p = NORA.assets[id], a = positions[p.from], b = positions[p.to];
       if (!s.label || lineHidden(id) || !a || !b) continue;
-      const at = network.canvasToDOM({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }), w = ctx.measureText(s.label).width;
+      const rows = s.pack ? [s.label, s.pack] : [s.label], w = Math.max(...rows.map((t) => ctx.measureText(t).width));
+      const height = 16 * rows.length;
+      let spot = null;
+      for (const t of [0.5, 0.4, 0.6, 0.32, 0.68, 0.25, 0.75]) {
+        const at = network.canvasToDOM({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+        const box = [at.x - w / 2 - 3, at.y - 8, at.x + w / 2 + 3, at.y - 8 + height];
+        if (!taken.some((o) => overlaps(box, o))) { spot = { at, box }; break; }
+      }
+      if (!spot) continue; // nowhere clear on this line at this zoom: zoom in to read it
       ctx.globalAlpha = s.dim ? 0.35 : 1;
       ctx.fillStyle = C.paper;
-      ctx.fillRect(at.x - w / 2 - 3, at.y - 8, w + 6, 16);
-      ctx.fillStyle = C.text_dim;
-      ctx.fillText(s.label, at.x, at.y);
-      boxes.push([at.x - w / 2 - 3, at.y - 8, at.x + w / 2 + 3, at.y + 8]);
-      valueEnds[id] = network.DOMtoCanvas({ x: at.x + w / 2 + 3, y: at.y });
+      ctx.fillRect(spot.box[0], spot.box[1], spot.box[2] - spot.box[0], height);
+      rows.forEach((text, i) => {
+        ctx.fillStyle = i ? C.text : C.text_dim;
+        ctx.fillText(text, spot.at.x, spot.at.y + 16 * i);
+      });
+      boxes.push(spot.box);
+      taken.push(spot.box);
+      valueEnds[id] = network.DOMtoCanvas({ x: spot.box[2], y: spot.at.y });
     }
     ctx.restore();
     return boxes;

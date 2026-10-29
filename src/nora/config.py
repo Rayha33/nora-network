@@ -28,7 +28,13 @@ DEFAULTS: dict = {
     },
     "labels": {"names": True, "line_values": "auto"},
     "assets": {"hide": [], "grid_entries": True},
-    "flow": {"direction": "vertical", "density": "comfortable", "animation": True, "hide": []},
+    "flow": {
+        "direction": "vertical",
+        "density": "comfortable",
+        "animation": True,
+        "hide": [],
+        "watch": [],
+    },
     "thresholds": {
         "load": [1.01, 1.05, 1.10],
         "nomination": [0.03, 0.06, 0.10],
@@ -178,7 +184,7 @@ def _check(section: str, key: str, value) -> str | None:
     if section == "assets" and key == "hide":
         bad = [t for t in value if t not in NODE_TYPES] if isinstance(value, list) else ["?"]
         return None if not bad else f"unknown asset type(s) {bad}"
-    if section == "flow" and key == "hide":  # node ids; `nora validate` checks they exist
+    if section == "flow" and key in ("hide", "watch"):  # node ids; `nora validate` checks them
         ok = isinstance(value, list) and all(isinstance(v, str) for v in value)
         return None if ok else "must be a list of node ids"
     if isinstance(default, bool):

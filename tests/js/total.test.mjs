@@ -99,12 +99,17 @@ test("the plan's deliverable total comes from the payload, not JS aggregation", 
     "the payload carries a Python-computed deliverable");
 });
 /* Fewer numbers (Ray): a line with no flow is drawn dark grey; a "0.0" on it adds nothing. */
-test("lines: no flow, no number on the line", () => {
-  const { App } = loadApp();
+/* Ray, 29 Oct, reading the line values as "settle out pressure": a line carries its
+   settle-out pressure (as on his Area D screen), shut in or flowing, where its ends
+   report a pressure; its flow is in the squares. */
+test("lines: the settle-out pressure on the line, where its ends have pressures", () => {
+  const { App, NORA } = loadApp();
   App.state.mode = "live";
-  const id = App.pipeIds[0];
-  App.live.values[id] = 0;
-  assert.equal(App.pipeStyle(id).label, "", "a still line carries no value");
+  const id = App.pipeIds[0], { from, to } = NORA.assets[id];
   App.live.values[id] = 12.34;
-  assert.equal(App.pipeStyle(id).label, "12.3", "a flowing one does");
+  assert.equal(App.pipeStyle(id).label, "", "no pressures: nothing on the line");
+  App.live.frames = [{ t: 0, flows: { [id]: 0 }, metrics: { pressure_bar: { [from]: 120, [to]: 120 } }, plan: null }];
+  App.live.index = 0;
+  App.live.values[id] = 0;
+  assert.equal(App.pipeStyle(id).label, "sop 120.0", "a shut-in line still shows what it settles to");
 });
