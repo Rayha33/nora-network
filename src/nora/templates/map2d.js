@@ -79,9 +79,10 @@ function NoraCanvasMap(view) {
   }
   /* Line widths follow map.js: hairlines when zoomed out, a little more weight closer in.
      Every size in screen pixels follows the one UI scale (App.uiScale, issue #59). */
-  function lineWidth(w) {
+  // Thin at overview zoom; a model mode's line (Load, Risk) keeps its weight (review #49802).
+  function lineWidth(w, model = false) {
     const z = zoom(), k = z <= 3 ? 0.45 : z <= 6 ? 0.45 + ((z - 3) / 3) * 0.25 : Math.min(1.1, 0.7 + ((z - 6) / 3) * 0.4);
-    return Math.max(0.6, w * k) * App.uiScale();
+    return Math.max(0.6, w * (model ? Math.max(1, k) : k)) * App.uiScale();
   }
   const nodeRadius = () => Math.max(3.5, Math.min(9, 2 + zoom() * 0.9)) * App.uiScale();
 
@@ -116,7 +117,7 @@ function NoraCanvasMap(view) {
       const pts = p.line.map(([lon, lat]) => toScreen(lon, lat));
       const trace = () => { ctx.beginPath(); pts.forEach((q, i) => (i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y))); };
       ctx.globalAlpha = s.dim ? 0.3 : 1;
-      const w = lineWidth(s.width) * (p.onshore ? 0.8 : 1);
+      const w = lineWidth(s.width, s.model) * (p.onshore ? 0.8 : 1);
       if (s.level) { trace(); ctx.setLineDash([]); ctx.strokeStyle = C.casing; ctx.lineWidth = w + 1.6 * u; ctx.stroke(); }
       trace();
       ctx.setLineDash(p.onshore || s.dashed ? [2 * w + 1, 2 * w + 1] : []);
@@ -180,6 +181,19 @@ function NoraCanvasMap(view) {
       }
       ctx.textBaseline = "top";
     }
+    // Load and Risk: each line's number under its middle, clear of the names (as map.js).
+    const modelLabels = [];
+    ctx.font = `italic ${11 * u}px Archivo, system-ui, sans-serif`;
+    for (const p of pipes) {
+      const s = App.pipeStyle(p.id);
+      if (!s.model || !s.label || s.hidden || !pipeAtZoom(p.id)) continue;
+      const m = along(p.id, 0.5), y = m.y + 9 * u, w = ctx.measureText(s.label).width + 4 * u;
+      const box = [m.x - w / 2, y - 7 * u, m.x + w / 2, y + 7 * u];
+      if (placed.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) continue;
+      placed.push(box);
+      modelLabels.push({ text: s.label, x: m.x, y });
+    }
+    ctx.font = `${11.5 * u}px Archivo, system-ui, sans-serif`;
     // No alarm badges on lines (Ray, 29 Oct: "remove the small red squares they serve no purpose").
     // Pigs, peaks and gas quality: bands, then markers, then pipeline names on top, so a
     // crossing peak can never erase a name.
@@ -200,6 +214,12 @@ function NoraCanvasMap(view) {
       ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(label.text, label.x, label.y);
       ctx.fillStyle = C.text; ctx.fillText(label.text, label.x, label.y);
     }
+    ctx.font = `italic ${11 * u}px Archivo, system-ui, sans-serif`;
+    for (const label of modelLabels) {
+      ctx.lineWidth = 3.5 * u; ctx.strokeStyle = C.paper; ctx.strokeText(label.text, label.x, label.y);
+      ctx.fillStyle = C.text; ctx.fillText(label.text, label.x, label.y);
+    }
+    ctx.font = `${11.5 * u}px Archivo, system-ui, sans-serif`;
     ctx.textBaseline = "top";
   }
 

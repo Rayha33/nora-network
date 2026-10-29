@@ -79,7 +79,7 @@ a { color: var(--text); text-underline-offset: 3px; }
    .stage are not zoomed (maps and canvases keep their own pixels); they draw at
    App.uiScale() themselves. Sizes below stay in unzoomed px; anything sized in vw
    inside zoomed chrome divides by the scale. */
-.bar, .player, .sidebar, .pop, .screen, .map-note, .map2d-zoom, .ctx-menu { zoom: var(--ui-scale); }
+.bar, .player, .sidebar, .pop, .screen, .map-note, .map2d-zoom, .coord-readout, .ctx-menu { zoom: var(--ui-scale); }
 .stage { position: fixed; inset: calc(var(--bar-h) * var(--ui-scale)) 0 0; }
 .has-player .stage { bottom: calc(var(--player-h) * var(--ui-scale)); }
 body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer when idle */
@@ -165,8 +165,10 @@ body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer 
   background: var(--panel); color: var(--text-dim); border: 1px solid var(--rule); border-radius: 7px;
   padding: 6px 12px; font-size: 11px; box-shadow: var(--shadow-sm);
 }
+/* In the bottom-right corner beside the zoom buttons, with the map's other chrome: in the
+   middle it sat on Dunkirk at the default fit (review #49802). */
 .coord-readout {
-  position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 5;
+  position: absolute; bottom: 10px; right: 40px; z-index: 5;
   background: var(--panel); color: var(--text-dim); border: 1px solid var(--rule); border-radius: 6px;
   padding: 4px 9px; font: 11px/1.5 var(--mono); white-space: nowrap; box-shadow: var(--shadow-sm); pointer-events: none;
 }

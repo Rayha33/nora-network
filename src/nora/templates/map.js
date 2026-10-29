@@ -134,10 +134,11 @@
     map.addSource("nora-mids", { type: "geojson", data: mids });
     const state = (key, fallback) => ["coalesce", ["feature-state", key], fallback];
     const detailFilter = ["<=", ["coalesce", ["get", "minZoom"], 0], ["zoom"]]; // the same rule as nodeAtZoom
-    // Hairlines at overview zoom, a little more weight only when zoomed in.
+    // Hairlines at overview zoom, a little more weight only when zoomed in. Load and
+    // Risk speak in line weight, so their lines keep it at every zoom (review #49802).
     const width = (k, extra = 0) => ["interpolate", ["linear"], ["zoom"],
-      3, ["+", extra, ["*", 0.45 * k, state("width", 1)]],
-      6, ["+", extra, ["*", 0.7 * k, state("width", 1)]],
+      3, ["+", extra, ["*", k, atZoom(0.45), state("width", 1)]],
+      6, ["+", extra, ["*", k, atZoom(0.7), state("width", 1)]],
       9, ["+", extra, ["*", 1.1 * k, state("width", 1)]]];
     const opacity = ["case", ["boolean", ["feature-state", "hide"], false], 0, ["boolean", ["feature-state", "dim"], false], 0.3, 1];
     // A dark casing under any line in alarm, so colour never stands alone.
@@ -185,14 +186,17 @@
     view.highlight(App.route.focus);
   }
 
+  // A line's weight factor at a zoom stop: a model mode's line (Load, Risk) never thins.
+  const atZoom = (factor) => ["case", ["boolean", ["feature-state", "model"], false], Math.max(1, factor), factor];
+
   /* Sizes in screen pixels follow the one UI scale (App.uiScale, issue #59): a video
      wall gets lines, circles, names and badges it can read from metres away. The
      layers are added at 100 %; scaleLayers() sets these whenever settings apply. */
   function scaleLayers() {
     const k = App.uiScale(), state = (key, fallback) => ["coalesce", ["feature-state", key], fallback];
     const width = (w, extra = 0) => ["interpolate", ["linear"], ["zoom"],
-      3, ["+", extra * k, ["*", 0.45 * w * k, state("width", 1)]],
-      6, ["+", extra * k, ["*", 0.7 * w * k, state("width", 1)]],
+      3, ["+", extra * k, ["*", w * k, atZoom(0.45), state("width", 1)]],
+      6, ["+", extra * k, ["*", w * k, atZoom(0.7), state("width", 1)]],
       9, ["+", extra * k, ["*", 1.1 * w * k, state("width", 1)]]];
     const radius = (extra = 0) => ["interpolate", ["linear"], ["zoom"], 3, (3.5 + extra) * k, 6, (5.5 + extra) * k, 9, (8 + extra) * k];
     const sizes = {
@@ -381,7 +385,7 @@
     const alarms = [];
     for (const id of App.pipeIds) {
       const s = App.pipeStyle(id);
-      map.setFeatureState(featureOf[id], { color: s.color, width: s.width, casing: s.level > 0, dim: s.dim, hide: s.hidden });
+      map.setFeatureState(featureOf[id], { color: s.color, width: s.width, casing: s.level > 0, dim: s.dim, hide: s.hidden, model: Boolean(s.model) });
       if (s.level && !s.hidden) alarms.push(`${id}:${s.level}`);
     }
     for (const id of App.nodeIds) {
@@ -430,7 +434,7 @@
     sizeCanvas();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawnMarks = []; // nothing to hover over until markers are drawn again
-    if (App.state.mode !== "live") return;
+    if (App.state.mode !== "live") { modelLabels(scene); return; }
     const visibleRanges = {};
     const visibleAlong = (id, along) => {
       if (!visibleRanges[id]) {
@@ -543,6 +547,30 @@
 
   /* Screen boxes of the node dots and their names, where MapLibre puts them (under the
      dot, wrapped at 9 em), so the labels of pigs and peaks keep clear of them. */
+  /* Load and Risk write each line's number (how full; what a trip costs) under its
+     middle, in the italic the model's numbers use, where it clears the node names:
+     at overview zoom the map had no numbers at all (review #49802). */
+  function modelLabels(scene) {
+    if (boxesKey !== scene) { boxes = nodeBoxes(ctx); boxesKey = scene; }
+    const taken = boxes.slice(), u = App.uiScale();
+    ctx.save();
+    ctx.font = `italic ${11 * u}px Archivo, system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineJoin = "round";
+    for (const id of App.pipeIds) {
+      const s = App.pipeStyle(id);
+      if (!s.model || !s.label || s.hidden || !ends[id] || !pipeAtZoom(id)) continue;
+      const p = map.project(alongRoute(id, 0.5).at), y = p.y + 9 * u, w = ctx.measureText(s.label).width + 4 * u;
+      const box = [p.x - w / 2, y - 7 * u, p.x + w / 2, y + 7 * u];
+      if (taken.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) continue;
+      taken.push(box);
+      ctx.lineWidth = 3.5 * u; ctx.strokeStyle = C.paper; ctx.strokeText(s.label, p.x, y);
+      ctx.fillStyle = C.text; ctx.fillText(s.label, p.x, y);
+    }
+    ctx.restore();
+  }
+
   function nodeBoxes(ctx) {
     const out = [], names = App.settings().names, w0 = map.getContainer().clientWidth, h0 = map.getContainer().clientHeight;
     const k = App.uiScale(), wrap = 104 * k; // the names grow with the one UI scale
