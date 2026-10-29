@@ -40,3 +40,16 @@ def test_the_site_is_published_only_after_every_check_ci_runs():
     deploy = runs("deploy.yml")
     missing = [command for command in runs("ci.yml") if command not in deploy]
     assert missing == [], "CI checks the deploy workflow skips"
+
+
+def test_every_action_is_pinned_to_a_commit():
+    """Review #49802: third-party actions with contents: write ran from a tag, and a
+    tag can be moved to other code. Every `uses:` names a 40-hex commit SHA."""
+    workflows = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
+    assert workflows
+    for workflow in workflows:
+        for line in workflow.read_text(encoding="utf-8").splitlines():
+            if m := re.search(r"uses:\s*(\S+)", line):
+                assert re.fullmatch(r"[\w.-]+/[\w./-]+@[0-9a-f]{40}", m.group(1)), (
+                    f"{workflow.name}: {m.group(1)} is not pinned to a commit SHA"
+                )

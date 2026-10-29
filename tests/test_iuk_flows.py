@@ -60,9 +60,7 @@ def test_the_site_replays_iuk_as_one_signed_flow(north_sea):
 
 
 def test_national_gas_is_asked_with_an_honest_user_agent():
-    # The data portal answers a plain client that names itself; only Gassco's Cloudflare
-    # wants a browser's User-Agent, and that one is left as it is.
-    assert "Mozilla" not in fetcher().USER_AGENT
-    assert "nora-network" in fetcher().USER_AGENT
-    assert interconnector.user_agent != USER_AGENT
-    assert "nora-network" in interconnector.user_agent
+    # The data portal answers a plain client that names itself. Every NORA client
+    # names itself now, Gassco's too (review #49802: it used to pose as Chrome).
+    for agent in (fetcher().USER_AGENT, interconnector.user_agent, USER_AGENT):
+        assert "Mozilla" not in agent and "nora-network" in agent
