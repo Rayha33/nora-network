@@ -2721,6 +2721,7 @@ const App = (() => {
           stat("ETA", exit ? timeFormat(exit.t, { timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit" }) : "–", exit ? `CET · ${nameOf(exit.node)}` : "")),
         journey,
         description ? h("p", { class: "peak-description" }, description) : null,
+        slugProfile(m, parcels),
         box("Position",
           row("Location", headKp && tailKp && headKp.pid !== tailKp.pid ? `${nameOf(tailKp.pid)} to ${nameOf(headKp.pid)}` : nameOf(headKp ? headKp.pid : m.id)),
           row("Head", kp(headKp)),
@@ -2737,6 +2738,76 @@ const App = (() => {
           row("Peak ID", slug ? peakId(slug) : "–"),
           row("Notified", notified),
           row("Origo ref", h("span", { class: "origo-field" }, origo, origoNote)))) }; // no closing note (Ray, 29 Oct: "it doesnt add any value")
+  }
+  /* A peak's profile along its route (hub 3607; Ray, 27 Oct: "the profile of the H2S in
+     the pipeline"): the concentration against the distance from the field. Solid: the
+     slug's parcels where they are now. Dashed: what its strongest parcel is expected to
+     become ahead, stepping down where other gas joins (mixAt). The warning and alarm
+     limits as on every chart, and a tick at each node on the way. An estimate from the
+     model's gas speed and today's flows. */
+  function slugProfile(m, parcels) {
+    const lead = parcels.reduce((a, b) => (a && a.conc >= b.conc ? a : b), null);
+    if (!lead) return null;
+    const q0 = QUALITY[m.gas], limits = C.quality[m.gas], v = C.pipelines.gas_velocity_mps, f = frame();
+    const kmOf = (pid) => Math.max(1, assets[pid].km || 1);
+    const endOf = (hop) => (hop.forward ? assets[hop.pid].to : assets[hop.pid].from);
+    // How far a parcel has come from the field, in km along the lines it took.
+    const travelled = (q) => {
+      let d = 0;
+      for (let k = 0; k < q.path.length - 1; k++) d += kmOf(q.path[k].pid);
+      return d + (q.arrived ? kmOf(q.pid) : Math.min(kmOf(q.pid), Math.max(0, ((live.time - q.t0) * v) / 1000)));
+    };
+    const now = parcels.map((q) => [travelled(q), q.conc]).sort((a, b) => a[0] - b[0]);
+    const ticks = [[0, lead.origin]];
+    let x = 0;
+    for (const hop of lead.path) { x += kmOf(hop.pid); ticks.push([x, endOf(hop)]); }
+    const ahead = [[travelled(lead), lead.conc]];
+    if (!lead.arrived) {
+      let pid = lead.pid, node = endOf(lead), conc = lead.conc;
+      for (let hops = 0; hops < 20; hops++) {
+        const mixed = mixAt(node, pid, conc, lead.metric, f);
+        ahead.push([x, conc], [x, mixed]);
+        conc = mixed;
+        const r = isExit(node) ? null : onward(node, f.flows);
+        if (!r || r.pid === pid) break;
+        pid = r.pid;
+        node = r.forward ? assets[pid].to : assets[pid].from;
+        x += kmOf(pid);
+        ticks.push([x, node]);
+      }
+    }
+    const W = 340, H = 168, left = 8, right = W - 8, top = 12, plot = 108, total = Math.max(1, x);
+    const hi = Math.max(limits[2], ...now.map(([, c]) => c), ...ahead.map(([, c]) => c)) * 1.12;
+    const X = (km) => left + (km / total) * (right - left), Y = (c) => top + plot - (c / hi) * plot;
+    const line = (rows) => rows.map(([km, c], k) => `${k ? "L" : "M"}${X(km).toFixed(1)},${Y(c).toFixed(1)}`).join("");
+    const text = `stroke:${COLORS.surface};stroke-width:3px;paint-order:stroke;font-weight:400;font-size:11px;font-family:Archivo,system-ui,sans-serif`;
+    let body = "";
+    for (const [label, value, lvl] of [["Warning", limits[0], 1], ["Alarm", limits[2], 2]]) {
+      body += `<line x1="${left}" x2="${right}" y1="${Y(value).toFixed(1)}" y2="${Y(value).toFixed(1)}" stroke="${limitInk(lvl)}" stroke-width="1" stroke-dasharray="2 3"/>`;
+      body += `<text x="${right}" y="${(Y(value) - 3).toFixed(1)}" text-anchor="end" fill="${COLORS.text_dim}" style="${text}">${label} ${esc(fmt(value, q0.digits))}</text>`;
+    }
+    // Node ticks; a name only where it has room (never text over text).
+    let room = -Infinity;
+    for (const [k, [km, node]] of ticks.entries()) {
+      const px = X(km), last = k === ticks.length - 1;
+      body += `<line x1="${px.toFixed(1)}" x2="${px.toFixed(1)}" y1="${top + plot}" y2="${top + plot + 4}" stroke="${COLORS.text_dim}" stroke-width="1"/>`;
+      const name = nameOf(node), width = name.length * 5.6;
+      const anchor = k === 0 ? "start" : last ? "end" : "middle", from = anchor === "start" ? px : anchor === "end" ? px - width : px - width / 2;
+      if (from > room + 6 && (last || from + width < right - 60)) {
+        body += `<text x="${px.toFixed(1)}" y="${top + plot + 16}" text-anchor="${anchor}" fill="${COLORS.text_dim}" style="${text}">${esc(name)}</text>`;
+        room = from + width;
+      }
+    }
+    body += `<line x1="${left}" x2="${right}" y1="${top + plot}" y2="${top + plot}" stroke="${COLORS.text_dim}" stroke-width="0.6"/>`;
+    if (ahead.length > 1) body += `<path class="ahead" d="${line(ahead)}" fill="none" stroke="${COLORS[q0.color]}" stroke-width="1.4" stroke-dasharray="4 3"/>`;
+    body += `<path class="now" d="${line(now.length > 1 ? now : [[now[0][0], 0], ...now])}" fill="none" stroke="${COLORS[q0.color]}" stroke-width="2"/>`;
+    const [leadKm, leadConc] = ahead[0];
+    body += `<circle cx="${X(leadKm).toFixed(1)}" cy="${Y(leadConc).toFixed(1)}" r="3" fill="${COLORS[q0.color]}" stroke="${COLORS.casing}" stroke-width="0.8"/>`;
+    body += `<text x="${X(leadKm).toFixed(1)}" y="${(Y(leadConc) - 7).toFixed(1)}" text-anchor="${X(leadKm) > W / 2 ? "end" : "start"}" fill="${COLORS.text}" style="${text}">now ${esc(fmt(leadConc, q0.digits))} ${esc(q0.unit)}</text>`;
+    body += `<text x="${right}" y="${H - 2}" text-anchor="end" fill="${COLORS.text_dim}" style="${text}">${esc(fmt(total, 0))} km</text>`;
+    return h("div", { class: "box slug-profile" }, h("h2", null, `${q0.name} along the route`),
+      svg(`0 0 ${W} ${H}`, body, "profile"),
+      h("p", { class: "dim small" }, "Solid: the peak now. Dashed: expected ahead, diluted where other gas joins. An estimate from the gas speed and today's flows."));
   }
   // A pig's run: the next node, the receiver at the end of its route, and when.
   function pigTrip(pig, time) {

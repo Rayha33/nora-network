@@ -633,3 +633,4 @@ table.data.alarm-table td.id { font-size: 11px; }
 .diag-chart-title { font-size: 12px; color: var(--text-dim); }
 .diag-chart svg.diag-trend { display: block; width: 100%; height: auto; }
 table.data.diag-cursor { margin-top: 8px; }
+.slug-profile svg.profile { display: block; width: 100%; height: auto; }
