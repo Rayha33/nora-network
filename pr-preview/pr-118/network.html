@@ -121,7 +121,7 @@ body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer 
 .player-label, .timeline-label, .eyebrow {
   font-size: 11px; font-weight: 400; color: var(--text-dim);
 }
-.crumbs { display: flex; align-items: center; gap: 3px; min-width: 0; }
+.crumbs { display: flex; align-items: center; gap: 3px; min-width: 0; flex: none; }
 .crumbs button {
   height: var(--ctl); border: 0; background: transparent; padding: 0 8px; border-radius: 6px; cursor: pointer;
   font-size: var(--ctl-font); color: var(--text-dim); white-space: nowrap; max-width: 240px; overflow: hidden; text-overflow: ellipsis;
@@ -425,20 +425,16 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 }
 .sidebar .actions button:hover { background: var(--raised); }
 
-@media (max-width: 1240px) {
-  .bar { gap: 12px; }
-  .brand-name { display: none; }
-  .plan-chip { max-width: 220px; }
-  .seg button { min-width: 44px; padding: 0 10px; }
-}
-
+/* data-bar (app.js barLayout): the room the bar has at its UI scale. */
+:root[data-bar="tight"] .bar, :root[data-bar="two"] .bar { gap: 12px; }
+:root[data-bar="tight"] .brand-name, :root[data-bar="two"] .brand-name { display: none; }
+:root[data-bar="tight"] .plan-chip { max-width: 220px; }
+:root[data-bar="tight"] .seg button { min-width: 44px; padding: 0 10px; }
 /* Too narrow for one row: the view and mode switches move to a second row. */
-@media (max-width: 1060px) {
-  :root { --bar-h: 104px; }
-  .bar { flex-wrap: wrap; align-content: center; row-gap: 8px; padding: 0 14px; }
-  .bar-views { order: 1; width: 100%; overflow-x: auto; scrollbar-width: none; }
-  .bar-views::-webkit-scrollbar { display: none; }
-}
+:root[data-bar="two"] { --bar-h: 104px; }
+:root[data-bar="two"] .bar { flex-wrap: wrap; align-content: center; row-gap: 8px; padding: 0 14px; }
+:root[data-bar="two"] .bar-views { order: 1; width: 100%; overflow-x: auto; scrollbar-width: none; }
+:root[data-bar="two"] .bar-views::-webkit-scrollbar { display: none; }
 
 @media (max-width: 1100px) {
   .player { grid-template-columns: minmax(240px, 300px) 1fr auto; gap: 16px; }
@@ -1046,8 +1042,16 @@ const App = (() => {
   // A wall is read from 5-10 m: body text at least about 20 px (13 px × 1.5).
   const autoScaleFor = (profile) => (profile === "wall" ? Math.max(1.5, autoScale(window.innerWidth)) : autoScale(window.innerWidth));
   // Returns true when the profile or scale changed, so the views can re-fit.
+  /* The bar is one row while it fits (Ray, 29 Oct: "everything here should be on one
+     line"). The UI scale zooms it, so a 1440 px wall screen at 1.5 has 960 px of room:
+     the fit is judged on that, which a media query cannot see. */
+  function barLayout(scale) {
+    const room = window.innerWidth / scale;
+    document.documentElement.dataset.bar = room < 1060 ? "two" : room < 1240 ? "tight" : "one";
+  }
   function applyDisplay() {
     const profile = chosenProfile(), scale = Math.round(chosenScale(profile) * 100) / 100;
+    barLayout(scale);
     if (profile === display.profile && scale === display.scale) return false;
     display.profile = profile;
     display.scale = scale;
