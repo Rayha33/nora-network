@@ -90,7 +90,7 @@ a { color: var(--text); text-underline-offset: 3px; }
    .stage are not zoomed (maps and canvases keep their own pixels); they draw at
    App.uiScale() themselves. Sizes below stay in unzoomed px; anything sized in vw
    inside zoomed chrome divides by the scale. */
-.bar, .player, .sidebar, .pop, .screen, .map-context, .map-note, .map2d-zoom, .ctx-menu { zoom: var(--ui-scale); }
+.bar, .player, .sidebar, .pop, .screen, .map-note, .map2d-zoom, .ctx-menu { zoom: var(--ui-scale); }
 .stage { position: fixed; inset: calc(var(--bar-h) * var(--ui-scale)) 0 0; }
 .has-player .stage { bottom: calc(var(--player-h) * var(--ui-scale)); }
 body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer when idle */
@@ -185,16 +185,6 @@ body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer 
 .badge.text-only { font-weight: 500; }
 
 /* Map and GIS chrome */
-.map-context {
-  position: absolute; z-index: 6; top: 14px; left: 14px; max-width: min(320px, calc(100% - 28px));
-  padding: 10px 14px; border: 1px solid var(--rule); border-radius: 8px;
-  background: var(--panel); box-shadow: var(--shadow-sm); pointer-events: none;
-}
-.map-context .eyebrow { display: block; margin-bottom: 2px; }
-.map-context h1 { margin: 0; font-size: 16px; line-height: 1.25; font-weight: 600; }
-.map-context-meta { display: flex; align-items: center; gap: 7px; margin-top: 4px; color: var(--text-dim); font-size: 11px; }
-.live-indicator { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); box-shadow: 0 0 0 3px var(--band); }
-.meta-separator { opacity: 0.55; }
 .map-note {
   position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 7;
   background: var(--panel); color: var(--text-dim); border: 1px solid var(--rule); border-radius: 7px;
@@ -479,8 +469,6 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
   .key-grid { grid-template-columns: 1fr; }
   .key-section.key-wide { grid-column: auto; }
   .pop { right: 12px; width: min(360px, calc((100vw - 24px) / var(--ui-scale))); }
-  .map-context { top: 14px; left: 14px; padding: 13px 15px; }
-  .map-context h1 { font-size: 18px; }
   .coord-readout { display: none; }
 }
 
@@ -501,7 +489,6 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
   .bar-secondary > .toolbar-label, .toolbar-rule { display: none; }
   .seg button { padding: 0 11px; }
   .year input { width: 110px; }
-  .map-context { display: none; } /* on a phone the map needs the room; the bar names the unit */
   .player { grid-template-columns: minmax(0, 1fr); grid-template-rows: 58px 44px; gap: 0 12px; padding: 0 14px 6px; }
   .transport { grid-column: 1; grid-row: 1; }
   .play { width: var(--ctl); height: var(--ctl); }
@@ -578,13 +565,7 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 
 <main class="stage">
   <section id="screen-overview" class="screen paper" aria-label="Level 1: overview"></section>
-  <div id="view-map" class="view" hidden aria-label="Level 2: unit on the map">
-    <section class="map-context" aria-label="Current network view">
-      <span class="eyebrow" id="map-kicker">All operating units</span>
-      <h1 id="map-unit">North Sea gas network</h1>
-      <div class="map-context-meta"><span class="live-indicator" aria-hidden="true"></span><span id="map-mode-label">Live operations</span><span class="meta-separator">·</span><span>MSm³/d</span></div>
-    </section>
-  </div>
+  <div id="view-map" class="view" hidden aria-label="Level 2: unit on the map"></div>
   <div id="view-flow" class="view" hidden aria-label="Level 2: unit as a gas flow overview"></div>
   <section id="screen-asset" class="screen paper" hidden aria-label="Level 3: asset detail"></section>
   <section id="screen-diag" class="screen paper" hidden aria-label="Level 4: diagnostics"></section>
@@ -2445,9 +2426,6 @@ const App = (() => {
     const unitSelect = $("crumb-unit");
     unitSelect.value = s === "asset" || s === "diag" ? unitOf[route.asset] || "all" : route.unit;
     unitSelect.setAttribute("aria-current", s === "unit" ? "page" : "false");
-    const mapUnit = route.unit === "all" ? null : unitById[route.unit];
-    $("map-kicker").textContent = mapUnit ? "Operating unit" : "All operating units";
-    $("map-unit").textContent = mapUnit ? mapUnit.name : "North Sea gas network";
     const deep = s === "asset" || s === "diag";
     $("sep-asset").hidden = $("crumb-asset").hidden = !deep;
     $("sep-diag").hidden = $("crumb-diag").hidden = s !== "diag";
@@ -2970,8 +2948,6 @@ const App = (() => {
   function markTabs() {
     for (const tab of document.querySelectorAll("[data-view]")) tab.setAttribute("aria-selected", String(tab.dataset.view === state.view));
     for (const tab of document.querySelectorAll("[data-mode]")) tab.setAttribute("aria-selected", String(tab.dataset.mode === state.mode));
-    const modeLabels = { live: "Live operations", load: "Capacity load · model", risk: "Outage exposure · model", whatif: "What-if analysis", plain: "Network assets" };
-    $("map-mode-label").textContent = modeLabels[state.mode];
   }
 
   function start() {
@@ -4406,8 +4382,10 @@ function NoraCanvasMap(view) {
     }
     ctx.restore();
   }
-  /* Zoomed-out semantic detail: keep direction and volume visible without repeating
-     every individual pipeline. Show incoming and outgoing totals on separate rows. */
+  /* Zoomed out: the gas coming in and going out, as two totals on their own rows, the
+     numbers alone (Ray, 29 Oct: "remove the out and in text from all boxes", "only keep
+     the flow numbers themselves"): incoming dim above, outgoing in full ink below, as
+     in the zoomed-in square. */
   function drawOverviewFlows(ctx, x, y, id, look, { half, total, positions = framePos }) {
     let incoming = 0, outgoing = 0;
     for (const line of lineReadings(id, positions)) {
@@ -4416,8 +4394,8 @@ function NoraCanvasMap(view) {
       else if (line.direction === "in") incoming += line.value;
     }
     const labels = [];
-    if (incoming >= 0.05) labels.push({ text: `IN ${App.fmt(incoming, incoming < 10 ? 1 : 0)}M`, ink: look.dim });
-    if (outgoing >= 0.05) labels.push({ text: `OUT ${App.fmt(outgoing, outgoing < 10 ? 1 : 0)}M`, ink: look.ink });
+    if (incoming >= 0.05) labels.push({ text: `${App.fmt(incoming, incoming < 10 ? 1 : 0)}M`, ink: look.dim });
+    if (outgoing >= 0.05) labels.push({ text: `${App.fmt(outgoing, outgoing < 10 ? 1 : 0)}M`, ink: look.ink });
     if (!labels.length && total != null) labels.push({ text: `${App.fmt(total, total < 10 ? 1 : 0)}M`, ink: look.ink });
     const scale = network ? network.getScale() : 1, row = 7 / scale;
     ctx.save();
