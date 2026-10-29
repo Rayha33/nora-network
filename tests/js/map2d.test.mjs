@@ -199,8 +199,9 @@ test("flow overview: incoming and outgoing totals are readable inside the square
   });
   assert.ok(id, "the fixture has a node with both incoming and outgoing gas");
   App.views.flow.drawOverviewFlows(ctx, 0, 0, id, App.colors.card.active, { half, total: 50, positions: pos });
-  assert.ok(labels.some((label) => /^IN \d/.test(label.text)), "incoming flow is stated explicitly");
-  assert.ok(labels.some((label) => /^OUT \d/.test(label.text)), "outgoing flow is stated explicitly");
+  const flows = labels.filter((label) => /^[\d.,]+M$/.test(label.text));
+  assert.equal(flows.length, 2, "incoming and outgoing totals, each on its own row");
+  assert.ok(labels.every((label) => !/\b(in|out)\b/i.test(label.text)), "the numbers alone: no in or out text (Ray, 29 Oct)");
   assert.ok(labels.every((label) => Math.abs(label.x) <= half && Math.abs(label.y) <= half), "both totals stay inside the square");
   assert.ok(labels.every((label) => parseFloat(label.font) >= 11), "overview flows meet the readability floor");
 });
@@ -772,17 +773,16 @@ test("marker labels: never over a node name or another label", () => {
   assert.ok(second && (second.x !== first.x || second.y !== first.y), "a second peak at the same spot labels elsewhere");
 });
 
-/* Review finding: the canvas map cleared its whole container, which holds the page's
-   map card, and every later navigation wrote to the card's missing labels and threw.
-   It must keep the card, so navigation and the card's words keep working. */
-test("map: the canvas map keeps the map card, so navigation keeps working", () => {
+/* Review finding: the canvas map cleared its container, which then held the page's map
+   card, and every later navigation threw. Navigation must keep working after it. */
+test("map: navigation keeps working after the canvas map takes over", () => {
   const { App, NORA, document } = loadApp();
   App.state.view = "map";
   App.go({ screen: "unit", unit: "all" });
   assert.equal(App.views.map.canvasMap, true, "the canvas map took over");
   const unit = NORA.units[1];
   assert.doesNotThrow(() => App.go({ screen: "unit", unit: unit.id }), "navigating after the fallback");
-  assert.equal(document.getElementById("map-unit").textContent, unit.name, "the card names the unit");
+  assert.equal(document.getElementById("crumb-unit").value, unit.id, "the bar names the unit");
   assert.doesNotThrow(() => App.go({ screen: "overview" }), "and on to the overview");
 });
 

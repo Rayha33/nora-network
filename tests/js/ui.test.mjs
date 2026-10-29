@@ -1,19 +1,16 @@
-/* The map's context card follows the same route state as the network view. */
+/* The top bar names the unit; the map has no card of its own (Ray, 29 Oct: "remove
+   this window, it doesnt serve any purpose"). */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { loadApp } from "./harness.mjs";
 
-test("map context names all units and the selected operating unit", () => {
+test("map: no info card over the map; the bar names the unit", () => {
   const { App, NORA, document } = loadApp();
-  App.go({ screen: "unit", unit: "all" });
-  assert.equal(document.getElementById("map-kicker").textContent, "All operating units");
-  assert.equal(document.getElementById("map-unit").textContent, "North Sea gas network");
-
   const unit = NORA.units[0];
   App.go({ screen: "unit", unit: unit.id });
-  assert.equal(document.getElementById("map-kicker").textContent, "Operating unit");
-  assert.equal(document.getElementById("map-unit").textContent, unit.name);
+  assert.equal(document.getElementById("map-unit"), null, "the card is gone from the page");
+  assert.equal(document.getElementById("crumb-unit").value, unit.id, "the unit is named in the bar");
 });
 
 test("live node style separates throughput and pressure for the Flow renderer", () => {
