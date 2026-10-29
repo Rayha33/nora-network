@@ -1041,7 +1041,19 @@
         position: { x: held.x + (el.clientWidth / 2 - at.x) / target, y: held.y + (el.clientHeight / 2 - at.y) / target },
       });
     });
-    if (App.embed) network.setOptions({ interaction: { zoomView: false } });
+    /* Zoom with the wheel, a pinch or the + and − buttons, as on the Map (Ray, 29 Oct:
+       "i cant zoom in and out on flow view"). In the home page's frame a plain wheel
+       scrolls the page, and with Ctrl or ⌘ (a trackpad pinch sends Ctrl) it zooms, the
+       way the Map behaves there; vis never sees the plain one. */
+    container.addEventListener("wheel", (e) => { if (App.embed && !e.ctrlKey && !e.metaKey) e.stopPropagation(); }, { capture: true });
+    const zoomButtons = document.createElement("div");
+    zoomButtons.className = "map2d-zoom flow-zoom";
+    for (const [label, factor] of [["+", 1.5], ["−", 1 / 1.5]]) {
+      const b = Object.assign(document.createElement("button"), { type: "button", textContent: label, title: factor > 1 ? "Zoom in" : "Zoom out" });
+      b.addEventListener("click", () => zoomBy(factor));
+      zoomButtons.append(b);
+    }
+    container.append(zoomButtons);
     nodes.update(App.nodeIds.map((id) => ({ id, shape: "custom", ctxRenderer: card(id), label: "" })));
     /* vis ends a line where its node's shape says the border is; for a custom shape it
        guesses an ellipse round nodeDimensions, so lines stopped inside the squares or
@@ -1298,6 +1310,13 @@
     return Math.min(el.clientWidth / w, el.clientHeight / h) * 0.8;
   }
   let kept = null; // the viewport an edit's reload restores (App.edit.viewport)
+  // A button's zoom: about the middle of the window, within the same limits as the wheel.
+  function zoomBy(factor) {
+    const scale = Math.min(MAX_SCALE, Math.max(minScale(), network.getScale() * factor));
+    kept = null;
+    network.moveTo({ scale, animation: App.reduceMotion ? false : { duration: 200, easingFunction: "easeInOutQuad" } });
+  }
+  view.zoomBy = zoomBy; // for tests
   view.setUnit = (unit) => {
     if (!view.ready) return;
     if (kept) { network.moveTo({ position: kept.position, scale: kept.scale, animation: false }); return; }
