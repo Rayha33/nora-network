@@ -255,3 +255,18 @@ test("alarms: the counts open a list, Integrity and SCADA, time first", () => {
     assert.ok(App.sidebar.id(), "and opens the asset");
   }
 });
+
+test("NORA in the top bar goes back to the map of the whole network", () => {
+  // Ray, 29 Oct: "clicking on NORA should take me back to map overview and not download file".
+  const { App, document } = loadApp();
+  const html = readFileSync(new URL("../../src/nora/templates/app.html.j2", import.meta.url), "utf8");
+  assert.doesNotMatch(html, /class="brand"[^>]*href="\.\/"/, "no link to the folder");
+  App.state.view = "flow";
+  App.go({ screen: "overview" });
+  const brand = document.getElementById("brand");
+  let prevented = false;
+  brand._listeners.click.at(-1)({ preventDefault: () => { prevented = true; } });
+  assert.ok(prevented, "the page handles it");
+  assert.equal(App.state.view, "map");
+  assert.deepEqual({ screen: App.route.screen, unit: App.route.unit }, { screen: "unit", unit: "all" });
+});
