@@ -172,3 +172,25 @@ test("gas day: a trail of earlier hours on the bar, and the day's chart in the p
   assert.ok(chart.includes(`Target ${App.fmt(target, 1)}`), "the end-of-day target, from the day's nominations");
   assert.match(chart, /now [\d.]+ of [\d.]+/);
 });
+
+test("a field's GC: composition, calorific value, Wobbe index and dew points, past a limit coloured", () => {
+  // Ray, 29 Oct: "when i for instance click on a field like Oseberg i need to see the GC
+  // (gass chromotograph) values in a table".
+  const { App, document } = load();
+  const id = "oseberg", t = 1_790_000_000;
+  App.live.frames = [{ t, flows: {}, plan: null, metrics: { c1_molpct: { [id]: 100 }, wdp_c: { [id]: -14 }, hcdp_c: { [id]: 1.5 }, o2_ppm: { [id]: 1 } } }];
+  App.live.index = 0;
+  const q = App.gasQuality(id);
+  assert.ok(Math.abs(q.gcv - 37.706) < 1e-9, "pure methane: 37.706 MJ/Sm³");
+  assert.ok(Math.abs(q.wobbe - 37.706 / Math.sqrt(16.043 / 28.9626)) < 1e-9, "its Wobbe index");
+  App.go({ screen: "asset", asset: id });
+  const screen = document.getElementById("screen-asset"), page = screen.textContent;
+  for (const label of ["C1 Methane", "C6+ Hexanes and heavier", "CO₂", "N₂", "Calorific value", "Wobbe index", "H₂S", "O₂", "Water dew point", "Hydrocarbon dew point"]) {
+    assert.ok(page.includes(label), `${label} in the table`);
+  }
+  const cells = [];
+  const walk = (el) => { if (el && el.tagName === "TD") cells.push(el); (el && el.children || []).forEach(walk); };
+  walk(screen);
+  const hcdp = cells.find((c) => c.textContent === "1.5");
+  assert.ok(hcdp && /color/.test((hcdp.attributes && hcdp.attributes.get && hcdp.attributes.get("style")) || ""), "an HCDP over −2 °C: its number coloured");
+});

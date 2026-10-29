@@ -11,6 +11,8 @@ steps = 168
 seed = 7
 operations = true   # also pressures, hourly nominations and bookings
 quality = true      # also H2S and CO2 at each field, with the excursions below
+composition = true  # and each field's export gas as its GC reads it: C1 to C6+, N2, O2, dew points
+weather = true      # the outside air temperature at each onshore site
 # A pig on every trunk, export line and interconnector, launched once a fortnight and
 # staggered; with the named pigs below, about five are under way at any time (2 to 7)
 # (Ray: "a few peaks and pigs going through different pipelines"). The named [[pigs]]

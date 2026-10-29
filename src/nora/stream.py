@@ -49,6 +49,44 @@ METRICS = {
     "booked_msm3d": "Booked capacity (MSm3/d)",
     "h2s_ppm": "H2S (ppm)",
     "co2_molpct": "CO2 (mol %)",
+    # A field's export gas from its gas chromatograph (GC), and its dew points
+    "c1_molpct": "Methane, C1 (mol %)",
+    "c2_molpct": "Ethane, C2 (mol %)",
+    "c3_molpct": "Propane, C3 (mol %)",
+    "ic4_molpct": "i-Butane, iC4 (mol %)",
+    "nc4_molpct": "n-Butane, nC4 (mol %)",
+    "ic5_molpct": "i-Pentane, iC5 (mol %)",
+    "nc5_molpct": "n-Pentane, nC5 (mol %)",
+    "c6plus_molpct": "Hexanes and heavier, C6+ (mol %)",
+    "n2_molpct": "Nitrogen, N2 (mol %)",
+    "o2_ppm": "Oxygen, O2 (ppm)",
+    "wdp_c": "Water dew point (°C)",
+    "hcdp_c": "Hydrocarbon dew point (°C)",
+    "air_temp_c": "Outside air temperature (°C)",
+}
+# A field's gas between lean (Troll-like) and rich (Åsgard-like), mol % of the hydrocarbons
+# and nitrogen (CO2 comes from its own reading).
+GC_LEAN = {
+    "c1": 93.6,
+    "c2": 3.7,
+    "c3": 0.5,
+    "ic4": 0.06,
+    "nc4": 0.07,
+    "ic5": 0.02,
+    "nc5": 0.02,
+    "c6plus": 0.03,
+    "n2": 2.0,
+}
+GC_RICH = {
+    "c1": 84.5,
+    "c2": 8.6,
+    "c3": 3.6,
+    "ic4": 0.6,
+    "nc4": 0.85,
+    "ic5": 0.22,
+    "nc5": 0.2,
+    "c6plus": 0.23,
+    "n2": 1.2,
 }
 # Typical gas quality at a field: each field gets a steady level in this range.
 QUALITY_BASE = {"h2s_ppm": (0.2, 1.2), "co2_molpct": (0.5, 1.5)}
@@ -417,7 +455,66 @@ def synthesize(
         rows = _surge_flows(rows, surges)
     if spec.get("quality", False):
         rows += _quality_rows(net, times, spec.get("excursions", []), spec.get("seed", 1))
+    if spec.get("composition", False):
+        rows += _composition_rows(net, times, rows, spec.get("seed", 1))
+    if spec.get("weather", False):
+        rows += _weather_rows(net, times, spec.get("seed", 1))
     return rows
+
+
+def _composition_rows(net: Network, times: list[datetime], rows: list[Row], seed) -> list[Row]:
+    """Each producing field's export gas as its GC reads it (Ray, 29 Oct: "GC values in a
+    table like C1 Metan, C2 Etan, C3 Propan etc all the way to C6+ and then CO2, N2 ...
+    O2, WDP and HCDP"). Each field sits somewhere between lean and rich gas and drifts a
+    little; its CO2 is its own CO2 reading, the rest scaled to fill 100 %. Synthetic."""
+    co2 = {(when, node): value for when, node, metric, value in rows if metric == "co2_molpct"}
+    out: list[Row] = []
+    for node in sorted(n.id for n in net.nodes if n.type == "field" and n.capacity_msm3d):
+        rng = random.Random(f"gc-{seed}-{node}")  # each field its own, whatever else changes
+        rich, drift, dew, hc = rng.random(), 0.0, rng.gauss(-14, 1.5), 0.0
+        for when in times:
+            drift = 0.9 * drift + rng.gauss(0, 0.01)
+            r = min(1.0, max(0.0, rich + drift))
+            mix = {k: GC_LEAN[k] + (GC_RICH[k] - GC_LEAN[k]) * r for k in GC_LEAN}
+            carbon = co2.get((when, node), 1.0)
+            scale = (100 - carbon) / sum(mix.values())
+            for k, v in mix.items():
+                out.append((when, node, f"{k}_molpct", round(v * scale, 3)))
+            hc = 0.8 * hc + rng.gauss(0, 0.3)
+            out.append((when, node, "o2_ppm", round(max(0.0, 1.5 + rng.gauss(0, 0.4)), 2)))
+            out.append((when, node, "wdp_c", round(dew + rng.gauss(0, 0.3), 1)))
+            out.append((when, node, "hcdp_c", round(-9 + 6 * r + hc, 1)))
+    return out
+
+
+def _weather_rows(net: Network, times: list[datetime], seed) -> list[Row]:
+    """The outside air temperature at each onshore site (Ray, 29 Oct: "what temperature it
+    is at each of the main exit point hubs ... outside temperature in degrees celsius"):
+    late autumn, cooler to the north, warmest early afternoon. Synthetic."""
+    out: list[Row] = []
+    onshore = sorted(
+        (
+            n
+            for n in net.nodes
+            if n.type in ("terminal", "processing", "market") and n.status == "operating"
+        ),
+        key=lambda n: n.id,
+    )
+    for node in onshore:
+        rng, noise = random.Random(f"weather-{seed}-{node.id}"), 0.0
+        mean = 14.0 - 0.35 * (node.lat - 50)
+        for when in times:
+            noise = 0.9 * noise + rng.gauss(0, 0.35)
+            hour = when.hour + when.minute / 60
+            out.append(
+                (
+                    when,
+                    node.id,
+                    "air_temp_c",
+                    round(mean + 3 * math.cos(2 * math.pi * (hour - 13) / 24) + noise, 1),
+                )
+            )
+    return out
 
 
 def _quality_rows(net: Network, times: list[datetime], excursions: list, seed) -> list[Row]:

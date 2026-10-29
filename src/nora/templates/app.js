@@ -2195,6 +2195,51 @@ const App = (() => {
       h("div", { class: "actions" }, offline),
       h("p", { class: "dim small" }, "Model estimate, steady state: flows in today's directions and shares; pressures from each line's regression, corrected to today's pressures, with exits and gas plants holding theirs. Your values are temporary: Reset clears them."));
   }
+  /* A field's export gas as its GC reads it (Ray, 29 Oct: "when i for instance click on a
+     field like Oseberg i need to see the GC (gass chromotograph) values in a table like C1
+     Metan, C2 Etan, C3 Propan etc all the way to C6+ and then CO2, N2, how rich the gas is
+     ..., wobbe index, H2S, O2, WDP and HCDP"). How rich the gas is (its gross calorific
+     value), the Wobbe index and the relative density are worked out from the composition
+     (ISO 6976, ideal gas, 15 °C / 15 °C); the rest are readings. A value past its sales-gas
+     limit takes the limit colour on its number. */
+  const GC = [ // key, symbol, name, molar mass (g/mol), gross calorific value (MJ/m³)
+    ["c1", "C1", "Methane", 16.043, 37.706], ["c2", "C2", "Ethane", 30.069, 66.07], ["c3", "C3", "Propane", 44.097, 93.94],
+    ["ic4", "iC4", "i-Butane", 58.123, 121.4], ["nc4", "nC4", "n-Butane", 58.123, 121.79], ["ic5", "iC5", "i-Pentane", 72.15, 149.36],
+    ["nc5", "nC5", "n-Pentane", 72.15, 149.66], ["c6plus", "C6+", "Hexanes and heavier", 86.177, 177.55],
+    ["co2", "CO₂", "Carbon dioxide", 44.01, 0], ["n2", "N₂", "Nitrogen", 28.014, 0],
+  ];
+  // Sales-gas limits for the colour: typical of North Sea export specifications, illustrative.
+  const GC_LIMITS = { wobbe: [47.2, 51.41], hcdp: [null, -2], wdp: [null, -8], o2: [null, 10] };
+  function gasQuality(id, f = frame()) {
+    const mol = Object.fromEntries(GC.map(([k]) => [k, metric(`${k}_molpct`, id, f)]));
+    if (mol.c1 == null) return null;
+    let gcv = 0, molar = 0;
+    for (const [k, , , m, hv] of GC) { const x = (mol[k] || 0) / 100; gcv += x * hv; molar += x * m; }
+    const density = molar / 28.9626;
+    return { mol, gcv, density, wobbe: gcv / Math.sqrt(density), h2s: metric("h2s_ppm", id, f), o2: metric("o2_ppm", id, f), wdp: metric("wdp_c", id, f), hcdp: metric("hcdp_c", id, f) };
+  }
+  function gcBox(id) {
+    const q = gasQuality(id);
+    if (!q) return null;
+    const past = (v, [lo, hi] = []) => v != null && ((lo != null && v < lo) || (hi != null && v > hi));
+    const cell = (v, digits, limits) => h("td", past(v, limits) ? { style: `color:${limitInk(1)};font-weight:600` } : null, v == null ? "–" : fmt(v, digits));
+    const h2sLimit = C.quality.h2s_ppm[2];
+    return h("div", { class: "box gc" }, h("h2", { title: "The field's export gas, as its gas chromatograph reads it" }, "Gas composition (GC)"),
+      h("table", { class: "data gc-table" },
+        h("thead", null, h("tr", null, h("th", null, "Component"), h("th", null, "mol %"))),
+        h("tbody", null, ...GC.map(([k, symbol, name]) => h("tr", null, h("td", null, `${symbol} ${name}`), cell(q.mol[k], k === "c1" ? 2 : 3))))),
+      h("table", { class: "data gc-table" },
+        h("thead", null, h("tr", null, h("th", null, "Property"), h("th", null, "Value"), h("th", null, "Limit"))),
+        h("tbody", null,
+          h("tr", null, h("td", null, "Calorific value (GCV), MJ/Sm³"), cell(q.gcv, 2), h("td", { class: "dim" }, "")),
+          h("tr", null, h("td", null, "Wobbe index, MJ/Sm³"), cell(q.wobbe, 2, GC_LIMITS.wobbe), h("td", { class: "dim" }, `${GC_LIMITS.wobbe[0]}–${GC_LIMITS.wobbe[1]}`)),
+          h("tr", null, h("td", null, "Relative density"), cell(q.density, 3), h("td", { class: "dim" }, "")),
+          h("tr", null, h("td", null, "H₂S, ppm"), cell(q.h2s, 1, [null, h2sLimit]), h("td", { class: "dim" }, `≤ ${h2sLimit}`)),
+          h("tr", null, h("td", null, "O₂, ppm"), cell(q.o2, 1, GC_LIMITS.o2), h("td", { class: "dim" }, `≤ ${GC_LIMITS.o2[1]}`)),
+          h("tr", null, h("td", null, "Water dew point (WDP), °C"), cell(q.wdp, 1, GC_LIMITS.wdp), h("td", { class: "dim" }, `≤ ${GC_LIMITS.wdp[1]}`)),
+          h("tr", null, h("td", null, "Hydrocarbon dew point (HCDP), °C"), cell(q.hcdp, 1, GC_LIMITS.hcdp), h("td", { class: "dim" }, `≤ ${GC_LIMITS.hcdp[1]}`)))),
+      h("p", { class: "dim small" }, `${live.stream && live.stream.synthetic ? "Synthetic readings. " : ""}Calorific value, Wobbe index and density worked out from the composition (ISO 6976, ideal gas, 15 °C); limits typical of export gas, illustrative.`));
+  }
   // Level 3: what flows in (top), the asset, what flows out (bottom), and its values.
   function assetDetail(id, inSidebar = false) {
     const d = assets[id];
@@ -2215,13 +2260,16 @@ const App = (() => {
         : `${NORA.pipelineTypes[d.type]}, ${nameOf(d.from)} to ${nameOf(d.to)}.`),
       h("div", { class: "cols" },
         h("div", { class: "box" }, h("h2", { title: "Flowing in above the asset, out below it" }, "In context"), schematic(id)),
-        h("div", { class: "box" }, h("h2", { title: "Live readings in their ranges, from the data being played" }, "Values"), bank(indicators, "No live readings for this asset in the dataset.", { byMeasure: true }),
+        h("div", { class: "box" }, h("h2", { title: "Live readings in their ranges, from the data being played" }, "Values"),
+          metric("air_temp_c", id) != null ? h("p", { class: "outside" }, `Outside ${fmt(metric("air_temp_c", id), 1)} °C`) : null,
+          bank(indicators, "No live readings for this asset in the dataset.", { byMeasure: true }),
           exitPoints.includes(id) && dayDelivery(id) ? h("div", { class: "nomination-outlook" }, h("h2", { style: "margin-top:14px" }, "Gas day · MSm³ delivered against nominated"), gasDayChart(id)) : null,
           exitPoints.includes(id) ? h("div", { class: "nomination-outlook" }, h("h2", { style: "margin-top:14px" }, "Next 6 hours · MSm³/d"), nominationHistogram(id)) : null,
           inSidebar ? null : h("h2", { style: "margin-top:14px" }, "State"),
           conds.length ? alarmList(conds)
             : h("p", { class: "state-quiet" }, "Normal · no alarms right now"),
           conds.length ? (() => { const cause = upstreamCause(id); return h("p", { class: "cause" }, h("strong", null, "Likely cause: "), cause.text, h("span", { class: "dim" }, ` (confidence ${cause.confidence}; traced through the network model)`)); })() : null),
+        gcBox(id),
         h("div", { class: "box" }, h("h2", null, "Facts"), facts(id))),
       h("div", { class: "actions" },
         d.kind === "node" ? h("button", { type: "button", class: "text", "data-key": "action:whatif", onclick: () => {
@@ -3561,7 +3609,8 @@ const App = (() => {
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
-    pressureMark, flowMark, drawFlowDirection, gasDayChart,
+    pressureMark, flowMark, drawFlowDirection, gasDayChart, gasQuality,
+    airTemp: (id) => metric("air_temp_c", id),
     rampAhead, // the next 6 hours of nominations at an exit point
     pipeStyle, pipeMapName, pipeDetail, detailZoom: DETAIL_ZOOM, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
