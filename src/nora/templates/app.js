@@ -1682,13 +1682,14 @@ const App = (() => {
     return h("div", { class: "box" }, h("h2", null, "Nominations at the exit points, next 6 hours"),
       rows.length ? h("ul", { class: "noms" }, rows.map(({ id, ramp }) => {
         const s = ramp.steepest, steady = !s || Math.abs(s.change) < 0.05;
-        return h("li", { class: "nom-row", onclick: () => go({ screen: "asset", asset: id }), title: "Hourly nominations, now and the next 5 hours (MSm³/d)" },
+        // A button, so the keyboard reaches every row (as everything on this screen)
+        return h("li", null, h("button", { type: "button", class: "nom-row", onclick: () => go({ screen: "asset", asset: id }), title: "Hourly nominations, now and the next 5 hours (MSm³/d)" },
           h("span", { class: "name" }, nameOf(id)),
           h("span", { class: "values" }, `${fmt(ramp.now, 1)} → ${fmt(ramp.last, 1)}`),
           nominationSteps(ramp.hours),
           h("span", { class: "ramp" }, steady ? h("span", { class: "dim" }, "steady")
             : `${s.change > 0 ? "▲" : "▼"} ${fmt(Math.abs(s.change), 1)}/h at ${hm(s.t)}`),
-          ramp.level ? badge(ramp.level, "Fast ramp") : h("span", null));
+          ramp.level ? badge(ramp.level, "Fast ramp") : h("span", null)));
       })) : h("p", { class: "empty" }, "No nominations in this dataset."),
       h("p", { class: "dim small" }, `${source} MSm³/d; times CET.`));
   }
