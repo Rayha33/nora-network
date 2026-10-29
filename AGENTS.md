@@ -36,7 +36,11 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 | `src/nora/analysis.py` | max flow, min-cost routing, N-1 outages, plant capacity, `analyse()` for the site |
 | `src/nora/ops.py` | plan check (are the nominations deliverable?), look-ahead, decision support |
 | `src/nora/blending.py` | the blending stations (`nora.toml` [blending]): the lines in, between and out of them, for the picture on their asset pages |
-| `src/nora/stream.py` | load, import, synthesise (flows, operations, gas quality, pigs) and scaffold streams |
+| `src/nora/stream.py` | the public API (import from here): load, import, synthesise (flows, operations, gas quality, pigs) and scaffold streams |
+| `src/nora/streams/model.py` | what a stream is: `Stream`, `Event`, `Pig`, the metrics and row type |
+| `src/nora/streams/importing.py` | raw files into rows: `read_flows`, `[[import]]` mappings, `scaffold` (`nora stream new`) |
+| `src/nora/streams/synthetic.py` | synthetic streams: flows from the model, operations, gas quality, events, the pig programme |
+| `src/nora/streams/pigs.py` | pigs as data: tags, receivers, speed with the gas, ETAs, messages and ETA-drift alarms |
 | `src/nora/live.py` | serve a stream, a polled source or readings pushed to `/ingest` as Server-Sent Events (`/stream`); [docs/live-data.md](docs/live-data.md) |
 | `src/nora/integrations.py` | live connectors: Gassco real-time, National Gas (IUK), Origo and Gassco Booking (built against mocks; [docs/integrations.md](docs/integrations.md)) |
 | `src/nora/layout.py` | Flow view positions: layered stages, ordered and spaced to minimise crossings |

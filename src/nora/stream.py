@@ -14,201 +14,104 @@ Metrics (METRICS below): flow_msm3d on a pipeline (negative = against its from -
 direction) or a node (throughput); pressure_bar at a node; nomination_msm3d and
 booked_msm3d at an exit point, held until the next value. `nora stream new` writes a
 stream.toml for a raw file; see data/streams/README.md.
+
+The internals live in nora/streams/ (model, importing, synthetic, pigs); this module
+is the public API and re-exports what callers import from it.
 """
 
 from __future__ import annotations
 
 import csv
-import json
 import math
-import random
-import re
-import shutil
 import statistics
 import tomllib
-from collections.abc import Iterator
-from dataclasses import dataclass, field, replace
-from datetime import UTC, datetime, timedelta
+from dataclasses import replace
+from datetime import datetime, timedelta
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
-import networkx as nx
+from .data import DataError, Network, suggest
+from .streams.importing import import_rows, read_flows, scaffold
+from .streams.model import (
+    FLOW_COLUMNS,
+    HELD,
+    METRIC_COLUMNS,
+    METRICS,
+    STREAM_ID,
+    STREAMS_DIR,
+    Event,
+    Pig,
+    Row,
+    Stream,
+    _check_stream_id,
+    parse_time,
+)
+from .streams.pigs import (
+    PIG_DRIFT_ALARM_S,
+    PIG_DRIFT_S,
+    PIG_GRACE_S,
+    PIG_KINDS,
+    PIG_NOTICE_S,
+    PIG_RESPONSE_S,
+    PIG_SLOWEST,
+    _pig_problem,
+    pig_alarm,
+    pig_code,
+    pig_eta,
+    pig_messages,
+    pig_speed,
+    pig_tag,
+)
+from .streams.synthetic import (
+    GC_LEAN,
+    GC_RICH,
+    PIG_LINES,
+    QUALITY_BASE,
+    _pig_programme,
+    apply_events,
+    start_of,
+    synthesize,
+)
 
-from .analysis import routed_flow
-from .data import DATA_DIR, SUPPLY_TYPES, DataError, Network, read_rows, suggest
-from .graph import build_graph
-
-STREAMS_DIR = DATA_DIR / "streams"
-FLOW_COLUMNS = ("timestamp", "asset", "flow_msm3d")
-METRIC_COLUMNS = ("timestamp", "asset", "metric", "value")
-STREAM_ID = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
-METRICS = {
-    "flow_msm3d": "Flow (MSm3/d)",
-    "pressure_bar": "Pressure (bar)",
-    "nomination_msm3d": "Hourly nomination (MSm3/d)",
-    "booked_msm3d": "Booked capacity (MSm3/d)",
-    "h2s_ppm": "H2S (ppm)",
-    "co2_molpct": "CO2 (mol %)",
-    # A field's export gas from its gas chromatograph (GC), and its dew points
-    "c1_molpct": "Methane, C1 (mol %)",
-    "c2_molpct": "Ethane, C2 (mol %)",
-    "c3_molpct": "Propane, C3 (mol %)",
-    "ic4_molpct": "i-Butane, iC4 (mol %)",
-    "nc4_molpct": "n-Butane, nC4 (mol %)",
-    "ic5_molpct": "i-Pentane, iC5 (mol %)",
-    "nc5_molpct": "n-Pentane, nC5 (mol %)",
-    "c6plus_molpct": "Hexanes and heavier, C6+ (mol %)",
-    "n2_molpct": "Nitrogen, N2 (mol %)",
-    "o2_ppm": "Oxygen, O2 (ppm)",
-    "wdp_c": "Water dew point (°C)",
-    "hcdp_c": "Hydrocarbon dew point (°C)",
-    "air_temp_c": "Outside air temperature (°C)",
-}
-# A field's gas between lean (Troll-like) and rich (Åsgard-like), mol % of the hydrocarbons
-# and nitrogen (CO2 comes from its own reading).
-GC_LEAN = {
-    "c1": 93.6,
-    "c2": 3.7,
-    "c3": 0.5,
-    "ic4": 0.06,
-    "nc4": 0.07,
-    "ic5": 0.02,
-    "nc5": 0.02,
-    "c6plus": 0.03,
-    "n2": 2.0,
-}
-GC_RICH = {
-    "c1": 84.5,
-    "c2": 8.6,
-    "c3": 3.6,
-    "ic4": 0.6,
-    "nc4": 0.85,
-    "ic5": 0.22,
-    "nc5": 0.2,
-    "c6plus": 0.23,
-    "n2": 1.2,
-}
-# Typical gas quality at a field: each field gets a steady level in this range.
-QUALITY_BASE = {"h2s_ppm": (0.2, 1.2), "co2_molpct": (0.5, 1.5)}
-HELD = ("nomination_msm3d", "booked_msm3d")  # valid until the next value arrives
-Row = tuple[datetime, str, str, float]  # time, asset, metric, value
-
-
-def _check_stream_id(name: str) -> None:
-    """Stream names become folder names: keep them inside data/streams."""
-    if not STREAM_ID.fullmatch(name):
-        raise DataError([f"stream name '{name}' must match {STREAM_ID.pattern} (a folder name)"])
-
-
-@dataclass(frozen=True)
-class Event:
-    """Something that happens during a stream. Synthetic streams apply it to the model
-    (capacity_factor 0 = asset offline); for real data it only marks the timeline."""
-
-    label: str
-    asset: str
-    start: datetime
-    end: datetime
-    capacity_factor: float = 0.0
-    planned: bool = False  # planned work is known in advance; a trip is not
-
-    def active(self, when: datetime) -> bool:
-        return self.start <= when < self.end
-
-
-@dataclass(frozen=True)
-class Pig:
-    """A pig run: launched into a pipeline, travelling with the gas at about `speed_mps`,
-    and launched again every `every_hours` when that is set (a pigging programme)."""
-
-    label: str
-    pipeline: str
-    launch: datetime
-    speed_mps: float
-    every_hours: float = 0.0
-    ident: int | None = None  # the pig ID operators use (stream.toml `id`); each relaunch counts up
-    tag: str = ""  # the tag on the pig, such as PIG-LGS-014; generated when not given
-    kind: str = "cleaning"  # cleaning, inspection or gauging
-    receiver: str | None = None  # the receiving station (a node); None: the end of its route
-    notify_every_hours: float = 6.0  # an ETA update to the receiver this often
-
-
-@dataclass(frozen=True)
-class Stream:
-    name: str
-    title: str
-    description: str
-    source: str
-    license: str
-    synthetic: bool
-    events: tuple[Event, ...]
-    times: tuple[datetime, ...]
-    assets: tuple[str, ...]
-    values: tuple[tuple[float | None, ...], ...]  # flows: values[time][asset]; None = no reading
-    order: int = 100  # lower plays first on the site; set with `order =` in stream.toml
-    # Other metrics, aligned to `times`: {metric: (assets, values[time][asset])}
-    metrics: dict = field(default_factory=dict)
-    pigs: tuple[Pig, ...] = ()
-
-    def frames(self) -> Iterator[tuple[datetime, dict[str, float]]]:
-        for when, row in zip(self.times, self.values, strict=True):
-            yield when, {a: v for a, v in zip(self.assets, row, strict=True) if v is not None}
-
-    def frames_full(self) -> Iterator[tuple[int, datetime, dict, dict]]:
-        """(index, time, flows, {metric: {asset: value}}) for every time step."""
-        for i, (when, flows) in enumerate(self.frames()):
-            # Row i of each metric's matrix (transposing it per step cost O(steps²)).
-            extra = {
-                metric: {a: v for a, v in zip(assets, values[i], strict=True) if v is not None}
-                for metric, (assets, values) in self.metrics.items()
-            }
-            yield i, when, flows, extra
-
-    def payload(self) -> dict:
-        """Compact JSON for the browser: epoch-second times and a value matrix."""
-        return {
-            "name": self.name,
-            "title": self.title,
-            "description": self.description,
-            "source": self.source,
-            "license": self.license,
-            "synthetic": self.synthetic,
-            "events": [
-                {
-                    "label": e.label,
-                    "asset": e.asset,
-                    "start": int(e.start.timestamp()),
-                    "end": int(e.end.timestamp()),
-                    "planned": e.planned,
-                }
-                for e in self.events
-            ],
-            "pigs": [
-                {
-                    "label": pig.label,
-                    "pipeline": pig.pipeline,
-                    "launch": int(pig.launch.timestamp()),
-                    "speed": pig.speed_mps,
-                    "every": round(pig.every_hours * 3600),
-                    "id": pig.ident,
-                    "tag": pig.tag,
-                    "kind": pig.kind,
-                    "receiver": pig.receiver,
-                    "notify": round(pig.notify_every_hours * 3600),
-                }
-                for pig in self.pigs
-            ],
-            "times": [int(t.timestamp()) for t in self.times],
-            "assets": list(self.assets),
-            "values": [[None if v is None else round(v, 2) for v in row] for row in self.values],
-            "metrics": {
-                metric: {
-                    "assets": list(assets),
-                    "values": [[None if v is None else round(v, 2) for v in row] for row in values],
-                }
-                for metric, (assets, values) in self.metrics.items()
-            },
-        }
+__all__ = [
+    "Event",
+    "FLOW_COLUMNS",
+    "GC_LEAN",
+    "GC_RICH",
+    "HELD",
+    "METRICS",
+    "METRIC_COLUMNS",
+    "PIG_DRIFT_ALARM_S",
+    "PIG_DRIFT_S",
+    "PIG_GRACE_S",
+    "PIG_KINDS",
+    "PIG_LINES",
+    "PIG_NOTICE_S",
+    "PIG_RESPONSE_S",
+    "PIG_SLOWEST",
+    "Pig",
+    "QUALITY_BASE",
+    "Row",
+    "STREAMS_DIR",
+    "STREAM_ID",
+    "Stream",
+    "apply_events",
+    "describe",
+    "import_rows",
+    "list_streams",
+    "load_stream",
+    "parse_time",
+    "pig_alarm",
+    "pig_code",
+    "pig_eta",
+    "pig_messages",
+    "pig_speed",
+    "pig_tag",
+    "read_flows",
+    "scaffold",
+    "start_of",
+    "synthesize",
+    "write_flows",
+]
 
 
 def list_streams(streams_dir: Path = STREAMS_DIR) -> list[str]:
@@ -247,560 +150,6 @@ def load_stream(name: str, net: Network, streams_dir: Path = STREAMS_DIR) -> Str
     if problems:
         raise DataError(problems)
     return replace(_pivot(name, meta, events, rows), pigs=pigs)
-
-
-def parse_time(value: str | datetime, tz: ZoneInfo | None = None, fmt: str | None = None):
-    """ISO 8601 (or `fmt` for strptime) to an aware UTC datetime; naive times use `tz`."""
-    if isinstance(value, datetime):
-        when = value
-    elif fmt:
-        when = datetime.strptime(value.strip(), fmt)
-    else:
-        when = datetime.fromisoformat(value.strip())
-    if when.tzinfo is None:
-        when = when.replace(tzinfo=tz or UTC)
-    return when.astimezone(UTC)
-
-
-def read_flows(path: Path, problems: list[str]) -> list[Row]:
-    """NORA's own format: timestamp,asset,flow_msm3d or timestamp,asset,metric,value.
-
-    One row per timestamp+asset+metric: duplicate rows are reported as a problem
-    (unlike [import] mappings, which sum repeated readings on purpose).
-    """
-    header = ""
-    if path.exists():
-        with path.open(encoding="utf-8-sig") as handle:
-            header = handle.readline()
-    long = "metric" in [c.strip() for c in header.split(",")]
-    rows = []
-    seen: dict[tuple[datetime, str, str], str] = {}  # (time, asset, metric) -> first line
-    for row in read_rows(path, METRIC_COLUMNS if long else FLOW_COLUMNS, problems):
-        try:
-            when = parse_time(row.text("timestamp", required=True))
-        except ValueError:
-            row.problem(f"'timestamp' must be ISO 8601, got '{row.text('timestamp')}'")
-            continue
-        metric = row.choice("metric", METRICS) if long else "flow_msm3d"
-        value = row.number("value" if long else "flow_msm3d", required=True)
-        asset = row.text("asset", required=True)
-        if value is None or not asset or metric not in METRICS:
-            continue
-        key = (when, asset, metric)
-        if key in seen:  # one reading per timestamp+asset: duplicates are an error, not summed
-            row.problem(
-                f"duplicate reading for '{asset}' at {when:%Y-%m-%d %H:%M} UTC"
-                f" (first on {seen[key]}); flows.csv keeps one row per timestamp and"
-                " asset - sum repeated readings in an [import] mapping instead"
-            )
-            continue
-        seen[key] = row.where
-        rows.append((when, asset, metric, value))
-    return rows
-
-
-def import_rows(folder: Path, spec: dict, where: str, problems: list[str]) -> list[Row]:
-    """Turn a raw file into rows using the [import] mapping from stream.toml.
-
-    layout = "long": one reading per line, with `asset` and `value` columns.
-    layout = "wide": one line per time, one column per point.
-    [import.assets] maps raw point names (long) or column names (wide) to NORA ids;
-    points mapped to "" are skipped, and a leading "-" ("-baltic_pipe_east") flips
-    the sign for sources that report outflows as negative. Readings that map to the
-    same asset and time are summed, and every value is multiplied by `factor` to get
-    MSm3/d.
-    """
-    path = folder / spec.get("file", "raw.csv")
-    if path.resolve().parent != Path(folder).resolve():
-        problems.append(
-            f"{where}: raw file must stay inside the stream folder, got {spec.get('file')!r}"
-        )
-        return []
-    if not path.exists():
-        problems.append(f"{where}: raw file {path.name} not found")
-        return []
-    metric = spec.get("metric", "flow_msm3d")
-    if metric not in METRICS:
-        problems.append(
-            f"{where}: [import] metric must be one of {', '.join(METRICS)}"
-            + suggest(metric, METRICS)
-        )
-        return []
-    layout = spec.get("layout", "long")
-    if layout not in ("long", "wide"):
-        problems.append(f'{where}: [import] layout must be "long" or "wide", got \'{layout}\'')
-        return []
-    mapping: dict[str, str] = spec.get("assets", {})
-    factor_text = spec.get("factor", 1.0)
-    try:
-        factor = float(factor_text)
-    except (TypeError, ValueError):
-        problems.append(
-            f"{where}: [import] factor must be a number"
-            + suggest(str(factor_text), [str(f) for f in (0.001, 0.01, 0.1, 1.0, 10.0)])
-        )
-        return []
-    tz_text = spec.get("timezone", "UTC")
-    try:
-        tz = ZoneInfo(str(tz_text))
-    except Exception:  # ZoneInfoNotFoundError is not always importable as a name
-        common = ["UTC", "Europe/Oslo", "Europe/London", "Europe/Berlin", "America/New_York"]
-        problems.append(
-            f"{where}: [import] timezone must be a valid IANA zone" + suggest(str(tz_text), common)
-        )
-        return []
-    time_column = spec.get("timestamp", "timestamp")
-    where_filter: dict[str, str] = {k: str(v) for k, v in spec.get("where", {}).items()}
-    totals: dict[tuple[datetime, str], float] = {}
-    with path.open(newline="", encoding="utf-8-sig") as handle:
-        reader = csv.DictReader(handle, delimiter=spec.get("delimiter", ","))
-        needed = [time_column, *where_filter]
-        needed += (
-            [spec.get("asset", "asset"), spec.get("value", "value")] if layout == "long" else []
-        )
-        missing = [c for c in needed if c not in (reader.fieldnames or ())]
-        if missing:
-            columns = ", ".join(reader.fieldnames or ())
-            problems.append(f"{where}: {path.name} has no column(s) {missing}; it has: {columns}")
-            return []
-        for record in reader:
-            # raw files are messier than NORA's own CSVs: strip before filtering
-            record = {k: (v or "").strip() for k, v in record.items()}
-            if any(record.get(column, "") != value for column, value in where_filter.items()):
-                continue
-            line = f"{where}/{path.name} line {reader.line_num}"
-            try:
-                when = parse_time(record[time_column], tz, spec.get("time_format"))
-            except ValueError:
-                problems.append(f"{line}: cannot read time '{record[time_column]}'")
-                continue
-            if layout == "long":
-                point = record[spec.get("asset", "asset")]
-                value_column = spec.get("value", "value")
-                pairs = [(mapping.get(point, point) if mapping else point, record[value_column])]
-            else:
-                pairs = [(asset, record.get(column, "")) for column, asset in mapping.items()]
-            for asset, raw in pairs:
-                if not asset or raw in ("", None):
-                    continue
-                sign = -1.0 if asset.startswith("-") else 1.0
-                asset = asset.removeprefix("-")
-                try:
-                    value = sign * float(raw) * factor
-                except ValueError:
-                    problems.append(f"{line}: '{raw}' is not a number")
-                    continue
-                totals[(when, asset)] = totals.get((when, asset), 0.0) + value
-    return [(when, asset, metric, value) for (when, asset), value in sorted(totals.items())]
-
-
-def synthesize(
-    net: Network,
-    spec: dict,
-    events: tuple[Event, ...] = (),
-    pressure_windows: dict | None = None,
-) -> list[Row]:
-    """Generate plausible operating data from the network model.
-
-    Field output follows a daily demand shape plus slow random drift per field, LNG
-    send-out stays flatter, and each event scales an asset's capacity while it is
-    active. Every step is routed with routed_flow, so the flows always balance.
-
-    With `operations = true` the stream also gets:
-      nomination_msm3d  hourly nominations at each terminal: the flow the shippers
-                        planned without events; dispatch keeps the flows on
-                        it until an event intervenes
-      booked_msm3d      booked capacity at each terminal, one exit booked tight
-      pressure_bar      pressure at each node, following the gas actually moving
-                        through it with a lag, inside its operating window, plus
-                        the `pressure_excursions` the spec lists (a node's pressure
-                        rising by `rise_bar` for `hours`, to show its limits)
-    With `quality = true`, H2S (ppm) and CO2 (mol %) at each field: a steady level
-    with a little noise, plus the `excursions` the spec lists.
-    The same spec and seed always give the same rows.
-    """
-    start = parse_time(spec.get("start", "2026-01-05T00:00:00Z"))
-    step = timedelta(minutes=int(spec.get("step_minutes", 60)))
-    steps = int(spec.get("steps", 168))
-    rng = random.Random(spec.get("seed", 1))
-    base = build_graph(net)
-    pipes = sorted({attrs["pipeline"] for _, _, attrs in base.edges(data=True)})
-    suppliers = sorted(n for n, attrs in base.nodes(data=True) if attrs["type"] in SUPPLY_TYPES)
-    operations = bool(spec.get("operations", False))
-    drift = dict.fromkeys(suppliers, 0.0)
-    rows: list[Row] = []
-    actual: list[dict[str, float]] = []
-    planned: list[dict[str, float]] = []
-    times = [start + k * step for k in range(steps)]
-    for when in times:
-        graph = apply_events(base, events, when)
-        supply, plan_supply = {}, {}
-        for node in suppliers:
-            drift[node] = 0.9 * drift[node] + rng.gauss(0, 0.012)
-            share = _load(when, base.nodes[node]["type"], drift[node])
-            # The event-applied graph, not the base: a derated or offline supply
-            # node must actually reduce what it can push into the network...
-            supply[node] = (graph.nodes[node]["capacity_msm3d"] or 0.0) * share
-            # ...while the plan (the nominations) is what it would supply without
-            # events, so a field outage shows as a shortfall against the plan.
-            plan_supply[node] = (base.nodes[node]["capacity_msm3d"] or 0.0) * share
-        # Dispatch keeps exit points on their nominations: the plan is what the supply
-        # would deliver without events, and only an event pushes the flows off it.
-        flow = routed_flow(graph, supply)
-        rows += [
-            (when, pipe, "flow_msm3d", round(flow.pipelines.get(pipe, 0.0), 3)) for pipe in pipes
-        ]
-        if operations:
-            actual.append(_throughput(net, flow))
-            planned.append(
-                _throughput(net, flow if graph is base else routed_flow(base, plan_supply))
-            )
-    if operations:
-        rises = _pressure_rises(net, times, spec.get("pressure_excursions", []))
-        breaches = spec.get("breaches")
-        targets, surges = (
-            _random_breaches(net, times, breaches, rows, spec.get("seed", 1))
-            if breaches
-            else ([], [])
-        )
-        rows += _operations_rows(net, times, actual, planned, pressure_windows, rng, rises, targets)
-        rows = _surge_flows(rows, surges)
-    if spec.get("quality", False):
-        rows += _quality_rows(net, times, spec.get("excursions", []), spec.get("seed", 1))
-    if spec.get("composition", False):
-        rows += _composition_rows(net, times, rows, spec.get("seed", 1))
-    if spec.get("weather", False):
-        rows += _weather_rows(net, times, spec.get("seed", 1))
-    return rows
-
-
-def _composition_rows(net: Network, times: list[datetime], rows: list[Row], seed) -> list[Row]:
-    """Each producing field's export gas as its GC reads it (Ray, 29 Oct: "GC values in a
-    table like C1 Metan, C2 Etan, C3 Propan etc all the way to C6+ and then CO2, N2 ...
-    O2, WDP and HCDP"). Each field sits somewhere between lean and rich gas and drifts a
-    little; its CO2 is its own CO2 reading, the rest scaled to fill 100 %. Synthetic."""
-    co2 = {(when, node): value for when, node, metric, value in rows if metric == "co2_molpct"}
-    out: list[Row] = []
-    for node in sorted(n.id for n in net.nodes if n.type == "field" and n.capacity_msm3d):
-        rng = random.Random(f"gc-{seed}-{node}")  # each field its own, whatever else changes
-        rich, drift, dew, hc = rng.random(), 0.0, rng.gauss(-14, 1.5), 0.0
-        for when in times:
-            drift = 0.9 * drift + rng.gauss(0, 0.01)
-            r = min(1.0, max(0.0, rich + drift))
-            mix = {k: GC_LEAN[k] + (GC_RICH[k] - GC_LEAN[k]) * r for k in GC_LEAN}
-            carbon = co2.get((when, node), 1.0)
-            scale = (100 - carbon) / sum(mix.values())
-            for k, v in mix.items():
-                out.append((when, node, f"{k}_molpct", round(v * scale, 3)))
-            hc = 0.8 * hc + rng.gauss(0, 0.3)
-            out.append((when, node, "o2_ppm", round(max(0.0, 1.5 + rng.gauss(0, 0.4)), 2)))
-            out.append((when, node, "wdp_c", round(dew + rng.gauss(0, 0.3), 1)))
-            out.append((when, node, "hcdp_c", round(-9 + 6 * r + hc, 1)))
-    return out
-
-
-def _weather_rows(net: Network, times: list[datetime], seed) -> list[Row]:
-    """The outside air temperature at each onshore site (Ray, 29 Oct: "what temperature it
-    is at each of the main exit point hubs ... outside temperature in degrees celsius"):
-    late autumn, cooler to the north, warmest early afternoon. Synthetic."""
-    out: list[Row] = []
-    onshore = sorted(
-        (
-            n
-            for n in net.nodes
-            if n.type in ("terminal", "processing", "market") and n.status == "operating"
-        ),
-        key=lambda n: n.id,
-    )
-    for node in onshore:
-        rng, noise = random.Random(f"weather-{seed}-{node.id}"), 0.0
-        mean = 14.0 - 0.35 * (node.lat - 50)
-        for when in times:
-            noise = 0.9 * noise + rng.gauss(0, 0.35)
-            hour = when.hour + when.minute / 60
-            out.append(
-                (
-                    when,
-                    node.id,
-                    "air_temp_c",
-                    round(mean + 3 * math.cos(2 * math.pi * (hour - 13) / 24) + noise, 1),
-                )
-            )
-    return out
-
-
-def _quality_rows(net: Network, times: list[datetime], excursions: list, seed) -> list[Row]:
-    """H2S and CO2 at each field. An excursion ramps up over an hour to `peak`, holds
-    it for `hours`, and ramps down again: a slug of off-spec gas to follow. With
-    `every_hours` it comes back that often."""
-    rng = random.Random(f"quality-{seed}")  # its own generator: flows stay as they were
-    fields = sorted(n.id for n in net.nodes if n.type == "field")
-    problems, bumps = [], []
-    for i, spec in enumerate(excursions, start=1):
-        asset, metric = spec.get("asset", ""), spec.get("metric", "")
-        where = f"synthetic excursion {i}"
-        if asset not in fields:
-            problems.append(f"{where}: '{asset}' is not a field" + suggest(asset, fields))
-        if metric not in QUALITY_BASE:
-            problems.append(f"{where}: metric must be one of {', '.join(QUALITY_BASE)}")
-        try:
-            peak, hours = float(spec["peak"]), float(spec.get("hours", 3))
-            start, every = parse_time(spec["start"]), float(spec.get("every_hours", 0))
-            while start <= times[-1]:
-                bumps.append((asset, metric, peak, start, hours))
-                if every <= 0:
-                    break
-                start += timedelta(hours=every)
-        except (KeyError, ValueError) as error:
-            problems.append(f"{where}: needs a peak and a start time ({error})")
-    if problems:
-        raise DataError(problems)
-    rows: list[Row] = []
-    for metric, (low, high) in QUALITY_BASE.items():
-        for node in fields:
-            base, noise = rng.uniform(low, high), 0.0
-            for when in times:
-                noise = 0.7 * noise + rng.gauss(0, 0.02)
-                value = base * (1 + noise)
-                for asset, kind, peak, start, hours in bumps:
-                    if asset == node and kind == metric:
-                        value += max(0.0, peak - base) * _plateau(when, start, hours)
-                rows.append((when, node, metric, round(max(0.0, value), 2)))
-    return rows
-
-
-def _plateau(when: datetime, start: datetime, hours: float) -> float:
-    """0 before and after, 1 from `start` for `hours`, with one-hour ramps."""
-    t = (when - start).total_seconds() / 3600
-    return max(0.0, min(1.0, t + 1, hours + 1 - t))
-
-
-def _throughput(net: Network, flow) -> dict[str, float]:
-    """Gas through each node: what it supplies, or what arrives at it."""
-    through: dict[str, float] = dict(flow.supplied)
-    for pipe in net.pipelines:
-        value = flow.pipelines.get(pipe.id, 0.0)
-        target = pipe.to_id if value > 0 else pipe.from_id
-        if pipe.type != "onshore" or net.node_by_id[target].type == "market":
-            through[target] = through.get(target, 0.0) + abs(value)
-    return through
-
-
-def _pressure_rises(net: Network, times: list[datetime], excursions: list) -> list:
-    """A node's pressure rising by `rise_bar` (a restriction downstream, a compressor
-    trip): ramps like a quality excursion, and the pressure follows at its usual pace.
-    Scripted so the Flow view shows its limits in a demo (Ray, 29 Oct: high yellow,
-    high-high red, integrity dark red)."""
-    problems, rises = [], []
-    for i, spec in enumerate(excursions, start=1):
-        asset, where = spec.get("asset", ""), f"synthetic pressure excursion {i}"
-        if asset not in net.node_by_id:
-            problems.append(f"{where}: '{asset}' is not a node" + suggest(asset, net.node_by_id))
-        try:
-            rise, hours = float(spec["rise_bar"]), float(spec.get("hours", 3))
-            start, every = parse_time(spec["start"]), float(spec.get("every_hours", 0))
-            while start <= times[-1]:
-                rises.append((asset, rise, start, hours))
-                if every <= 0:
-                    break
-                start += timedelta(hours=every)
-        except (KeyError, ValueError) as error:
-            problems.append(f"{where}: needs a rise_bar and a start time ({error})")
-    if problems:
-        raise DataError(problems)
-    return rises
-
-
-def _random_breaches(net: Network, times: list[datetime], spec, flow_rows: list[Row], seed):
-    """Random limit breaches for a demo (Ray, 29 Oct: "random pressure and flow limits
-    breached but keep the not too frequent. then less frequent a few of them turning red,
-    meaning high high or low low"). `breaches = {pressure_per_day, flow_per_day,
-    severe_share}`: each event picks a node (its pressure heads past its low or high
-    limit, nora.toml [pressure_limits]) or a busy pipeline (its flow runs over capacity),
-    a start and a few hours; a `severe_share` of them go on to low-low or high-high (a
-    flow past the load's critical level). Returns pressure targets and flow surges."""
-    from .config import load_config
-
-    config = load_config()
-    limits, load = config["pressure_limits"], config["thresholds"]["load"]
-    rng = random.Random(f"breaches-{seed}")  # its own generator: nothing else moves
-    days = (times[-1] - times[0]).total_seconds() / 86400 + 1 / 24
-    severe = float(spec.get("severe_share", 0.25))
-    when = lambda: times[0] + timedelta(hours=rng.uniform(0, days * 24 - 8))  # noqa: E731
-    nodes = sorted(n.id for n in net.nodes if n.type in limits and n.status == "operating")
-
-    def flags(count):  # exactly a `severe` share of the events go on to red, in random order
-        hard = [k < round(count * severe) for k in range(count)]
-        rng.shuffle(hard)
-        return hard
-
-    targets = []  # (node, bar to head for, start, hours)
-    red_up = rng.random() < 0.5  # the red ones take turns: high-high, then low-low
-    for hard in flags(round(float(spec.get("pressure_per_day", 0)) * days)):
-        node, up = rng.choice(nodes), rng.random() < 0.5
-        if hard:
-            up, red_up = red_up, not red_up
-        kind = net.node_by_id[node].type
-        ll, low, high, hh, _top = limits[kind]
-        bar = (hh + 1.5 if hard else high + 3) if up else (ll - 1.5 if hard else low - 3)
-        hours = rng.uniform(3, 5) if hard else rng.uniform(5, 9)  # red is brief
-        if hard:  # but long enough to get there at 6 bar/h from where the node usually sits
-            lo_w, hi_w = config["pressure"][kind]
-            usual = lo_w + (hi_w - lo_w) * (0.5 if kind in ("terminal", "market", "lng") else 0.7)
-            hours += abs(bar - usual) / 6
-        targets.append((node, bar, when(), hours))
-    flows: dict[str, list[float]] = {}
-    for _when, asset, metric, value in flow_rows:
-        if metric == "flow_msm3d":
-            flows.setdefault(asset, []).append(abs(value))
-    busy = sorted(
-        p.id
-        for p in net.pipelines
-        if p.capacity_msm3d
-        and flows.get(p.id)
-        and statistics.median(flows[p.id]) >= 0.5 * p.capacity_msm3d
-    )
-    surges = []  # (pipeline, share of capacity, start, hours, capacity)
-    for hard in flags(round(float(spec.get("flow_per_day", 0)) * days) if busy else 0):
-        pipe = rng.choice(busy)
-        share = (
-            rng.uniform(load[2] + 0.01, load[2] + 0.04)
-            if hard
-            else rng.uniform(load[0] + 0.01, load[1] - 0.01)
-        )
-        capacity = next(p.capacity_msm3d for p in net.pipelines if p.id == pipe)
-        surges.append((pipe, share, when(), rng.uniform(3, 6), capacity))
-    return targets, surges
-
-
-def _surge_flows(rows: list[Row], surges) -> list[Row]:
-    """A pipeline's flow raised towards `share` of its capacity while a surge lasts (its
-    sign kept). Synthetic: the other lines are not rebalanced."""
-    if not surges:
-        return rows
-    out = []
-    for when, asset, metric, value in rows:
-        if metric == "flow_msm3d":
-            for pipe, share, start, hours, capacity in surges:
-                if pipe == asset:
-                    peak = share * capacity
-                    bump = _plateau(when, start, hours) * max(0.0, peak - abs(value))
-                    value = round(math.copysign(abs(value) + bump, value or 1.0), 3)
-        out.append((when, asset, metric, value))
-    return out
-
-
-def _operations_rows(net, times, actual, planned, windows, rng, rises=(), targets=()) -> list[Row]:
-    if windows is None:
-        from .config import load_config
-
-        windows = load_config()["pressure"]
-    rows: list[Row] = []
-    exits = sorted(n.id for n in net.nodes if n.type == "terminal")
-    # Hourly nominations: the planned flow at each exit point.
-    nominated: dict[str, list[float]] = {}
-    for node in exits:
-        nominated[node] = [round(p.get(node, 0.0), 1) for p in planned]
-        for when, value in zip(times, nominated[node], strict=True):
-            rows.append((when, node, "nomination_msm3d", value))
-    # Bookings: comfortable headroom, except the busiest exit, booked tight.
-    busiest = max(exits, key=lambda n: max(nominated[n]), default=None)
-    for node in exits:
-        peak = max(nominated[node])
-        if peak <= 0:
-            continue
-        booked = math.ceil(peak * (1.05 if node == busiest else 1.15) * 2) / 2
-        rows += [(when, node, "booked_msm3d", booked) for when in times]
-    # Pressures: arrival points follow the gas arriving; departure points the load. A
-    # pipeline's pressure is its line pack, so it moves slowly: it tracks its target a
-    # fifth of the way each hour, at most 1.5 bar/h, with a gentle drift. Faster moves
-    # made the line pack swing by hundreds of MSm3/d where operators see a few (Ray, 29
-    # Oct: the pack rate stays near 0, and the rate of change of pressure is watched).
-    hours = (times[1] - times[0]).total_seconds() / 3600 if len(times) > 1 else 1.0
-    typical = {
-        node: statistics.median(p.get(node, 0.0) for p in planned) for node in net.node_by_id
-    }
-    for node in sorted(net.node_by_id):
-        kind = net.node_by_id[node].type
-        if kind not in windows or typical[node] <= 0:
-            continue
-        low, high = windows[kind]
-        span = high - low
-        arrival = kind in ("terminal", "market", "lng")
-        pressure, noise = None, 0.0
-        for when, through in zip(times, actual, strict=True):
-            ratio = min(1.4, through.get(node, 0.0) / typical[node])
-            share = 0.2 + 0.3 * ratio if arrival else 0.55 + 0.15 * ratio  # same means, calmer
-            noise = 0.95 * noise + rng.gauss(0, 0.0012)
-            target = low + span * (share + noise)
-            target += sum(r * _plateau(when, s, h) for a, r, s, h in rises if a == node)
-            # a random breach heads for its bar from where the node usually sits
-            usual = low + span * (0.5 if arrival else 0.7)
-            breach = sum(
-                (bar - usual) * _plateau(when, s, h) for a, bar, s, h in targets if a == node
-            )
-            target += breach
-            # a breach (a trip, a restriction) moves the pressure faster: up to 6 bar/h
-            pull, most = (0.5, 6.0) if breach else (0.2, 1.5)
-            if pressure is None:
-                pressure = target
-            else:
-                step = min(1.0, pull * hours) * (target - pressure)
-                pressure += max(-most * hours, min(most * hours, step))
-            rows.append((when, node, "pressure_bar", round(pressure, 2)))
-    return rows
-
-
-def _load(when: datetime, kind: str, drift: float) -> float:
-    """Share of capacity in use: a morning and evening peak, quieter weekends."""
-    hour = when.hour + when.minute / 60
-    daily = 0.05 * math.cos(2 * math.pi * (hour - 18) / 24)
-    daily += 0.02 * math.cos(2 * math.pi * (hour - 8) / 12)
-    weekend = -0.05 if when.weekday() >= 5 else 0.0
-    level = 0.55 + daily / 2 if kind == "lng" else 0.84 + daily
-    return min(1.0, max(0.05, level + weekend + drift))
-
-
-def apply_events(base: nx.DiGraph, events: tuple[Event, ...], when: datetime) -> nx.DiGraph:
-    active = [e for e in events if e.active(when)]
-    if not active:
-        return base
-    graph = base.copy()
-    for event in active:
-        factor = event.capacity_factor
-        if event.asset in graph:
-            attrs = graph.nodes[event.asset]
-            if attrs["type"] in SUPPLY_TYPES:
-                attrs["capacity_msm3d"] = (attrs["capacity_msm3d"] or 0.0) * factor
-            elif factor == 0:
-                graph.remove_node(event.asset)
-            else:
-                # A processing node's capacity travels on the node, not its edges:
-                # scale it too, or a partial derate is silently ignored. A terminal or
-                # hub without a capacity of its own takes what its lines can bring it.
-                if not attrs.get("capacity_msm3d"):
-                    attrs["capacity_msm3d"] = _intake(graph, event.asset)
-                if attrs.get("capacity_msm3d"):
-                    attrs["capacity_msm3d"] *= factor
-                for _, _, edge in graph.out_edges(event.asset, data=True):
-                    if "capacity" in edge:
-                        edge["capacity"] *= factor
-            continue
-        edges = [(u, v) for u, v, a in graph.edges(data=True) if a["pipeline"] == event.asset]
-        if factor == 0:
-            graph.remove_edges_from(edges)
-        for u, v in edges if factor else ():
-            if "capacity" in graph.edges[u, v]:
-                graph.edges[u, v]["capacity"] *= factor
-    return graph
-
-
-def _intake(graph: nx.DiGraph, node: str) -> float | None:
-    """What the lines into `node` can carry together; None when one has no capacity."""
-    capacities = [edge.get("capacity") for _, _, edge in graph.in_edges(node, data=True)]
-    if not capacities or None in capacities:
-        return None
-    return sum(capacities)
 
 
 def _events(meta: dict, net: Network, where: str, problems: list[str]) -> tuple[Event, ...]:
@@ -882,207 +231,6 @@ def _pigs(meta: dict, net: Network, where: str, problems: list[str]) -> tuple[Pi
         pig if pig.tag else replace(pig, tag=pig_tag(pig.pipeline, n))
         for n, pig in enumerate(pigs, start=1)
     )
-
-
-PIG_KINDS = ("cleaning", "inspection", "gauging")
-
-
-def _pig_problem(pig: Pig, net: Network) -> str:
-    """What is wrong with a pig's kind, receiver or notify interval; '' when nothing."""
-    if pig.kind not in PIG_KINDS:
-        return (
-            f"kind must be {', '.join(PIG_KINDS[:-1])} or {PIG_KINDS[-1]}, got '{pig.kind}'"
-            + suggest(pig.kind, PIG_KINDS)
-        )
-    if pig.receiver is not None and (
-        not isinstance(pig.receiver, str) or pig.receiver not in net.node_by_id
-    ):
-        return f"unknown receiver '{pig.receiver}'" + suggest(
-            str(pig.receiver), list(net.node_by_id)
-        )
-    if not pig.notify_every_hours > 0:
-        return "notify_every_hours must be above 0"
-    return ""
-
-
-def pig_code(pipeline: str) -> str:
-    """A short code for a line in a pig's tag: langeled_south -> LNS, iuk -> IUK.
-
-    One word gives its first three letters. Several give the first word's initial and
-    consonants, then each further word's initial (a number word whole: zeepipe_2a -> Z2A).
-    """
-    words = [w for w in re.split(r"[^A-Za-z0-9]+", pipeline.upper()) if w]
-    if not words:
-        return "PIG"
-    if len(words) == 1:
-        return words[0][:3]
-    first = words[0][0] + "".join(c for c in words[0][1:] if c not in "AEIOU")
-    rest = "".join(w if w[0].isdigit() else w[0] for w in words[1:])
-    return (first[: max(1, 3 - len(rest))] + rest)[:4]
-
-
-def pig_tag(pipeline: str, number: int) -> str:
-    return f"PIG-{pig_code(pipeline)}-{number:03d}"
-
-
-# A pig's speed and its messages to the receiving station. The browser moves the pigs
-# and keeps the message log (app.js pigSpeed, pigMessages and pigAlarm); these are the
-# same rules in Python, and tests/data/pig_messages.json holds cases both must pass.
-# The messages are synthetic: NORA writes them as a dispatcher would, from the data.
-PIG_SLOWEST, PIG_FASTEST = 0.3, 1.5  # a pig's speed against its set speed, at most
-PIG_NOTICE_S = 2 * 3600  # the launch notice goes this long before the launch
-PIG_DRIFT_S = 30 * 60  # an ETA update when the live ETA moves this far from the last sent
-PIG_DRIFT_ALARM_S = 2 * 3600  # a drift this large, unsent, is an alarm
-PIG_RESPONSE_S = 15 * 60  # the dispatcher sends that update this long after the move
-PIG_GRACE_S = 15 * 60  # a scheduled update later than this is missed
-
-
-def pig_speed(speed_mps: float, flow: float | None, typical: float | None) -> float:
-    """A pig moves with the gas: its set speed times the line's flow against its typical
-    flow, bounded to 0.3-1.5 times. No reading or no typical flow: its set speed."""
-    if flow is None or not typical or typical <= 0:
-        return speed_mps
-    return speed_mps * min(PIG_FASTEST, max(PIG_SLOWEST, abs(flow) / typical))
-
-
-def pig_eta(time: float, remaining: list[tuple[float, float]]) -> float:
-    """The live ETA: now plus each stretch still ahead (metres) at its line's speed. The
-    browser takes that speed from the line's mean flow over the last 24 hours, so the
-    daily swing in the flows does not move an ETA days away."""
-    return time + sum(metres / speed for metres, speed in remaining)
-
-
-def pig_messages(
-    launch: float,
-    arrival: float | None,
-    notify_s: float,
-    checks: list[float],
-    eta,
-    receiver: str,
-) -> list[dict]:
-    """The messages to the receiving station over one run, in time order.
-
-    A launch notice 2 h before the launch; an ETA update every `notify_s` after the launch;
-    one more, PIG_RESPONSE_S later, whenever the live ETA (`eta(t)`, looked at at each
-    time in `checks`; the browser looks every 15 minutes) has moved more than PIG_DRIFT_S
-    from the last one sent; and the arrival confirmation. A pure function of its inputs,
-    so replay and seek agree.
-    """
-    first = launch - PIG_NOTICE_S
-    end = math.inf if arrival is None else arrival
-    out = [{"t": first, "kind": "launch", "eta": eta(first), "to": receiver}]
-    scheduled = []
-    k = 1
-    while launch + k * notify_s < end and (arrival is not None or k <= 1000):
-        scheduled.append(launch + k * notify_s)
-        k += 1
-    if arrival is None:  # still under way when the data ends: up to the last data step
-        scheduled = [t for t in scheduled if not checks or t <= checks[-1]]
-    times = sorted({t for t in [*scheduled, *checks] if first < t < end})
-    planned = set(scheduled)
-    due = None
-
-    def send(t: float, reason: str) -> None:
-        out.append({"t": t, "kind": "update", "eta": eta(t), "to": receiver, "reason": reason})
-
-    for t in times:
-        if due is not None and due <= t:
-            if not (due == t and t in planned):  # else the scheduled one goes instead
-                send(due, "drift")
-            due = None
-        if t in planned:
-            send(t, "scheduled")
-            due = None
-        elif due is None and abs(eta(t) - out[-1]["eta"]) > PIG_DRIFT_S:
-            due = t + PIG_RESPONSE_S
-    if due is not None and due < end:
-        send(due, "drift")
-    if arrival is not None:
-        out.append({"t": arrival, "kind": "arrival", "eta": arrival, "to": receiver})
-    return out
-
-
-def pig_alarm(
-    now: float, launch: float, arrival: float | None, notify_s: float, messages, eta_now
-) -> tuple[int, str, float]:
-    """(level, what, drift seconds) for a run at `now`: 1 when the live ETA is more than
-    30 min from the last one sent, 3 past 2 h or when a scheduled update is missed."""
-    if now < launch - PIG_NOTICE_S or (arrival is not None and now >= arrival):
-        return 0, "", 0.0
-    sent = [m for m in messages if m["t"] <= now]
-    if not sent:
-        return 0, "", 0.0
-    drift = eta_now - sent[-1]["eta"]
-    k = math.floor((now - PIG_GRACE_S - launch) / notify_s)
-    if k >= 1 and sent[-1]["t"] < launch + k * notify_s:
-        return 3, "missed", drift
-    if abs(drift) > PIG_DRIFT_ALARM_S:
-        return 3, "drift", drift
-    if abs(drift) > PIG_DRIFT_S:
-        return 1, "drift", drift
-    return 0, "", drift
-
-
-# A pigging programme puts a pig on every trunk, export line and interconnector:
-# one pig per main line, launches staggered evenly over `every_hours` from the stream
-# start, so several are always under way. An explicit [[pigs]] entry wins for its line.
-PIG_LINES = ("trunk", "export", "interconnector")
-
-
-def _pig_programme(
-    meta: dict, net: Network, explicit: set[str], where: str, problems: list[str]
-) -> list[Pig]:
-    synthetic = meta.get("synthetic")
-    if not isinstance(synthetic, dict):
-        return []
-    programme = synthetic.get("pig_programme")
-    if not isinstance(programme, dict):
-        if programme is not None:
-            problems.append(f"{where}/stream.toml pig_programme: must be a table")
-        return []
-    try:
-        every = float(programme.get("every_hours", 48))
-        speed = float(programme.get("speed_mps", 4.0))
-        notify = float(programme.get("notify_every_hours", 6.0))
-    except (TypeError, ValueError):
-        problems.append(
-            f"{where}/stream.toml pig_programme: every_hours and speed_mps must be numbers"
-        )
-        return []
-    if every <= 0:
-        problems.append(f"{where}/stream.toml pig_programme: every_hours must be above 0")
-        return []
-    if speed <= 0:
-        problems.append(f"{where}/stream.toml pig_programme: speed_mps must be above 0")
-        return []
-    kind = str(programme.get("kind", "cleaning"))
-    problem = _pig_problem(
-        Pig("", "", start_of(synthetic), 1.0, kind=kind, notify_every_hours=notify), net
-    )
-    if problem:
-        problems.append(f"{where}/stream.toml pig_programme: {problem}")
-        return []
-    start = start_of(synthetic)
-    mains = sorted(p.id for p in net.pipelines if p.type in PIG_LINES and p.id not in explicit)
-    pigs = []
-    for i, pipeline in enumerate(mains):
-        launch = start + timedelta(seconds=every * 3600 * i / max(1, len(mains)))
-        pigs.append(
-            Pig(
-                label=f"Pig on {net.asset_name(pipeline)}",
-                pipeline=pipeline,
-                launch=launch,
-                speed_mps=speed,
-                every_hours=every,
-                kind=kind,
-                notify_every_hours=notify,
-            )
-        )
-    return pigs
-
-
-def start_of(synthetic: dict) -> datetime:
-    return parse_time(synthetic.get("start", "2026-01-05T00:00:00Z"))
 
 
 def _check_rows(rows: list[Row], net: Network, where: str, problems: list[str]) -> None:
@@ -1188,91 +336,3 @@ def describe(stream: Stream, net: Network) -> str:
             f"event: {event.label} ({event.asset}) {event.start:%a %H:%M} to {event.end:%a %H:%M}"
         )
     return "\n".join(lines)
-
-
-def scaffold(name: str, raw: Path, net: Network, streams_dir: Path = STREAMS_DIR) -> Path:
-    """Start a new stream from a raw CSV: copy it in and draft stream.toml.
-
-    Guesses the time column, whether the file is long or wide, and which NORA asset
-    each point is, by name. Every guess is written out for a person to check.
-    """
-    _check_stream_id(name)
-    folder = Path(streams_dir) / name
-    if folder.exists():
-        raise DataError([f"streams/{name} already exists"])
-    with Path(raw).open(newline="", encoding="utf-8-sig") as handle:
-        reader = csv.DictReader(handle)
-        columns = list(reader.fieldnames or [])
-        sample = [record for _, record in zip(range(2000), reader, strict=False)]
-    if not columns:
-        raise DataError([f"{raw}: no header row"])
-
-    def numeric(column: str) -> bool:
-        values = [r[column] for r in sample if r.get(column)]
-        try:
-            return bool(values) and all(math.isfinite(float(v)) for v in values[:50])
-        except ValueError:
-            return False
-
-    time_column = next(
-        (c for c in columns if any(k in c.lower() for k in ("time", "date", "period", "gasday"))),
-        columns[0],
-    )
-    numbers = [c for c in columns if c != time_column and numeric(c)]
-    labels = [c for c in columns if c != time_column and not numeric(c)]
-    wide = len(numbers) > 2 or not labels
-    if wide:
-        points, asset_column, value_column = numbers, None, None
-    else:
-        asset_column = max(labels, key=lambda c: len({r[c] for r in sample}))
-        value_column = numbers[0] if numbers else "value"
-        points = sorted({r[asset_column] for r in sample})[:200]
-
-    names = {}
-    for node in net.nodes:
-        names[node.name.lower()] = node.id
-        names[node.id] = node.id
-    for pipe in net.pipelines:
-        names[pipe.name.lower()] = pipe.id
-        names[pipe.id] = pipe.id
-
-    def guess(point: str) -> str:
-        key = point.lower()
-        if key in names:
-            return names[key]
-        for label, asset in names.items():
-            if len(label) > 3 and label in key:
-                return asset
-        match = suggest(key, names).split("'")
-        return names[match[1]] if len(match) > 1 else ""
-
-    def q(text: str) -> str:
-        return json.dumps(text, ensure_ascii=False)
-
-    lines = [
-        f"title = {q(name.replace('-', ' ').capitalize())}",
-        'description = ""',
-        'source = ""   # where the raw file came from (URL)',
-        'license = ""',
-        "",
-        "[import]",
-        f"file = {q(raw.name)}",
-        f'layout = "{"wide" if wide else "long"}"',
-        f"timestamp = {q(time_column)}",
-    ]
-    if not wide:
-        lines += [f"asset = {q(asset_column)}", f"value = {q(value_column)}"]
-    lines += [
-        "factor = 1.0        # multiply raw values by this to get MSm3/d",
-        'timezone = "UTC"    # for timestamps without an offset, e.g. "Europe/Oslo"',
-        "",
-        "# Raw point -> NORA node or pipeline id (see data/nodes.csv and data/pipelines.csv).",
-        '# Guesses are filled in by name; points mapped to "" are skipped.',
-        "[import.assets]",
-    ]
-    lines += [f"{q(point)} = {q(guess(point))}" for point in points]
-    folder.mkdir(parents=True)
-    shutil.copyfile(raw, folder / raw.name)
-    toml_path = folder / "stream.toml"
-    toml_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return toml_path
