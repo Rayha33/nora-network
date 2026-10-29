@@ -174,3 +174,11 @@ test("flow: replaying the data hands vis-network only what changed", () => {
   App.live.values = { [pid]: 0 }; // the line stops: its look changes
   assert.deepEqual(Array.from(flow.changes().lines, (line) => line.id), [pid], "only that line");
 });
+
+/* Ray, 29 Oct, of the Flow view's hover box ("Johan Sverdrup / 4.6 MSm³/d / 152 bar"):
+   "this mouse over popup window is useless and is just standing in the way". The
+   square shows those numbers already; a click opens the details. */
+test("flow: no hover popup on a node or a line", () => {
+  const source = readFileSync(new URL("../../src/nora/templates/flow.js", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /hoverNode|title:\s*tooltip/, "flow.js sets no title on hover (tests/test_flow_network.py checks the network)");
+});
