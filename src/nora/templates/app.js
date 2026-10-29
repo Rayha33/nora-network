@@ -2039,6 +2039,19 @@ const App = (() => {
     m += `<circle cx="${x(last)}" cy="${y(lastValue)}" r="2.6" fill="${lvl ? LEVEL_COLOR[lvl] : COLORS.text}" stroke="${COLORS.text}"/>`;
     return svg(`0 0 ${W} ${H}`, m, "trend");
   }
+  /* Time to a limit (hub 3604; Ray, 27 Oct: "more visual ways of showing how values are
+     heading towards what limit"): at the rate of the last steps, the nearest limit ahead
+     in the direction the value moves, when it is reached within the plan's look-ahead.
+     Plain words, no colour: a projection, not an alarm. */
+  function toLimit(ind) {
+    const known = ind.series.filter((v) => v != null), v = known[known.length - 1], r = rate(ind.series);
+    if (!ind.limits || r == null || v == null || Math.abs(r) < 1e-6) return null;
+    const ahead = ind.limits.filter((l) => (r > 0 ? l.at > v : l.at < v)).sort((a, b) => Math.abs(a.at - v) - Math.abs(b.at - v))[0];
+    const hours = ahead ? (ahead.at - v) / r : null;
+    if (!(hours > 0 && hours <= (T.plan_lookahead_hours || 6))) return null;
+    return `${ahead.name} in ~${hours < 1 ? `${Math.max(5, Math.round((hours * 60) / 5) * 5)} min` : `${fmt(hours, 1)} h`}`;
+  }
+  const toLimitText = (ind) => { const text = toLimit(ind); return text ? h("span", { class: "to-limit" }, text) : null; };
   function rateText(r, unit) {
     if (r == null) return h("span", { class: "dim" }, "–");
     if (Math.abs(r) < 0.05) return h("span", { class: "dim" }, ""); // steady: nothing to say
@@ -2057,6 +2070,9 @@ const App = (() => {
       bar: rangeBar({ min: 0, max: top, value: actual, target: nom, lvl, band,
         ticks: [...(nom ? [nom * (1 - tol[2]), nom * (1 + tol[2])].map((at) => ({ at, level: 3 })) : []), ...(booked ? [{ at: booked, level: 2 }] : [])] }),
       series: series((f) => throughput(id, f.flows)),
+      // Booked capacity only: delivery follows a moving nomination, so the nomination's
+      // own band is no fixed limit to project toward.
+      limits: booked ? [{ at: booked, name: "booked capacity" }] : [],
       value: nom ? `${fmt(actual, 1)} of ${fmt(nom, 1)} nominated${booked ? `, ${fmt(booked)} booked` : ""}` : `${fmt(actual, 1)} MSm³/d`,
     };
   }
@@ -2069,6 +2085,9 @@ const App = (() => {
       bar: rangeBar({ min: low - 0.1 * span, max: high + 0.1 * span, value: p, lvl, band,
         ticks: [{ at: low, level: 3 }, { at: high, level: 3 }, { at: low + pm[1] * span, level: 2 }, { at: high - pm[1] * span, level: 2 }] }),
       series: series((f) => metric("pressure_bar", id, f)),
+      limits: (C.pressure_limits || {})[assets[id].type]
+        ? C.pressure_limits[assets[id].type].map((at, i) => ({ at, name: ["low-low limit", "low limit", "high limit", "high-high limit", "integrity limit"][i] }))
+        : [{ at: low, name: "minimum" }, { at: high, name: "maximum" }],
       value: `${fmt(p, 1)} bar, window ${fmt(low)}–${fmt(high)}`,
     };
   }
@@ -2079,6 +2098,7 @@ const App = (() => {
       bar: rangeBar({ min: 0, max: limits[2] * 1.5, value: v, lvl, band: [0, limits[0]],
         ticks: limits.map((at, i) => ({ at, level: i + 1 })) }),
       series: series((f) => metric(name, id, f)),
+      limits: [{ at: limits[0], name: "warning level" }, { at: limits[2], name: "limit" }],
       value: `${qualityText(name, v)}, limit ${limits[2]}`,
     };
   }
@@ -2088,6 +2108,7 @@ const App = (() => {
       id, measure: "Load", unit: "pts", lvl: level(u, T.load), band: [0, T.load[0] * 100],
       bar: rangeBar({ min: 0, max: 1.1, value: u, lvl: level(u, T.load), band: [0, T.load[0]], ticks: T.load.map((at, i) => ({ at, level: i + 1 })) }),
       series: series((f) => (f.flows[id] == null ? null : (Math.abs(f.flows[id]) / d.capacity) * 100)),
+      limits: [{ at: 100, name: "capacity" }],
       value: `${fmt(u * 100)}%: ${fmt(v, 1)} of ${fmt(d.capacity)} MSm³/d`,
     };
   }
@@ -2104,9 +2125,9 @@ const App = (() => {
       ...indicators.flatMap((ind) => [
         byMeasure ? h("div", { class: "name measure" }, ind.measure || nameOf(ind.id))
           : h("div", pressable(`asset:${ind.id}`, () => go({ screen: "asset", asset: ind.id }), { class: "name", role: "link", title: "Open the asset" }), nameOf(ind.id)),
-        h("div", null, ind.bar, h("div", { class: "value" }, ind.value, h("span", { class: "rate-inline" }, rateText(rate(ind.series), ind.unit)))),
+        h("div", null, ind.bar, h("div", { class: "value" }, ind.value, h("span", { class: "rate-inline" }, rateText(rate(ind.series), ind.unit), toLimitText(ind)))),
         trend(ind.series, { band: ind.band, lvl: ind.lvl }),
-        h("div", { class: "rate" }, rateText(rate(ind.series), ind.unit)),
+        h("div", { class: "rate" }, rateText(rate(ind.series), ind.unit), toLimitText(ind)),
         h("div", { class: "state optional" }, badge(ind.lvl)),
       ]));
   }
