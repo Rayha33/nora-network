@@ -644,3 +644,7 @@ table.data.alarm-table td.id { font-size: 11px; }
 table.data.diag-cursor { margin-top: 8px; }
 .slug-profile svg.profile { display: block; width: 100%; height: auto; }
 .to-limit { display: block; font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+
+/* Skip link (hub 3615): off screen until it has keyboard focus */
+.skip { position: absolute; left: 8px; top: -60px; z-index: 100; padding: 8px 12px; border-radius: 6px; background: var(--selected-bg); color: var(--selected-text); }
+.skip:focus { top: 8px; }

@@ -3421,6 +3421,35 @@ const App = (() => {
     else if (route.screen === "asset") renderAsset();
     else if (route.screen === "diag") renderDiag();
     renderTop();
+    announceAlarms();
+    describeView();
+  }
+  /* For a screen reader (hub 3615). New alarms are announced, priority and text, at most
+     once per hour of data so a busy hour is one message, not a stream. */
+  const announced = new Set();
+  let lastAnnounce = null;
+  function announceAlarms() {
+    const fresh = live.conditions.filter((c) => !announced.has(occurrence(c)));
+    if (!fresh.length || live.time == null) return;
+    if (lastAnnounce != null && live.time >= lastAnnounce && live.time - lastAnnounce < 3600) return;
+    for (const c of fresh) announced.add(occurrence(c));
+    lastAnnounce = live.time;
+    const said = fresh.slice(0, 3).map((c) => `${LEVEL[c.level]}, priority ${4 - c.level}: ${c.text}`);
+    $("announce").textContent = `${fresh.length} new alarm${fresh.length === 1 ? "" : "s"}. ${said.join(". ")}${fresh.length > 3 ? `. And ${fresh.length - 3} more in the alarm list` : ""}.`;
+  }
+  // The Map and the Flow draw on canvases; the same assets as a list, with their state.
+  function describeView() {
+    const list = $("view-list");
+    if (!list) return;
+    if (route.screen !== "unit") { if (list.dataset.signature !== "") replaceIfChanged(list, "", () => []); return; }
+    const unit = unitById[route.unit], ids = unit ? unit.nodes : nodeIds;
+    const worst = (id) => live.conditions.filter((c) => c.id === id);
+    const signature = `${route.unit}|${ids.map((id) => `${id}:${worst(id).map((c) => c.level).join("")}`).join(",")}`;
+    replaceIfChanged(list, signature, () => [h("h2", null, `${unit ? unit.name : "The network"}: ${ids.length} assets`),
+      h("ul", null, ids.map((id) => {
+        const conds = worst(id);
+        return h("li", null, `${nameOf(id)}: ${conds.length ? conds.map((c) => `${LEVEL[c.level]}, ${c.text}`).join("; ") : "normal"}`);
+      }))]);
   }
   function renderTop() {
     const counts = [3, 2, 1].map((l) => {
@@ -3644,6 +3673,12 @@ const App = (() => {
   function closePops() {
     for (const [button, panel] of POPS) { if ($(panel)) $(panel).hidden = true; if ($(button)) $(button).setAttribute("aria-expanded", "false"); }
   }
+  $("skip-alarms").addEventListener("click", (event) => {
+    event.preventDefault();
+    if ($("alarms").hidden) $("alarm-counts").click();
+    $("alarms").setAttribute("tabindex", "-1");
+    $("alarms").focus();
+  });
   for (const [button, panel] of POPS) {
     if (!$(button)) continue;
     $(button).addEventListener("click", (event) => {
@@ -3805,7 +3840,7 @@ const App = (() => {
   function step() {
     if (live.stream && !live.feed) {
       live.values = valuesAt(live.playhead);
-      live.time = live.stream.times[live.index] + (live.playhead - live.index) * live.stream.step;
+      live.time = live.stream.times[live.index] + (reduceMotion ? 0 : (live.playhead - live.index) * live.stream.step);
       scrub.value = "0"; // the selected real time remains at the centre of the window
     }
     prunePeaks();
@@ -4063,7 +4098,8 @@ const App = (() => {
           trackTrips(frame());
           spawnPeaks(previous, frame());
         }
-        live.time = s.times[live.index] + (live.playhead - live.index) * s.step;
+        // With reduced motion, markers move in the data's own steps, not in between.
+        live.time = s.times[live.index] + (reduceMotion ? 0 : (live.playhead - live.index) * s.step);
         if (now - lastStep > 250) { lastStep = now; step(); }
       } else if (live.feed && glideFeed(dt) && now - lastStep > 250) { lastStep = now; step(); }
     } else if (now - lastStep > 30000) {
@@ -4737,7 +4773,8 @@ const App = (() => {
       setStream(wanted);
     }
     go(fromHash() || (C.screen.start === "network" ? { screen: "unit", unit: "all" } : { screen: "overview" }), false);
-    if (params.get("autoplay") === "1" || (C.screen.autoplay && params.get("autoplay") !== "0" && !feed)) play();
+    // Reduced motion: nothing starts moving by itself; ▶ plays.
+    if (params.get("autoplay") === "1" || (C.screen.autoplay && params.get("autoplay") !== "0" && !feed && !reduceMotion)) play();
     kiosk();
     requestAnimationFrame(tick);
   }

@@ -136,7 +136,7 @@ export function makeSandbox({ nora, document = makeDom(), search = "" } = {}) {
     document,
     location: { search, hash: "", href: "http://localhost/" },
     history: { replaceState() {}, pushState() {}, state: null },
-    matchMedia: media,
+    matchMedia: () => media(), // every query false, as in a default browser (it used to pass the query in as `matches`)
     localStorage: {
       getItem: (k) => (storage.has(k) ? storage.get(k) : null),
       setItem: (k, v) => storage.set(k, String(v)),
@@ -193,7 +193,7 @@ export function makeSandbox({ nora, document = makeDom(), search = "" } = {}) {
     clearTimeout: window.clearTimeout,
     setInterval: window.setInterval,
     clearInterval: window.clearInterval,
-    matchMedia: media,
+    matchMedia: () => media(), // every query false, as in a default browser (it used to pass the query in as `matches`)
     history: window.history,
     location: window.location,
     localStorage: window.localStorage,
