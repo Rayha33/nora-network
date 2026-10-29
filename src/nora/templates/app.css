@@ -625,3 +625,11 @@ table.data.alarm-table td.network { white-space: normal; min-width: 90px; }
 table.data.alarm-table td.id { font-size: 11px; }
 .alarm-table tr.shelving td { padding-top: 0; }
 .alarm-table tr.shelving select { height: 22px; font-size: 11px; }
+
+/* L4 trends (hub 3614): exact history with limits, a crosshair, drag to zoom */
+.diag-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 6px; }
+.diag-controls .seg button { min-width: 0; padding: 0 10px; }
+.diag-chart { margin: 10px 0 2px; touch-action: none; cursor: crosshair; user-select: none; }
+.diag-chart-title { font-size: 12px; color: var(--text-dim); }
+.diag-chart svg.diag-trend { display: block; width: 100%; height: auto; }
+table.data.diag-cursor { margin-top: 8px; }
