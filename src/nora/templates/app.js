@@ -606,12 +606,20 @@ const App = (() => {
     const d = assets[pid];
     if (d.length && d.diameter) lineVolume[pid] = (Math.PI / 4) * (d.diameter * 0.0254) ** 2 * d.length * 1000;
   }
-  function linepack(pid, f) { // MSm³
-    if (!lineVolume[pid] || !f) return null;
+  /* Settle-out pressure (bar g): what a line settles to, shut in at both ends, with the
+     gas it holds now: the mean of its end pressures for compressible flow. Operators
+     read it on the lines (the old Area D screen's "sop"). */
+  function settleOut(pid, f = frame()) {
+    if (!f || !assets[pid]) return null;
     const a = metric("pressure_bar", assets[pid].from, f), b = metric("pressure_bar", assets[pid].to, f);
     if (a == null && b == null) return null;
-    const p1 = (a ?? b) + PACK.pStd, p2 = (b ?? a) + PACK.pStd, mean = (2 / 3) * (p1 + p2 - (p1 * p2) / (p1 + p2));
-    return ((lineVolume[pid] * mean) / PACK.pStd) * (PACK.tStd / PACK.tSea) / PACK.z / 1e6;
+    const p1 = (a ?? b) + PACK.pStd, p2 = (b ?? a) + PACK.pStd;
+    return (2 / 3) * (p1 + p2 - (p1 * p2) / (p1 + p2)) - PACK.pStd;
+  }
+  function linepack(pid, f) { // MSm³
+    const sop = lineVolume[pid] ? settleOut(pid, f) : null;
+    if (sop == null) return null;
+    return ((lineVolume[pid] * (sop + PACK.pStd)) / PACK.pStd) * (PACK.tStd / PACK.tSea) / PACK.z / 1e6;
   }
   const frameNo = (i) => live.frames[Math.max(0, Math.min(live.frames.length - 1, i))];
   // The frame an hour before now, and now: rates are over the last hour.
@@ -1268,7 +1276,10 @@ const App = (() => {
         const m = Math.abs(v);
         out.width = 1 + 4 * Math.sqrt(m / live.maxAbs);
         out.color = m < 0.05 ? COLORS.inactive : COLORS.active;
-        out.label = m < 0.05 ? "" : fmt(m, 1); // the dark grey line already says "no flow"
+        // On the line its settle-out pressure (Ray read the line values as "settle out
+        // pressure", and his Area D screen shows them there); its flow is in the squares.
+        const sop = settleOut(id);
+        out.label = sop == null ? "" : `sop ${fmt(sop, 1)}`;
         const pack = packRate(id); // shown only when the line packs or unpacks
         out.pack = pack != null && Math.abs(pack) >= 0.5 ? `pack ${signed(pack, 1)}` : "";
         out.level = levelOf(id);
@@ -1971,7 +1982,7 @@ const App = (() => {
           item(sample(COLORS.normal, 3), "Normal"),
           item(sample(COLORS.inactive, 3), "Inactive"),
           item(sample(COLORS.inactive, 1.5, ' stroke-dasharray="3 3"'), "No data"))),
-        section("Flow", true, flow, h("p", { class: "key-caption" }, "Flow in MSm³/d: incoming faint, outgoing full · line ends: pressure, ▲▼ bar per hour · pack: line pack change, MSm³/d"), exit, h("p", { class: "key-caption" }, "Exit delivery")),
+        section("Flow", true, flow, h("p", { class: "key-caption" }, "Flow in MSm³/d: incoming faint, outgoing full · line ends: pressure, ▲▼ bar per hour · on a line: sop, its settle-out pressure (bar), and pack, its line pack change (MSm³/d)"), exit, h("p", { class: "key-caption" }, "Exit delivery")),
         section("Indicators", true, rangeBar({ min: 0, max: 10, value: 6, band: [3, 7], ticks: [{ at: 1.5, level: 3 }, { at: 8.5, level: 3 }], target: 5 }),
           h("p", { class: "key-caption" }, "Band: normal · ◇ target · pointer: now"),
           h("p", { class: "key-caption" }, "Solid: history · dashed: model"))));
@@ -2824,7 +2835,7 @@ const App = (() => {
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
-    linepack, packRate, pressureRate, inventory, // the line-pack model (PMS-style estimates)
+    linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
     pipeStyle, pipeMapName, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
     timeState, timelineWindow,

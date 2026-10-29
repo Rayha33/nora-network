@@ -1007,14 +1007,16 @@
   };
   view.changes = () => ({ nodes: changes(App.nodeIds, nodeLook), lines: changes(App.pipeIds, lineLook) }); // for tests
 
-  /* Line values, drawn over the lines at their middle on a paper patch, at one screen
-     size whatever the zoom, like every other number (Ray, 29 Oct: "when i zoom in some
-     of the numbers become smaller than others"); hidden zoomed far out, where they
-     would crowd. Returns their screen boxes, so marker labels and badges keep clear. */
+  /* Line values (in Live, the settle-out pressure, and the pack rate under it when the
+     line packs), on a paper patch at one screen size whatever the zoom, like every
+     other number (Ray, 29 Oct: "when i zoom in some of the numbers become smaller than
+     others"; "settle out pressure become too small when i zoom out"). Each takes the
+     first spot along its line, from the middle out, clear of the squares, their names
+     and tags and the values already placed: never text on text. Returns the screen
+     boxes, so marker labels and badges keep clear. */
   function drawLineValues(ctx, positions) {
-    const scale = network.getScale(), boxes = [];
+    const scale = network.getScale(), boxes = [], taken = [...nodeBoxes(), ...(scale < 1 ? overviewBoxes : [])];
     valueEnds = {};
-    if (scale < 0.45) return boxes;
     const ratio = (network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
     ctx.save();
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -1024,20 +1026,25 @@
     for (const id of App.pipeIds) {
       const s = App.pipeStyle(id), p = NORA.assets[id], a = positions[p.from], b = positions[p.to];
       if (!s.label || lineHidden(id) || !a || !b) continue;
-      const at = network.canvasToDOM({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
-      // Under the flow, the line pack's change when the line packs or unpacks (it should
-      // stay near 0 unless something is planned): a model estimate from its pressures.
       const rows = s.pack ? [s.label, s.pack] : [s.label], w = Math.max(...rows.map((t) => ctx.measureText(t).width));
-      const top = at.y - 8, height = 16 * rows.length;
+      const height = 16 * rows.length;
+      let spot = null;
+      for (const t of [0.5, 0.4, 0.6, 0.32, 0.68, 0.25, 0.75]) {
+        const at = network.canvasToDOM({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+        const box = [at.x - w / 2 - 3, at.y - 8, at.x + w / 2 + 3, at.y - 8 + height];
+        if (!taken.some((o) => overlaps(box, o))) { spot = { at, box }; break; }
+      }
+      if (!spot) continue; // nowhere clear on this line at this zoom: zoom in to read it
       ctx.globalAlpha = s.dim ? 0.35 : 1;
       ctx.fillStyle = C.paper;
-      ctx.fillRect(at.x - w / 2 - 3, top, w + 6, height);
+      ctx.fillRect(spot.box[0], spot.box[1], spot.box[2] - spot.box[0], height);
       rows.forEach((text, i) => {
         ctx.fillStyle = i ? C.text : C.text_dim;
-        ctx.fillText(text, at.x, at.y + 16 * i);
+        ctx.fillText(text, spot.at.x, spot.at.y + 16 * i);
       });
-      boxes.push([at.x - w / 2 - 3, top, at.x + w / 2 + 3, top + height]);
-      valueEnds[id] = network.DOMtoCanvas({ x: at.x + w / 2 + 3, y: at.y });
+      boxes.push(spot.box);
+      taken.push(spot.box);
+      valueEnds[id] = network.DOMtoCanvas({ x: spot.box[2], y: spot.at.y });
     }
     ctx.restore();
     return boxes;

@@ -57,3 +57,12 @@ test("inventory: a number and a hairline in the player", () => {
     assert.match(text, /id="inventory-spark"/);
   });
 });
+
+test("settle-out pressure: on the line, labelled sop, from its end pressures", () => {
+  const { App, NORA } = loadApp();
+  twoHours(App, NORA, [140, 70], [140, 70]);
+  App.state.mode = "live";
+  const sop = App.settleOut("franpipe");
+  assert.ok(sop > 105 && sop < 115, `${sop} bar: the compressible mean of 140 and 70 bar, above the plain 105`);
+  assert.equal(App.pipeStyle("franpipe").label, `sop ${App.fmt(sop, 1)}`, "Ray's old screen: sop on the lines; flows are in the squares");
+});
