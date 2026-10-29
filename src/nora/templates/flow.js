@@ -870,10 +870,26 @@
      text) only changes when the data steps or the view moves, and vis redraws it then.
      So the circles are drawn a few times a second, not sixty (Ray, 28 Oct: "the
      application is extremely slow"). */
-  let marks = null, marksCtx = null;
+  let marks = null, marksCtx = null, marksKey = null;
+  /* Where the moving things are on screen, to the half pixel, with their labels. Without
+     WebGL the CPU repaints the whole layer, and doing it every frame took 30 % of a core
+     on a retina window while, in real time, a pig crosses a pixel every few minutes (Ray,
+     29 Oct: "make it run more smoothly"). The frame loop repaints only when this changes.
+     null: the flow stubs are showing, and they move with the clock every frame. */
+  function marksAt() {
+    const scale = network.getScale();
+    if (App.state.mode !== "live" || animateStubs(scale)) return null;
+    const at = (m, t) => {
+      const q = network.canvasToDOM(pointAlong(edges.get(m.id), Math.max(0, Math.min(1, t)), framePos));
+      return `${Math.round(q.x * 2)},${Math.round(q.y * 2)}`;
+    };
+    return App.markers().filter((m) => edges.get(m.id) && !lineHidden(m.id))
+      .map((m) => `${m.key} ${m.label} ${m.level} ${[m.along, ...(m.extent || [])].map((t) => at(m, t)).join(" ")}`).join("|");
+  }
   function drawMarks() {
     if (!marksCtx || !network) return;
     App.frame.run(() => {
+      marksKey = marksAt();
       const ratio = window.devicePixelRatio || 1, w = el.clientWidth, h = el.clientHeight;
       if (marks.width !== Math.round(w * ratio) || marks.height !== Math.round(h * ratio)) {
         marks.width = Math.round(w * ratio);
@@ -1263,8 +1279,9 @@
   // drawn with; after a zoom or a pan the network draws first (and the layer with it).
   view.draw = () => {
     if (App.state.mode !== "live" || !App.live.playing || !network) return;
-    if (sameView()) drawMarks();
-    else network.redraw();
+    if (!sameView()) { network.redraw(); return; }
+    const key = marksCtx ? App.frame.run(marksAt) : null;
+    if (key === null || key !== marksKey) drawMarks(); // else nothing moved on screen
   };
   view.applySettings = () => { if (view.ready) { layout(); view.restyle(); view.setUnit(App.route.unit); } };
   view.theme = () => {

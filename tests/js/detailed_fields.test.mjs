@@ -44,10 +44,10 @@ test("canvas map hides a minor field at overview and shows it when focused", () 
   const view = App.views.map;
   assert.equal(view.canvasMap, true);
   operations.length = 0;
-  view.restyle();
+  view.repaint();
   assert.ok(!operations.includes("Mikkel"), "the overview stays uncluttered");
   view.focus("mikkel", false);
   operations.length = 0;
-  view.restyle();
+  view.repaint();
   assert.ok(operations.includes("Mikkel"), "the real field appears at detailed zoom");
 });

@@ -893,18 +893,21 @@ function drawableCanvas(document, counts) {
    whole map every animation frame even while paused. It redraws only while playing. */
 test("map: the canvas map draws each frame only while the data plays", () => {
   const counts = {};
-  const { App, document } = loadApp({ globals: { Path2D: class { moveTo() {} lineTo() {} closePath() {} } } });
+  const { App, document, NORA } = loadApp({ globals: { Path2D: class { moveTo() {} lineTo() {} closePath() {} } } });
   drawableCanvas(document, counts);
+  document.getElementById("speed").options = [{ value: "60" }];
+  document.getElementById("stream-select")._listeners.change[0]({ target: { value: NORA.streams[0].name } }); // pigs to move
   App.state.view = "map";
   App.go({ screen: "unit", unit: "all" });
   const view = App.views.map;
   App.live.playing = false;
-  const paused = counts.fillRect || 0;
+  const paused = counts.drawImage || 0;
   view.draw(); view.draw(); view.draw();
-  assert.equal(counts.fillRect || 0, paused, "paused: no redraw per frame");
+  assert.equal(counts.drawImage || 0, paused, "paused: no redraw per frame");
   App.live.playing = true;
+  App.live.time += 1800; // the markers move on
   view.draw();
-  assert.ok((counts.fillRect || 0) > paused, "playing: each frame redraws");
+  assert.ok((counts.drawImage || 0) > paused, "playing: a frame where the markers moved redraws");
 });
 
 /* Review finding: after the online map style failed and the map fell back to raster
