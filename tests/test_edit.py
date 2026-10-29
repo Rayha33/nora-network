@@ -350,3 +350,17 @@ def test_removing_a_streamed_asset_keeps_the_data_valid(tmp_path):
     assert '"GUDRUN" = ""  # gudrun was removed from the network' in sodir
     synthetic = (data / "streams" / "synthetic-week" / "stream.toml").read_text()
     assert 'asset = "gudrun"' not in synthetic and 'asset = "troll"' in synthetic
+
+
+def test_save_places_moved_and_new_nodes_in_the_layout(tiny_dir, tiny):
+    """A node dragged or added in the Flow view keeps its place: flow_layout.toml."""
+    (tiny_dir / "flow_layout.toml").write_text(
+        "# places\n[positions]\ngas = [0, 0]\nhub = [0, 1]\nb_terminal = [1, 2]\n", encoding="utf-8"
+    )
+    network = edit.remove_pipeline(tiny, "b_entry")
+    network = edit.remove_pipeline(network, "pipe_b")
+    network = edit.remove_node(network, "b_terminal")
+    edit.save(network, tiny_dir, {}, {"hub": [0.5, 1.25], "market": [2, 3]})
+    text = (tiny_dir / "flow_layout.toml").read_text(encoding="utf-8")
+    assert text.startswith("# places\n[positions]\ngas = [0, 0]\nhub = [0.5, 1.25]\n")
+    assert "b_terminal" not in text and text.endswith("market = [2, 3]\n")

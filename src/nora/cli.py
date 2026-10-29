@@ -15,6 +15,7 @@ from .analysis import analyse
 from .config import load_config
 from .data import DATA_DIR, DataError, load_network, suggest
 from .integrations import CONNECTORS, SOURCES
+from .layout import load_flow_layout
 from .live import POLL_SECONDS
 from .ops import plan_timeline
 from .site import build_site
@@ -35,6 +36,7 @@ def cmd_validate(args) -> int:
             [f"nora.toml [flow] hide: no node {n!r}" + suggest(n, net.node_by_id) for n in unknown]
         )
     units = load_units(net, args.data / "units.toml")
+    load_flow_layout(net, args.data / "flow_layout.toml")
     names = list_streams(_streams_dir(args))
     for name in names:
         load_stream(name, net, _streams_dir(args))

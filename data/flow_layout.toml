@@ -1,0 +1,57 @@
+# Where each node sits in the Flow view: [across, down] in grid steps (one step across
+# is one square's width with room; one step down is one row of squares with names).
+# Laid out like the operators' Area D overview (Ray, 29 Oct): the UK and St Fergus on
+# the left, the Tampen, Nyhamna and Kollsnes corridors in the middle, Kårstø and the
+# Norwegian Sea on the right; fields at the top, the hubs below them, the landings
+# along the bottom from west to east. Drag a node in the Flow view to move it, and
+# Save. A node not listed here is placed by layout.py. `nora validate` checks the ids.
+
+[positions]
+# fields and the corridors they feed
+gjoa = [1, 0]
+frigg = [2.2, 0]
+odin = [3.3, 0]
+oseberg = [4.4, 0]
+aasta_hansteen = [6.1, 0]
+ormen_lange = [7.4, 0]
+troll = [8.6, 0]
+visund = [9.7, 0]
+gullfaks = [10.8, 0]
+heidrun = [12, 0]
+norne = [13.1, 0]
+edvard_grieg = [0, 1]
+heimdal = [4.4, 1]
+nyhamna = [7, 1]
+kvitebjorn = [9, 1]
+statfjord = [10.6, 1]
+tjeldbergodden = [11.6, 1]
+asgard = [12.7, 1]
+beryl = [0, 2]
+flags_brent = [1.5, 2]
+gudrun = [5, 2]
+kollsnes = [8.5, 2]
+johan_sverdrup = [11.2, 2]
+karsto = [12.6, 2.2]
+# hubs and the southern fields
+st_fergus = [0, 3]
+sleipner = [5.5, 3]
+draupner_s = [8, 3]
+draupner_e = [9.5, 3]
+baltic_tie = [12.6, 3.4]
+elgin_franklin = [1, 4]
+sns_fields = [3.4, 4]
+ekofisk = [10.6, 4]
+k13a = [8.2, 4.6]
+l10a = [9.4, 4.6]
+nybro = [13.8, 4.6]
+# the landings, west to east
+easington = [1, 5.6]
+balgzand = [2.2, 5.6]
+bacton = [3.4, 5.6]
+zeebrugge = [4.6, 5.6]
+dunkirk = [5.8, 5.6]
+den_helder = [8.2, 5.6]
+uithuizen = [9.4, 5.6]
+emden = [10.6, 5.6]
+dornum = [11.8, 5.6]
+pl_vtp = [13.8, 5.6]

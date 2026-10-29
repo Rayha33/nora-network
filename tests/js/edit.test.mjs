@@ -22,7 +22,8 @@ test("edits: applied before anything reads the network", () => {
   assert.ok(NORA.geo.nodes.features.some((f) => f.properties.asset === "snorre"), "the Map has it");
   assert.ok(!NORA.geo.pipes.features.some((f) => f.properties.asset === "ogt"), "and not the removed line");
   assert.equal(NORA.assets.snorre.supply, true, "a field supplies the network (the what-if counts it)");
-  assert.equal(App.edit.list().length, 4, "a step that no longer applies is dropped");
+  assert.deepEqual(Array.from(NORA.grid.sleipner), [3, 5.25], "a dragged node keeps its place");
+  assert.equal(App.edit.list().length, 5, "a step that no longer applies is dropped");
 });
 
 test("edits: right-click offers remove, connect and add", () => {
@@ -82,6 +83,11 @@ test("edits: the files to save keep every untouched row exactly", () => {
   const lines = rows(files["pipelines.csv"]);
   assert.ok(!lines.some((row) => /^(ogt|gudrun_sleipner),/.test(row)) && lines.some((row) => row.startsWith("snorre_statfjord,")));
   assert.match(files["units.toml"], /^# Units for level 2/, "the comments at the top stay");
+  const layout = files["flow_layout.toml"];
+  assert.match(layout, /^sleipner = \[5\.25, 3\]$/m, "the dragged node's new place, [across, down]");
+  assert.match(layout, /^snorre = \[2\.5, 1\]$/m, "the new node's place");
+  assert.doesNotMatch(layout, /^gudrun =/m, "the removed node's line is gone");
+  assert.match(layout, /^troll = /m, "the other lines stay");
   const section = files["units.toml"].split("[units.northern_north_sea]")[1].split("[units.")[0];
   assert.match(section, /"snorre"/, "the new node in its unit");
   assert.doesNotMatch(files["units.toml"], /"gudrun"/);
@@ -99,6 +105,7 @@ test("edits: the network for `nora serve --edit` has the same edits", () => {
   assert.deepEqual(sent.nodes.map((n) => n.id), ["statfjord", "snorre"]);
   assert.deepEqual(sent.pipelines.map((p) => p.id), ["keep", "snorre_statfjord"]);
   assert.deepEqual({ ...sent.units }, { snorre: "northern_north_sea" });
+  assert.deepEqual(JSON.parse(JSON.stringify(sent.layout)), { snorre: [2.5, 1] }, "places of added and moved nodes that are sent");
   assert.equal(sent.revision, "r", "the revision guards against a stale save");
 });
 
@@ -116,4 +123,14 @@ test("edits: a new node and line reach the Flow view's vis data, drawable before
   const snorre = nodes.added.find((n) => n.id === "snorre");
   assert.ok(snorre && snorre.shape && snorre.shape !== "circularImage", "a shape that needs no icon (vis threw on pyvis's default)");
   assert.ok(edges.added.some((e) => e.id === "snorre_statfjord" && e.from === "snorre" && e.to === "statfjord"));
+});
+
+test("edits: dragging a node keeps its place without a reload; dragging again updates it", () => {
+  const { App, NORA, localStorage } = editedApp([]);
+  App.edit.move("troll", [0.5, 8]);
+  App.edit.move("troll", [0.4, 8.2]);
+  assert.deepEqual(JSON.parse(localStorage.store.get("nora-edits")), [{ op: "moveNode", id: "troll", grid: [0.4, 8.2] }]);
+  assert.deepEqual(Array.from(NORA.grid.troll), [0.4, 8.2], "the drawing follows at once");
+  App.edit.move("kollsnes", [2, 8.5]);
+  assert.equal(App.edit.list().length, 2, "another node is its own step");
 });

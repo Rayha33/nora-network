@@ -27,6 +27,7 @@ from .data import (
     Pipeline,
     load_network,
 )
+from .layout import load_flow_layout
 from .site import build_site
 from .units import load_units
 
@@ -101,12 +102,17 @@ def check(net: Network) -> list[str]:
 
 
 def save(
-    net: Network, data_dir: Path = DATA_DIR, placements: dict[str, str] | None = None
+    net: Network,
+    data_dir: Path = DATA_DIR,
+    placements: dict[str, str] | None = None,
+    layout: dict[str, list[float]] | None = None,
 ) -> dict[Path, bytes]:
     """Validate and persist only changed CSV rows; return old bytes for rollback.
 
     units.toml follows (when the data has one): removed nodes leave their unit, and a new
-    node joins the unit `placements` names for it, so every node stays in exactly one."""
+    node joins the unit `placements` names for it, so every node stays in exactly one.
+    flow_layout.toml takes the Flow view places in `layout` ({node: [across, down]}) and
+    loses removed nodes."""
     data_dir = Path(data_dir)
     with _EDIT_LOCK:
         problems = check(net)
@@ -124,6 +130,16 @@ def save(
                 load_units(net, trial)  # raises DataError: a node in no unit, or in two
             if updated != current:
                 changes[units_path] = updated
+        layout_path = data_dir / "flow_layout.toml"
+        if layout or layout_path.exists():
+            current = layout_path.read_bytes() if layout_path.exists() else b"[positions]\n"
+            updated = edit_layout(current.decode("utf-8"), net, layout or {}).encode("utf-8")
+            with tempfile.TemporaryDirectory(prefix="nora-layout-") as folder:
+                trial = Path(folder) / "flow_layout.toml"
+                trial.write_bytes(updated)
+                load_flow_layout(net, trial)  # raises DataError: an unknown node, a bad place
+            if updated != current or not layout_path.exists():
+                changes[layout_path] = updated
         # A stream that names a removed asset would stop the site building: its column
         # is no longer mapped, and its excursions, events and pigs there go.
         removed = {a.id for a in (*original.nodes, *original.pipelines)} - {
@@ -179,6 +195,26 @@ def edit_units(text: str, net: Network, placements: dict[str, str]) -> str:
         if after != before:
             text = _replace_nodes_array(text, unit_id, after)
     return text
+
+
+def edit_layout(text: str, net: Network, layout: dict[str, list[float]]) -> str:
+    """flow_layout.toml with each node in `layout` at its new [across, down] (its line
+    rewritten, or added at the end) and the lines of nodes not in `net` dropped."""
+    entry = re.compile(r"^([A-Za-z0-9_-]+)\s*=\s*\[[^\]]*\][^\r\n]*(\r?\n|$)", re.MULTILINE)
+    text = entry.sub(lambda m: m.group(0) if m.group(1) in net.node_by_id else "", text)
+    for node, (across, down) in layout.items():
+        line = f"{node} = [{_number(across)}, {_number(down)}]"
+        found = re.search(rf"^{re.escape(node)}\s*=\s*\[[^\]]*\][^\r\n]*", text, re.MULTILINE)
+        if found:
+            text = text[: found.start()] + line + text[found.end() :]
+        else:
+            text = text.rstrip("\n") + "\n" + line + "\n"
+    return text
+
+
+def _number(value) -> str:
+    value = round(float(value), 2)
+    return str(int(value)) if value == int(value) else str(value)
 
 
 def edit_stream(text: str, removed: set[str]) -> str:
@@ -249,13 +285,11 @@ def network_payload(net: Network, revision: str) -> dict:
 
 def network_from_payload(payload) -> Network:
     """Decode a full GET /api/network payload; reject client-supplied paths and fields.
-    An optional `units` object places new nodes ({node id: unit id}, see units_from_payload)."""
+    Optional: `units` places new nodes ({node id: unit id}, see units_from_payload) and
+    `layout` places nodes in the Flow view ({node id: [across, down]})."""
     keys = set(payload) if isinstance(payload, dict) else set()
-    if (
-        not {"revision", "nodes", "pipelines"}
-        <= keys
-        <= {"revision", "nodes", "pipelines", "units"}
-    ):
+    known = {"revision", "nodes", "pipelines", "units", "layout"}
+    if not {"revision", "nodes", "pipelines"} <= keys <= known:
         raise DataError(["request: expected a revision and 'nodes' and 'pipelines' arrays"])
     revision = payload["revision"]
     if (
@@ -270,6 +304,21 @@ def network_from_payload(payload) -> Network:
         tuple(_node(item) for item in payload["nodes"]),
         tuple(_pipeline(item) for item in payload["pipelines"]),
     )
+
+
+def layout_from_payload(payload: dict) -> dict[str, list[float]]:
+    """{node id: [across, down]} for the nodes added or moved in the Flow view."""
+    layout = payload.get("layout", {})
+    ok = isinstance(layout, dict) and all(
+        isinstance(k, str)
+        and isinstance(v, list)
+        and len(v) == 2
+        and all(isinstance(x, int | float) and not isinstance(x, bool) for x in v)
+        for k, v in layout.items()
+    )
+    if not ok:
+        raise DataError(["request: 'layout' must map node ids to [across, down]"])
+    return layout
 
 
 def units_from_payload(payload: dict) -> dict[str, str]:
@@ -335,6 +384,7 @@ def make_handler(data_dir: Path, out_dir: Path):
                 payload = json.loads(self.rfile.read(int(length)).decode("utf-8"))
                 net = network_from_payload(payload)
                 placements = units_from_payload(payload)
+                layout = layout_from_payload(payload)
             except DataError as error:
                 self._json(400, {"problems": error.problems})
                 return
@@ -364,7 +414,7 @@ def make_handler(data_dir: Path, out_dir: Path):
                     )
                     return
                 try:
-                    snapshot = save(net, data_dir, placements)
+                    snapshot = save(net, data_dir, placements, layout)
                 except DataError as error:
                     self._json(422, {"saved": False, "problems": error.problems})
                     return
@@ -584,7 +634,7 @@ def _same_asset(left, right, columns) -> bool:
 
 def _data_revision(data_dir: Path) -> str:
     digest = hashlib.sha256()
-    for filename in ("nodes.csv", "pipelines.csv", "units.toml"):
+    for filename in ("nodes.csv", "pipelines.csv", "units.toml", "flow_layout.toml"):
         path = Path(data_dir) / filename
         if path.exists():
             digest.update(filename.encode("ascii") + b"\0")

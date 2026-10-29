@@ -5,16 +5,24 @@ processing plants and riser hubs, then receiving terminals, LNG, and markets las
 browser draws stages top to bottom (or left to right). Within a stage, assets are
 ordered and spaced so the straight pipelines between stages cross as little as possible
 (a layered, Sugiyama-style layout): geography only breaks ties, west before east.
+
+data/flow_layout.toml can place nodes by hand instead (`placed`): the operators' own
+overview arranges the network as they think of it (Ray, 29 Oct, an Area D picture).
+A node it lists sits there; the rest keep the computed place.
 """
 
 from __future__ import annotations
 
+import tomllib
 from itertools import combinations
+from pathlib import Path
 
 import networkx as nx
 
-from .data import STATUSES, Network
+from .data import DATA_DIR, STATUSES, DataError, Network, suggest
 from .graph import build_graph
+
+LAYOUT_PATH = DATA_DIR / "flow_layout.toml"
 
 COLUMN_GAP = 230.0
 ROW_GAP = 66.0
@@ -195,13 +203,47 @@ def _pack(want: list[float], weight: list[float], gaps: list[float]) -> list[flo
     return [v + off for v, off in zip(out, offset, strict=False)]
 
 
-def flow_grid(net: Network) -> dict[str, tuple[int, float]]:
+def load_flow_layout(net: Network, path: Path = LAYOUT_PATH) -> dict[str, tuple[float, float]]:
+    """{node: (across, down)} from data/flow_layout.toml; {} without the file. Raises
+    DataError listing every unknown id and every position that is not two numbers."""
+    path = Path(path)
+    if not path.exists():
+        return {}
+    try:
+        positions = tomllib.loads(path.read_text(encoding="utf-8")).get("positions", {})
+    except tomllib.TOMLDecodeError as error:
+        raise DataError([f"{path.name}: {error}"]) from None
+    problems, placed = [], {}
+    for node, value in positions.items():
+        if node not in net.node_by_id:
+            problems.append(f"{path.name}: no node '{node}'" + suggest(node, net.node_by_id))
+        elif not (
+            isinstance(value, list)
+            and len(value) == 2
+            and all(isinstance(v, int | float) and not isinstance(v, bool) for v in value)
+        ):
+            problems.append(f"{path.name}: {node} must be [across, down], got {value!r}")
+        else:
+            placed[node] = (float(value[0]), float(value[1]))
+    if problems:
+        raise DataError(problems)
+    return placed
+
+
+def flow_grid(
+    net: Network, placed: dict[str, tuple[float, float]] | None = None
+) -> dict[str, tuple[float, float]]:
     """(stage, rank) for every node: the stage from `stages`, and the place within the
-    stage, centred on 0, chosen so pipelines cross as little as possible. The browser
-    turns these into positions for either direction; 1 rank is one card's width."""
+    stage, centred on 0, chosen so pipelines cross as little as possible; a node in
+    `placed` ({node: (across, down)}) sits there instead. The browser turns these into
+    positions for either direction; 1 rank is one card's width."""
     layers = _Layers(net)
     ranks = layers.spacing(layers.order())
-    return {node: (layers.stage[node], ranks[node]) for node in sorted(ranks)}
+    grid = {node: (layers.stage[node], ranks[node]) for node in sorted(ranks)}
+    for node, (across, down) in (placed or {}).items():
+        if node in grid:
+            grid[node] = (down, across)
+    return grid
 
 
 def flow_positions(net: Network) -> dict[str, tuple[float, float]]:

@@ -939,6 +939,12 @@
     // the canvas has its real size only after the first draw: fit then
     kept = App.edit.viewport(); // after an edit, the drawing as it was, until it is moved
     for (const moved of ["dragStart", "zoom"]) network.on(moved, () => { kept = null; });
+    // A node dragged to a new place keeps it (an edit, saved to data/flow_layout.toml).
+    network.on("dragEnd", ({ nodes: moved }) => {
+      if (!moved || !moved.length || connecting) return;
+      const at = network.getPositions(moved);
+      for (const id of moved) if (at[id]) App.edit.move(id, placeAt(at[id]).grid);
+    });
     network.once("afterDrawing", () => { layout(); view.setUnit(App.route.unit); });
     container.addEventListener("pointermove", (e) => {
       if (!connecting) return;
