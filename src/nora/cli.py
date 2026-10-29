@@ -8,7 +8,6 @@ import functools
 import os
 import sys
 import webbrowser
-from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -124,7 +123,7 @@ def cmd_serve(args) -> int:
 
 
 def cmd_live(args) -> int:
-    from .live import poll, serve
+    from .live import SharedPoll, serve
 
     # build_site has already loaded the network and every stream; reuse them
     # instead of loading (and re-solving synthetic streams) a second time.
@@ -134,7 +133,7 @@ def cmd_live(args) -> int:
         serve(
             args.out,
             meta=source.meta(),
-            frames=partial(poll, source, args.poll_seconds),
+            frames=SharedPoll(source, args.poll_seconds).frames,  # one poller for all readers
             plan=None,
             host=args.host,
             port=args.port,

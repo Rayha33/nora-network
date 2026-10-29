@@ -22,6 +22,7 @@ from __future__ import annotations
 import json
 import math
 import sys
+import threading
 import time
 import webbrowser
 from collections.abc import Callable, Iterator
@@ -90,40 +91,111 @@ def nominations_ahead(stream: Stream, index: int, hours: float = 6.0) -> dict:
     }
 
 
+def poll_once(source: Connector, index: int, poll_seconds: float = POLL_SECONDS) -> PolledItem:
+    """One poll of a live connector: a frame, or an error event ({"error": ...}).
+
+    A failed poll logs and comes back as an error event, never an exception, so a
+    down API reads as a stale feed, not a dead server.
+    """
+    now = datetime.now(tz=UTC)
+    try:
+        readings = list(source.fetch(now - timedelta(seconds=poll_seconds), now))
+        if not readings:
+            raise ValueError(f"{source.name}: empty response")
+        # What holds now (the latest reading per asset up to now) and, from a
+        # source that knows them (Origo's nominations), the hours ahead.
+        current = [r for r in readings if r.when <= now] or readings
+        latest = {r.asset: r.value for r in sorted(current, key=lambda r: r.when)}
+        later: dict[str, list[float]] = {}
+        for r in sorted((r for r in readings if r.when > now), key=lambda r: r.when):
+            later.setdefault(r.asset, []).append(r.value)
+        when = max(r.when for r in current)
+        flows = dict(latest) if source.flows else {}
+        item = (when, flows, {source.metric: latest}, index)
+        return (*item, {source.metric: later}) if later else item
+    except Exception as error:  # noqa: BLE001 - the feed must outlive any one poll
+        print(f"{source.name}: poll failed: {error}", file=sys.stderr)
+        return {"error": str(error), "source": source.name}
+
+
 def poll(
     source: Connector, poll_seconds: float = POLL_SECONDS
 ) -> Iterator[tuple[float, PolledItem]]:
     """Yield (wait, frame) pairs by polling a live connector every poll_seconds.
 
-    A failed poll never ends the feed: it logs, yields an SSE error event instead of
-    a frame, and keeps polling, so the browser keeps its last good frame and a down
-    API reads as a stale feed, not a dead server. The first frame is sent at once.
+    A failed poll never ends the feed: it yields an SSE error event instead of a
+    frame, and keeps polling. The first frame is sent at once. One generator polls
+    for one reader; a server with several browsers shares one SharedPoll instead.
     """
     index, first = 0, True
     while True:
         # Every attempt after the first waits, failed or not: a source that is down
         # is retried every poll_seconds, never in a tight loop.
         wait, first = (0.0 if first else poll_seconds), False
-        now = datetime.now(tz=UTC)
-        try:
-            readings = list(source.fetch(now - timedelta(seconds=poll_seconds), now))
-            if not readings:
-                raise ValueError(f"{source.name}: empty response")
-            # What holds now (the latest reading per asset up to now) and, from a
-            # source that knows them (Origo's nominations), the hours ahead.
-            current = [r for r in readings if r.when <= now] or readings
-            latest = {r.asset: r.value for r in sorted(current, key=lambda r: r.when)}
-            later: dict[str, list[float]] = {}
-            for r in sorted((r for r in readings if r.when > now), key=lambda r: r.when):
-                later.setdefault(r.asset, []).append(r.value)
-            when = max(r.when for r in current)
-            flows = dict(latest) if source.flows else {}
-            item = (when, flows, {source.metric: latest}, index)
-            yield wait, (*item, {source.metric: later}) if later else item
+        item = poll_once(source, index, poll_seconds)
+        if not isinstance(item, dict):
             index += 1
-        except Exception as error:  # noqa: BLE001 - the feed must outlive any one poll
-            print(f"{source.name}: poll failed: {error}", file=sys.stderr)
-            yield wait, {"error": str(error), "source": source.name}
+        yield wait, item
+
+
+class SharedPoll:
+    """One upstream poller for every browser on /stream.
+
+    Review #49802: each SSE client ran its own `poll`, so ten open tabs polled the
+    source ten times every interval, and each frame then sat out a whole interval
+    before it was sent. Here one daemon thread polls every poll_seconds and every
+    client gets each result as soon as it lands. `frames` follows the handler's
+    (wait, item) protocol; its item is a callable the handler calls after the wait,
+    so the wait is spent before the fetch, not after it.
+    """
+
+    def __init__(self, source: Connector, poll_seconds: float = POLL_SECONDS):
+        self.source, self.poll_seconds = source, poll_seconds
+        self.polls = 0  # upstream fetches so far, whatever the number of readers
+        self._changed = threading.Condition()
+        self._item: PolledItem | None = None
+        self._seq = 0  # bumps with every poll result
+        self._due = 0.0  # time.monotonic() of the next poll
+        self._thread: threading.Thread | None = None
+
+    def _run(self) -> None:
+        index = 0
+        while True:
+            item = poll_once(self.source, index, self.poll_seconds)
+            if not isinstance(item, dict):
+                index += 1
+            with self._changed:
+                self.polls += 1
+                self._item, self._seq = item, self._seq + 1
+                self._due = time.monotonic() + self.poll_seconds
+                self._changed.notify_all()
+            time.sleep(self.poll_seconds)
+
+    def _start(self) -> None:
+        with self._changed:
+            if self._thread is None:
+                self._thread = threading.Thread(target=self._run, daemon=True)
+                self._thread.start()
+
+    def frames(self) -> Iterator[tuple[float, Callable[[], PolledItem | None]]]:
+        """One reader's feed: the latest result at once, then each new one."""
+        self._start()
+        seen = 0
+
+        def fresh() -> PolledItem | None:
+            nonlocal seen
+            with self._changed:
+                # a fetch can take a while (30 s timeout); nothing new is a keepalive
+                self._changed.wait_for(lambda: self._seq > seen, timeout=KEEPALIVE_SECONDS)
+                if self._seq == seen:
+                    return None
+                seen = self._seq
+                return self._item
+
+        while True:
+            with self._changed:
+                wait = 0.0 if self._seq > seen else max(0.0, self._due - time.monotonic())
+            yield wait, fresh
 
 
 class _Handler(SimpleHTTPRequestHandler):
@@ -148,6 +220,12 @@ class _Handler(SimpleHTTPRequestHandler):
             self._send("meta", self.meta)
             for wait, item in self.frames():
                 self._pause(wait)
+                if callable(item):  # a SharedPoll reader: the result after the wait
+                    item = item()
+                    if item is None:  # still fetching: keep the line warm
+                        self.wfile.write(b": keepalive\n\n")
+                        self.wfile.flush()
+                        continue
                 if isinstance(item, dict):  # a poller failure: tell the browser, keep serving
                     self._send("error", item)
                     continue

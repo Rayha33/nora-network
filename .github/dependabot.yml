@@ -1,0 +1,8 @@
+# The workflows pin every action to a commit SHA (a moved tag cannot change what runs
+# with write access). Dependabot proposes the newer SHAs once a month.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

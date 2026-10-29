@@ -57,11 +57,10 @@ RECEIVING_COUNTRIES = {
 }
 # The UK gas day starts at 05:00 UK time; National Gas's tables run over one gas day.
 GAS_DAY_START_MINUTES = 5 * 60
-# Cloudflare in front of gassco.eu rejects anything that does not look like a browser.
-USER_AGENT = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/131.0 Safari/537.36"
-)
+# NORA says who it is (review #49802: it used to pose as Chrome to get past the
+# Cloudflare check in front of gassco.eu). If Cloudflare refuses an honest client, the
+# feed reports the failed poll; asking Gassco for access is the way past that.
+USER_AGENT = "nora-network (https://github.com/Rayha33/nora-network)"
 
 
 class NotConfigured(RuntimeError):
@@ -171,7 +170,8 @@ class GasscoRealTime(Connector):
     Endpoint: GASSCO_URL (open, no key; the figures on Gassco's home page chart come
     from it). Values are MSm3/d and the timestamp is epoch milliseconds; Gassco
     publishes every 5 minutes, so that is the poll interval the CLI defaults to.
-    Cloudflare blocks requests without a browser User-Agent, so `fetch` sends one.
+    `fetch` sends NORA's own User-Agent; Cloudflare may refuse it until Gassco allows
+    NORA in, and the feed then reports each failed poll.
 
     The endpoint aggregates per country, not per terminal, so only a country with a
     single receiving terminal (France: Dunkirk, Belgium: Zeebrugge) gets a reading;

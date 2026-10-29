@@ -152,6 +152,38 @@ def test_serve_accepts_a_poller_instead_of_a_stream(api_url, monkeypatch, tmp_pa
     assert values["zeebrugge"] == 43.6
 
 
+def test_serve_shares_one_poller_between_browsers(api_url, monkeypatch, tmp_path):
+    """Review #49802: two browsers on /stream, one upstream poll (SharedPoll)."""
+    from nora.live import SharedPoll
+
+    monkeypatch.setenv("NORA_GASSCO_URL", api_url)
+    site = tmp_path / "site"
+    site.mkdir()
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    shared = SharedPoll(gassco, poll_seconds=3600)
+    kwargs = {"meta": gassco.meta(), "frames": shared.frames, "port": port, "open_browser": False}
+    threading.Thread(target=serve, args=(site,), daemon=True, kwargs=kwargs).start()
+    responses = []
+    for _ in range(2):
+        for _ in range(50):
+            try:
+                responses.append(
+                    urllib.request.urlopen(f"http://127.0.0.1:{port}/stream", timeout=5)
+                )
+                break
+            except OSError:
+                threading.Event().wait(0.1)
+        else:
+            pytest.fail("the live server never came up")
+    for response in responses:
+        lines = [response.readline().decode().strip() for _ in range(5)]
+        assert lines[3] == "event: frame"
+        assert json.loads(lines[4][len("data: ") :])["values"]["zeebrugge"] == 43.6
+    assert shared.polls == 1, "both browsers got the frame from one upstream fetch"
+
+
 def test_cli_offers_the_source_flag():
     import nora.cli as cli_mod
 
