@@ -87,7 +87,7 @@ def build_site(out_dir: Path, data_dir: Path = DATA_DIR) -> dict:
         ),
         encoding="utf-8",
     )
-    page = index_html(net, analysis, streams, links, build_info())
+    page = index_html(net, analysis, streams, links, build_info(), config)
     (out / "index.html").write_text(page, encoding="utf-8")
     for name in ("nodes.csv", "pipelines.csv"):
         shutil.copyfile(data_dir / name, out / "data" / name)
@@ -121,8 +121,17 @@ def _stream_summary(stream: Stream) -> dict:
 
 
 def index_html(
-    net: Network, analysis: dict, streams: list[Stream], links: dict, build: dict
+    net: Network,
+    analysis: dict,
+    streams: list[Stream],
+    links: dict,
+    build: dict,
+    config: dict | None = None,
 ) -> str:
+    """The home page, in the app's own palette (nora.toml [colors] and [colors_dark]) and
+    type, so the site is one design system (review #49802: it had its own serif and
+    magenta)."""
+    config = config or load_config()
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATES)), autoescape=select_autoescape(["html", "j2"])
     )
@@ -140,4 +149,7 @@ def index_html(
         streams=[_stream_summary(s) for s in streams],
         links=links,
         build=build,
+        light=config["colors"],
+        dark=config["colors_dark"],
+        theme=config["screen"]["theme"],  # as the app: light, dark, or auto (the device's)
     )
