@@ -5,7 +5,7 @@ ogt,Oseberg Gas Transport,oseberg,heimdal,feeder,109,36,40,false,2000,operating,
 statpipe_rich,Statpipe (rich gas),statfjord,karsto,trunk,308,30,25,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,
 statpipe_dry,Statpipe (dry gas),karsto,draupner_s,trunk,228,28,20,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,
 statpipe_heimdal,Statpipe (Heimdal leg),heimdal,draupner_s,trunk,155,36,30,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,
-statpipe_ekofisk,Statpipe (Draupner - Ekofisk),draupner_s,ekofisk,trunk,203,36,30,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,
+statpipe_ekofisk,Statpipe (Draupner S - Ekofisk tie-in),draupner_s,ekofisk_tee,trunk,203,36,30,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,
 draupner_bridge,Draupner S - E bridge,draupner_s,draupner_e,link,0.1,,,true,1985,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,Platforms are bridge-linked
 sleipner_draupner,Sleipner - Draupner,sleipner,draupner_s,link,,,60,true,,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,Interconnection between the two riser hubs
 zeepipe_2a,Zeepipe IIA,kollsnes,sleipner,trunk,303,40,58,false,1996,operating,Gassco,https://en.wikipedia.org/wiki/Zeepipe,
@@ -31,7 +31,7 @@ smorbukk_nord_asgard,Smørbukk Nord - Åsgard,smorbukk_nord,asgard,feeder,,,,fal
 skarv_asgard,Skarv - Åsgard Transport,skarv,asgard,feeder,80,26,,false,2013,operating,Gassco,https://www.norskpetroleum.no/en/facts/field/skarv/,"26-inch line to Åsgard T on Åsgard Transport, drawn as a tie-in to the Åsgard area; no incremental supply."
 draugen_asgard,Draugen - Åsgard Transport,draugen,asgard,feeder,,16,,false,2000,operating,Gassco,https://factpages.sodir.no/downloads/csv/pipLine.zip,"16-inch line to Draugen T on Åsgard Transport, drawn as a tie-in to the Åsgard area; no incremental supply."
 aerfugl_skarv,Ærfugl - Skarv FPSO,aerfugl,skarv,feeder,,,,false,2020,operating,Aker BP,https://www.norskpetroleum.no/en/facts/field/aerfugl/,Schematic tie-back; no incremental supply.
-norpipe,Norpipe Gas,ekofisk,emden,export,440,36,44,false,1977,operating,Gassco,https://en.wikipedia.org/wiki/Norpipe,
+norpipe,Norpipe Gas,ekofisk_tee,emden,export,440,36,44,false,1977,operating,Gassco,https://en.wikipedia.org/wiki/Norpipe,
 europipe_1,Europipe I,draupner_e,dornum,export,660,40,46,false,1995,operating,Gassco,https://en.wikipedia.org/wiki/Europipe_I,
 europipe_2_north,Europipe II (Kårstø - Baltic tie-in),karsto,baltic_tie,export,400,42,71,false,1999,operating,Gassco,https://en.wikipedia.org/wiki/Europipe_II,Split at the Baltic Pipe tie-in
 europipe_2_south,Europipe II (Baltic tie-in - Dornum),baltic_tie,dornum,export,258,42,71,false,1999,operating,Gassco,https://en.wikipedia.org/wiki/Europipe_II,Split at the Baltic Pipe tie-in
@@ -47,3 +47,4 @@ flags,FLAGS,flags_brent,st_fergus,export,450,36,33,false,1982,operating,,https:/
 sage,SAGE,beryl,st_fergus,export,323,30,30,false,1992,operating,,"approximate, public data",
 sns_bacton,Southern North Sea gathering,sns_fields,bacton,feeder,,,15,false,,operating,,"approximate, public data",Several pipelines modelled as one
 iuk,Interconnector (IUK),bacton,zeebrugge,interconnector,235,40,70,true,1998,operating,,https://www.interconnector.com/,
+ekofisk_tie_in,Ekofisk tie-in,ekofisk,ekofisk_tee,feeder,1,,,false,1977,operating,ConocoPhillips,https://en.wikipedia.org/wiki/Norpipe,Ekofisk's gas into the Draupner S - Norpipe line (Ray: tied in along it)

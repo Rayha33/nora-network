@@ -53,7 +53,7 @@
   },
   {
    "name": "Baltic Pipe tie-in",
-   "type": "hub",
+   "type": "tee",
    "country": "DK",
    "lat": 55.814,
    "lon": 6.512,
@@ -170,6 +170,18 @@
    "status": "operating",
    "exit": false,
    "id": "ekofisk"
+  },
+  {
+   "name": "Ekofisk tie-in",
+   "type": "tee",
+   "country": "NO",
+   "lat": 56.54,
+   "lon": 3.23,
+   "capacity_msm3d": null,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "ekofisk_tee"
   },
   {
    "name": "Emden",
@@ -709,13 +721,13 @@
   },
   {
    "pipeline": "statpipe_ekofisk",
-   "name": "Statpipe (Draupner - Ekofisk)",
+   "name": "Statpipe (Draupner S - Ekofisk tie-in)",
    "type": "trunk",
    "from_id": "draupner_s",
    "length_km": 203.0,
    "capacity": 30.0,
    "source": "draupner_s",
-   "target": "ekofisk"
+   "target": "ekofisk_tee"
   },
   {
    "pipeline": "uhgp",
@@ -728,13 +740,22 @@
    "target": "beryl"
   },
   {
+   "pipeline": "ekofisk_tie_in",
+   "name": "Ekofisk tie-in",
+   "type": "feeder",
+   "from_id": "ekofisk",
+   "length_km": 1.0,
+   "source": "ekofisk",
+   "target": "ekofisk_tee"
+  },
+  {
    "pipeline": "norpipe",
    "name": "Norpipe Gas",
    "type": "export",
-   "from_id": "ekofisk",
+   "from_id": "ekofisk_tee",
    "length_km": 440.0,
    "capacity": 44.0,
-   "source": "ekofisk",
+   "source": "ekofisk_tee",
    "target": "emden"
   },
   {

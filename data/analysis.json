@@ -1,7 +1,7 @@
 {
  "offline": [],
- "assets": 48,
- "pipelines": 48,
+ "assets": 49,
+ "pipelines": 49,
  "countries": [
   "BE",
   "DE",
@@ -13,12 +13,13 @@
  ],
  "node_types": {
   "field": 30,
-  "hub": 5,
+  "hub": 4,
   "market": 2,
   "processing": 4,
+  "tee": 2,
   "terminal": 7
  },
- "pipeline_km": 11005,
+ "pipeline_km": 11006,
  "supply_capacity": 472.0,
  "deliverable": 430.0,
  "delivered": {
@@ -68,6 +69,7 @@
   "sleipner_draupner": 38.0,
   "statpipe_ekofisk": 19.0,
   "uhgp": 6.0,
+  "ekofisk_tie_in": 25.0,
   "norpipe": 44.0,
   "flags": 33.0,
   "gjoa_flags": 15.0,
@@ -300,8 +302,8 @@
   },
   {
    "kind": "node",
-   "id": "ekofisk",
-   "name": "Ekofisk",
+   "id": "ekofisk_tee",
+   "name": "Ekofisk tie-in",
    "lost": 44.0,
    "share": 0.1023
   },
@@ -413,7 +415,7 @@
   {
    "kind": "pipeline",
    "id": "statpipe_ekofisk",
-   "name": "Statpipe (Draupner - Ekofisk)",
+   "name": "Statpipe (Draupner S - Ekofisk tie-in)",
    "lost": 19.0,
    "share": 0.0442
   },
@@ -465,6 +467,20 @@
    "name": "Southern North Sea gathering",
    "lost": 15.0,
    "share": 0.0349
+  },
+  {
+   "kind": "node",
+   "id": "ekofisk",
+   "name": "Ekofisk",
+   "lost": 14.0,
+   "share": 0.0326
+  },
+  {
+   "kind": "pipeline",
+   "id": "ekofisk_tie_in",
+   "name": "Ekofisk tie-in",
+   "lost": 14.0,
+   "share": 0.0326
   },
   {
    "kind": "node",
@@ -790,7 +806,7 @@
   }
  ],
  "sourced": {
-  "rows": 96,
-  "total": 96
+  "rows": 98,
+  "total": 98
  }
 }
