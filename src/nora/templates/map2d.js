@@ -97,37 +97,69 @@ function NoraCanvasMap(view) {
     canvas.style.height = `${height}px`;
   }
 
-  function redraw() { App.frame.run(redrawNow); }
-  function redrawNow() {
-    if (!ctx || !width) return;
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    ctx.fillStyle = C.water;
-    ctx.fillRect(0, 0, width, height);
+  /* Without WebGL every pixel is painted by the CPU. Playing, the map was painted whole
+     60 times a second: water, land, every line, dot and name, to move a few small
+     markers (75 % of a core on a 1728 x 1080 retina window). The still part is now
+     painted once into `base`, again only when the look, the camera or the size changes;
+     each frame copies it and draws the moving markers and the names above them. */
+  let base = null, baseCtx = null, baseKey = "", baseBoxes = { placed: [], dots: [] }, movedKey = "";
+  /* Everything the still map shows, as text. The data steps four times a second and each
+     step restyles the map, but an hourly dataset changes once an hour: a restyle that
+     changes nothing visible repaints nothing. */
+  function baseLook() {
+    const parts = [cam.x, cam.y, cam.k, width, height, ratio, App.uiScale(), App.state.mode, highlighted,
+      App.settings().names, C.water, C.paper, C.text, C.text_dim, C.casing, JSON.stringify(C.card)];
+    for (const p of pipes) {
+      const s = App.pipeStyle(p.id);
+      parts.push(s.hidden || !pipeAtZoom(p.id) ? "-" : `${s.color} ${s.width} ${s.model} ${s.level} ${s.dashed} ${s.dim}`);
+    }
+    for (const n of nodes) {
+      const s = App.nodeStyle(n.id);
+      parts.push(s.hidden || !nodeAtZoom(n.id) ? "-" : `${s.dim} ${s.inactive} ${s.level} ${App.nameOf(n.id)}`);
+    }
+    return parts.join("|");
+  }
+  // Where the moving markers and their bands are, to the half pixel. In real time a pig
+  // crosses a pixel every few minutes: a frame where nothing moved is not painted.
+  function movingKey() {
+    if (App.state.mode !== "live") return "";
+    return App.markers().map((m) => {
+      if (!pipeById[m.id] || !pipeAtZoom(m.id)) return "";
+      const at = [m.along, ...(m.extent || [])].map((t) => along(m.id, t));
+      return `${m.key} ${at.map((q) => `${Math.round(q.x * 2)},${Math.round(q.y * 2)}`).join(" ")}`;
+    }).join("|");
+  }
+  function redraw() { App.frame.run(() => redrawNow(true)); }
+  function redrawMoving() { App.frame.run(() => redrawNow(false)); }
+  function drawBase(g) {
+    g.setTransform(ratio, 0, 0, ratio, 0, 0);
+    g.fillStyle = C.water;
+    g.fillRect(0, 0, width, height);
     // Land: paper, as on the WebGL map.
-    ctx.setTransform(ratio * cam.k, 0, 0, ratio * cam.k, ratio * (width / 2 - cam.x * cam.k), ratio * (height / 2 - cam.y * cam.k));
+    g.setTransform(ratio * cam.k, 0, 0, ratio * cam.k, ratio * (width / 2 - cam.x * cam.k), ratio * (height / 2 - cam.y * cam.k));
     land = land || landPath();
-    ctx.fillStyle = C.paper;
-    ctx.fill(land);
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    g.fillStyle = C.paper;
+    g.fill(land);
+    g.setTransform(ratio, 0, 0, ratio, 0, 0);
     const live = App.state.mode === "live", u = App.uiScale();
     // Pipelines: casing under any line in alarm, so colour never stands alone.
-    ctx.lineCap = "round";
+    g.lineCap = "round";
     for (const p of pipes) {
       const s = App.pipeStyle(p.id);
       if (s.hidden || !pipeAtZoom(p.id)) continue;
       const pts = p.line.map(([lon, lat]) => toScreen(lon, lat));
-      const trace = () => { ctx.beginPath(); pts.forEach((q, i) => (i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y))); };
-      ctx.globalAlpha = s.dim ? 0.3 : 1;
+      const trace = () => { g.beginPath(); pts.forEach((q, i) => (i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y))); };
+      g.globalAlpha = s.dim ? 0.3 : 1;
       const w = lineWidth(s.width, s.model) * (p.onshore ? 0.8 : 1);
-      if (s.level) { trace(); ctx.setLineDash([]); ctx.strokeStyle = C.casing; ctx.lineWidth = w + 1.6 * u; ctx.stroke(); }
+      if (s.level) { trace(); g.setLineDash([]); g.strokeStyle = C.casing; g.lineWidth = w + 1.6 * u; g.stroke(); }
       trace();
-      ctx.setLineDash(p.onshore || s.dashed ? [2 * w + 1, 2 * w + 1] : []);
-      ctx.strokeStyle = s.color;
-      ctx.lineWidth = w;
-      ctx.stroke();
+      g.setLineDash(p.onshore || s.dashed ? [2 * w + 1, 2 * w + 1] : []);
+      g.strokeStyle = s.color;
+      g.lineWidth = w;
+      g.stroke();
     }
-    ctx.setLineDash([]);
-    ctx.globalAlpha = 1;
+    g.setLineDash([]);
+    g.globalAlpha = 1;
     // Nodes: calm circles by state; names placed so no two overlap.
     const r = nodeRadius(), names = App.settings().names, boxes = [], dots = [];
     for (const n of nodes) {
@@ -136,35 +168,61 @@ function NoraCanvasMap(view) {
       const q = toScreen(n.lonlat[0], n.lonlat[1]);
       if (q.x < -40 || q.y < -40 || q.x > width + 40 || q.y > height + 40) continue;
       const look = C.card[s.inactive ? "inactive" : live ? "active" : "normal"];
-      ctx.globalAlpha = s.dim ? 0.3 : s.inactive ? 0.7 : 1;
-      ctx.beginPath();
-      ctx.arc(q.x, q.y, r, 0, Math.PI * 2);
-      ctx.fillStyle = look.fill;
-      ctx.fill();
-      ctx.lineWidth = (s.level ? 2.5 : 1) * u;
-      ctx.strokeStyle = s.level ? App.levelColor[s.level] : C.text_dim;
-      ctx.stroke();
+      g.globalAlpha = s.dim ? 0.3 : s.inactive ? 0.7 : 1;
+      g.beginPath();
+      g.arc(q.x, q.y, r, 0, Math.PI * 2);
+      g.fillStyle = look.fill;
+      g.fill();
+      g.lineWidth = (s.level ? 2.5 : 1) * u;
+      g.strokeStyle = s.level ? App.levelColor[s.level] : C.text_dim;
+      g.stroke();
       if (n.id === highlighted) {
-        ctx.beginPath(); ctx.arc(q.x, q.y, r + 5 * u, 0, Math.PI * 2);
-        ctx.lineWidth = 2 * u; ctx.strokeStyle = C.text; ctx.stroke();
+        g.beginPath(); g.arc(q.x, q.y, r + 5 * u, 0, Math.PI * 2);
+        g.lineWidth = 2 * u; g.strokeStyle = C.text; g.stroke();
       }
-      ctx.globalAlpha = 1;
+      g.globalAlpha = 1;
       dots.push([q.x - r - u, q.y - r - u, q.x + r + u, q.y + r + u]);
       if (names && !s.dim) boxes.push({ id: n.id, x: q.x, y: q.y + r + 3 * u, level: s.level });
     }
     // Labels: alarms first, then the rest; a name that would cover another is skipped.
+    g.font = `${11.5 * u}px Archivo, system-ui, sans-serif`;
+    g.textAlign = "center";
+    g.textBaseline = "top";
+    g.lineJoin = "round";
+    const placed = [];
+    for (const b of boxes.sort((a, c) => c.level - a.level)) {
+      const text = App.nameOf(b.id), w = g.measureText(text).width + 4 * u, box = [b.x - w / 2, b.y, b.x + w / 2, b.y + 13 * u];
+      if (placed.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) continue;
+      placed.push(box);
+      g.lineWidth = 4 * u; g.strokeStyle = C.paper; g.strokeText(text, b.x, b.y); // no line shows through a name
+      g.fillStyle = C.text; g.fillText(text, b.x, b.y);
+    }
+    return { placed, dots };
+  }
+  // `asked`: a restyle, the camera or a setting asked for it; otherwise the frame loop.
+  function redrawNow(asked) {
+    if (!ctx || !width) return;
+    if (!base || base.width !== canvas.width || base.height !== canvas.height) {
+      base = Object.assign(document.createElement("canvas"), { width: canvas.width, height: canvas.height });
+      baseCtx = base.getContext("2d");
+      baseKey = "";
+    }
+    const look = baseLook(), moved = movingKey(), still = !!baseCtx && look === baseKey;
+    if (still && !asked && moved === movedKey) return; // nothing on screen would change
+    movedKey = moved;
+    if (!still) {
+      baseBoxes = drawBase(baseCtx || ctx);
+      baseKey = baseCtx ? look : "";
+    }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (baseCtx) ctx.drawImage(base, 0, 0);
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    const live = App.state.mode === "live", u = App.uiScale(), names = App.settings().names;
+    const placed = [...baseBoxes.placed], dots = baseBoxes.dots;
     ctx.font = `${11.5 * u}px Archivo, system-ui, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
     ctx.lineJoin = "round";
-    const placed = [];
-    for (const b of boxes.sort((a, c) => c.level - a.level)) {
-      const text = App.nameOf(b.id), w = ctx.measureText(text).width + 4 * u, box = [b.x - w / 2, b.y, b.x + w / 2, b.y + 13 * u];
-      if (placed.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) continue;
-      placed.push(box);
-      ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(text, b.x, b.y); // no line shows through a name
-      ctx.fillStyle = C.text; ctx.fillText(text, b.x, b.y);
-    }
     // Major pipeline names use the same collision map as node names. Reserve their boxes
     // now, but paint them after the moving bands so a peak never crosses out the text.
     const pipeLabels = [];
@@ -420,7 +478,7 @@ function NoraCanvasMap(view) {
   /* App's frame loop asks every frame. Only moving markers need that (live and playing);
      every other change (a restyle, the camera, settings, a resize) redraws on its own,
      so a paused map is not drawn 60 times a second. */
-  view.draw = () => { if (App.state.mode === "live" && App.live.playing) redraw(); };
+  view.draw = () => { if (App.state.mode === "live" && App.live.playing) redrawMoving(); };
   view.applySettings = () => redraw();
   view.setUnit = (unit) => {
     if (!view.ready) return;
@@ -452,6 +510,10 @@ function NoraCanvasMap(view) {
     redraw();
   };
   view.theme = () => redraw(); // App.colors is updated in place
+  // Paint everything again, the still map too: when the web font arrives, the names drawn
+  // in the fallback font are redrawn although nothing else changed.
+  view.repaint = () => { baseKey = ""; redraw(); };
+  if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", () => view.repaint());
   view.map = null; // no MapLibre map behind this view
   view.canvasMap = true;
   view.zoomAt = zoomAt; // for tests: zoom-limit gestures must not move the camera

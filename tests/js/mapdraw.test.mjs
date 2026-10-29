@@ -158,16 +158,28 @@ test("map without WebGL: a paused canvas map is not redrawn every frame", () => 
   el.clientWidth = 1000;
   el.clientHeight = 700;
   document.getElementById("speed").options = [{ value: "60" }];
-  document.getElementById("stream-select")._listeners.change[0]({ target: { value: NORA.streams[1].name } });
+  document.getElementById("stream-select")._listeners.change[0]({ target: { value: NORA.streams[0].name } });
   App.state.view = "map";
   App.state.mode = "live";
   App.go({ screen: "unit", unit: "all" });
   const view = App.views.map;
   assert.equal(view.canvasMap, true);
-  const redraws = (fn) => { const before = counts.fillRect || 0; fn(); return (counts.fillRect || 0) - before; }; // one water fill a redraw
+  // A frame copies the still map (drawImage); repainting the still map fills the water (fillRect).
+  const count = (fn) => {
+    const frames = counts.drawImage || 0, repaints = counts.fillRect || 0;
+    fn();
+    return { frames: (counts.drawImage || 0) - frames, repaints: (counts.fillRect || 0) - repaints };
+  };
   App.live.playing = false;
-  assert.equal(redraws(() => { for (let i = 0; i < 5; i++) view.draw(); }), 0, "paused: the frame loop draws nothing");
-  assert.equal(redraws(() => view.restyle()), 1, "a restyle still redraws");
+  assert.deepEqual(count(() => { for (let i = 0; i < 5; i++) view.draw(); }), { frames: 0, repaints: 0 }, "paused: the frame loop draws nothing");
+  assert.deepEqual(count(() => view.restyle()), { frames: 1, repaints: 0 }, "a restyle that changes no line or node keeps the still map");
+  assert.deepEqual(count(() => view.highlight(App.nodeIds[0])), { frames: 1, repaints: 1 }, "a new look repaints it");
   App.live.playing = true;
-  assert.equal(redraws(() => { for (let i = 0; i < 3; i++) view.draw(); }), 3, "playing: the markers move every frame");
+  /* Without WebGL the CPU paints every pixel: repainting water, land, lines and names
+     60 times a second to move a few markers took 75 % of a core (Ray, 29 Oct: "make it
+     run more smoothly"). Playing, a frame copies the still map and draws the markers,
+     and only when one of them has moved. */
+  assert.deepEqual(count(() => { for (let i = 0; i < 3; i++) view.draw(); }), { frames: 0, repaints: 0 }, "playing, nothing moved: nothing painted");
+  const moving = count(() => { for (let i = 0; i < 3; i++) { App.live.time += 1800; view.draw(); } });
+  assert.deepEqual(moving, { frames: 3, repaints: 0 }, "playing, the markers moved: each frame paints them over the still map");
 });

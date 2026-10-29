@@ -64,7 +64,7 @@ function canvasMap(mode) {
   App.go({ screen: "unit", unit: "all" });
   texts.length = 0;
   widths.length = 0;
-  App.views.map.restyle();
+  App.views.map.repaint();
   return { App, NORA, texts, widths };
 }
 
