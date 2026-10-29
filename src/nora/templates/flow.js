@@ -32,7 +32,7 @@
     const room = Math.min((grid.down * s - 30) / 2, (grid.across * s - 16) / 2); // screen px
     return Math.max(8, Math.min(room, Math.max(22, SQUARE.live * s))) / s;
   }
-  const nodeHalf = () => (App.state.mode === "live" ? overviewSquareHalf(network ? network.getScale() : 1) : SQUARE.plain);
+  const nodeHalf = () => (App.stateShown() ? overviewSquareHalf(network ? network.getScale() : 1) : SQUARE.plain);
   // How far a line runs inside a square before it leaves it, along the unit vector (ux, uy).
   const edgeGap = (half, ux, uy) => half / Math.max(Math.abs(ux), Math.abs(uy), 1e-6);
   function squarePath(ctx, x, y, half) {
@@ -71,7 +71,7 @@
     // needs both in/out labels also gets room from its neighbours.
     framePos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id,
       direction === "vertical" ? { x: rank * baseRankGap, y: stage * baseGap } : { x: stage * baseGap, y: rank * baseRankGap }]));
-    const extra = Math.max(0, (App.state.mode === "live" ? SQUARE.live : SQUARE.plain) - CIRC.r) * 2; // base square room; overview size follows zoom separately
+    const extra = Math.max(0, (App.stateShown() ? SQUARE.live : SQUARE.plain) - CIRC.r) * 2; // base square room; overview size follows zoom separately
     const rankGap = baseRankGap + extra;
     const across = (Math.max(...ranks) - Math.min(...ranks) + 1) * rankGap;
     const aspect = direction === "vertical" ? el.clientHeight / el.clientWidth : el.clientWidth / el.clientHeight;
@@ -239,7 +239,7 @@
     const here = positions[id], out = [];
     if (!here) return out;
     for (const pid of linesAt[id] || []) {
-      const p = NORA.assets[pid], v = App.live.values[pid];
+      const p = NORA.assets[pid], v = App.lineFlow(pid);
       if ((p.from !== id && p.to !== id) || lineHidden(pid)) continue;
       const otherId = p.from === id ? p.to : p.from, other = positions[otherId];
       if (!other) continue;
@@ -265,7 +265,7 @@
     const here = positions[id], out = {};
     if (!here) return out;
     for (const pid of linesAt[id] || []) {
-      const p = NORA.assets[pid], v = App.live.values[pid];
+      const p = NORA.assets[pid], v = App.lineFlow(pid);
       if (!v || Math.abs(v) < 0.05 || (p.from !== id && p.to !== id) || lineHidden(pid)) continue;
       const other = positions[p.from === id ? p.to : p.from];
       if (!other) continue;
@@ -286,7 +286,7 @@
     return scale >= 1; // never render the detailed 11 px labels below their actual size
   }
   function pressureVisibility(mode, scale) {
-    return mode === "live" && scale > 0;
+    return (mode === "live" || mode === "whatif") && scale > 0;
   }
   /* Pressure tags (Ray, 29 Oct: "pressures need to be like this at every end of lines
      but they should be inside their own small rectangle where the line comes in or
@@ -662,7 +662,7 @@
           ctx.restore();
           return;
         }
-        const live = App.state.mode === "live";
+        const live = App.stateShown(); // the data now, or a what-if's state
         const scale = network ? network.getScale() : 1, detailed = detailedFlow(scale);
         const half = nodeHalf();
         const look = C.card[s.inactive ? "inactive" : live ? "active" : "normal"];
@@ -1222,7 +1222,7 @@
     const positions = Object.entries(network.getPositions()).filter(([id]) => !nodeHidden(id)).map(([, p]) => p);
     if (!positions.length || !el.clientWidth) return 0;
     const xs = positions.map((p) => p.x), ys = positions.map((p) => p.y);
-    const margin = (App.state.mode === "live" ? SQUARE.live : SQUARE.plain) * 6;
+    const margin = (App.stateShown() ? SQUARE.live : SQUARE.plain) * 6;
     const w = Math.max(...xs) - Math.min(...xs) + margin, h = Math.max(...ys) - Math.min(...ys) + margin;
     return Math.min(el.clientWidth / w, el.clientHeight / h) * 0.8;
   }

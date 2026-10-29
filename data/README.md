@@ -110,6 +110,28 @@ that matches the page's host; the page asks for the key at the first Save and ke
 in that browser. Anyone with the key can change `data/`, so share it like a password,
 and commit the saved files from the server's checkout as usual.
 
+## pipeline_models.csv
+
+One row per pipeline: the regression the What-if uses for its pressures, as a pipeline
+modelling system (PMS) keeps them (Ray, 29 Oct: "pipeline-specific regression formulas and
+correction factor"):
+
+    p_in² − p_out² = correction × (a × Q² + b × Q)      pressures in bar a, Q in MSm³/d
+
+| column | meaning |
+| --- | --- |
+| `pipeline` | a pipeline id from `pipelines.csv` |
+| `a`, `b` | the regression's coefficients (bar² per (MSm³/d)², bar² per MSm³/d) |
+| `correction` | used when today's pressures cannot tune the line (default 1) |
+| `source` | where the row comes from |
+
+`python scripts/build_pipeline_models.py` seeds `a` from the Weymouth equation (length and
+diameter) for every line with both; it keeps any row whose source is not its own estimate,
+so the PMS's regressions can replace the seeds. In the What-if the correction is tuned to
+today's pressures where they allow it (the measured drop over the regression's, between 0.2
+and 5). A line with no row passes its pressure through. Removing a pipeline in the editor
+removes its row.
+
 ## pipelines.csv
 
 One row per pipeline. Parallel lines between the same two nodes are one row.

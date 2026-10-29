@@ -481,7 +481,11 @@ const App = (() => {
   }
   // Its limits are [low-low, low, high, high-high, integrity]: L and H yellow, LL and HH
   // red, INT dark red (`level` 1, 2, 3 for the colour).
-  function pressureMark(id, p = metric("pressure_bar", id)) {
+  // The state the views draw: the data now, or the what-if's (its own flows and pressures).
+  const whatifOn = () => state.mode === "whatif";
+  const viewFrame = () => (whatifOn() ? whatifState().frame : frame());
+  const lineFlow = (pid) => (whatifOn() ? whatifState().frame.flows[pid] : live.values[pid]);
+  function pressureMark(id, p = metric("pressure_bar", id, viewFrame())) {
     const limits = (C.pressure_limits || {})[(assets[id] || {}).type];
     if (!limits || p == null) return null;
     const [ll, low, high, hh, top] = limits;
@@ -493,7 +497,7 @@ const App = (() => {
   }
   // A line's flow against its capacity (nora.toml thresholds.load): its number yellow
   // over the warning level, red past the critical one, like a pressure's.
-  function flowMark(pid, v = live.values[pid]) {
+  function flowMark(pid, v = lineFlow(pid)) {
     const d = assets[pid];
     if (!d || !d.capacity || v == null) return null;
     const lvl = level(Math.abs(v) / d.capacity, T.load);
@@ -768,7 +772,8 @@ const App = (() => {
     const pair = hourPair(), a = pair && linepack(pid, pair[0]), b = pair && linepack(pid, pair[1]);
     return a == null || b == null ? null : ((b - a) * 86400) / (pair[1].t - pair[0].t);
   }
-  function pressureRate(id) { // bar/h
+  function pressureRate(id) { // bar/h (a what-if is a steady state: none)
+    if (whatifOn()) return null;
     const pair = hourPair(), a = pair && metric("pressure_bar", id, pair[0]), b = pair && metric("pressure_bar", id, pair[1]);
     return a == null || b == null ? null : ((b - a) * 3600) / (pair[1].t - pair[0].t);
   }
@@ -826,7 +831,14 @@ const App = (() => {
   /* Within-day delivery at an exit point: the gas delivered so far this gas day against
      what was nominated for the same hours, as a share (0 = on plan, -0.05 = 5 % short).
      The gas day starts at thresholds.gas_day_start_utc. */
-  const dayDelivery = (id) => cached("day", id, () => dayDeliveryNow(id));
+  const dayDelivery = (id) => cached("day", id, () => (whatifOn() ? whatifDay(id) : dayDeliveryNow(id)));
+  // In a what-if: its delivery against the nomination it starts from (now's, or the next gas day's).
+  function whatifDay(id) {
+    const w = whatifState(), nom = w.nominations[id], got = w.delivered[id];
+    if (!(nom > 0) || got == null) return null;
+    const share = (got - nom) / nom;
+    return { share, level: level(Math.abs(share), T.nomination), trail: [] };
+  }
   /* The gas day so far at an exit: delivered against nominated, and how that stood after
      each hour of the day (`trail`, oldest first; Ray, 29 Oct: "the end of day target to
      exit points changes over time and this need to be illustrated as well"). `hours`
@@ -852,11 +864,11 @@ const App = (() => {
     return { share, level: level(Math.abs(share), T.nomination), trail: trail.slice(0, -1), hours, dayStart };
   }
   // How fast gas through a node is changing, MSm³/d per hour, over the last 2 hours.
-  const flowRate = (id) => rate(window4h(id).past);
+  const flowRate = (id) => (whatifOn() ? null : rate(window4h(id).past));
   /* The 4-hour window shown in each flow-view card: the last 2 hours of actual flow,
      and the next 2 hours of what shippers have nominated (from the recorded data, or
      the `ahead` block of a live-feed frame). */
-  function window4h(id) { return cached("w4h", id, () => window4hNow(id)); }
+  function window4h(id) { return whatifOn() ? { past: [], future: null, tol: 0 } : cached("w4h", id, () => window4hNow(id)); }
   function window4hNow(id) {
     const n = Math.max(1, Math.round(2 / stepHours()));
     const past = [];
@@ -1319,7 +1331,7 @@ const App = (() => {
      is neither a supplier nor an exit split into an entry twin; exits' booked
      shares filled before the rest (review #49802). */
   const WHATIF_SOURCE = "__supply__", WHATIF_SINK = "__markets__", EPS = 1e-9;
-  const whatif = { offline: new Set(), cache: null };
+  const whatif = { offline: new Set(), cache: null, supply: {}, offtake: {}, pressure: {}, pack: {}, scenario: "now", version: 0, key: null, state: null };
   function whatifFlow() {
     const arcs = [], adj = {}, sinkArc = {};
     const add = (u, v, cap, pipeline = null, sign = 0) => {
@@ -1401,17 +1413,252 @@ const App = (() => {
     if (!whatif.cache) whatif.cache = whatifFlow();
     return whatif.cache;
   }
-  function toggleOffline(id) {
-    if (whatif.offline.has(id)) whatif.offline.delete(id);
-    else whatif.offline.add(id);
+  // ------------------------------------------------------------------ what-if: a steady state
+  /* A steady-state what-if (Ray, 29 Oct): "users change production deliveries and pipeline
+     packing to see how the network balance and pipeline flows change. it then uses
+     pipeline-specific regression formulas and correction factor to estimate pressures
+     and the flow of gas stored in each pipeline"; "when clicking on a node i should be able
+     to add my own flow and pressure values that are temporary ... see how the rest of the
+     overview of pressure and flows change"; "how the whole overview will look based on
+     nominations for the next gas day".
+
+     It starts from the state now. Now: each field's production (yours, or today's) runs
+     down the lines in the direction gas flows today, each node splitting what it sends on
+     in today's shares (by capacity where it sends nothing); a line that packs delivers that
+     much less than it takes in; an exit takes what reaches it. Next gas day: each exit
+     takes the next gas day's nomination (or yours), and the lines carry that back up to
+     the fields in today's shares, which says what each must produce.
+
+     Pressures: each line's regression (data/pipeline_models.csv, as a PMS keeps them),
+     p_in² − p_out² = c (a Q² + b Q), Q its mean flow, bar a. The correction c tunes it to
+     today: the measured drop over the regression's at today's flow (kept between 0.05 and
+     20), else the file's own. The change in each line's drop is laid on today's pressures,
+     so with nothing changed every pressure is today's. Exits and gas plants hold today's
+     pressure (onshore control, compressors) unless a pressure you set upstream feeds them;
+     your pressures hold. Line pack follows from the end pressures (the line-pack model).
+     All model estimates, and labelled so. */
+  const MODELS = NORA.pipeModels || {};
+  const absBar = (p) => p + PACK.pStd;
+  const whatifLinesAt = {};
+  for (const pid of pipeIds) for (const end of [assets[pid].from, assets[pid].to]) (whatifLinesAt[end] = whatifLinesAt[end] || []).push(pid);
+  // A line's flow now, or the model's where the data has none.
+  const baseFlow = (pid, f) => (f.flows[pid] !== undefined ? f.flows[pid] : assets[pid].utilization != null && assets[pid].capacity ? assets[pid].utilization * assets[pid].capacity : 0);
+  // A supply node's own production now: what it sends out beyond what it takes in.
+  function productionNow(id, f = frame()) {
+    let sent = 0;
+    for (const pid of whatifLinesAt[id] || []) sent += (assets[pid].from === id ? 1 : -1) * baseFlow(pid, f);
+    return Math.max(0, sent);
+  }
+  // Each exit's average hourly nomination over the next gas day (the data's, else now's).
+  function nextDayNominations(f = frame()) {
+    const start = T.gas_day_start_utc == null ? 5 : T.gas_day_start_utc, out = {};
+    if (f.t == null) return out;
+    const from = Math.floor((f.t - start * 3600) / 86400) * 86400 + start * 3600 + 86400, to = from + 86400;
+    const day = live.frames.filter((g) => g.t >= from && g.t < to);
+    for (const id of exitPoints) {
+      const values = day.map((g) => metric("nomination_msm3d", id, g)).filter((v) => v != null);
+      out[id] = values.length ? values.reduce((a, b) => a + b, 0) / values.length : metric("nomination_msm3d", id, f) ?? null;
+    }
+    return out;
+  }
+  // Every exit: the terminals, and a market at the end of a line (Poland VTP, Tjeldbergodden).
+  const whatifExits = nodeIds.filter((id) => assets[id].exit);
+  const settleOutOf = (a, b) => {
+    if (a == null && b == null) return null;
+    const p1 = absBar(a ?? b), p2 = absBar(b ?? a);
+    return (2 / 3) * (p1 + p2 - (p1 * p2) / (p1 + p2)) - PACK.pStd;
+  };
+  const linepackOf = (pid, sop) => (lineVolume[pid] && sop != null ? ((lineVolume[pid] * absBar(sop)) / PACK.pStd) * (PACK.tStd / PACK.tSea) / PACK.z / 1e6 : null);
+  function whatifState() {
+    const key = `${live.index}|${whatif.version}`;
+    if (whatif.key !== key) { whatif.key = key; whatif.state = whatifSolve(); }
+    return whatif.state;
+  }
+  function whatifSolve() {
+    const f = frame(), off = whatif.offline, next = whatif.scenario === "next";
+    const out = (id) => off.has(id) || assets[id].status !== "operating" || !yearActive(id);
+    const cut = (pid) => out(pid) || out(assets[pid].from) || out(assets[pid].to);
+    const outs = {}, ins = {}, sign = {}, share = {};
+    for (const pid of pipeIds) {
+      if (cut(pid)) continue;
+      const v = baseFlow(pid, f), p = assets[pid];
+      sign[pid] = v < 0 ? -1 : 1;
+      share[pid] = Math.abs(v);
+      const [u, w] = v < 0 ? [p.to, p.from] : [p.from, p.to];
+      (outs[u] = outs[u] || []).push(pid);
+      (ins[w] = ins[w] || []).push(pid);
+    }
+    const head = (pid) => (sign[pid] < 0 ? assets[pid].from : assets[pid].to);
+    const tail = (pid) => (sign[pid] < 0 ? assets[pid].to : assets[pid].from);
+    const order = [], indeg = {};
+    for (const id of nodeIds) indeg[id] = (ins[id] || []).length;
+    const queue = nodeIds.filter((id) => !indeg[id]);
+    while (queue.length) {
+      const u = queue.shift();
+      order.push(u);
+      for (const pid of outs[u] || []) if (--indeg[head(pid)] === 0) queue.push(head(pid));
+    }
+    for (const id of nodeIds) if (!order.includes(id)) order.push(id); // a loop: taken as it comes
+    /* Only the changes are routed, on top of today's flows (so with nothing changed every
+       flow is today's, even where the data does not balance): each node passes what it
+       gains or loses on in today's shares; an exit takes it. */
+    const lines = {}, supply = {}, delivered = {}, stranded = {}, short = {};
+    const packed = (pid) => whatif.pack[pid] || 0, add = (o, k, v) => { o[k] = (o[k] || 0) + v; };
+    const nominations = next ? nextDayNominations(f) : Object.fromEntries(whatifExits.map((id) => [id, metric("nomination_msm3d", id, f) ?? null]));
+    const gain = {}, more = {}; // what each node gains (MSm³/d), what each line takes in more
+    for (const id of nodeIds) if (assets[id].supply) {
+      const made = productionNow(id, f), then = out(id) ? 0 : next ? made : whatif.supply[id] ?? made;
+      supply[id] = then;
+      add(gain, id, then - made);
+    }
+    for (const pid of pipeIds) { // a line out of service: its gas stays at its tail to go another way
+      if (!cut(pid) || Math.abs(baseFlow(pid, f)) < 1e-9) continue;
+      const v = baseFlow(pid, f), [u, w] = v < 0 ? [assets[pid].to, assets[pid].from] : [assets[pid].from, assets[pid].to];
+      add(gain, u, Math.abs(v));
+      add(gain, w, -Math.abs(v));
+    }
+    for (const pid of Object.keys(sign)) if (packed(pid)) add(gain, head(pid), -packed(pid)); // packing keeps gas in the line
+    const shares = (list, weightOf) => {
+      let w = list.map(weightOf), sum = w.reduce((a, b) => a + b, 0);
+      if (sum < 1e-9) { w = list.map((pid) => assets[pid].capacity || 1); sum = w.reduce((a, b) => a + b, 0); }
+      return w.map((x) => x / sum);
+    };
+    for (const u of order) {
+      if (out(u) || Math.abs(gain[u] || 0) < 1e-12) continue;
+      const go = outs[u] || [];
+      if (assets[u].exit || !go.length) { if (!assets[u].exit && gain[u] > 0.05) stranded[u] = gain[u]; continue; }
+      shares(go, (pid) => share[pid]).forEach((k, i) => { add(more, go[i], gain[u] * k); add(gain, head(go[i]), gain[u] * k); });
+    }
+    const arrives = (id) => { // what reaches an exit, with the changes so far
+      let into = 0;
+      for (const pid of ins[id] || []) into += Math.max(0, share[pid] + (more[pid] || 0) - packed(pid));
+      return into;
+    };
+    if (next) { // the next gas day: each exit's nomination (or yours) pulls the difference up the lines
+      const need = {};
+      for (const id of whatifExits) if (!out(id)) need[id] = (whatif.offtake[id] ?? nominations[id] ?? arrives(id)) - arrives(id);
+      for (const u of [...order].reverse()) {
+        if (out(u)) continue;
+        let n = need[u] || 0;
+        for (const pid of outs[u] || []) n += lines[pid] ? lines[pid] : 0;
+        if (Math.abs(n) < 1e-12) continue;
+        const come = ins[u] || [], own = assets[u].supply;
+        if (!come.length && !own) continue; // nothing upstream to make it
+        const parts = shares([...come, own ? "__own__" : null].filter(Boolean), (pid) => (pid === "__own__" ? productionNow(u, f) : share[pid]));
+        come.forEach((pid, i) => { lines[pid] = (lines[pid] || 0) + n * parts[i]; });
+        if (own) supply[u] += n * parts[parts.length - 1];
+      }
+      for (const [pid, x] of Object.entries(lines)) add(more, pid, x);
+    }
+    for (const k of Object.keys(lines)) delete lines[k];
+    for (const pid of Object.keys(sign)) {
+      const into = share[pid] + (more[pid] || 0);
+      if (into < -1e-9) short[pid] = true;
+      const i = Math.max(0, into), o = Math.max(0, i - packed(pid));
+      if (packed(pid) > i + 1e-9) short[pid] = true;
+      lines[pid] = { into: i, out: o };
+    }
+    for (const id of whatifExits) if (!out(id)) delivered[id] = (ins[id] || []).reduce((sum, pid) => sum + lines[pid].out, 0);
+    // Pressures, in s = p² (bar a), on the lines that carry gas today.
+    const now = (id) => metric("pressure_bar", id, f), s0 = {}, model = (pid, q) => (MODELS[pid] ? MODELS[pid].a * q * q + MODELS[pid].b * q : 0);
+    for (const id of nodeIds) if (now(id) != null) s0[id] = absBar(now(id)) ** 2;
+    const edges = Object.keys(sign), correction = {}, from = {};
+    for (const pid of edges) {
+      const measured = s0[tail(pid)] != null && s0[head(pid)] != null ? s0[tail(pid)] - s0[head(pid)] : null, m0 = model(pid, share[pid]);
+      const k = measured != null && measured > 0 && m0 > 1e-9 ? measured / m0 : null;
+      if (k != null) { correction[pid] = Math.max(0.05, Math.min(20, k)); from[pid] = "today's pressures"; }
+      else { correction[pid] = MODELS[pid] ? MODELS[pid].correction : 1; from[pid] = MODELS[pid] ? "pipeline_models.csv" : "no model"; }
+    }
+    const relax = (fixed, target, start) => { // least squares over the lines, Gauss-Seidel
+      const s = { ...start };
+      const free = nodeIds.filter((id) => !out(id) && !(id in fixed) && (whatifLinesAt[id] || []).some((pid) => sign[pid]));
+      for (let sweep = 0; sweep < 400; sweep++) {
+        let moved = 0;
+        for (const u of free) {
+          let sum = 0, n = 0;
+          for (const pid of whatifLinesAt[u] || []) {
+            if (!sign[pid] || target[pid] == null) continue; // a line with an end that has no pressure
+            const other = tail(pid) === u ? head(pid) : tail(pid), here = fixed[other] ?? s[other];
+            if (here == null) continue;
+            sum += tail(pid) === u ? here + target[pid] : here - target[pid];
+            n++;
+          }
+          if (!n) continue;
+          const v = Math.max(1, sum / n);
+          moved = Math.max(moved, Math.abs(v - (s[u] ?? v)));
+          s[u] = v;
+        }
+        if (moved < 1e-6) break;
+      }
+      return { ...s, ...fixed };
+    };
+    // a node with no reading of its own (a tie-in) takes today's from its lines
+    const today = relax(s0, Object.fromEntries(edges.map((pid) => [pid, correction[pid] * model(pid, share[pid])])), {});
+    const mean = (pid) => (lines[pid] ? (lines[pid].into + lines[pid].out) / 2 : 0);
+    const target = Object.fromEntries(edges.filter((pid) => today[tail(pid)] != null && today[head(pid)] != null).map((pid) => [pid,
+      today[tail(pid)] - today[head(pid)] + correction[pid] * (model(pid, mean(pid)) - model(pid, share[pid]))]));
+    const anchors = {};
+    for (const [id, p] of Object.entries(whatif.pressure)) if (!out(id)) anchors[id] = absBar(p) ** 2;
+    const fed = new Set(), walk = Object.keys(anchors);
+    while (walk.length) { const u = walk.pop(); for (const pid of outs[u] || []) if (!fed.has(head(pid))) { fed.add(head(pid)); walk.push(head(pid)); } }
+    // Exits and gas plants hold today's pressure (onshore control, compressors), unless
+    // a pressure you set feeds them.
+    const fixed = { ...anchors };
+    for (const id of nodeIds) {
+      const held = assets[id].exit || assets[id].type === "processing";
+      if (held && !out(id) && !fed.has(id) && !(id in anchors) && today[id] != null) fixed[id] = today[id];
+    }
+    const s = relax(fixed, target, today);
+    const pressure = {}, pressureNow = {}; // a tie-in's pressure now is the model's, from its neighbours
+    for (const id of nodeIds) {
+      if (today[id] != null && (s0[id] != null || assets[id].type === "tee")) pressureNow[id] = Math.sqrt(today[id]) - PACK.pStd;
+      if (!out(id) && s[id] != null && (s0[id] != null || assets[id].type === "tee")) pressure[id] = Math.sqrt(s[id]) - PACK.pStd;
+    }
+    const flows = {}, pack = {};
+    for (const pid of pipeIds) {
+      flows[pid] = lines[pid] ? sign[pid] * mean(pid) : 0;
+      const at = (p, node) => p[node];
+      if (lineVolume[pid]) pack[pid] = { now: linepackOf(pid, settleOutOf(at(pressureNow, assets[pid].from), at(pressureNow, assets[pid].to))), then: linepackOf(pid, settleOutOf(at(pressure, assets[pid].from), at(pressure, assets[pid].to))) };
+    }
+    const sum = (o) => Object.values(o).reduce((a, b) => a + (b || 0), 0);
+    const nominated = sum(Object.fromEntries(whatifExits.filter((id) => !out(id)).map((id) => [id, nominations[id]])));
+    // against the nominations, over the exits that have one
+    const offNominations = whatifExits.filter((id) => !out(id) && nominations[id] != null).reduce((n, id) => n + (delivered[id] || 0) - nominations[id], 0);
+    return {
+      frame: { t: f.t, flows, metrics: { pressure_bar: pressure, nomination_msm3d: nominations }, plan: null },
+      lines, supply, delivered, stranded, short, nominations, correction, from, pack, pressure, pressureNow,
+      balance: { produced: sum(supply), packed: sum(Object.fromEntries(Object.entries(lines).map(([k, l]) => [k, l.into - l.out]))), delivered: sum(delivered), nominated, offNominations },
+    };
+  }
+  // Your values: set one, or clear it with null. Each change redraws everything.
+  function setWhatif(kind, id, value) {
+    const store = whatif[kind];
+    if (value == null || value === "" || Number.isNaN(Number(value))) delete store[id];
+    else store[id] = Number(value);
+    whatifChanged();
+  }
+  function whatifChanged() {
+    whatif.version++;
     whatif.cache = null;
     restyle();
     renderWhatif();
+    renderSidebar(true);
   }
-  /* The What-if mode's own bar, over the network while the mode is on: what the
-     network can still deliver, and Restore all. It used to share the top bar's plan
-     chip, which Ray removed (29 Oct: "remove this. it serves no purpose"); the plan
-     status is on the Overview. Says so plainly when nothing can be delivered. */
+  function resetWhatif() {
+    whatif.offline.clear();
+    for (const kind of ["supply", "offtake", "pressure", "pack"]) whatif[kind] = {};
+    whatifChanged();
+  }
+  const whatifChanges = () => whatif.offline.size + ["supply", "offtake", "pressure", "pack"].reduce((n, kind) => n + Object.keys(whatif[kind]).length, 0);
+  function toggleOffline(id) {
+    if (whatif.offline.has(id)) whatif.offline.delete(id);
+    else whatif.offline.add(id);
+    whatifChanged();
+  }
+  /* The What-if mode's own bar, bottom left of the network (clear of the panel on the
+     right; Ray, 29 Oct: "when i click on take offline the restore button is blinking"): the
+     scenario (now, or the next gas day's nominations), the balance in and out, how many
+     values are yours, and Reset. Rebuilt only when what it says changes. */
   let whatifBar = null;
   function renderWhatif() {
     renderTop();
@@ -1420,15 +1667,16 @@ const App = (() => {
       whatifBar = h("div", { class: "edits-bar whatif-bar", role: "status", "aria-live": "polite" });
       document.body.append(whatifBar);
     }
-    const base = NORA.deliverable || 0, n = whatif.offline.size;
-    if (!n) {
-      whatifBar.replaceChildren(h("span", { class: "dim" }, "What-if: click assets to take them offline"));
-      return;
-    }
-    const value = whatifResult().value;
-    const said = value < 0.05 ? "What-if: no gas can be delivered" : `What-if: ${fmt(value)} of ${fmt(base)} MSm³/d`;
-    whatifBar.replaceChildren(h("span", { class: "count" }, said), h("span", { class: "dim" }, `${n} offline`),
-      h("button", { type: "button", onclick: () => { whatif.offline.clear(); whatif.cache = null; restyle(); renderWhatif(); renderSidebar(); } }, "Restore all"));
+    const w = whatifState(), b = w.balance, n = whatifChanges(), off = b.offNominations;
+    const said = `In ${fmt(b.produced, 1)}${Math.abs(b.packed) >= 0.05 ? `, packed ${signed(b.packed, 1)}` : ""}, out ${fmt(b.delivered, 1)} MSm³/d${b.nominated ? ` (${signed(off, 1)} on nominations)` : ""}`;
+    replaceIfChanged(whatifBar, `${whatif.scenario}|${said}|${n}`, () => [
+      h("div", { class: "seg whatif-scenario", role: "tablist", "aria-label": "What-if starts from" },
+        ...[["now", "Now"], ["next", "Next gas day"]].map(([key, label]) => h("button", { type: "button", role: "tab", "aria-selected": String(whatif.scenario === key),
+          onclick: () => { whatif.scenario = key; whatifChanged(); } }, label))),
+      h("span", { class: "count" }, said),
+      h("span", { class: "dim" }, n ? `${n} of your values` : "click an asset to change it"),
+      n ? h("button", { type: "button", onclick: resetWhatif }, "Reset") : null,
+    ].filter(Boolean));
   }
 
   // ------------------------------------------------------------------ styling rules (both views)
@@ -1483,9 +1731,10 @@ const App = (() => {
       hidden: !visible(id), dim: false, // every unit is always on (Ray, 29 Oct)
     };
     if (d.status !== "operating") out.color = COLORS.inactive;
-    if (mode === "live") {
-      const v = live.values[id];
-      if (v === undefined) Object.assign(out, { color: COLORS.inactive, width: 1, dashed: true });
+    if (mode === "live" || mode === "whatif") {
+      const v = lineFlow(id), w = mode === "whatif" ? whatifState() : null;
+      if (w && (whatif.offline.has(id) || whatif.offline.has(d.from) || whatif.offline.has(d.to))) Object.assign(out, { color: COLORS.inactive, width: 1, dashed: true });
+      else if (v === undefined) Object.assign(out, { color: COLORS.inactive, width: 1, dashed: true });
       else {
         const m = Math.abs(v);
         out.width = 1 + 4 * Math.sqrt(m / live.maxAbs);
@@ -1494,11 +1743,12 @@ const App = (() => {
         // pressure", and his Area D screen shows them there); its flow is in the squares.
         // The number alone (Ray, 29 Oct: "everyone knows what it is as it is in the center
         // of the pipeline").
-        const sop = settleOut(id);
+        const sop = settleOut(id, viewFrame());
         out.label = sop == null ? "" : fmt(sop, 1);
-        const pack = packRate(id); // shown only when the line packs or unpacks
+        // shown only when the line packs or unpacks (in a what-if: your packing)
+        const pack = w ? (w.lines[id] ? w.lines[id].into - w.lines[id].out : null) : packRate(id);
         out.pack = pack != null && Math.abs(pack) >= 0.5 ? `pack ${signed(pack, 1)}` : "";
-        out.level = levelOf(id);
+        out.level = w ? 0 : levelOf(id);
         if (d.bidirectional) Object.assign(out, { forward: v >= 0, backward: v < 0 });
       }
     } else if (mode === "load") {
@@ -1515,15 +1765,6 @@ const App = (() => {
       if (d.lost && !onshore) out.width = 0.6 + 3.4 * Math.sqrt(d.lost / worst);
       out.label = d.lost ? `−${fmt(d.lost)}` : "";
       out.model = true;
-    } else if (mode === "whatif") {
-      if (whatif.offline.has(d.from) || whatif.offline.has(d.to)) {
-        Object.assign(out, { color: COLORS.inactive, dashed: true, label: "" });
-      } else {
-        const m = Math.abs(whatifResult().pipelines[id] || 0);
-        out.color = m < 0.05 ? COLORS.inactive : COLORS.active;
-        if (m >= 0.05) out.width = 0.6 + 0.9 * Math.sqrt(m / whatifResult().max);  // same scale as live
-        out.label = m < 0.05 ? "" : fmt(m, 1);
-      }
     }
     if (settings.lineValues === "off" || (settings.lineValues === "auto" && mode === "plain")) out.label = "";
     if (settings.lineValues === "on" && !out.label && d.capacity) out.label = fmt(d.capacity);
@@ -1535,10 +1776,11 @@ const App = (() => {
     const d = assets[id], mode = state.mode;
     const out = { level: 0, inactive: d.status !== "operating", sub: NORA.short[d.type], scale: 1,
       hidden: !visible(id), dim: false };
-    if (mode === "live") {
-      const f = frame(), through = throughput(id, f.flows), p = metric("pressure_bar", id, f);
+    if (mode === "whatif" && whatif.offline.has(id)) { out.inactive = true; out.sub = "offline"; }
+    else if (mode === "live" || mode === "whatif") {
+      const f = viewFrame(), through = throughput(id, f.flows), p = metric("pressure_bar", id, f);
       const nom = metric("nomination_msm3d", id, f);
-      out.level = levelOf(id);
+      out.level = mode === "live" ? levelOf(id) : 0;
       if (through != null && through < 0.05) out.inactive = true;
       out.flow = nom > 0 ? `${fmt(through, 1)} / ${fmt(nom, 1)}` : through != null ? fmt(through, 1) : "";
       out.pressure = p != null ? `${fmt(p)} bar` : "";
@@ -1548,9 +1790,6 @@ const App = (() => {
     } else if (mode === "risk" && d.type !== "market") {
       out.scale = 0.75 + 0.9 * Math.sqrt(d.lost / worst);
       out.sub = d.lost ? `−${fmt(d.lost)} if it trips` : "No loss if it trips";
-    } else if (mode === "whatif") {
-      if (whatif.offline.has(id)) { out.inactive = true; out.sub = "offline"; }
-      else if (d.exit) out.sub = `${fmt(whatifResult().delivered[id] || 0, 1)} MSm³/d`;
     }
     if (!settings.names) out.sub = "";
     return out;
@@ -1794,6 +2033,7 @@ const App = (() => {
      ahead with when it starts; a fast ramp is marked (nora.toml [thresholds] step, as
      a share of the nomination now). */
   function rampAhead(id) {
+    if (whatifOn()) return null; // the what-if is one steady hour
     const hours = nominationWindow(id);
     if (hours[0].value == null) return null;
     let steepest = null;
@@ -1908,6 +2148,53 @@ const App = (() => {
     return svg(`0 0 ${W} ${H}`, body, "nomination-histogram");
   }
 
+  /* An asset in the what-if: your values (temporary: Reset clears them) and what follows
+     from them, now → what-if (Ray, 29 Oct: "when clicking on a node i should be able to
+     add my own flow and pressure values that are temporary"). */
+  function whatifCard(id) {
+    const d = assets[id], w = whatifState(), f = frame(), next = whatif.scenario === "next";
+    const row = (label, value) => [h("dt", null, label), h("dd", null, value)];
+    const turn = (a, b, unit, digits = 1) => (a == null && b == null ? "–" : `${a == null ? "–" : fmt(a, digits)} → ${b == null ? "–" : fmt(b, digits)} ${unit}`);
+    const input = (kind, label, placeholder, unit) => {
+      const yours = whatif[kind][id] != null;
+      const el = h("input", { type: "number", step: "0.1", inputmode: "decimal", class: yours ? "yours" : "", "data-key": `whatif:${kind}:${id}`, "aria-label": `${label} (${unit})`, placeholder });
+      if (yours) el.value = String(whatif[kind][id]);
+      el.addEventListener("change", () => setWhatif(kind, id, el.value.trim() === "" ? null : Number(el.value)));
+      return h("label", null, `${label}, ${unit}`, el);
+    };
+    const offline = h("button", { type: "button", "data-key": `whatif:offline:${id}`, onclick: () => toggleOffline(id) },
+      whatif.offline.has(id) ? "Bring back" : "Take offline");
+    const inputs = [], facts = [];
+    if (d.kind === "node") {
+      const through = throughput(id, w.frame.flows), pNow = metric("pressure_bar", id, f), pThen = w.pressure[id];
+      if (d.supply && !next) inputs.push(input("supply", "Production", fmt(productionNow(id, f), 1), "MSm³/d"));
+      if (d.exit && next) inputs.push(input("offtake", "Offtake", w.nominations[id] == null ? "" : fmt(w.nominations[id], 1), "MSm³/d"));
+      if (pNow != null) inputs.push(input("pressure", "Pressure", fmt(pNow, 1), "bar"));
+      facts.push(row("Flow", turn(throughput(id, f.flows), through, "MSm³/d")));
+      if (d.supply && next) facts.push(row("Production needed", `${fmt(w.supply[id] || 0, 1)} MSm³/d${d.capacity && (w.supply[id] || 0) > d.capacity ? `, over its ${fmt(d.capacity)}` : ""}`));
+      if (d.exit) facts.push(row("Delivered", `${fmt(w.delivered[id] || 0, 1)} of ${w.nominations[id] == null ? "–" : fmt(w.nominations[id], 1)} nominated`));
+      if (pNow != null || pThen != null) {
+        const mark = pThen != null ? pressureMark(id, pThen) : null;
+        facts.push(row("Pressure", h("span", mark ? { style: `color:${mark.ink}` } : null, `${turn(pNow, pThen, "bar")}${mark ? ` (${mark.code})` : ""}`)));
+      }
+      if (w.stranded[id]) facts.push(row("Nowhere to go", `${fmt(w.stranded[id], 1)} MSm³/d`));
+    } else {
+      const l = w.lines[id], m = MODELS[id], pack = w.pack[id], end = (node) => [w.pressureNow[node], w.pressure[node]];
+      inputs.push(input("pack", "Packing", "0", "MSm³/d"));
+      facts.push(row("Flow", l ? (Math.abs(l.into - l.out) >= 0.05 ? `${fmt(l.into, 1)} in, ${fmt(l.out, 1)} out MSm³/d` : `${fmt(l.into, 1)} MSm³/d`) : "none"));
+      if (d.capacity && l) facts.push(row("Load", `${fmt((Math.max(l.into, l.out) / d.capacity) * 100)} % of ${fmt(d.capacity)}`));
+      facts.push(row(`Pressure at ${nameOf(d.from)}`, turn(...end(d.from), "bar")));
+      facts.push(row(`Pressure at ${nameOf(d.to)}`, turn(...end(d.to), "bar")));
+      if (pack) facts.push(row("Line pack", `${turn(pack.now, pack.then, "MSm³", 2)}${pack.now != null && pack.then != null ? ` (${signed(pack.then - pack.now, 2)})` : ""}`));
+      if (w.short[id]) facts.push(row("Packing", "more than it takes in: it delivers nothing"));
+      facts.push(row("Regression", m ? `p₁² − p₂² = c (${fmt(m.a, 3)} Q² + ${fmt(m.b, 3)} Q), c ${fmt(w.correction[id] ?? m.correction, 2)} from ${w.from[id] || "the file"}` : "none: its pressure passes through"));
+    }
+    return h("div", { class: "box whatif-card" }, h("h2", null, next ? "What-if: next gas day" : "What-if"),
+      inputs.length ? h("div", { class: "whatif-inputs" }, ...inputs) : null,
+      h("dl", { class: "facts" }, ...facts.flat()),
+      h("div", { class: "actions" }, offline),
+      h("p", { class: "dim small" }, "Model estimate, steady state: flows in today's directions and shares; pressures from each line's regression, corrected to today's pressures, with exits and gas plants holding theirs. Your values are temporary: Reset clears them."));
+  }
   // Level 3: what flows in (top), the asset, what flows out (bottom), and its values.
   function assetDetail(id, inSidebar = false) {
     const d = assets[id];
@@ -1921,6 +2208,7 @@ const App = (() => {
     const conds = live.conditions.filter((c) => c.id === id);
     // In the sidebar the name is already the panel header: no repeated h1.
     return h("div", { class: inSidebar ? "side-detail" : "screen-body" },
+      inSidebar && whatifOn() ? whatifCard(id) : null,
       inSidebar ? null : h("h1", null, d.name),
       inSidebar ? null : h("p", { class: "sub" }, d.kind === "node"
         ? `${NORA.nodeTypes[d.type]}, ${d.country}. Unit: ${(unitById[unitOf[id]] || {}).name || "none"}.`
@@ -1986,7 +2274,10 @@ const App = (() => {
     if (event.target.closest("#asset-side")) return;
     closeSidebar();
   });
-  function renderSidebar() {
+  function renderSidebar(force = false) {
+    // While you type a what-if value, the data's steps leave the panel alone.
+    const typing = document.activeElement && document.activeElement.tagName === "INPUT" && $("asset-side").contains && $("asset-side").contains(document.activeElement);
+    if (typing && !force) return;
     if (side.marker) {
       const body = $("side-body"), top = body.scrollTop, detail = markerDetail(side.marker);
       $("side-title").textContent = detail.title;
@@ -3257,10 +3548,15 @@ const App = (() => {
   return {
     state, live, route, views, settings: () => settings, embed, reduceMotion, nodeIds, pipeIds,
     whatif: {
-      result: whatifResult,
+      result: whatifResult, // the most the network can deliver with assets offline (the analysis' max flow)
+      state: whatifState, // the steady state: flows, pressures, line pack, balance
+      set: setWhatif, // ("supply" | "offtake" | "pressure" | "pack", id, value or null)
+      scenario: (key) => { if (key) { whatif.scenario = key; whatifChanged(); } return whatif.scenario; },
+      reset: resetWhatif,
       toggle: toggleOffline,
-      clear: () => { whatif.offline.clear(); whatif.cache = null; },
+      clear: () => { whatif.offline.clear(); whatif.cache = null; whatif.version++; },
       offline: () => [...whatif.offline],
+      card: whatifCard,
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
@@ -3274,13 +3570,14 @@ const App = (() => {
     display: () => display.profile,
     uiScale: () => display.scale,
     // Flow through a node now (MSm³/d) and its pressure (bar), for the views to show.
-    reading: (id) => cached("reading", id, () => ({ flow: throughput(id, frame().flows), pressure: metric("pressure_bar", id) })),
+    reading: (id) => cached("reading", id, () => { const f = viewFrame(); return { flow: throughput(id, f.flows), pressure: metric("pressure_bar", id, f) }; }),
+    lineFlow, stateShown: () => state.mode === "live" || state.mode === "whatif",
     frame: frameApi, cached,
     dayDelivery, register, restyle, go, start, setMode, theme: () => theme,
     select: (id) => {
       if (!id || !assets[id]) { if (route.screen === "unit" && state.mode !== "whatif") closeSidebar(); return; }
       // In What-if mode a click takes a node offline or brings it back instead.
-      if (state.mode === "whatif" && assets[id].kind === "node") { toggleOffline(id); renderSidebar(); return; }
+      if (state.mode === "whatif") { openSidebar(id); return; } // its what-if card: your values
       // On the unit screen the details slide in from the right instead of taking over the page.
       if (route.screen === "unit") { openSidebar(id); return; }
       go({ screen: "asset", asset: id });

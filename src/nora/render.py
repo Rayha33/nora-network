@@ -29,6 +29,7 @@ from .graph import great_circle_km
 from .icons import TYPES, icon_uri
 from .layout import flow_grid, load_flow_layout
 from .ops import plan_timeline
+from .pms import load_pipeline_models
 from .stream import Stream
 from .units import load_units
 
@@ -343,6 +344,8 @@ def page_payload(
         ],
         "links": links or {},
         "supplyTypes": list(SUPPLY_TYPES),
+        # Each pipeline's regression for the What-if's pressures (data/pipeline_models.csv).
+        "pipeModels": load_pipeline_models(net, Path(data_dir) / "pipeline_models.csv"),
         # The data files as they are, for the editor's download: an edited network goes
         # back as the same files with only the edited rows changed (templates/app.js).
         "sources": {

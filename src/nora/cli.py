@@ -18,6 +18,7 @@ from .integrations import CONNECTORS, SOURCES
 from .layout import load_flow_layout
 from .live import POLL_SECONDS
 from .ops import plan_timeline
+from .pms import load_pipeline_models
 from .site import build_site
 from .stream import describe, list_streams, load_stream, scaffold, write_flows
 from .units import load_units
@@ -45,12 +46,13 @@ def cmd_validate(args) -> int:
         )
     units = load_units(net, args.data / "units.toml")
     load_flow_layout(net, args.data / "flow_layout.toml")
+    models = load_pipeline_models(net, args.data / "pipeline_models.csv")
     names = list_streams(_streams_dir(args))
     for name in names:
         load_stream(name, net, _streams_dir(args))
     print(
         f"OK: {len(net.nodes)} nodes, {len(net.pipelines)} pipelines, {len(units)} units, "
-        f"{len(names)} stream(s), nora.toml"
+        f"{len(models)} pipeline models, {len(names)} stream(s), nora.toml"
     )
     return 0
 
