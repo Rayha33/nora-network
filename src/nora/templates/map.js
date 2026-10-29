@@ -9,6 +9,7 @@
   let map = null, canvas = null, ctx = null, highlighted = null, alarmKey = "";
   let basemap = null; // the style in use: the online one, or FALLBACK_STYLE once that failed
   let drawnMarks = []; // where pigs, peaks and slugs were drawn this frame, for mouse-over
+  let notes = null; // the notes' windows over the map (App.notes)
   const markAt = (x, y) => {
     let best = null, bestD = 9 * App.uiScale(); // px
     for (const d of drawnMarks) { const dist = Math.hypot(d.x - x, d.y - y); if (dist < bestD) { best = d.m; bestD = dist; } }
@@ -279,6 +280,7 @@
     canvas.className = "dots-layer";
     el.append(canvas);
     ctx = canvas.getContext("2d");
+    notes = App.notes.layer(el);
     let styled = false;
     const failToFallback = (why) => {
       if (styled) return;
@@ -346,11 +348,11 @@
       const hit = map.queryRenderedFeatures([e.clientX - rect.left, e.clientY - rect.top], { layers: ["nora-node-dots", "nora-nodes", "nora-pipes-hit"] });
       if (!hit.length) return;
       e.preventDefault();
-      const id = hit[0].properties.asset, d = NORA.assets[id];
+      const id = hit[0].properties.asset, d = NORA.assets[id], at = [e.clientX - rect.left, e.clientY - rect.top];
       const items = App.menu.for(id, d.lat != null ? {
         center: () => map.easeTo({ center: [d.lon, d.lat], zoom: Math.max(map.getZoom(), 7), duration: App.reduceMotion ? 0 : 700 }),
         coords: `${d.lat.toFixed(4)}, ${d.lon.toFixed(4)}`,
-      } : {});
+      } : ends[id] ? { note: () => App.notes.add(id, ...App.notes.snap(ends[id], (lonlat) => map.project(lonlat), ...at)) } : {});
       App.menu.open(e.clientX, e.clientY, items);
     });
   };
@@ -394,7 +396,7 @@
   const changed = () => { revision++; };
   function sceneKey() {
     const c = map.getCenter(), el = map.getContainer();
-    return [revision, App.state.mode, c.lng, c.lat, map.getZoom(), map.getBearing(), map.getPitch(),
+    return [revision, App.notes.version(), App.state.mode, c.lng, c.lat, map.getZoom(), map.getBearing(), map.getPitch(),
       el.clientWidth, el.clientHeight, window.devicePixelRatio || 1].join("|");
   }
   view.draw = () => {
@@ -408,7 +410,7 @@
     sizeCanvas();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawnMarks = []; // nothing to hover over until markers are drawn again
-    if (App.state.mode !== "live") { modelLabels(scene); return; }
+    if (App.state.mode !== "live") { modelLabels(scene); drawNotes(); return; }
     const visibleRanges = {};
     const visibleAlong = (id, along) => {
       if (!visibleRanges[id]) {
@@ -528,7 +530,10 @@
       ctx.fillStyle = C.text_dim; ctx.fillText(label.sub, label.x, label.y - 13 * u);
     }
     ctx.restore();
+    drawNotes();
   }
+  // Notes last: their windows and arrows sit over everything the layer draws.
+  const drawNotes = () => notes && notes.draw(ctx, (lonlat) => map.project(lonlat), (pid) => !App.pipeStyle(pid).hidden && pipeAtZoom(pid));
 
   /* Screen boxes of the node dots and their names, where MapLibre puts them (under the
      dot, wrapped at 9 em), so the labels of pigs and peaks keep clear of them. */
