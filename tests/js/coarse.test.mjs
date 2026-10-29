@@ -50,7 +50,10 @@ test("a recorded dataset is not labelled real time; the synthetic week still is"
 test("a daily dataset plays a day in about a second", () => {
   const { App } = open("denmark-gas-energinet");
   assert.ok(86400 / App.live.speed <= 2, `a day takes ${86400 / App.live.speed} s to play`);
-  assert.equal(open("synthetic-week").App.live.speed, 1, "data re-timed to now plays at real time");
+  // Ray, 29 Oct: "10 min / s should be the default view when opening the page".
+  const week = open("synthetic-week");
+  assert.equal(week.App.live.speed, 600, "data re-timed to now opens at 10 min/s");
+  assert.equal(week.document.getElementById("speed").value, "600");
 });
 
 test("the scrub says how far it moves, for keyboard and screen reader users", () => {

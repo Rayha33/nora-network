@@ -265,7 +265,7 @@
       map = new maplibregl.Map({
         container: el, style: NORA.config.map.style, bounds: NORA.config.map.bounds,
         fitBoundsOptions: { padding: padding() }, attributionControl: { compact: true },
-        cooperativeGestures: App.embed, dragRotate: false, pitchWithRotate: false, minZoom: 2, maxZoom: 12,
+        cooperativeGestures: false, dragRotate: false, pitchWithRotate: false, minZoom: 2, maxZoom: 12,
         maxBounds: [[w - padLon, s - padLat], [e + padLon, Math.min(85, n + padLat)]], fadeDuration: 0,
       });
     } catch { canvasFallback(el); return; } // MapLibre throws when it cannot get a WebGL context
@@ -276,6 +276,7 @@
     map.once("load", limitZoom);
     view.map = map;
     map.touchZoomRotate.disableRotation();
+    App.onPinch(el, (factor, at) => map.zoomTo(map.getZoom() + Math.log2(factor), { around: map.unproject([at.x, at.y]), duration: 0 }));
     canvas = document.createElement("canvas");
     canvas.className = "dots-layer";
     el.append(canvas);

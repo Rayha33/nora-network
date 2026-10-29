@@ -10,7 +10,7 @@ network_mode = "live"       # live, load, risk or plain
 theme = "light"             # light, dark or auto (follows the device); the button switches
 autoplay = true             # start playing the data when the page opens (?autoplay=0 to stop)
 speed = 600                 # default playback of a recording: data seconds per real second (10 min/s: a peak crosses a line in about a minute)
-now_speed = 1               # synthetic data opens at now and plays at real time, so "Now" stays true (the speed menu fast-forwards)
+now_speed = 600             # synthetic data opens at now and plays at 10 min/s (Ray, 29 Oct: "10 min / s should be the default view when opening the page")
 now_in_middle = true        # synthetic data is re-timed in the browser so now sits mid-timeline: history left, model right
 display = "auto"            # auto (from the window), desk, wall (video wall: large, dark, kiosk) or compact; ?display= and Settings override
 wall_distance_m = 5         # a video wall is read from this far away ...

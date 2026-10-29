@@ -3,10 +3,9 @@ import re
 
 import pytest
 
-from nora.analysis import analyse
 from nora.cli import main
-from nora.data import DATA_DIR, load_network
-from nora.site import build_site, index_html, repo_links
+from nora.data import DATA_DIR
+from nora.site import build_site, index_html
 
 
 @pytest.fixture(scope="module")
@@ -65,12 +64,20 @@ def test_both_views_get_every_asset(site, north_sea):
     assert nora["streams"][0]["name"] == "synthetic-week"  # lowest order plays first
 
 
-def test_home_page_shows_the_analysis(site):
+def test_home_page_is_the_app(site):
+    """Ray, 29 Oct: "remove all text below the screens" and "we are making software, not
+    an essay". The home page opens the app at once, with a link's settings and place."""
     html = (site / "index.html").read_text()
-    analysis = json.loads((site / "data" / "analysis.json").read_text())
-    assert f"{analysis['deliverable']:,.0f} MSm³/d" in html
-    assert analysis["outages"][0]["name"] in html
-    assert "network.html?embed=1" in html
+    assert 'url=network.html"' in html
+    assert 'location.replace("network.html" + location.search + location.hash)' in html
+    assert "<iframe" not in html and "<main" not in html and "<p" not in html
+
+
+def test_home_page_waits_on_the_apps_paper():
+    from nora.config import load_config
+
+    config = load_config()
+    assert config["colors"]["paper"] in index_html(config)
 
 
 def test_cli_validate_and_stats(capsys):
@@ -93,43 +100,3 @@ def test_hostile_names_do_not_reach_the_page_as_html(tmp_path):
     # the label rides to the browser inside JSON, where `&` is \u0026; the
     # browser decodes it back to &lt; before vis-network sees the label
     assert "u0026lt;img" in html
-
-
-def _words(html: str) -> str:
-    """The page's text, tags dropped and whitespace collapsed."""
-    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", html))
-
-
-def test_home_page_says_every_row_has_a_source_when_every_row_does(site):
-    # Review, 29 Oct: with 88 of 88 rows sourced the page said "Only 88 of 88 rows".
-    net = load_network(DATA_DIR)
-    rows = len(net.nodes) + len(net.pipelines)
-    assert all(r.source for r in [*net.nodes, *net.pipelines]), "the repo's data is fully sourced"
-    words = _words((site / "index.html").read_text())
-    assert f"All {rows} rows cite a source" in words
-    assert "Only" not in words.split("Fix or add data")[1].split("Build a feature")[0]
-
-
-def test_home_page_asks_for_sources_while_rows_lack_them(tiny):
-    page = index_html(tiny, analyse(tiny), [], repo_links(), {"commit": "abc1234", "date": ""})
-    assert "Only 0 of 10 rows cite a source so far" in _words(page)
-
-
-def test_home_page_uses_the_apps_design_system(tiny):
-    """Review #49802: the home page had its own serif (Newsreader) and magenta palette.
-    It now takes the app's colours from nora.toml and its one typeface."""
-    from nora.config import load_config
-
-    config = load_config()
-    page = index_html(tiny, analyse(tiny), [], repo_links(), {"commit": "", "date": ""}, config)
-    assert "Newsreader" not in page and "serif" not in page.replace("sans-serif", "")
-    assert "magenta" not in page and "#a3266f" not in page
-    for role in ("paper", "text", "text_dim", "panel"):
-        assert config["colors"][role] in page, f"the light {role} comes from nora.toml"
-        assert config["colors_dark"][role] in page, f"the dark {role} comes from nora.toml"
-    # the theme follows nora.toml's, like the app's: light here, so no OS dark switch
-    assert config["screen"]["theme"] == "light"
-    assert "prefers-color-scheme" not in page
-    dark = {**config, "screen": {**config["screen"], "theme": "auto"}}
-    auto = index_html(tiny, analyse(tiny), [], repo_links(), {"commit": "", "date": ""}, dark)
-    assert "prefers-color-scheme: dark" in auto

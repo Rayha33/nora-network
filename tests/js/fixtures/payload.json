@@ -50668,7 +50668,7 @@
    "theme": "light",
    "autoplay": true,
    "speed": 600,
-   "now_speed": 1,
+   "now_speed": 600,
    "now_in_middle": true,
    "display": "auto",
    "wall_distance_m": 5,

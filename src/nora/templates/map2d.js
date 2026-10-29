@@ -395,21 +395,12 @@ function NoraCanvasMap(view) {
     });
     canvas.addEventListener("pointercancel", release);
     canvas.addEventListener("pointerleave", () => { readout.textContent = ""; });
-    let hint = null, hintTimer = null;
     canvas.addEventListener("wheel", (e) => {
-      // Embedded: a plain wheel scrolls the page; Ctrl or ⌘ (or a pinch) zooms, as on
-      // the WebGL map, and a short note says so.
-      if (App.embed && !e.ctrlKey && !e.metaKey) {
-        if (!hint) el.append(hint = Object.assign(document.createElement("div"), { className: "map-note", textContent: "Hold Ctrl or ⌘ and scroll to zoom" }));
-        hint.hidden = false;
-        clearTimeout(hintTimer);
-        hintTimer = setTimeout(() => { hint.hidden = true; }, 1500);
-        return;
-      }
       e.preventDefault();
       zoomAt(e.offsetX, e.offsetY, Math.exp(-e.deltaY * 0.0015));
     }, { passive: false });
     canvas.addEventListener("dblclick", (e) => zoomAt(e.offsetX, e.offsetY, 2));
+    App.onPinch(canvas, (factor, at) => zoomAt(at.x, at.y, factor));
     canvas.addEventListener("contextmenu", (e) => {
       const id = hit(e.offsetX, e.offsetY);
       if (!id) return;

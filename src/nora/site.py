@@ -1,4 +1,5 @@
-"""Build the static site GitHub Pages serves: index.html, network.html and data/.
+"""Build the static site GitHub Pages serves: network.html (the app), index.html (which
+opens it) and data/.
 
 The output is plain files with no server-side code, so the same folder works on
 GitHub Pages, any static host, or opened straight from disk.
@@ -18,10 +19,10 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from .analysis import analyse
 from .config import load_config
-from .data import DATA_DIR, NODE_TYPES, PIPELINE_TYPES, REPO_ROOT, STATUSES, Network, load_network
+from .data import DATA_DIR, REPO_ROOT, STATUSES, load_network
 from .graph import build_graph
 from .render import TEMPLATES, network_html
-from .stream import Stream, list_streams, load_stream
+from .stream import list_streams, load_stream
 from .units import load_units
 
 DEFAULT_REPO = "Rayha33/nora-network"
@@ -57,11 +58,6 @@ def repo_links() -> dict:
     }
 
 
-def build_info() -> dict:
-    commit = os.environ.get("GITHUB_SHA") or _git("rev-parse", "HEAD")
-    return {"commit": commit[:7], "date": _git("log", "-1", "--format=%cs")}
-
-
 def build_site(out_dir: Path, data_dir: Path = DATA_DIR) -> dict:
     """Validate the data, run the analysis, and write the site. Returns a summary."""
     data_dir = Path(data_dir)
@@ -87,8 +83,7 @@ def build_site(out_dir: Path, data_dir: Path = DATA_DIR) -> dict:
         ),
         encoding="utf-8",
     )
-    page = index_html(net, analysis, streams, links, build_info(), config)
-    (out / "index.html").write_text(page, encoding="utf-8")
+    (out / "index.html").write_text(index_html(config), encoding="utf-8")
     for name in ("nodes.csv", "pipelines.csv"):
         shutil.copyfile(data_dir / name, out / "data" / name)
     graph = nx.node_link_data(build_graph(net, STATUSES), edges="edges")
@@ -104,52 +99,11 @@ def build_site(out_dir: Path, data_dir: Path = DATA_DIR) -> dict:
     return {"out": out, "net": net, "streams": streams, "analysis": analysis}
 
 
-def _stream_summary(stream: Stream) -> dict:
-    step = (stream.times[1] - stream.times[0]) if len(stream.times) > 1 else None
-    return {
-        "name": stream.name,
-        "title": stream.title,
-        "description": stream.description,
-        "source": stream.source,
-        "synthetic": stream.synthetic,
-        "start": stream.times[0] if stream.times else None,
-        "end": stream.times[-1] if stream.times else None,
-        "step_minutes": int(step.total_seconds() // 60) if step else None,
-        "assets": len(stream.assets),
-        "events": stream.events,
-    }
-
-
-def index_html(
-    net: Network,
-    analysis: dict,
-    streams: list[Stream],
-    links: dict,
-    build: dict,
-    config: dict | None = None,
-) -> str:
-    """The home page, in the app's own palette (nora.toml [colors] and [colors_dark]) and
-    type, so the site is one design system (review #49802: it had its own serif and
-    magenta)."""
+def index_html(config: dict | None = None) -> str:
+    """The home page: it opens the app (Ray, 29 Oct: "we are making software, not an
+    essay"), on the app's paper while it does."""
     config = config or load_config()
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATES)), autoescape=select_autoescape(["html", "j2"])
     )
-    names = {n.id: n.name for n in net.nodes} | {p.id: p.name for p in net.pipelines}
-    kinds = {n.id: NODE_TYPES[n.type] for n in net.nodes}
-    kinds |= {p.id: PIPELINE_TYPES[p.type] for p in net.pipelines}
-    delivered = sorted(analysis["delivered"].items(), key=lambda item: -item[1])
-    return env.get_template("index.html.j2").render(
-        a=analysis,
-        names=names,
-        kinds=kinds,
-        delivered=delivered,
-        top_delivery=max((v for _, v in delivered), default=1) or 1,
-        outages=[o for o in analysis["outages"] if o["lost"] > 0][:8],
-        streams=[_stream_summary(s) for s in streams],
-        links=links,
-        build=build,
-        light=config["colors"],
-        dark=config["colors_dark"],
-        theme=config["screen"]["theme"],  # as the app: light, dark, or auto (the device's)
-    )
+    return env.get_template("index.html.j2").render(paper=config["colors"]["paper"])
