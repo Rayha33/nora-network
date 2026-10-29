@@ -4,59 +4,74 @@
 # you already got an image from me"): the fields across the top from Gjøa and Statfjord
 # to Heidrun and Norne, St Fergus and the UK on the left, Nyhamna and Kollsnes in the
 # middle, Kårstø on the right, Sleipner, Draupner S and E across the middle, the landings
-# along the bottom from west to east. No line runs through another node. Drag a node in the Flow view to move it, and
+# along the bottom from west to east. No line runs through another node. Drag a node in the Flow view and
 # Save. A node not listed here is placed by layout.py. `nora validate` checks the ids.
+# Gassco's schematic (issue #38) adds Martin Linge on FUKA, Dvalin on Polarled, the
+# Jotun and Mariner tie-ins on Heimskringla, Grane, Ivar Aasen, Gina Krog and Valhall;
+# the rows from St Fergus down moved lower to make room for them.
 
 [positions]
 # fields across the top, west to east
+martin_linge = [-1.0, 0]
 gjoa = [0, 0]
 statfjord = [2.0, 0.55]
 gullfaks = [3.0, 0]
 oseberg = [4.2, 0]
 ormen_lange = [5.6, 0]
-aasta_hansteen = [6.8, 0]
-troll = [8.4, 0]
+aasta_hansteen = [6.6, 0]
+dvalin = [7.6, 0]
+troll = [8.6, 0]
 kvitebjorn = [9.6, 0]
 visund = [10.8, 0]
 heidrun = [12.2, 0]
 norne = [13.4, 0]
 # St Fergus and the UK, the processing plants, Kårstø and the Norwegian Sea
+fuka_tee = [-1.0, 1.4]  # where Martin Linge's line joins FUKA (Frigg TP1)
 flags_brent = [0.3, 1.0]
 beryl = [1.3, 1.6]
 edvard_grieg = [2.3, 1.55]
-st_fergus = [0, 2.15]
-heimdal = [3.4, 2.1]  # the Heimskringla T (Ray, 29 Oct)
+ivar_aasen = [3.3, 1.1]
+st_fergus = [0, 2.75]
+mariner_tee = [1.8, 2.72]  # on Heimskringla's St Fergus leg
+mariner = [1.6, 3.8]  # takes gas from the tie-in
+heimdal = [3.4, 2.7]  # the Heimskringla T (Ray, 29 Oct)
+grane = [4.4, 2.3]  # takes gas from the T
+jotun = [5.4, 2.8]
+jotun_tee = [5.0, 4.0]  # on Heimskringla's Draupner leg
 nyhamna = [6.2, 1.45]
+dvalin_tee = [7.2, 1.55]  # on Polarled
 kollsnes = [9.0, 1.8]
 tjeldbergodden = [11.2, 1.0]
 asgard = [13.6, 1.0]
 karsto = [12.6, 1.75]
-johan_sverdrup = [11.3, 2.5]
+johan_sverdrup = [11.3, 3.1]
 # the hubs, Ekofisk and the southern fields
-gudrun = [1.2, 3.4]
-sleipner = [2.6, 3.1]
-draupner_s = [6.6, 3.1]
-draupner_e = [8.8, 3.1]
-ekofisk = [5.4, 3.75]
-ekofisk_tee = [7.4, 4.3]  # on the line from Draupner S to Emden (Area D)
-baltic_tie = [12.6, 3.7]
-nybro = [13.8, 3.7]
+sleipner = [2.6, 4.5]
+gudrun = [1.2, 4.8]
+gina_krog = [2.3, 5.5]
+draupner_s = [6.6, 4.5]
+draupner_e = [8.8, 4.5]
+ekofisk = [5.4, 5.15]
+valhall = [6.4, 5.9]
+ekofisk_tee = [7.4, 5.7]  # on the line from Draupner S to Emden (Area D)
+baltic_tie = [12.6, 5.1]
+nybro = [13.8, 5.1]
 # the landings, west to east
-easington = [0.2, 5.6]
-dunkirk = [1.6, 5.6]
-zeebrugge = [3.2, 5.6]
-emden = [10.2, 5.6]
-dornum = [12.6, 5.6]
-pl_vtp = [13.8, 5.6]
+easington = [0.2, 7.0]
+dunkirk = [1.6, 7.0]
+zeebrugge = [3.2, 7.0]
+emden = [10.2, 7.0]
+dornum = [12.6, 7.0]
+pl_vtp = [13.8, 7.0]
 # not drawn in the Flow view (nora.toml [flow] hide, or decommissioned with no line), kept apart here
-frigg = [0.0, 6.8]
-odin = [1.2, 6.8]
-smorbukk_nord = [2.4, 6.8]
-mikkel = [3.6, 6.8]
-morvin = [4.8, 6.8]
-trestakk = [6.0, 6.8]
-skarv = [7.2, 6.8]
-aerfugl = [8.4, 6.8]
-draugen = [9.6, 6.8]
-tordis = [10.8, 6.8]
-gullfaks_sor = [12.0, 6.8]
+frigg = [0.0, 8.2]
+odin = [1.2, 8.2]
+smorbukk_nord = [2.4, 8.2]
+mikkel = [3.6, 8.2]
+morvin = [4.8, 8.2]
+trestakk = [6.0, 8.2]
+skarv = [7.2, 8.2]
+aerfugl = [8.4, 8.2]
+draugen = [9.6, 8.2]
+tordis = [10.8, 8.2]
+gullfaks_sor = [12.0, 8.2]

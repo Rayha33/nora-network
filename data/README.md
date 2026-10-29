@@ -48,6 +48,10 @@ One row per asset.
 (NBP, TTF, THE and so on, placed schematically on the map) and large consumers such as
 the Tjeldbergodden methanol plant.
 
+A field that takes gas from the network instead of supplying it (Grane for injection,
+Mariner for power) is a `field` with `capacity_msm3d` 0 and a line drawn towards it. It is
+neither supply nor exit, so the routing sends it no gas; the line shows the real tie-in.
+
 ### flow_layout.toml
 
 Where each node sits in the Flow view, as `node = [across, down]` in grid steps, laid
@@ -187,6 +191,10 @@ pipeline and the source of every route:
 - North Sea Transition Authority's UKCS offshore infrastructure pipeline linear WGS84
   FeatureServer for FLAGS, SAGE, CATS, SEAL, IUK and BBL. NSTA PL774 is split at CATS T5;
   Culzean's PL4106 joins that tee rather than taking a false path to the CATS riser.
+  FUKA (the Frigg UK System) joins PL6N, PL2026 and PL6S; Mariner's gas import is PL3768.
+- Lines that NORA cuts at a tie-in it models keep one register route split at that tee:
+  Polarled at the Dvalin tie-in, Heimskringla's St Fergus leg at the Mariner tie-in and
+  its Draupner leg at the Jotun tie-in (as Europipe II at the Baltic Pipe tie-in).
 - EMODnet Human Activities, Pipelines
   (https://emodnet.ec.europa.eu/en/human-activities, licence CC BY 4.0) for NOGAT, NGT,
   WGT, Tyra West–F3 and Tyra–Nybro. NOGAT joins its F3–L2 and L2–Callantsoog sections.
