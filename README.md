@@ -58,6 +58,7 @@ Or press the Codespaces badge above for a ready-made workspace in the browser.
 ```bash
 .venv/bin/nora stats                    # what the network delivers, and its weak points
 .venv/bin/nora live                     # replay a stream as a live feed
+.venv/bin/nora live --now --stream synthetic-week  # a showcase: the stream re-timed to now, looping
 .venv/bin/nora live --ingest            # take live readings pushed as JSON (docs/live-data.md)
 .venv/bin/nora stream new my-data --from flows.csv   # add your own dataset
 ```

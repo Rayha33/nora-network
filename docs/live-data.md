@@ -99,3 +99,41 @@ and GBS need credentials, and run against mocks until then
 A CSV export becomes a stream: `nora stream new NAME --from file.csv`, then map its
 columns in `stream.toml`. See `data/streams/README.md`. `nora live --stream NAME` plays it
 as if it were live.
+
+## Showcase: a stream at the current time
+
+To show NORA running, on a laptop or a screen in a meeting room, replay a stream with its
+times moved to now:
+
+```bash
+nora live --now --stream synthetic-week
+```
+
+- The stream's first hour is stamped with the hour the server started in, its next hour
+  one step later, and so on, so the app's clock reads the real time. The stream loops for
+  ever and the times keep rising across loops.
+- Each browser first gets the last 24 hours at once, so trends and the gas day have their
+  past, then each hour as the wall clock reaches it. Every frame carries what a replay
+  carries: flows, pressures, nominations, H₂S and CO₂, the plan and the hours ahead.
+- Pigs and events move with the stream: each loop sends a new `meta` event with that
+  loop's pigs and events at their new times.
+- `--speed N` plays N seconds of data per real second: `--speed 60` is an hour a minute,
+  so pigs and gas quality peaks move visibly. Above 1 the clock runs ahead of the wall
+  clock. At real time (the default) the page moves once per data step (an hour).
+- Re-timed is not live. Synthetic data stays labelled synthetic, and a recording is
+  labelled a recording: the feed's title ends in "(synthetic, re-timed to now)" or
+  "(recorded, re-timed to now)".
+
+To share it with others on the same network (office Wi-Fi, a phone on the LAN), bind to
+every interface and give them your laptop's address:
+
+```bash
+nora live --now --stream synthetic-week --host 0.0.0.0
+ipconfig getifaddr en0      # macOS; on Linux: hostname -I
+# others open http://<that address>:8765/network.html?live=/stream
+```
+
+The page and its feed come from the same server, so the page accepts the feed. Nothing
+there takes input from the network: `--now` has no `/ingest`. Your firewall may ask
+whether to allow incoming connections; allow them for the session and stop the server
+(Ctrl-C) when you are done.

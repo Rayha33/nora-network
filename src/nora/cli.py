@@ -177,6 +177,11 @@ def cmd_live(args) -> int:
                 "NORA_INGEST_TOKEN to a long random secret first (docs/live-data.md)"
             ]
         )
+    if args.now and (args.ingest or args.source):
+        raise DataError(["--now replays a stream; it does not go with --ingest or --source"])
+    if args.speed is not None and args.speed <= 0:
+        raise DataError(["--speed is data seconds per real second, above 0"])
+    speed = args.speed or (1.0 if args.now else 3600.0)
     # build_site has already loaded the network and every stream; reuse them
     # instead of loading (and re-solving synthetic streams) a second time.
     summary = _build(args)
@@ -221,8 +226,9 @@ def cmd_live(args) -> int:
         plan=plan_timeline(stream, summary["net"], load_config()),
         host=args.host,
         port=args.port,
-        speed=args.speed,
+        speed=speed,
         open_browser=not args.no_browser,
+        now=args.now,
     )
     return 0
 
@@ -313,10 +319,14 @@ def main(argv: list[str] | None = None) -> int:
         help="seconds between polls for --source (default 300, Gassco publishes every 5 min)",
     )
     live.add_argument(
+        "--now",
+        action="store_true",
+        help="re-time the stream to the wall clock and loop it, for a showcase",
+    )
+    live.add_argument(
         "--speed",
         type=float,
-        default=3600.0,
-        help="data seconds per real second (default 3600: an hour a second)",
+        help="data seconds per real second (default 3600: an hour a second; 1 with --now)",
     )
     live.set_defaults(run=cmd_live)
 
