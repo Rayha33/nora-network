@@ -19,6 +19,13 @@ wall_width_m = 4            # ... and its picture is this wide: the wall's text 
 [labels]
 names = true
 line_values = "auto"        # auto (shown in live, load and risk), on, off
+pack = true                 # a line's line-pack change under its settle-out pressure
+pressure_change = true      # the last hour's change under a pressure tag's number
+temperature = true          # the outside temperature under an onshore site's name
+
+[markers]                   # what moves along the lines
+pigs = true
+gas_quality = true          # H2S and CO2 peaks
 
 [assets]
 hide = []                   # asset types to leave out, e.g. ["market", "lng"]
