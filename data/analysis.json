@@ -1,7 +1,7 @@
 {
  "offline": [],
- "assets": 49,
- "pipelines": 49,
+ "assets": 48,
+ "pipelines": 48,
  "countries": [
   "BE",
   "DE",
@@ -12,18 +12,18 @@
   "PL"
  ],
  "node_types": {
-  "field": 30,
+  "field": 29,
   "hub": 3,
   "market": 2,
   "processing": 4,
   "tee": 3,
   "terminal": 7
  },
- "pipeline_km": 11006,
- "supply_capacity": 472.0,
- "deliverable": 430.0,
+ "pipeline_km": 10956,
+ "supply_capacity": 457.0,
+ "deliverable": 415.0,
  "delivered": {
-  "bacton": 15.0,
+  "bacton": 0.0,
   "dornum": 95.0,
   "dunkirk": 55.0,
   "easington": 72.0,
@@ -49,7 +49,6 @@
   "ormen_lange": 50.0,
   "oseberg": 30.0,
   "sleipner": 30.0,
-  "sns_fields": 15.0,
   "statfjord": 15.0,
   "troll": 120.0,
   "visund": 0.0
@@ -97,7 +96,6 @@
   "langeled_south": 72.0,
   "zeepipe_1": 42.0,
   "smorbukk_nord_asgard": 0.0,
-  "sns_bacton": 15.0,
   "statpipe_rich": 7.0,
   "tampen_link": 18.0,
   "tordis_gullfaks": 0.0,
@@ -142,7 +140,6 @@
   "gjoa_flags": 0.8824,
   "flags": 1.0,
   "sage": 0.5333,
-  "sns_bacton": 1.0,
   "iuk": 0.0
  },
  "outages": [
@@ -151,411 +148,397 @@
    "id": "sleipner",
    "name": "Sleipner",
    "lost": 152.0,
-   "share": 0.3535
+   "share": 0.3663
   },
   {
    "kind": "node",
    "id": "kollsnes",
    "name": "Kollsnes",
    "lost": 115.0,
-   "share": 0.2674
+   "share": 0.2771
   },
   {
    "kind": "node",
    "id": "draupner_e",
    "name": "Draupner E",
    "lost": 101.0,
-   "share": 0.2349
+   "share": 0.2434
   },
   {
    "kind": "node",
    "id": "dornum",
    "name": "Dornum",
    "lost": 90.0,
-   "share": 0.2093
+   "share": 0.2169
   },
   {
    "kind": "node",
    "id": "troll",
    "name": "Troll",
    "lost": 83.0,
-   "share": 0.193
+   "share": 0.2
   },
   {
    "kind": "pipeline",
    "id": "troll_kollsnes",
    "name": "Troll - Kollsnes",
    "lost": 83.0,
-   "share": 0.193
+   "share": 0.2
   },
   {
    "kind": "node",
    "id": "st_fergus",
    "name": "St Fergus",
    "lost": 79.0,
-   "share": 0.1837
+   "share": 0.1904
   },
   {
    "kind": "node",
    "id": "easington",
    "name": "Easington",
    "lost": 72.0,
-   "share": 0.1674
+   "share": 0.1735
   },
   {
    "kind": "pipeline",
    "id": "langeled_south",
    "name": "Langeled (south)",
    "lost": 72.0,
-   "share": 0.1674
+   "share": 0.1735
   },
   {
    "kind": "node",
    "id": "baltic_tie",
    "name": "Baltic Pipe tie-in",
    "lost": 71.0,
-   "share": 0.1651
+   "share": 0.1711
   },
   {
    "kind": "node",
    "id": "karsto",
    "name": "K\u00e5rst\u00f8",
    "lost": 71.0,
-   "share": 0.1651
+   "share": 0.1711
   },
   {
    "kind": "pipeline",
    "id": "europipe_2_north",
    "name": "Europipe II (K\u00e5rst\u00f8 - Baltic tie-in)",
    "lost": 71.0,
-   "share": 0.1651
+   "share": 0.1711
   },
   {
    "kind": "node",
    "id": "nyhamna",
    "name": "Nyhamna",
    "lost": 59.0,
-   "share": 0.1372
+   "share": 0.1422
   },
   {
    "kind": "pipeline",
    "id": "langeled_north",
    "name": "Langeled (north)",
    "lost": 59.0,
-   "share": 0.1372
+   "share": 0.1422
   },
   {
    "kind": "node",
    "id": "asgard",
    "name": "\u00c5sgard area",
    "lost": 58.0,
-   "share": 0.1349
+   "share": 0.1398
   },
   {
    "kind": "pipeline",
    "id": "asgard_transport",
    "name": "\u00c5sgard Transport",
    "lost": 58.0,
-   "share": 0.1349
+   "share": 0.1398
   },
   {
    "kind": "pipeline",
    "id": "zeepipe_2b",
    "name": "Zeepipe IIB",
    "lost": 57.0,
-   "share": 0.1326
+   "share": 0.1373
   },
   {
    "kind": "node",
    "id": "dunkirk",
    "name": "Dunkirk (Franpipe)",
    "lost": 55.0,
-   "share": 0.1279
+   "share": 0.1325
   },
   {
    "kind": "pipeline",
    "id": "franpipe",
    "name": "Franpipe",
    "lost": 55.0,
-   "share": 0.1279
+   "share": 0.1325
   },
   {
    "kind": "node",
    "id": "draupner_s",
    "name": "Draupner S",
    "lost": 50.0,
-   "share": 0.1163
+   "share": 0.1205
   },
   {
    "kind": "pipeline",
    "id": "europipe_1",
    "name": "Europipe I",
    "lost": 46.0,
-   "share": 0.107
+   "share": 0.1108
   },
   {
    "kind": "pipeline",
    "id": "zeepipe_2a",
    "name": "Zeepipe IIA",
    "lost": 45.0,
-   "share": 0.1047
+   "share": 0.1084
   },
   {
    "kind": "node",
    "id": "ekofisk_tee",
    "name": "Ekofisk tie-in",
    "lost": 44.0,
-   "share": 0.1023
+   "share": 0.106
   },
   {
    "kind": "node",
    "id": "emden",
    "name": "Emden",
    "lost": 44.0,
-   "share": 0.1023
+   "share": 0.106
   },
   {
    "kind": "pipeline",
    "id": "europipe_2_south",
    "name": "Europipe II (Baltic tie-in - Dornum)",
    "lost": 44.0,
-   "share": 0.1023
+   "share": 0.106
   },
   {
    "kind": "pipeline",
    "id": "norpipe",
    "name": "Norpipe Gas",
    "lost": 44.0,
-   "share": 0.1023
+   "share": 0.106
   },
   {
    "kind": "node",
    "id": "zeebrugge",
    "name": "Zeebrugge",
    "lost": 42.0,
-   "share": 0.0977
+   "share": 0.1012
   },
   {
    "kind": "pipeline",
    "id": "zeepipe_1",
    "name": "Zeepipe I",
    "lost": 42.0,
-   "share": 0.0977
+   "share": 0.1012
   },
   {
    "kind": "pipeline",
    "id": "sleipner_draupner",
    "name": "Sleipner - Draupner",
    "lost": 38.0,
-   "share": 0.0884
+   "share": 0.0916
   },
   {
    "kind": "node",
    "id": "ormen_lange",
    "name": "Ormen Lange",
    "lost": 36.0,
-   "share": 0.0837
+   "share": 0.0867
   },
   {
    "kind": "pipeline",
    "id": "ormen_lange_nyhamna",
    "name": "Ormen Lange - Nyhamna",
    "lost": 36.0,
-   "share": 0.0837
+   "share": 0.0867
   },
   {
    "kind": "node",
    "id": "flags_brent",
    "name": "FLAGS North (Brent area)",
    "lost": 33.0,
-   "share": 0.0767
+   "share": 0.0795
   },
   {
    "kind": "pipeline",
    "id": "flags",
    "name": "FLAGS",
    "lost": 33.0,
-   "share": 0.0767
+   "share": 0.0795
   },
   {
    "kind": "pipeline",
    "id": "draupner_bridge",
    "name": "Draupner S - E bridge",
    "lost": 31.0,
-   "share": 0.0721
+   "share": 0.0747
   },
   {
    "kind": "node",
    "id": "heimdal",
    "name": "Heimskringla tie-in",
    "lost": 30.0,
-   "share": 0.0698
+   "share": 0.0723
   },
   {
    "kind": "node",
    "id": "oseberg",
    "name": "Oseberg",
    "lost": 30.0,
-   "share": 0.0698
+   "share": 0.0723
   },
   {
    "kind": "pipeline",
    "id": "ogt",
    "name": "Heimskringla",
    "lost": 30.0,
-   "share": 0.0698
+   "share": 0.0723
   },
   {
    "kind": "pipeline",
    "id": "vesterled",
    "name": "Heimskringla (St Fergus leg)",
    "lost": 30.0,
-   "share": 0.0698
+   "share": 0.0723
   },
   {
    "kind": "pipeline",
    "id": "statpipe_ekofisk",
    "name": "Statpipe (Draupner S - Ekofisk tie-in)",
    "lost": 19.0,
-   "share": 0.0442
+   "share": 0.0458
   },
   {
    "kind": "node",
    "id": "statfjord",
    "name": "Statfjord",
    "lost": 18.0,
-   "share": 0.0419
+   "share": 0.0434
   },
   {
    "kind": "pipeline",
    "id": "tampen_link",
    "name": "Tampen Link",
    "lost": 18.0,
-   "share": 0.0419
+   "share": 0.0434
   },
   {
    "kind": "node",
    "id": "beryl",
    "name": "Beryl",
    "lost": 16.0,
-   "share": 0.0372
+   "share": 0.0386
   },
   {
    "kind": "pipeline",
    "id": "sage",
    "name": "SAGE",
    "lost": 16.0,
-   "share": 0.0372
-  },
-  {
-   "kind": "node",
-   "id": "bacton",
-   "name": "Bacton",
-   "lost": 15.0,
-   "share": 0.0349
-  },
-  {
-   "kind": "node",
-   "id": "sns_fields",
-   "name": "Southern North Sea fields",
-   "lost": 15.0,
-   "share": 0.0349
-  },
-  {
-   "kind": "pipeline",
-   "id": "sns_bacton",
-   "name": "Southern North Sea gathering",
-   "lost": 15.0,
-   "share": 0.0349
+   "share": 0.0386
   },
   {
    "kind": "node",
    "id": "ekofisk",
    "name": "Ekofisk",
    "lost": 14.0,
-   "share": 0.0326
+   "share": 0.0337
   },
   {
    "kind": "pipeline",
    "id": "ekofisk_tie_in",
    "name": "Ekofisk tie-in",
    "lost": 14.0,
-   "share": 0.0326
+   "share": 0.0337
   },
   {
    "kind": "node",
    "id": "aasta_hansteen",
    "name": "Aasta Hansteen",
    "lost": 9.0,
-   "share": 0.0209
+   "share": 0.0217
   },
   {
    "kind": "pipeline",
    "id": "polarled",
    "name": "Polarled",
    "lost": 9.0,
-   "share": 0.0209
+   "share": 0.0217
   },
   {
    "kind": "node",
    "id": "gjoa",
    "name": "Gj\u00f8a",
    "lost": 8.0,
-   "share": 0.0186
+   "share": 0.0193
   },
   {
    "kind": "pipeline",
    "id": "gjoa_flags",
    "name": "Gj\u00f8a gas export",
    "lost": 8.0,
-   "share": 0.0186
+   "share": 0.0193
   },
   {
    "kind": "node",
    "id": "edvard_grieg",
    "name": "Edvard Grieg",
    "lost": 6.0,
-   "share": 0.014
+   "share": 0.0145
   },
   {
    "kind": "node",
    "id": "heidrun",
    "name": "Heidrun",
    "lost": 6.0,
-   "share": 0.014
+   "share": 0.0145
   },
   {
    "kind": "pipeline",
    "id": "haltenpipe",
    "name": "Haltenpipe",
    "lost": 6.0,
-   "share": 0.014
+   "share": 0.0145
   },
   {
    "kind": "pipeline",
    "id": "uhgp",
    "name": "Utsira High Gas Pipeline",
    "lost": 6.0,
-   "share": 0.014
+   "share": 0.0145
   },
   {
    "kind": "node",
    "id": "gullfaks",
    "name": "Gullfaks",
    "lost": 3.0,
-   "share": 0.007
+   "share": 0.0072
   },
   {
    "kind": "pipeline",
    "id": "gullfaks_statfjord",
    "name": "Gullfaks gas export",
    "lost": 3.0,
-   "share": 0.007
+   "share": 0.0072
   },
   {
    "kind": "node",
    "id": "aerfugl",
    "name": "\u00c6rfugl",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "bacton",
+   "name": "Bacton",
    "lost": 0.0,
    "share": 0.0
   },
@@ -806,7 +789,7 @@
   }
  ],
  "sourced": {
-  "rows": 98,
-  "total": 98
+  "rows": 96,
+  "total": 96
  }
 }

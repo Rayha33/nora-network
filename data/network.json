@@ -484,18 +484,6 @@
    "id": "smorbukk_nord"
   },
   {
-   "name": "Southern North Sea fields",
-   "type": "field",
-   "country": "GB",
-   "lat": 53.1,
-   "lon": 2.1,
-   "capacity_msm3d": 15.0,
-   "booked_msm3d": null,
-   "status": "operating",
-   "exit": false,
-   "id": "sns_fields"
-  },
-  {
    "name": "St Fergus",
    "type": "terminal",
    "country": "GB",
@@ -1022,16 +1010,6 @@
    "length_km": 17.30370697507082,
    "source": "smorbukk_nord",
    "target": "asgard"
-  },
-  {
-   "pipeline": "sns_bacton",
-   "name": "Southern North Sea gathering",
-   "type": "feeder",
-   "from_id": "sns_fields",
-   "length_km": 50.47864823172117,
-   "capacity": 15.0,
-   "source": "sns_fields",
-   "target": "bacton"
   },
   {
    "pipeline": "statpipe_rich",

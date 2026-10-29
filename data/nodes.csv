@@ -35,7 +35,6 @@ karsto,Kårstø,processing,NO,59.273,5.521,Gassco,88,operating,,,https://equinor
 nyhamna,Nyhamna,processing,NO,62.848,6.954,Gassco,84,operating,,,https://equinor.com/energy/gas-terminals-and-storage,Processing plant for Ormen Lange and Polarled gas,,
 flags_brent,FLAGS North (Brent area),hub,GB,61.05,1.71,,,operating,,,https://en.wikipedia.org/wiki/FLAGS,Northern end of FLAGS; receives Tampen Link and Gjøa gas,,
 beryl,Beryl,field,GB,59.55,1.53,,10,operating,,,https://en.wikipedia.org/wiki/Beryl_oil_field,Start of SAGE,,
-sns_fields,Southern North Sea fields,field,GB,53.10,2.10,,15,operating,,,https://en.wikipedia.org/wiki/List%20of%20oil%20and%20gas%20fields%20of%20the%20North%20Sea,Aggregate of mature southern gas fields,,
 st_fergus,St Fergus,terminal,GB,57.553,-1.850,,,operating,,,https://en.wikipedia.org/wiki/St_Fergus_Gas_Plant,Gas terminal in Aberdeenshire,,
 easington,Easington,terminal,GB,53.642,0.156,,,operating,,,https://en.wikipedia.org/wiki/Easington_Gas_Terminal,Langeled receiving terminal,,
 bacton,Bacton,terminal,GB,52.86,1.46,,,operating,,,https://en.wikipedia.org/wiki/Bacton_Gas_Terminal,Terminal for SEAL and the IUK and BBL interconnectors,,
