@@ -359,9 +359,10 @@ function NoraCanvasMap(view) {
   };
 
   view.restyle = () => redraw();
-  // Called every animation frame: only playback moves anything. Changes while paused
-  // come through restyle, the camera and the settings, which redraw themselves.
-  view.draw = () => { if (App.live.playing) redraw(); };
+  /* App's frame loop asks every frame. Only moving markers need that (live and playing);
+     every other change (a restyle, the camera, settings, a resize) redraws on its own,
+     so a paused map is not drawn 60 times a second. */
+  view.draw = () => { if (App.state.mode === "live" && App.live.playing) redraw(); };
   view.applySettings = () => redraw();
   view.setUnit = (unit) => {
     if (!view.ready) return;
