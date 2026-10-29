@@ -1,5 +1,5 @@
 title = "Norwegian field production, Sep 2024 to Aug 2026"
-description = "Monthly net gas produced by Norwegian offshore fields, from the Norwegian Offshore Directorate (SODIR) factpages. Real monthly averages for the fields NORA models; Sleipner Vest and Øst are summed into the Sleipner node. The rest of the chart has no readings."
+description = "Monthly net gas produced by Norwegian offshore fields, from the Norwegian Offshore Directorate (SODIR) factpages. Real monthly averages for the fields NORA models; Sleipner Vest and Øst are summed into the Sleipner node, Valhall and Hod into Valhall, and Balder and Jotun into the Jotun FPSO. The rest of the chart has no readings."
 source = "https://factpages.sodir.no/"
 license = "Norwegian Licence for Open Government Data (NLOD), https://data.norge.no/nlod/en; credit SODIR as the source"
 
@@ -31,3 +31,11 @@ timezone = "UTC"
 "EDVARD GRIEG" = "edvard_grieg"
 "HEIDRUN" = "heidrun"
 "NORNE" = "norne"
+"GINA KROG" = "gina_krog"
+"IVAR AASEN" = "ivar_aasen"
+"DVALIN" = "dvalin"
+"VALHALL" = "valhall"
+"HOD" = "valhall"  # processed on Valhall, summed into its node
+"MARTIN LINGE" = "martin_linge"
+"JOTUN" = "jotun"
+"BALDER" = "jotun"  # Balder's excess gas is exported from the Jotun FPSO

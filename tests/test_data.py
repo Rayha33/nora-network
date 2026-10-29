@@ -169,13 +169,53 @@ def test_heimdal_is_a_t_on_heimskringla_from_oseberg_to_st_fergus_and_draupner(n
     line is called Heimskringla going from Oseberg to St. Fergus and Draupner"."""
     tee = north_sea.node_by_id["heimdal"]
     assert tee.type == "tee" and tee.name == "Heimskringla tie-in"
+    lines = {p.id: p for p in north_sea.pipelines}
     legs = {p.id: p for p in north_sea.pipelines if p.from_id == "heimdal" or p.to_id == "heimdal"}
+    # Gassco's schematic (#38): Grane takes gas at the T, and each leg has a tie-in on it
+    # (Mariner on the St Fergus leg, Jotun on the Draupner leg) before it lands.
     assert {(p.from_id, p.to_id) for p in legs.values()} == {
         ("oseberg", "heimdal"),
-        ("heimdal", "st_fergus"),
-        ("heimdal", "draupner_s"),
+        ("heimdal", "mariner_tee"),
+        ("heimdal", "jotun_tee"),
+        ("heimdal", "grane"),
     }
-    assert all(p.name.startswith("Heimskringla") for p in legs.values())
+    assert (lines["vesterled"].from_id, lines["vesterled"].to_id) == ("mariner_tee", "st_fergus")
+    assert (lines["statpipe_heimdal"].from_id, lines["statpipe_heimdal"].to_id) == (
+        "jotun_tee",
+        "draupner_s",
+    )
+    heimskringla = [p for p in legs.values() if p.id != "grane_gas_import"]
+    heimskringla += [lines["vesterled"], lines["statpipe_heimdal"]]
+    assert all(p.name.startswith("Heimskringla") for p in heimskringla)
+
+
+def test_gassco_schematic_fields_join_at_their_real_tie_ins(north_sea):
+    """Issue #38: each field from Gassco's schematic joins where SODIR, NSTA or the
+    operator says it does, and every new row cites its source."""
+    lines = {p.id: p for p in north_sea.pipelines}
+    nodes = north_sea.node_by_id
+    expected = {
+        "gina_krog_sleipner": ("gina_krog", "sleipner"),
+        "ivar_aasen_edvard_grieg": ("ivar_aasen", "edvard_grieg"),
+        "dvalin_gas": ("dvalin", "dvalin_tee"),
+        "polarled_north": ("aasta_hansteen", "dvalin_tee"),
+        "polarled": ("dvalin_tee", "nyhamna"),
+        "valhall_norpipe": ("valhall", "ekofisk_tee"),
+        "jotun_gas": ("jotun", "jotun_tee"),
+        "martin_linge_gas": ("martin_linge", "fuka_tee"),
+        "fuka": ("fuka_tee", "st_fergus"),
+        "mariner_gas_import": ("mariner_tee", "mariner"),
+        "grane_gas_import": ("heimdal", "grane"),
+    }
+    for pid, ends in expected.items():
+        assert (lines[pid].from_id, lines[pid].to_id) == ends, pid
+        assert lines[pid].source.startswith("https://"), pid
+        for node in ends:
+            assert nodes[node].source.startswith("https://"), node
+    for tee in ("dvalin_tee", "jotun_tee", "fuka_tee", "mariner_tee"):
+        assert nodes[tee].type == "tee"
+    # Mariner and Grane take gas (fuel, injection); they are neither supply nor exit.
+    assert nodes["mariner"].capacity_msm3d == nodes["grane"].capacity_msm3d == 0
 
 
 def test_the_southern_north_sea_fields_and_bacton_are_gone(north_sea):

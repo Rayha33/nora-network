@@ -17,8 +17,10 @@ Sources:
 SEGMENTS maps each NORA pipeline to the SODIR segments that make it up, as
 (from facility, to facility) pairs in the order the gas flows; NSTA_ROUTES and
 EMODNET_ROUTES do the same with stable public pipeline identifiers. The script joins the
-parts, splits Europipe II, Baltic Pipe and CATS where NORA has a tie-in node, simplifies
-lines (Douglas-Peucker, about 300 m) and rounds to 3 decimals. Notional market/grid links
+parts, splits Europipe II, Baltic Pipe, Polarled and both Heimskringla legs where NORA
+has a tie-in node, simplifies lines (Douglas-Peucker, about 300 m) and rounds to 3
+decimals. SODIR registers Gina Krog's gas export line with no geometry, so it is drawn
+straight. Notional market/grid links
 and aggregate gathering systems deliberately stay straight and dashed where applicable.
 """
 
@@ -57,7 +59,6 @@ SEGMENTS = {
     "ogt": [("OSEBERG D", "HEIMDAL HRP")],
     "statpipe_rich": [("STATFJORD B", "STAT-SSTC"), ("STAT-SSTC", "KÅRSTØ")],
     "statpipe_dry": [("KÅRSTØ", "DRAUPNER S")],
-    "statpipe_heimdal": [("HEIMDAL", "DRAUPNER S")],
     "statpipe_ekofisk": [("DRAUPNER S", "NORPIPE Y")],
     "sleipner_draupner": [("SLEIPNER R", "DRAUPNER S")],
     "zeepipe_2a": [("KOLLSNES", "SLEIPNER R")],
@@ -65,7 +66,6 @@ SEGMENTS = {
     "langeled_north": [("NYHAMNA", "SLEIPNER R")],
     "langeled_south": [("SLEIPNER R", "EASINGTON")],
     "asgard_transport": [("ÅSGARD ERB", "KÅRSTØ")],
-    "polarled": [("AASTA HANSTEEN PLEM", "NYHAMNA")],
     "ormen_lange_nyhamna": [("ORMEN LANGE A", "NYHAMNA")],
     "gudrun_sleipner": [("GUDRUN", "SLEIPNER A")],
     "uhgp": [("EDVARD GRIEG", "SAGE-T")],
@@ -81,12 +81,25 @@ SEGMENTS = {
     "europipe_1": [("DRAUPNER E", "EUROPIPE-SCP"), ("EUROPIPE-SCP", "EMDEN")],
     "franpipe": [("DRAUPNER E", "DUNKERQUE")],
     "zeepipe_1": [("SLEIPNER R", "ZEEPIPE-SCP"), ("ZEEPIPE-SCP", "ZEEBRUGGE")],
-    "vesterled": [("HEIMDAL HRP", "ST.FERGUS")],
     "tampen_link": [("STATFJORD B", "FLAGS-T")],
     "gjoa_flags": [("GJØA", "GJØA-T")],
+    "martin_linge_gas": [("MARTIN LINGE A", "FRIGG TP1-Y")],
+    "grane_gas_import": [("HEIMDAL HRP", "GRANE")],
 }
 # One SODIR line that NORA splits at a tie-in node: (whole route, [(nora id, until node)]).
 SPLITS = {
+    "statpipe_heimdal": (
+        [("HEIMDAL", "DRAUPNER S")],
+        [("heimskringla_jotun", "jotun_tee"), ("statpipe_heimdal", None)],
+    ),
+    "polarled": (
+        [("AASTA HANSTEEN PLEM", "NYHAMNA")],
+        [("polarled_north", "dvalin_tee"), ("polarled", None)],
+    ),
+    "vesterled": (
+        [("HEIMDAL HRP", "ST.FERGUS")],
+        [("heimskringla_mariner", "mariner_tee"), ("vesterled", None)],
+    ),
     "europipe_2": (
         [("KÅRSTØ", "EMDEN")],
         [("europipe_2_north", "baltic_tie"), ("europipe_2_south", None)],
@@ -97,11 +110,19 @@ SPLITS = {
     ),
 }
 
-# UK routes: NORA pipeline id -> NSTA's stable pipeline number.
-NSTA_ROUTES = {
+# UK routes: NORA pipeline id -> NSTA's stable pipeline number, or the numbers that
+# make it up in the order the gas flows (FUKA is three: PL6N, the MCP01 bundle, PL6S).
+NSTA_ROUTES: dict[str, str | list[str]] = {
     "flags": "PL2",
     "sage": "PL762",
+    "fuka": ["PL6N", "PL2026", "PL6S"],
+    "mariner_gas_import": "PL3768",
 }
+
+
+def _numbers(value: str | list[str]) -> list[str]:
+    return [value] if isinstance(value, str) else list(value)
+
 
 # Routes from EMODnet: NORA pipeline id -> EMODnet pipeline ids, in flow order (none
 # since the Dutch and Danish lines left the network).
@@ -220,7 +241,7 @@ def split_route(
 def nsta_parts(data: dict) -> dict[str, list]:
     """The longest active gas pipeline for each needed NSTA number (spools and concrete
     mattresses can share a number with the trunk). ArcGIS paths are equivalent to parts."""
-    wanted = set(NSTA_ROUTES.values())
+    wanted = {number for value in NSTA_ROUTES.values() for number in _numbers(value)}
     chosen = {}
     for feature in data.get("features", []):
         attr = feature.get("attributes", {})
@@ -276,9 +297,8 @@ def build(text: str, nsta_data: dict | None = None, emodnet_data: dict | None = 
 
     if nsta_data is not None:
         found_nsta = nsta_parts(nsta_data)
-        for pid, number in NSTA_ROUTES.items():
-            parts = found_nsta.get(number)
-            route = walk(parts, where[starts[pid]]) if parts else None
+        for pid, value in NSTA_ROUTES.items():
+            route = chain(found_nsta, _numbers(value), where[starts[pid]])
             if route:
                 routes[pid] = route
                 route_sources[pid] = "nsta"
@@ -320,7 +340,7 @@ def download_json(url: str, params: dict, *, post: bool = False) -> dict:
 
 
 def download_nsta() -> dict:
-    numbers = sorted(set(NSTA_ROUTES.values()))
+    numbers = sorted({number for value in NSTA_ROUTES.values() for number in _numbers(value)})
     quoted = ",".join(f"'{number}'" for number in numbers)
     return download_json(
         NSTA_URL,

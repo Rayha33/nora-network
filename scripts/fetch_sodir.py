@@ -33,7 +33,8 @@ URL = (
 )
 
 # Fields in SODIR's table that map to a node in data/nodes.csv. Sleipner Vest and
-# Øst both feed the `sleipner` node; readings mapping to the same asset are summed.
+# Øst both feed the `sleipner` node, Valhall and Hod `valhall`, Balder and Jotun `jotun`;
+# readings mapping to the same asset are summed.
 MAPPED_FIELDS = [
     "TROLL",
     "KVITEBJØRN",
@@ -53,6 +54,14 @@ MAPPED_FIELDS = [
     "EDVARD GRIEG",
     "HEIDRUN",
     "NORNE",
+    "GINA KROG",
+    "IVAR AASEN",
+    "DVALIN",
+    "VALHALL",
+    "HOD",
+    "MARTIN LINGE",
+    "JOTUN",
+    "BALDER",
 ]
 
 
