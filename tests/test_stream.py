@@ -723,3 +723,29 @@ def test_synthetic_pressures_move_like_line_pack(north_sea):
     assert max(steps) <= 6 + 1e-9
     assert sum(step > 1.5 + 1e-9 for step in steps) < 0.02 * len(steps), "breaches are rare"
     assert statistics.median(steps) < 0.2
+
+
+def test_synthetic_week_has_each_fields_gc_and_the_outside_temperature(north_sea):
+    """Ray, 29 Oct: "GC values in a table like C1 Metan, C2 Etan, C3 Propan etc all the way
+    to C6+ and then CO2, N2 ... O2, WDP and HCDP"; "what temperature it is at each of the
+    main exit point hubs"."""
+    stream = load_stream("synthetic-week", north_sea)
+    keys = ("c1", "c2", "c3", "ic4", "nc4", "ic5", "nc5", "c6plus", "co2", "n2")
+    columns = {k: stream.metrics[f"{k}_molpct"] for k in keys}
+    assets, _ = columns["c1"]
+    fields = {n.id for n in north_sea.nodes if n.type == "field" and n.capacity_msm3d}
+    assert set(assets) == fields
+    for row in range(0, len(stream.times), 24):
+        for asset in assets:
+            total = sum(columns[k][1][row][columns[k][0].index(asset)] or 0 for k in keys)
+            assert abs(total - 100) < 0.05, f"{asset}: {total} mol %"
+            c1 = columns["c1"][1][row][assets.index(asset)]
+            assert 80 < c1 < 96, f"{asset}: methane {c1}"
+    for metric, low, high in (("wdp_c", -25, -5), ("hcdp_c", -15, 2), ("o2_ppm", 0, 5)):
+        _, values = stream.metrics[metric]
+        flat = [v for r in values for v in r if v is not None]
+        assert low < min(flat) and max(flat) < high, metric
+    sites, temps = stream.metrics["air_temp_c"]
+    assert {"zeebrugge", "easington", "dunkirk", "emden", "dornum", "nybro"} <= set(sites)
+    flat = [v for r in temps for v in r if v is not None]
+    assert min(flat) > -5 and max(flat) < 20, "late autumn by the North Sea"

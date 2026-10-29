@@ -718,9 +718,12 @@
         const name = fitText(ctx, d.name, half * 3);
         let width = Math.max(ctx.measureText(name).width, half);
         let sub = null;
-        if (s.sub && !live) {
+        // live: the outside temperature under an onshore site's name (Ray, 29 Oct)
+        const temp = live && App.state.mode === "live" ? App.airTemp(id) : null;
+        const subText = s.sub && !live ? s.sub : temp != null ? `${App.fmt(temp, 0)} °C` : null;
+        if (subText) {
           ctx.font = SUB_FONT;
-          sub = fitText(ctx, s.sub, half * 3);
+          sub = fitText(ctx, subText, half * 3);
           width = Math.max(width, ctx.measureText(sub).width);
         }
         const pressures = pressureBoxes || [], left = x - width / 2 - 4, right = x + width / 2 + 4;
