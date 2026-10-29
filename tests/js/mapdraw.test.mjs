@@ -130,7 +130,7 @@ test("map: the layer over the map is drawn when what it shows changes, at most o
       view.draw();
       map.fire("render"); // the map repainting for a data step, camera unchanged
     }
-  }), 10, "playing: once a frame, not again when the map repaints in the same frame");
+  }), 3, "playing: about 20 a second (10 frames at 60 a second: every third), not again when the map repaints");
 
   App.live.playing = false;
   assert.equal(drawn(() => { view.draw(); view.draw(); }), 1, "pausing: drawn once more (the flow stubs stop)");
@@ -182,6 +182,8 @@ test("map without WebGL: a paused canvas map is not redrawn every frame", () => 
      run more smoothly"). Playing, a frame copies the still map and draws the markers,
      and only when one of them has moved. */
   assert.deepEqual(count(() => { for (let i = 0; i < 3; i++) view.draw(); }), { frames: 0, repaints: 0 }, "playing, nothing moved: nothing painted");
-  const moving = count(() => { for (let i = 0; i < 3; i++) { App.live.time += 1800; view.draw(); } });
+  const moving = count(() => { for (let i = 0; i < 3; i++) { App.live.time += 1800; App.live.clock += 0.05; view.draw(); } });
   assert.deepEqual(moving, { frames: 3, repaints: 0 }, "playing, the markers moved: each frame paints them over the still map");
+  const fast = count(() => { for (let i = 0; i < 6; i++) { App.live.time += 1800; App.live.clock += 1 / 60; view.draw(); } });
+  assert.deepEqual(fast, { frames: 2, repaints: 0 }, "at 60 frames a second, every third one: at most 20 a second");
 });

@@ -101,7 +101,6 @@ SPLITS = {
 NSTA_ROUTES = {
     "flags": "PL2",
     "sage": "PL762",
-    "iuk": "PL1339",
 }
 
 # Routes from EMODnet: NORA pipeline id -> EMODnet pipeline ids, in flow order (none

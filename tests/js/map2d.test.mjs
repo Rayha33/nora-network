@@ -370,7 +370,6 @@ test("map: major pipelines have concise persistent names", () => {
   assert.equal(App.pipeMapName("franpipe"), "Franpipe");
   assert.equal(App.pipeMapName("zeepipe_1"), "Zeepipe I");
   assert.equal(App.pipeMapName("langeled_south"), "Langeled");
-  assert.equal(App.pipeMapName("iuk"), "Interconnector (IUK)");
   // Ray, 29 Oct: "there is no Heimdal anymore, it is just a T connection now and the line
   // is called Heimskringla going from Oseberg to St. Fergus and Draupner".
   for (const id of ["ogt", "vesterled", "statpipe_heimdal"]) assert.equal(App.pipeMapName(id), "Heimskringla", id);
@@ -1028,10 +1027,12 @@ test("map: no alarm badges on the map; pigs and peaks stay", () => {
 
 test("map: an interconnector shows which way its gas goes, and how much", () => {
   // Ray, 29 Oct: "should be able to subtle see which way the gas is flowing for the
-  // interconnector and what quantities are going which way".
+  // interconnector and what quantities are going which way". The IUK went with Bacton;
+  // any line typed interconnector in pipelines.csv draws it (a stand-in here).
   const { App, NORA } = loadApp();
   App.state.mode = "live";
-  const id = App.pipeIds.find((pid) => NORA.assets[pid].type === "interconnector");
+  const id = "franpipe";
+  NORA.assets[id].type = "interconnector";
   const draw = (v) => {
     App.live.values[id] = v;
     const texts = [], strokes = [];

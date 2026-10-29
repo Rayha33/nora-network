@@ -178,9 +178,9 @@ def test_heimdal_is_a_t_on_heimskringla_from_oseberg_to_st_fergus_and_draupner(n
     assert all(p.name.startswith("Heimskringla") for p in legs.values())
 
 
-def test_the_southern_north_sea_fields_are_gone_bacton_stays(north_sea):
-    """Ray, 29 Oct ("remove", of the Southern North Sea fields over Bacton). Bacton stays:
-    the IUK interconnector runs from it to Zeebrugge."""
+def test_the_southern_north_sea_fields_and_bacton_are_gone(north_sea):
+    """Ray, 29 Oct: "remove" (the Southern North Sea fields), then "remove bacton". The IUK
+    interconnector, which ran from Bacton to Zeebrugge, went with it; Zeebrugge stays."""
     ids = {n.id for n in north_sea.nodes} | {p.id for p in north_sea.pipelines}
-    assert "sns_fields" not in ids and "sns_bacton" not in ids
-    assert {"bacton", "iuk"} <= ids
+    assert not ids & {"sns_fields", "sns_bacton", "bacton", "iuk"}
+    assert {"zeebrugge", "zeepipe_1"} <= ids

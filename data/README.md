@@ -19,7 +19,7 @@ compiled from:
   Langeled, Europipe, Norpipe, Franpipe, Vesterled, CATS, FLAGS, etc.).
 - Operator/TSO sites for onshore grid-entry rows: National Grid (UK/NBP), Gasunie
   (NL/TTF), Trading Hub Europe (DE/THE), Fluxys (BE/ZTP), Energinet (DK/ETF), the
-  Baltic Pipe project site, IUK and BBL.
+  Baltic Pipe project site and BBL.
 - `approximate, public data` for rows where no single authoritative public page could
   be pinned down. These are the best candidates for a better citation.
 

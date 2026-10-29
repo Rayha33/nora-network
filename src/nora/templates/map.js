@@ -411,13 +411,20 @@
     return [revision, App.notes.version(), App.state.mode, c.lng, c.lat, map.getZoom(), map.getBearing(), map.getPitch(),
       el.clientWidth, el.clientHeight, window.devicePixelRatio || 1].join("|");
   }
+  /* Playing, only the clock moves the layer: at 10 min/s a peak crosses a pixel in a few
+     frames, so it is repainted at most 20 times a second, not 60 (Ray, 29 Oct: "fix
+     performance, it is lagging"). A pan, a zoom or new data draws at once. */
+  let drawnScene = "", drawnClock = -Infinity;
   view.draw = () => {
     if (!ctx || !map) return;
     if (cameraKey() !== renderedCamera) return; // the map has not drawn this camera yet: its render draws the layer
     const scene = sceneKey(), key = `${scene}|${App.live.playing ? App.live.clock : "paused"}`;
     if (key === drawnKey) return;
+    if (scene === drawnScene && App.live.playing && App.live.clock - drawnClock < App.movingStep) return;
     App.frame.run(() => drawNow(scene));
     drawnKey = key;
+    drawnScene = scene;
+    drawnClock = App.live.clock;
   };
   function drawNow(scene) {
     sizeCanvas();

@@ -1343,11 +1343,13 @@
 
   // Every frame while playing: only the moving layer, with the view the lines were
   // drawn with; after a zoom or a pan the network draws first (and the layer with it).
+  let marksClock = -Infinity; // the data clock the moving layer was last drawn at
   view.draw = () => {
     if (App.state.mode !== "live" || !App.live.playing || !network) return;
     if (!sameView()) { network.redraw(); return; }
+    if (App.live.clock - marksClock < App.movingStep) return; // 20 a second is smooth enough (App.movingStep)
     const key = marksCtx ? App.frame.run(marksAt) : null;
-    if (key === null || key !== marksKey) drawMarks(); // else nothing moved on screen
+    if (key === null || key !== marksKey) { drawMarks(); marksClock = App.live.clock; } // else nothing moved on screen
   };
   view.applySettings = () => { if (view.ready) { layout(); view.restyle(); view.setUnit(App.route.unit); } };
   view.theme = () => {

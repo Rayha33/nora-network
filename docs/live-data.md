@@ -89,10 +89,9 @@ For a source NORA should fetch itself, subclass `Connector` in
 - add it to `SOURCES`.
 
 `nora live --source NAME --poll-seconds 60` then polls it once for every browser. A failed
-poll shows the page as stale instead of stopping. The Gassco, National Gas (IUK),
-Origo and Gassco Booking (`--source gbs`) connectors there are worked examples; Origo
-and GBS need credentials, and run against mocks until then
-([docs/integrations.md](integrations.md)).
+poll shows the page as stale instead of stopping. The Gassco, Origo and Gassco Booking
+(`--source gbs`) connectors there are worked examples; Origo and GBS need credentials, and
+run against mocks until then ([docs/integrations.md](integrations.md)).
 
 ## Replay: files
 

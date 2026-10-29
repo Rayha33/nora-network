@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from nora.integrations import SOURCES, gassco, interconnector
+from nora.integrations import SOURCES, gassco
 from nora.live import poll, serve
 
 FIXTURE = Path(__file__).parent / "data" / "gassco_realTimeGraphData.json"
@@ -28,11 +28,7 @@ class _ApiHandler(BaseHTTPRequestHandler):
         if self.path == "/down":
             self.send_error(503)
             return
-        payload = (
-            (FIXTURE.parent / "national_gas_latest.json").read_bytes()
-            if self.path == "/national-gas"
-            else FIXTURE.read_bytes()
-        )
+        payload = FIXTURE.read_bytes()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(payload)))
@@ -67,29 +63,6 @@ def test_gassco_fetch_maps_single_terminal_countries_to_their_terminal(api_url, 
     }
     assert all(r.metric == gassco.metric for r in readings)
     assert readings[0].when.tzinfo is not None  # epoch ms became an aware datetime
-
-
-def test_interconnector_combines_bacton_export_and_import_into_signed_iuk_flow(
-    api_url, monkeypatch
-):
-    monkeypatch.setenv("NORA_NATIONAL_GAS_URL", api_url + "/national-gas")
-    now = datetime(2026, 10, 28, 12, 0, tzinfo=UTC)
-    readings = list(interconnector.fetch(now - timedelta(minutes=2), now))
-    assert len(readings) == 1
-    reading = readings[0]
-    assert reading.asset == "iuk"
-    assert reading.metric == "flow_msm3d"
-    assert reading.value == pytest.approx(12.3 - 4.5)
-    assert reading.when == datetime(2026, 10, 28, 9, 48, tzinfo=UTC)
-
-
-def test_interconnector_sign_reverses_for_zeebrugge_to_bacton():
-    fixture = json.loads((Path(__file__).parent / "data" / "national_gas_latest.json").read_text())
-    imported = fixture["data"]["Supply from entry points"]["data"][1]
-    imported["09:44"] = 14.5
-    when, value = interconnector.parse(fixture)
-    assert value == pytest.approx(12.3 - 14.5)
-    assert when.tzinfo is not None
 
 
 def test_poll_yields_frames_and_survives_a_dead_api(api_url, monkeypatch, capsys):
@@ -195,7 +168,7 @@ def test_cli_offers_the_source_flag():
 
 
 def test_sources_registry_only_contains_ready_connectors(monkeypatch):
-    assert set(SOURCES) == {"gassco", "interconnector", "origo", "gbs"}
+    assert set(SOURCES) == {"gassco", "origo", "gbs"}
     # Origo is wired; without its endpoint and token it says what to set
     from nora.integrations import NotConfigured
 
@@ -272,19 +245,6 @@ def test_a_nan_from_a_polled_source_becomes_null_not_invalid_json(api_url, monke
     payload = data[len("data: ") :]
     assert "NaN" not in payload, payload  # never invalid JSON
     assert json_mod.loads(payload)  # and it parses
-
-
-def test_interconnector_takes_the_newest_reading_after_midnight():
-    """Review finding: readings were ordered by the text of their time, so after
-    midnight "23:58" beat "00:02" and the IUK flow froze at the evening's value."""
-    fixture = json.loads((Path(__file__).parent / "data" / "national_gas_latest.json").read_text())
-    exported = fixture["data"]["Demand from interconnectors"]["data"][1]  # Bacton INT Export
-    assert exported["TERMINAL TOTALS"] == "Bacton INT Export"
-    for key in [k for k in exported if ":" in k]:
-        del exported[key]
-    exported.update({"23:58": 9.0, "00:02": 11.0})  # the gas day runs on past midnight
-    _, value = interconnector.parse(fixture)
-    assert value == pytest.approx(11.0 - 4.5)  # the 00:02 export, less the 09:44 import
 
 
 def test_origo_reads_hourly_nominations_by_exit_point():

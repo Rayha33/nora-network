@@ -47,33 +47,11 @@ data/streams/
 4. **See it:** `nora build` adds it to the chart's player (choose it in the dataset
    menu), and `nora live --stream my-data` serves it as a live feed.
 
-Commit the folder and open a pull request. Your preview link will show the replay.
+Commit the folder and open a pull request; `make serve` shows the replay before you do.
 
 ## Public live sources
 
 `nora live --source gassco` serves aggregate Norwegian exports by receiving country.
-For the physically bidirectional Interconnector (IUK) between Bacton and Zeebrugge:
-
-```bash
-nora live --source interconnector --poll-seconds 120
-```
-
-This polls National Gas's public latest-flows API. Positive `iuk` values mean Bacton →
-Zeebrugge; negative values mean Zeebrugge → Bacton, in MSm³/d. The existing map arrows,
-flow quadrants and asset readings use that sign directly. Zeebrugge/IUK is operated by
-Interconnector/Fluxys, not GTS. The static site's replay cannot poll this API
-because it does not allow cross-origin browser requests; use the local live server above.
-
-The site replays a recorded year of the same pipeline instead: `iuk-flows`, the daily
-physical flow from National Gas's data portal (Bacton into IUK, PUBOB2038, less IUK
-into Bacton, PUBOBJ592). Refresh it with
-
-```bash
-python scripts/fetch_nationalgas.py 2025-10-01 2026-10-28 data/streams/iuk-flows/raw.csv
-```
-
-`--ids` takes other publication ids from the portal's Find gas data list, for any
-other UK entry or exit point.
 
 ## stream.toml reference
 
