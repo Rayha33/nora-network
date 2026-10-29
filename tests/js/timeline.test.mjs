@@ -103,7 +103,9 @@ test("recorded real data keeps its own dates and has no now", () => {
   assert.equal(App.live.index, 0, "a recording plays from its start");
   assert.equal(App.timeState(), null);
   assert.equal($("when").hidden, true);
-  assert.equal($("tl-past").textContent, "−4 h");
+  // Four steps of its own either way: a daily recording shows four days, not four hours.
+  assert.equal($("tl-past").textContent, s.step >= 86400 ? `−${Math.round((4 * s.step) / 86400)} d` : "−4 h");
+  assert.equal($("tl-now").textContent, "Selected time · UTC", "a recording is not real time");
 });
 
 test("[screen] now_in_middle = false plays synthetic data at its own dates", () => {
