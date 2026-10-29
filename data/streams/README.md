@@ -1,9 +1,11 @@
 # Streams: replaying data as if it were live
 
-A stream is a time series of gas flows that NORA plays back on the chart: pipelines
-fill and empty hour by hour, dots move along them, and alarms fire when a flow drops.
+A stream is a time series of network readings (flows, pressures, nominations, bookings,
+gas quality) that NORA plays back on the chart: PIGs, flow-change peaks and gas-quality
+parcels move along the pipelines, and alarms fire when a reading crosses a limit.
 `nora live` can also serve a stream as a real live feed (Server-Sent Events), so the
-chart behaves exactly as it will once it is connected to a live source.
+chart behaves exactly as it will once it is connected to a live source. Synthetic
+streams demonstrate the interface; they are not records of actual operations.
 
 Each stream is one folder here with a `stream.toml`:
 
@@ -104,7 +106,51 @@ label = "Planned maintenance"
 asset = "kollsnes"
 start = 2026-10-21T06:00:00Z
 end = 2026-10-21T19:00:00Z
+planned = true                # known ahead; omit or false for unplanned events
 ```
+
+### Importing more than one metric
+
+Use one `[[import]]` table per file. Set `metric` on each table; all mapped readings
+in that file use that metric. For example, flow and pressure can be imported separately:
+
+```toml
+[[import]]
+file = "flows.csv"
+metric = "flow_msm3d"
+timestamp = "timestamp"
+asset = "point"
+value = "value"
+factor = 1.0
+[import.assets]
+"Pipe A" = "pipe_a"
+
+[[import]]
+file = "pressure.csv"
+metric = "pressure_bar"
+timestamp = "timestamp"
+asset = "point"
+value = "value"
+factor = 1.0
+[import.assets]
+"Terminal A" = "a_terminal"
+```
+
+Supported metric keys are:
+
+| key | meaning and usual location | held between readings? |
+| --- | --- | --- |
+| `flow_msm3d` | flow on a pipeline (signed from `from` to `to`) or node throughput | no |
+| `pressure_bar` | node pressure in bar | no |
+| `nomination_msm3d` | hourly nominated rate at an exit point | yes |
+| `booked_msm3d` | booked capacity at an exit point | yes |
+| `h2s_ppm` | H₂S concentration at a field, ppm | no |
+| `co2_molpct` | CO₂ concentration at a field, mol % | no |
+
+For `flows.csv`, the long metric format is `timestamp,asset,metric,value`; the shorter
+`timestamp,asset,flow_msm3d` format remains supported for flows only. Nominations and
+bookings carry forward from their first reading until replaced; earlier missing values
+remain missing. Imported files use one `metric` per `[[import]]` block.
 
 Readings that map to the same asset at the same time are added together, so several
 raw points can feed one pipeline or terminal. Put a `-` before the id
@@ -141,7 +187,47 @@ start = 2026-10-19T00:00:00Z
 step_minutes = 60
 steps = 168
 seed = 7
+operations = true  # also generate pressure, nominations and bookings
+quality = true     # generate field H₂S/CO₂ readings and any listed excursions
 ```
+
+With `operations = true`, the model generates hourly exit nominations and bookings,
+plus illustrative pressure readings. With `quality = true`, each field gets a baseline
+H₂S and CO₂ reading. Add excursions to demonstrate a changing gas-quality parcel:
+
+```toml
+[[synthetic.excursions]]
+asset = "field_id"
+metric = "h2s_ppm" # or "co2_molpct"
+peak = 5.0
+start = 2026-10-19T06:00:00Z
+hours = 3
+every_hours = 24 # optional repeat interval
+```
+
+Quality tracking is an estimate: it follows the pipeline carrying the most flow out of
+each node, and assumes the other gas at a mixing point has the median field reading.
+The overview estimates concentration and arrival time at the exit; its colored badge
+appears only after a configured warning threshold is crossed. The configured limits
+live in `[quality]` in `nora.toml`.
+
+## PIG runs
+
+An explicit `[[pigs]]` entry starts a PIG on one pipeline. `every_hours` repeats the run;
+leave it out (or set it to zero) for a single launch:
+
+```toml
+[[pigs]]
+pipeline = "langeled_south"
+label = "Langeled inspection"
+launch = 2026-10-19T06:00:00Z
+speed_mps = 4.0
+every_hours = 36
+```
+
+For a synthetic stream, `pig_programme = { every_hours = 48, speed_mps = 4.0 }` creates
+a staggered programme on every trunk, export line and interconnector. An explicit
+`[[pigs]]` entry takes precedence on its pipeline.
 
 ## Units
 

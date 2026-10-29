@@ -6,6 +6,22 @@ assistant is encouraged.
 
 ## Three ways in
 
+### The five-minute local path
+
+```bash
+git clone https://github.com/Rayha33/nora-network.git
+cd nora-network
+make setup
+make check
+make serve
+```
+
+`make serve` builds and opens the app locally. Start with the data files for network
+corrections (`data/nodes.csv`, `data/pipelines.csv`), `data/streams/` for readings and
+replay configuration, or `nora.toml` for display and alarm thresholds. Feature code is
+under `src/nora/`; [AGENTS.md](AGENTS.md) maps the modules and their boundaries. Run
+`make check` before opening a pull request.
+
 ### 1. Fix or add data, in the browser
 
 1. Open [`data/nodes.csv`](data/nodes.csv) or [`data/pipelines.csv`](data/pipelines.csv) on GitHub and press the pencil icon.

@@ -24,10 +24,12 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 | file | job |
 | --- | --- |
 | `nora.toml` | display settings, alarm thresholds, `[quality]` limits, pressure windows, light and dark palettes; validated by `src/nora/config.py` |
+| `src/nora/config.py` | deep-merges and validates `nora.toml`; the validated settings drive thresholds, pressure windows and both palettes |
 | `data/nodes.csv`, `data/pipelines.csv` | the network; documented in `data/README.md` |
 | `data/units.toml` | the operating units; every node in exactly one (`src/nora/units.py`) |
 | `data/pipeline_models.csv`, `src/nora/pms.py`, `scripts/build_pipeline_models.py` | each pipeline's regression for the What-if's pressures (as a PMS keeps them), seeded from Weymouth |
 | `data/flow_layout.toml` | where each node sits in the Flow view, Area D-style; dragging a node and Save updates it |
+| `src/nora/units.py` | validates unit membership and assigns each pipeline to the unit of its source node |
 | `data/streams/*/stream.toml` | time-series datasets; documented in `data/streams/README.md` |
 | `src/nora/data.py` | load and validate the CSVs; every problem gets file, line and a suggestion |
 | `src/nora/graph.py` | build the `networkx.DiGraph` |
@@ -65,8 +67,13 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 - **network.html stays one file.** vis-network and NORA's scripts are inlined, so the Flow
   view works offline. Only MapLibre (pinned, integrity-checked), map tiles and fonts
   come from the web; a test enforces this.
-- **Style in one place.** `App.pipeStyle` and `App.nodeStyle` in app.js decide colour,
-  width and labels for every mode; the views only apply them, so both stay in step.
+- **Style in one place.** `App.pipeStyle()` and `App.nodeStyle()` in app.js are the only
+  view-neutral style entry points for pipelines and nodes. `App.markers()` supplies the
+  moving PIG/peak/quality markers and `App.drawMarker()` draws their shared symbols.
+  The Map and Flow views apply these results; do not duplicate threshold or state rules.
+- **Gas quality.** `[quality]` limits in `nora.toml` drive the H₂S and CO₂ levels. Their
+  marker colours (`h2s`, `co2` in each palette) stay muted and distinct from the alarm
+  colours; see the display rules below.
 - **Views are independent.** map.js and flow.js each implement the view contract at the
   top of app.js. Work on one without touching the other.
 - **Data in the browser is untrusted.** Anyone can edit the CSVs, so build DOM with
@@ -74,6 +81,9 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 - **Units are MSm3/d** everywhere in code and data.
 - **Honest labels.** Synthetic data is labelled synthetic; model results say they are
   from the model. Do not present estimates as measurements.
+- **Do not overstate diagnostics.** Level 4 shows the readings, gaps, dataset/asset
+  source metadata and CSV row available to NORA. It is not yet end-to-end live SCADA
+  interface/tag lineage.
 - **Add a test** with every behaviour change. Prefer the tiny network in `conftest.py`.
 - **Editing API:** `nora serve --edit` binds only to `127.0.0.1` unless `NORA_EDIT_TOKEN`
   is set; hosted, every check and save must carry that key. Keep its JSON-only,
