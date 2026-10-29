@@ -1835,6 +1835,7 @@ const App = (() => {
     if (!d || (!["trunk", "export", "interconnector"].includes(d.type) && id !== "ogt")) return "";
     if (id.startsWith("europipe_2")) return "Europipe II";
     if (id.startsWith("langeled_")) return "Langeled";
+    if (d.name.startsWith("Heimskringla")) return "Heimskringla"; // one line, Oseberg to St Fergus and Draupner
     return d.name;
   }
   /* A pipeline always stays in the state grey palette. Alarms use a badge, shape and

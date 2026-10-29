@@ -162,3 +162,17 @@ def test_norpipe_runs_from_draupner_s_to_npt_with_ekofisk_tied_in(north_sea):
         "ekofisk_tee",
     )
     assert north_sea.node_by_id["baltic_tie"].type == "tee", "the Baltic Pipe tie-in is one too"
+
+
+def test_heimdal_is_a_t_on_heimskringla_from_oseberg_to_st_fergus_and_draupner(north_sea):
+    """Ray, 29 Oct: "there is no Heimdal anymore, it is just a T connection now and the
+    line is called Heimskringla going from Oseberg to St. Fergus and Draupner"."""
+    tee = north_sea.node_by_id["heimdal"]
+    assert tee.type == "tee" and tee.name == "Heimskringla tie-in"
+    legs = {p.id: p for p in north_sea.pipelines if p.from_id == "heimdal" or p.to_id == "heimdal"}
+    assert {(p.from_id, p.to_id) for p in legs.values()} == {
+        ("oseberg", "heimdal"),
+        ("heimdal", "st_fergus"),
+        ("heimdal", "draupner_s"),
+    }
+    assert all(p.name.startswith("Heimskringla") for p in legs.values())

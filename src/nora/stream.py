@@ -623,13 +623,20 @@ def _random_breaches(net: Network, times: list[datetime], spec, flow_rows: list[
         return hard
 
     targets = []  # (node, bar to head for, start, hours)
+    red_up = rng.random() < 0.5  # the red ones take turns: high-high, then low-low
     for hard in flags(round(float(spec.get("pressure_per_day", 0)) * days)):
         node, up = rng.choice(nodes), rng.random() < 0.5
-        ll, low, high, hh, _top = limits[net.node_by_id[node].type]
+        if hard:
+            up, red_up = red_up, not red_up
+        kind = net.node_by_id[node].type
+        ll, low, high, hh, _top = limits[kind]
         bar = (hh + 1.5 if hard else high + 3) if up else (ll - 1.5 if hard else low - 3)
-        targets.append(
-            (node, bar, when(), rng.uniform(3, 5) if hard else rng.uniform(5, 9))
-        )  # red is brief
+        hours = rng.uniform(3, 5) if hard else rng.uniform(5, 9)  # red is brief
+        if hard:  # but long enough to get there at 6 bar/h from where the node usually sits
+            lo_w, hi_w = config["pressure"][kind]
+            usual = lo_w + (hi_w - lo_w) * (0.5 if kind in ("terminal", "market", "lng") else 0.7)
+            hours += abs(bar - usual) / 6
+        targets.append((node, bar, when(), hours))
     flows: dict[str, list[float]] = {}
     for _when, asset, metric, value in flow_rows:
         if metric == "flow_msm3d":

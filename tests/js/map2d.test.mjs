@@ -371,7 +371,10 @@ test("map: major pipelines have concise persistent names", () => {
   assert.equal(App.pipeMapName("zeepipe_1"), "Zeepipe I");
   assert.equal(App.pipeMapName("langeled_south"), "Langeled");
   assert.equal(App.pipeMapName("iuk"), "Interconnector (IUK)");
-  assert.equal(App.pipeMapName("ogt"), "Oseberg Gas Transport");
+  // Ray, 29 Oct: "there is no Heimdal anymore, it is just a T connection now and the line
+  // is called Heimskringla going from Oseberg to St. Fergus and Draupner".
+  for (const id of ["ogt", "vesterled", "statpipe_heimdal"]) assert.equal(App.pipeMapName(id), "Heimskringla", id);
+  assert.equal(App.nameOf("heimdal"), "Heimskringla tie-in");
   assert.equal(App.pipeMapName("troll_kollsnes"), "", "small feeders stay quiet");
 });
 
