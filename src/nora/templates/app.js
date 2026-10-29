@@ -1451,12 +1451,14 @@ const App = (() => {
       // answer, not an alarm: no badge, no alarm colour (review #49802; alarms are Live).
       if (d.utilization != null) out.width = 0.6 + 2.6 * Math.min(1, d.utilization);
       out.label = d.utilization == null ? "" : `${fmt(d.utilization * 100)}%`;
+      out.model = true; // the maps keep its weight and its number at every zoom
     } else if (mode === "risk") {
       // What a trip would cost, by line weight and the number: the model's N-1 answer,
       // never the alarm shapes and colours (review #49802: 15 red and orange badges
       // here while the top bar counted 4 alarms).
       if (d.lost && !onshore) out.width = 0.6 + 3.4 * Math.sqrt(d.lost / worst);
       out.label = d.lost ? `−${fmt(d.lost)}` : "";
+      out.model = true;
     } else if (mode === "whatif") {
       if (whatif.offline.has(d.from) || whatif.offline.has(d.to)) {
         Object.assign(out, { color: COLORS.inactive, dashed: true, label: "" });
