@@ -1067,6 +1067,43 @@ const App = (() => {
     ctx.restore();
   }
 
+  /* Which way an interconnector's gas goes, and how much (Ray, 29 Oct: "should be able to
+     subtle see which way the gas is flowing for the interconnector and what quantities are
+     going which way"): small chevrons along the line pointing with the flow, and under its
+     middle the flow and where it goes ("12.3 to Zeebrugge"). `at(t)` gives a point and its
+     angle along the line's drawn part; both maps draw it. */
+  function drawFlowDirection(ctx, id, at, u = 1, taken = []) {
+    const d = assets[id], v = live.values[id];
+    if (!d || d.type !== "interconnector" || state.mode !== "live" || v == null) return;
+    const m = Math.abs(v), forward = v >= 0;
+    ctx.save();
+    ctx.strokeStyle = COLORS.text_dim;
+    ctx.lineWidth = 1.3 * u;
+    ctx.lineCap = "round";
+    if (m >= 0.05) for (const t of [0.2, 0.35, 0.65, 0.8]) {
+      const p = at(t), a = p.angle + (forward ? 0 : Math.PI), s = 4 * u;
+      ctx.beginPath();
+      ctx.moveTo(p.x - Math.cos(a - 0.6) * s, p.y - Math.sin(a - 0.6) * s);
+      ctx.lineTo(p.x, p.y);
+      ctx.lineTo(p.x - Math.cos(a + 0.6) * s, p.y - Math.sin(a + 0.6) * s);
+      ctx.stroke();
+    }
+    const mid = at(0.5), text = m < 0.05 ? "no flow" : `${fmt(m, 1)} to ${nameOf(forward ? d.to : d.from)}`;
+    ctx.font = `${11 * u}px Archivo, system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const w = ctx.measureText(text).width, y = mid.y + 11 * u, box = [mid.x - w / 2 - 2 * u, y - 7 * u, mid.x + w / 2 + 2 * u, y + 7 * u];
+    if (!taken.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) {
+      taken.push(box);
+      ctx.lineJoin = "round";
+      ctx.lineWidth = 3 * u;
+      ctx.strokeStyle = COLORS.paper; // a paper halo: no line runs through the text
+      ctx.strokeText(text, mid.x, y);
+      ctx.fillStyle = COLORS.text_dim;
+      ctx.fillText(text, mid.x, y);
+    }
+    ctx.restore();
+  }
   /* What a marker is, for a mouse-over: the value and when it reaches its next stop. */
   function markerTip(m) {
     const when = m.eta && m.to ? `: reaches ${m.to} at ${m.eta}` : m.to ? ` at ${m.to}` : "";
@@ -2106,6 +2143,15 @@ const App = (() => {
   }
   // Major named routes on the Map only. Split physical pipelines share one short name;
   // feeders, short links and notional grid entries stay quiet.
+  /* What a named line is, for the zoomed-in map (Ray, 28 Oct: "if i zoom in to areas on
+     the map view more details should appear like pipeline diameter, pipline length"):
+     its diameter and laid length from pipelines.csv, whichever are known. */
+  const DETAIL_ZOOM = 6.5;
+  function pipeDetail(id) {
+    const d = assets[id];
+    if (!d) return "";
+    return [d.diameter ? `${fmt(d.diameter)}″` : "", d.length ? `${fmt(d.length)} km` : ""].filter(Boolean).join(" · ");
+  }
   function pipeMapName(id) {
     const d = assets[id];
     if (!d || (!["trunk", "export", "interconnector"].includes(d.type) && id !== "ogt")) return "";
@@ -3875,9 +3921,9 @@ const App = (() => {
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
-    pressureMark, flowMark,
+    pressureMark, flowMark, drawFlowDirection,
     rampAhead, // the next 6 hours of nominations at an exit point
-    pipeStyle, pipeMapName, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
+    pipeStyle, pipeMapName, pipeDetail, detailZoom: DETAIL_ZOOM, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
     timeState, timelineWindow, seek,
     // The display profile (desk, wall or compact) and the one UI scale (1 = 100 %).
@@ -4091,10 +4137,12 @@ function NoraCanvasMap(view) {
         const s = App.pipeStyle(p.id), text = App.pipeMapName(p.id);
         if (!text || s.hidden || s.dim || !pipeAtZoom(p.id)) continue;
         const m = along(p.id, 0.5), y = m.y - 9 * u;
-        const w = ctx.measureText(text).width + 4 * u, box = [m.x - w / 2, y - 8 * u, m.x + w / 2, y + 8 * u];
+        const sub = zoom() >= App.detailZoom ? App.pipeDetail(p.id) : ""; // diameter and length, zoomed in
+        const w = Math.max(ctx.measureText(text).width, sub ? ctx.measureText(sub).width : 0) + 4 * u;
+        const box = [m.x - w / 2, y - (sub ? 21 : 8) * u, m.x + w / 2, y + 8 * u];
         if (placed.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) continue;
         placed.push(box);
-        pipeLabels.push({ text, x: m.x, y });
+        pipeLabels.push({ text, sub, x: m.x, y });
       }
       ctx.textBaseline = "top";
     }
@@ -4120,6 +4168,9 @@ function NoraCanvasMap(view) {
     }
     drawnMarks = [];
     const taken = [...placed, ...dots]; // marker labels keep clear of names and dots
+    for (const id of live ? App.pipeIds : []) {
+      if (NORA.assets[id].type === "interconnector" && pipeById[id] && !App.pipeStyle(id).hidden && pipeAtZoom(id)) App.drawFlowDirection(ctx, id, (t) => along(id, t), u, taken);
+    }
     for (const m of marks) {
       if (!pipeById[m.id] || App.pipeStyle(m.id).hidden || !pipeAtZoom(m.id)) continue;
       const p = along(m.id, m.along);
@@ -4130,6 +4181,12 @@ function NoraCanvasMap(view) {
     for (const label of pipeLabels) {
       ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(label.text, label.x, label.y);
       ctx.fillStyle = C.text; ctx.fillText(label.text, label.x, label.y);
+    }
+    ctx.font = `${10.5 * u}px Archivo, system-ui, sans-serif`;
+    for (const label of pipeLabels) {
+      if (!label.sub) continue;
+      ctx.lineWidth = 3.5 * u; ctx.strokeStyle = C.paper; ctx.strokeText(label.sub, label.x, label.y - 13 * u);
+      ctx.fillStyle = C.text_dim; ctx.fillText(label.sub, label.x, label.y - 13 * u);
     }
     ctx.font = `italic ${11 * u}px Archivo, system-ui, sans-serif`;
     for (const label of modelLabels) {
@@ -4836,13 +4893,18 @@ function NoraCanvasMap(view) {
         const style = App.pipeStyle(id), text = App.pipeMapName(id);
         if (!text || style.hidden || style.dim || !pipeAtZoom(id)) continue;
         const point = project(id, 0.5), y = point.y - 9 * u;
-        const w = ctx.measureText(text).width + 4 * u;
-        const box = [point.x - w / 2, y - 8 * u, point.x + w / 2, y + 8 * u];
+        // zoomed in, its diameter and length on a second line above the name
+        const sub = zoom >= App.detailZoom ? App.pipeDetail(id) : "";
+        const w = Math.max(ctx.measureText(text).width, sub ? ctx.measureText(sub).width : 0) + 4 * u;
+        const box = [point.x - w / 2, y - (sub ? 21 : 8) * u, point.x + w / 2, y + 8 * u];
         if (taken.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) continue;
         taken.push(box); // reserve now so marker labels avoid the name too
-        pipeLabels.push({ text, x: point.x, y });
+        pipeLabels.push({ text, sub, x: point.x, y });
       }
       ctx.restore();
+    }
+    for (const id of App.pipeIds) {
+      if (NORA.assets[id].type === "interconnector" && !App.pipeStyle(id).hidden && pipeAtZoom(id)) App.drawFlowDirection(ctx, id, (t) => project(id, t), u, taken);
     }
     for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]), 3.2 * u, projectBand(m.id, m.extent));
     for (const m of marks) {
@@ -4860,6 +4922,12 @@ function NoraCanvasMap(view) {
     for (const label of pipeLabels) {
       ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(label.text, label.x, label.y);
       ctx.fillStyle = C.text; ctx.fillText(label.text, label.x, label.y);
+    }
+    ctx.font = `${10.5 * u}px Archivo, system-ui, sans-serif`;
+    for (const label of pipeLabels) {
+      if (!label.sub) continue;
+      ctx.lineWidth = 3.5 * u; ctx.strokeStyle = C.paper; ctx.strokeText(label.sub, label.x, label.y - 13 * u);
+      ctx.fillStyle = C.text_dim; ctx.fillText(label.sub, label.x, label.y - 13 * u);
     }
     ctx.restore();
   }
