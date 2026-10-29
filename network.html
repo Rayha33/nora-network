@@ -4313,6 +4313,33 @@ function NoraCanvasMap(view) {
     const split = spaces.sort((a, b) => Math.abs(a - text.length / 2) - Math.abs(b - text.length / 2))[0];
     return [text.slice(0, split), text.slice(split + 1)];
   }
+  function overviewNamePlacement(point, radius, scale, width, height, boxes, bounds = null) {
+    const below = point.y + radius * scale + 2;
+    const candidates = [
+      { left: point.x - width / 2, top: below },
+      { left: point.x + radius * scale + 6, top: point.y - height / 2 },
+      { left: point.x - radius * scale - 6 - width, top: point.y - height / 2 },
+      { left: point.x - width / 2, top: point.y - radius * scale - height - 2 },
+    ];
+    const clear = (p) => (!bounds || (p.left >= 0 && p.top >= 0 && p.left + width <= bounds.width && p.top + height <= bounds.height))
+      && !boxes.some((b) => p.left < b[2] && p.left + width > b[0] && p.top < b[3] && p.top + height > b[1]);
+    for (const candidate of candidates) if (clear(candidate)) return candidate;
+    const maxAttempts = bounds ? Math.ceil(bounds.height / (height + 4)) + 2 : 1000;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const down = { left: point.x - width / 2, top: below + attempt * (height + 4) };
+      if (clear(down)) return down;
+      const up = { left: point.x - width / 2, top: point.y - radius * scale - height - 2 - attempt * (height + 4) };
+      if (clear(up)) return up; // bottom-edge names move up, never off-canvas
+      const shift = attempt * (height + 4);
+      for (const left of [point.x + radius * scale + 6, point.x - radius * scale - 6 - width]) {
+        for (const top of [point.y - height / 2 + shift, point.y - height / 2 - shift]) {
+          const side = { left, top };
+          if (clear(side)) return side; // dense columns still have shifted side slots
+        }
+      }
+    }
+    return null;
+  }
   function drawOverviewName(ctx, id, x, y, radius) {
     if (!network) return;
     const ratio = (network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
@@ -4322,13 +4349,12 @@ function NoraCanvasMap(view) {
     ctx.font = "600 11.5px Archivo, system-ui, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    const width = Math.max(...lines.map((line) => ctx.measureText(line).width));
-    const top = point.y + radius * network.getScale() + 4;
-    const box = [point.x - width / 2 - 3, top - 2, point.x + width / 2 + 3, top + lines.length * 13 + 2];
-    if (overviewBoxes.some((other) => box[0] < other[2] && box[2] > other[0] && box[1] < other[3] && box[3] > other[1])) {
-      ctx.restore();
-      return;
-    }
+    const textWidth = Math.max(...lines.map((line) => ctx.measureText(line).width));
+    const width = textWidth + 6, height = lines.length * 13 + 4;
+    const canvas = network.canvas.frame.canvas, bounds = { width: canvas.clientWidth, height: canvas.clientHeight };
+    const placement = overviewNamePlacement(point, radius, network.getScale(), width, height, overviewBoxes, bounds);
+    if (!placement) { ctx.restore(); return; } // only a genuinely full canvas may omit a name
+    const box = [placement.left, placement.top, placement.left + width, placement.top + height];
     overviewBoxes.push(box);
     const ca = network.DOMtoCanvas({ x: box[0], y: box[1] }), cb = network.DOMtoCanvas({ x: box[2], y: box[3] });
     pressurePlacements.push([ca.x, ca.y, cb.x, cb.y]); // later pressures avoid this name too
@@ -4336,9 +4362,10 @@ function NoraCanvasMap(view) {
     ctx.lineWidth = 3;
     ctx.strokeStyle = C.paper;
     ctx.fillStyle = C.text;
+    const center = placement.left + width / 2, top = placement.top + 2;
     lines.forEach((line, index) => {
-      ctx.strokeText(line, point.x, top + index * 13);
-      ctx.fillText(line, point.x, top + index * 13);
+      ctx.strokeText(line, center, top + index * 13);
+      ctx.fillText(line, center, top + index * 13);
     });
     ctx.restore();
   }
@@ -4951,6 +4978,7 @@ function NoraCanvasMap(view) {
   view.overviewSquareHalf = overviewSquareHalf;
   view.overviewReading = overviewReading;
   view.overviewNameLines = overviewNameLines;
+  view.overviewNamePlacement = overviewNamePlacement;
   view.stubDistance = stubDistance;
   view.stubClear = stubClear;
   view.card = card; // for tests: the renderer of one node
