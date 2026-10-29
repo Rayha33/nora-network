@@ -8,7 +8,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { loadApp } from "./harness.mjs";
-import { STEPS, editedApp } from "./edits.mjs";
+import { STEPS, editedApp, storage } from "./edits.mjs";
 
 test("edits: applied before anything reads the network", () => {
   const { App, NORA } = editedApp();
@@ -133,4 +133,28 @@ test("edits: dragging a node keeps its place without a reload; dragging again up
   assert.deepEqual(Array.from(NORA.grid.troll), [0.4, 8.2], "the drawing follows at once");
   App.edit.move("kollsnes", [2, 8.5]);
   assert.equal(App.edit.list().length, 2, "another node is its own step");
+});
+
+test("edits: a hosted server's Save asks for its edit key once, then keeps it", async () => {
+  // Ray, 29 Oct: saving must not mean downloading files once NORA is hosted. The server
+  // (NORA_EDIT_TOKEN) answers 401 without its key; the page asks, resends and keeps it.
+  const calls = [];
+  const fetch = async (url, options = {}) => {
+    calls.push({ url, auth: options.headers && options.headers.Authorization });
+    if (url === "api/network") return { ok: true, status: 200, json: async () => ({ nodes: [], pipelines: [], revision: "r1" }) };
+    const ok = options.headers.Authorization === "Bearer s3cret";
+    return { ok, status: ok ? 200 : 401, json: async () => (ok ? { saved: true } : { error: "this server needs its edit key to save" }) };
+  };
+  const { App, window, localStorage } = (() => {
+    const localStorage = storage([{ op: "removeLine", id: "ogt" }]);
+    return { ...loadApp({ globals: { localStorage, fetch } }), localStorage };
+  })();
+  let asked = 0;
+  window.prompt = () => { asked += 1; return "s3cret"; };
+  await App.edit.save();
+  assert.equal(asked, 1, "asked for the key once");
+  assert.deepEqual(calls.map((c) => c.auth), [undefined, undefined, "Bearer s3cret"], "sent without, then with the key");
+  assert.equal(localStorage.store.get("nora-edit-key"), "s3cret", "kept for the next save");
+  assert.ok(!localStorage.store.has("nora-edits"), "saved: the edits are cleared");
+  assert.equal(App.edit.list().length, 0);
 });

@@ -120,7 +120,7 @@
   async function addLayers() {
     view.ready = false;
     calmBasemap();
-    await Promise.all([1, 2, 3].map((l) => loadImage(`nora-alarm-${l}`, badgeUri(l), 32)));
+    await Promise.all([2, 3].map((l) => loadImage(`nora-alarm-${l}`, badgeUri(l), 32))); // no warning triangle
     const pipeGeo = {
       ...NORA.geo.pipes,
       features: NORA.geo.pipes.features.map((feature) => ({
@@ -173,7 +173,7 @@
     // Alarm badges: shape + number + colour, on nodes. Not on lines (Ray, 29 Oct: "remove
     // the small red squares they serve no purpose").
     for (const [id, source, offset] of [["nora-node-alarms", "nora-node-badges", [12, -12]]]) {
-      map.addLayer({ id, type: "symbol", source, filter: ["all", [">", ["get", "alarm"], 0], detailFilter],
+      map.addLayer({ id, type: "symbol", source, filter: ["all", [">", ["get", "alarm"], 1], detailFilter],
         layout: { "icon-image": ["concat", "nora-alarm-", ["to-string", ["get", "alarm"]]], "icon-size": 0.85, "icon-offset": offset,
           "icon-allow-overlap": true, "icon-ignore-placement": true, "symbol-sort-key": ["-", 0, ["get", "alarm"]] } });
     }

@@ -175,6 +175,22 @@ every_hours = 6
     assert "co2_molpct" in stream.metrics
 
 
+def test_synthetic_co2_slugs_are_short(north_sea):
+    """Ray, 29 Oct: "some of the CO2 peaks are unrealisticly long, cut the longest in
+    half". No field's CO2 stays over the follow level for more than four hours."""
+    from nora.config import load_config
+
+    quality = load_config()["quality"]
+    follow = quality["co2_molpct"][0] * quality["follow_from"]
+    assets, values = load_stream("synthetic-week", north_sea).metrics["co2_molpct"]
+    for column, asset in enumerate(assets):
+        run = longest = 0
+        for row in values:
+            run = run + 1 if row[column] is not None and row[column] >= follow else 0
+            longest = max(longest, run)
+        assert longest <= 4, f"{asset}: CO2 over {follow:.2f} mol % for {longest} h"
+
+
 def test_unknown_excursion_field_is_reported(tiny, tmp_path):
     toml = """
 [synthetic]

@@ -39,7 +39,8 @@ test("marker labels are at least 11 px and regular weight", () => {
 
 test("pig markers use a larger shared size without enlarging peaks", () => {
   const { App } = loadApp();
-  assert.ok(App.markerSize("pig") >= 16, "pig icons are clearly visible");
+  assert.ok(App.markerSize("pig") >= 12, "pig icons are clearly visible");
+  assert.ok(App.markerSize("pig") < 16, "and a bit smaller than they were (Ray, 29 Oct)");
   assert.ok(App.markerSize("pig") > App.markerSize("peak"), "pigs are more prominent than peak dots");
   assert.equal(App.markerSize("peak"), 6.5, "peak markers keep their established size");
 });
@@ -48,7 +49,9 @@ test("alarm badge numbers are never heavier than semibold", () => {
   const loaded = loadApp();
   const { ctx, texts } = recorder();
   for (const lvl of [1, 2, 3]) loaded.App.drawBadge(ctx, lvl, 20, 20, 8);
-  assert.deepEqual(texts.map((t) => t.text), ["3", "2", "1"], "each priority carries its number");
+  // Ray, 29 Oct: "remove all warning triangles". A warning draws nothing on a view.
+  assert.deepEqual(texts.map((t) => t.text), ["2", "1"], "medium and critical carry their number");
+  assert.equal(loaded.App.shapeMarkup(1), "", "no warning triangle in panels either");
   for (const t of texts) assert.ok(weight(t.font) <= 600, `badge ${t.text}: weight ${weight(t.font)}`);
   for (const lvl of [1, 2, 3]) {
     assert.doesNotMatch(loaded.App.shapeMarkup(lvl), /font-weight="[7-9]00"/, `SVG badge ${4 - lvl}`);

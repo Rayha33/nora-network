@@ -105,11 +105,9 @@ NSTA_ROUTES = {
     "iuk": "PL1339",
 }
 
-# Dutch routes: NORA pipeline id -> EMODnet pipeline ids, in flow order.
-EMODNET_ROUTES = {
-    "ngt": ["PL0003_PR"],
-    "wgt": ["PL0004_PR"],
-}
+# Routes from EMODnet: NORA pipeline id -> EMODnet pipeline ids, in flow order (none
+# since the Dutch and Danish lines left the network).
+EMODNET_ROUTES: dict[str, list[str]] = {}
 
 CREDITS = {
     "sodir": f"Norwegian Offshore Directorate (SODIR), {SODIR_URL}, licence NLOD",

@@ -1,9 +1,10 @@
-"""Local editing API and lossless row updates for the network CSVs."""
+"""Editing API (local, or hosted with an edit key) and lossless row updates for the data files."""
 
 from __future__ import annotations
 
 import csv
 import hashlib
+import hmac
 import io
 import json
 import os
@@ -331,8 +332,13 @@ def units_from_payload(payload: dict) -> dict[str, str]:
     return units
 
 
-def make_handler(data_dir: Path, out_dir: Path):
-    """Build the same-origin JSON API handler used by `nora serve --edit`."""
+def make_handler(data_dir: Path, out_dir: Path, token: str | None = None):
+    """Build the same-origin JSON API handler used by `nora serve --edit`.
+
+    With a `token` (NORA_EDIT_TOKEN), NORA can be hosted: every check and save must
+    carry it as `Authorization: Bearer <token>`, and the page may be served under any
+    host name, over http or https (behind a TLS proxy). Ray, 29 Oct: saving should not
+    mean downloading a file, "i will later host this solution"."""
 
     class EditHandler(SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
@@ -373,6 +379,11 @@ def make_handler(data_dir: Path, out_dir: Path):
             if not self._same_origin():
                 self._json(403, {"error": "a same-origin Origin header is required"})
                 return
+            if token is not None:
+                given = self.headers.get("Authorization", "")
+                if not hmac.compare_digest(given.encode(), f"Bearer {token}".encode()):
+                    self._json(401, {"error": "this server needs its edit key to save"})
+                    return
             length = self.headers.get("Content-Length")
             if length is None or not length.isdecimal():
                 self._json(411, {"error": "Content-Length is required"})
@@ -446,14 +457,16 @@ def make_handler(data_dir: Path, out_dir: Path):
                 )
 
         def _same_origin(self) -> bool:
-            # The page may be open as 127.0.0.1 or as localhost; either way the Host must
-            # be this loopback server and the Origin the page it served.
+            # The Origin must be the page this server served. On this computer that is
+            # 127.0.0.1 or localhost; hosted (with an edit key) any host, http or https.
+            host, origin = self.headers.get("Host") or "", self.headers.get("Origin")
+            if token is not None:
+                return bool(host) and origin in (f"http://{host}", f"https://{host}")
             port = self.server.server_address[1]
             hosts = {
                 f"{name}:{port}" if port != 80 else name for name in ("127.0.0.1", "localhost")
             }
-            host = self.headers.get("Host")
-            return host in hosts and self.headers.get("Origin") == f"http://{host}"
+            return host in hosts and origin == f"http://{host}"
 
         def _json(self, status: int, value: dict) -> None:
             body = json.dumps(value, ensure_ascii=False, allow_nan=False).encode("utf-8")

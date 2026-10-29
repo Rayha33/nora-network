@@ -67,12 +67,12 @@ test("keyboard focus stays on the same control when the data steps and the scree
   }
 });
 
-test("the alarm counts and the plan chip are live regions: unchanged, they are left alone", () => {
+test("the alarm counts are a live region: unchanged, they are left alone", () => {
   const { App, document } = play();
   App.go({ screen: "overview" });
-  const counts = document.getElementById("alarm-counts"), chip = document.getElementById("plan-chip");
-  const before = [counts._replaced, chip._replaced];
+  const counts = document.getElementById("alarm-counts");
+  const before = counts._replaced;
   App.go({ screen: "overview" }); // the same hour again: nothing to announce
   App.go({ screen: "overview" });
-  assert.deepEqual([counts._replaced, chip._replaced], before, "a screen reader would read them out again");
+  assert.equal(counts._replaced, before, "a screen reader would read them out again");
 });
