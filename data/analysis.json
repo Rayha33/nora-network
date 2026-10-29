@@ -1,7 +1,7 @@
 {
  "offline": [],
- "assets": 45,
- "pipelines": 43,
+ "assets": 44,
+ "pipelines": 42,
  "countries": [
   "BE",
   "DE",
@@ -17,14 +17,13 @@
   "hub": 5,
   "market": 2,
   "processing": 4,
-  "terminal": 10
+  "terminal": 9
  },
- "pipeline_km": 11663,
+ "pipeline_km": 11428,
  "supply_capacity": 502.0,
  "deliverable": 460.0,
  "delivered": {
   "bacton": 30.0,
-  "balgzand": 0.0,
   "den_helder": 5.0,
   "dornum": 117.0,
   "dunkirk": 55.0,
@@ -63,7 +62,6 @@
  "pipeline_flow": {
   "polarled": 9.0,
   "asgard_transport": 70.0,
-  "bbl": 0.0,
   "iuk": 0.0,
   "baltic_pipe_ns": 0.0,
   "europipe_2_south": 71.0,
@@ -145,7 +143,6 @@
   "seal": 0.4286,
   "sns_bacton": 1.0,
   "iuk": 0.0,
-  "bbl": 0.0,
   "ngt": 0.2381,
   "wgt": 0.1667
  },
@@ -600,13 +597,6 @@
   },
   {
    "kind": "node",
-   "id": "balgzand",
-   "name": "Balgzand",
-   "lost": 0.0,
-   "share": 0.0
-  },
-  {
-   "kind": "node",
    "id": "gudrun",
    "name": "Gudrun",
    "lost": 0.0,
@@ -658,13 +648,6 @@
    "kind": "pipeline",
    "id": "baltic_pipe_ns",
    "name": "Baltic Pipe (North Sea leg)",
-   "lost": 0.0,
-   "share": 0.0
-  },
-  {
-   "kind": "pipeline",
-   "id": "bbl",
-   "name": "BBL",
    "lost": 0.0,
    "share": 0.0
   },
@@ -740,7 +723,7 @@
   }
  ],
  "sourced": {
-  "rows": 88,
-  "total": 88
+  "rows": 86,
+  "total": 86
  }
 }

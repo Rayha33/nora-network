@@ -37,17 +37,6 @@
    "id": "bacton"
   },
   {
-   "name": "Balgzand",
-   "type": "terminal",
-   "country": "NL",
-   "lat": 52.86,
-   "lon": 4.9,
-   "capacity_msm3d": null,
-   "status": "operating",
-   "exit": true,
-   "id": "balgzand"
-  },
-  {
    "name": "Baltic Pipe tie-in",
    "type": "hub",
    "country": "DK",
@@ -521,16 +510,6 @@
    "target": "karsto"
   },
   {
-   "pipeline": "bbl",
-   "name": "BBL",
-   "type": "interconnector",
-   "from_id": "balgzand",
-   "length_km": 235.0,
-   "capacity": 53.0,
-   "source": "bacton",
-   "target": "balgzand"
-  },
-  {
    "pipeline": "iuk",
    "name": "Interconnector (IUK)",
    "type": "interconnector",
@@ -539,16 +518,6 @@
    "capacity": 70.0,
    "source": "bacton",
    "target": "zeebrugge"
-  },
-  {
-   "pipeline": "bbl",
-   "name": "BBL",
-   "type": "interconnector",
-   "from_id": "balgzand",
-   "length_km": 235.0,
-   "capacity": 53.0,
-   "source": "balgzand",
-   "target": "bacton"
   },
   {
    "pipeline": "baltic_pipe_ns",
