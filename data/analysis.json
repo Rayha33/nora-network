@@ -1,7 +1,7 @@
 {
  "offline": [],
- "assets": 48,
- "pipelines": 48,
+ "assets": 47,
+ "pipelines": 47,
  "countries": [
   "BE",
   "DE",
@@ -17,13 +17,12 @@
   "market": 2,
   "processing": 4,
   "tee": 3,
-  "terminal": 7
+  "terminal": 6
  },
- "pipeline_km": 10956,
+ "pipeline_km": 10721,
  "supply_capacity": 457.0,
  "deliverable": 415.0,
  "delivered": {
-  "bacton": 0.0,
   "dornum": 95.0,
   "dunkirk": 55.0,
   "easington": 72.0,
@@ -57,7 +56,6 @@
   "polarled": 9.0,
   "aerfugl_skarv": 0.0,
   "asgard_transport": 70.0,
-  "iuk": 0.0,
   "baltic_pipe_ns": 22.0,
   "europipe_2_south": 49.0,
   "sage": 16.0,
@@ -139,8 +137,7 @@
   "tampen_link": 0.72,
   "gjoa_flags": 0.8824,
   "flags": 1.0,
-  "sage": 0.5333,
-  "iuk": 0.0
+  "sage": 0.5333
  },
  "outages": [
   {
@@ -537,13 +534,6 @@
   },
   {
    "kind": "node",
-   "id": "bacton",
-   "name": "Bacton",
-   "lost": 0.0,
-   "share": 0.0
-  },
-  {
-   "kind": "node",
    "id": "draugen",
    "name": "Draugen",
    "lost": 0.0,
@@ -691,13 +681,6 @@
   },
   {
    "kind": "pipeline",
-   "id": "iuk",
-   "name": "Interconnector (IUK)",
-   "lost": 0.0,
-   "share": 0.0
-  },
-  {
-   "kind": "pipeline",
    "id": "kvitebjorn_kollsnes",
    "name": "Kvitebj\u00f8rn gas pipeline",
    "lost": 0.0,
@@ -789,7 +772,7 @@
   }
  ],
  "sourced": {
-  "rows": 96,
-  "total": 96
+  "rows": 94,
+  "total": 94
  }
 }

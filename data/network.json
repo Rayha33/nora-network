@@ -40,18 +40,6 @@
    "id": "asgard"
   },
   {
-   "name": "Bacton",
-   "type": "terminal",
-   "country": "GB",
-   "lat": 52.86,
-   "lon": 1.46,
-   "capacity_msm3d": null,
-   "booked_msm3d": null,
-   "status": "operating",
-   "exit": true,
-   "id": "bacton"
-  },
-  {
    "name": "Baltic Pipe tie-in",
    "type": "tee",
    "country": "DK",
@@ -611,16 +599,6 @@
    "target": "karsto"
   },
   {
-   "pipeline": "iuk",
-   "name": "Interconnector (IUK)",
-   "type": "interconnector",
-   "from_id": "bacton",
-   "length_km": 235.0,
-   "capacity": 70.0,
-   "source": "bacton",
-   "target": "zeebrugge"
-  },
-  {
    "pipeline": "baltic_pipe_ns",
    "name": "Baltic Pipe (North Sea leg)",
    "type": "export",
@@ -1068,16 +1046,6 @@
    "capacity": 12.0,
    "source": "visund",
    "target": "kvitebjorn"
-  },
-  {
-   "pipeline": "iuk",
-   "name": "Interconnector (IUK)",
-   "type": "interconnector",
-   "from_id": "bacton",
-   "length_km": 235.0,
-   "capacity": 70.0,
-   "source": "zeebrugge",
-   "target": "bacton"
   }
  ]
 }
