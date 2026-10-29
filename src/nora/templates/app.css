@@ -472,8 +472,9 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 /* Too narrow for one row: the view and mode switches move to a second row. */
 :root[data-bar="two"] { --bar-h: 104px; }
 :root[data-bar="two"] .bar { flex-wrap: wrap; align-content: center; row-gap: 8px; padding: 0 14px; }
-:root[data-bar="two"] .bar-views { order: 1; width: 100%; overflow-x: auto; scrollbar-width: none; }
-:root[data-bar="two"] .bar-views::-webkit-scrollbar { display: none; }
+/* The switches wrap rather than scroll out of sight; app.js fitBar() gives the bar the
+   height its rows need (three or four on a phone). */
+:root[data-bar="two"] .bar-views { order: 1; width: 100%; flex-wrap: wrap; row-gap: 8px; }
 
 @media (max-width: 1100px) {
   .player { grid-template-columns: minmax(240px, 300px) 1fr auto; gap: 16px; }
@@ -510,7 +511,7 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
   .search:focus-within { position: absolute; left: 14px; right: 14px; top: 66px; width: auto; z-index: 2; }
   .search:focus-within input { width: 100%; }
   .bar-views { gap: 7px; }
-  .seg button { padding: 0 11px; }
+  .seg button { padding: 0 6px; min-width: 44px; } /* both switches on one row at 390 px */
   .player { grid-template-columns: minmax(0, 1fr); grid-template-rows: 58px 44px; gap: 0 12px; padding: 0 14px 6px; }
   .transport { grid-column: 1; grid-row: 1; }
   .play { width: var(--ctl); height: var(--ctl); }
