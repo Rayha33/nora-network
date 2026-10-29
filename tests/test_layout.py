@@ -71,3 +71,44 @@ def test_a_bad_layout_entry_is_reported(north_sea, tmp_path):
     problems = " ".join(caught.value.problems)
     assert "no node 'slepner'" in problems and "did you mean 'sleipner'" in problems
     assert "troll must be [across, down]" in problems
+
+
+def _crosses_box(a, b, box) -> bool:
+    """Does the segment a-b pass through the box (x0, y0, x1, y1)? Liang-Barsky."""
+    (x0, y0), (x1, y1) = a, b
+    t0, t1, dx, dy = 0.0, 1.0, x1 - x0, y1 - y0
+    for p, q in ((-dx, x0 - box[0]), (dx, box[2] - x0), (-dy, y0 - box[1]), (dy, box[3] - y0)):
+        if p == 0:
+            if q < 0:
+                return False
+            continue
+        r = q / p
+        if p < 0:
+            if r > t1:
+                return False
+            t0 = max(t0, r)
+        else:
+            if r < t0:
+                return False
+            t1 = min(t1, r)
+    return True
+
+
+def test_no_line_runs_through_another_node_in_the_flow_view(north_sea):
+    """Ray, 29 Oct: "position the nodes better, you already got an image from me" (his Area
+    D screen). In the shipped layout no line crosses a square it does not end at: a step
+    across is 258 px, a row 204 px, and a square with its tags reaches 70 px either way."""
+    from nora.config import load_config
+
+    hidden = set(load_config()["flow"]["hide"])
+    placed = {k: (x * 258, y * 204) for k, (x, y) in load_flow_layout(north_sea).items()}
+    shown = {k: p for k, p in placed.items() if k not in hidden}
+    through = [
+        f"{line.id} through {node}"
+        for line in north_sea.pipelines
+        if line.from_id in shown and line.to_id in shown
+        for node, (x, y) in shown.items()
+        if node not in (line.from_id, line.to_id)
+        and _crosses_box(shown[line.from_id], shown[line.to_id], (x - 70, y - 70, x + 70, y + 70))
+    ]
+    assert through == []

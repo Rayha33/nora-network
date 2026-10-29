@@ -35,10 +35,11 @@ grid_entries = true         # notional onshore entries into the national grids
 direction = "vertical"      # vertical (top to bottom), horizontal, or auto (follows the screen)
 density = "comfortable"     # compact, comfortable or spacious
 animation = true            # flow bands in and out of the nodes (pigs and peaks always show)
-# Node ids drawn on the Map but not in the Flow view: Poland VTP (Ray, 29 Oct) and the
-# detailed fields that appear only when the map is zoomed in (data/nodes.csv map_min_zoom).
+# Node ids drawn on the Map but not in the Flow view: Poland VTP (Ray, 29 Oct), Frigg and
+# Odin (decommissioned, no line; not on Area D) and the detailed fields that appear only
+# when the map is zoomed in (data/nodes.csv map_min_zoom).
 hide = [
-    "pl_vtp", "smorbukk_nord", "mikkel", "morvin", "trestakk", "skarv", "aerfugl", "draugen",
+    "pl_vtp", "frigg", "odin", "smorbukk_nord", "mikkel", "morvin", "trestakk", "skarv", "aerfugl", "draugen",
     "tordis", "gullfaks_sor",
 ]
 watch = ["sleipner", "draupner_s", "draupner_e"]  # their pressure's change per hour always shows (Ray: "especially in and out of SLR, DRP S and DRP E")

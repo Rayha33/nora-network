@@ -50296,147 +50296,147 @@
  "grid": {
   "aasta_hansteen": [
    0.0,
-   6.1
+   6.8
   ],
   "aerfugl": [
    6.8,
-   6.0
+   8.4
   ],
   "asgard": [
    1.0,
-   12.7
+   13.6
   ],
   "bacton": [
    5.6,
-   3.4
+   4.4
   ],
   "baltic_tie": [
-   3.4,
+   3.7,
    12.6
   ],
   "beryl": [
-   2.0,
-   0.0
+   1.6,
+   1.3
   ],
   "dornum": [
    5.6,
-   11.8
+   12.6
   ],
   "draugen": [
    6.8,
-   7.2
+   9.6
   ],
   "draupner_e": [
-   3.0,
-   9.5
+   3.1,
+   8.8
   ],
   "draupner_s": [
-   3.0,
-   8.0
+   3.1,
+   6.6
   ],
   "dunkirk": [
    5.6,
-   5.8
+   1.6
   ],
   "easington": [
    5.6,
-   1.0
+   0.2
   ],
   "edvard_grieg": [
-   1.0,
-   0.0
+   1.55,
+   2.3
   ],
   "ekofisk": [
-   4.0,
-   10.6
+   3.75,
+   5.4
   ],
   "ekofisk_tee": [
-   4.56,
-   9.56
+   4.3,
+   7.4
   ],
   "emden": [
    5.6,
-   10.6
+   10.2
   ],
   "flags_brent": [
-   2.0,
-   1.5
+   1.0,
+   0.3
   ],
   "frigg": [
-   0.0,
-   2.2
+   6.8,
+   0.0
   ],
   "gjoa": [
    0.0,
-   1.0
+   0.0
   ],
   "gudrun": [
-   2.0,
-   5.0
+   3.4,
+   1.2
   ],
   "gullfaks": [
    0.0,
-   10.8
+   3.0
   ],
   "gullfaks_sor": [
    6.8,
-   9.6
+   12.0
   ],
   "heidrun": [
    0.0,
-   12.0
+   12.2
   ],
   "heimdal": [
-   1.0,
-   4.4
+   2.1,
+   3.4
   ],
   "johan_sverdrup": [
-   2.0,
-   11.2
+   2.5,
+   11.3
   ],
   "karsto": [
-   2.2,
+   1.75,
    12.6
   ],
   "kollsnes": [
-   2.0,
-   8.5
+   1.8,
+   9.0
   ],
   "kvitebjorn": [
-   1.0,
-   9.0
+   0.0,
+   9.6
   ],
   "mikkel": [
    6.8,
-   1.2
+   3.6
   ],
   "morvin": [
    6.8,
-   2.4
+   4.8
   ],
   "norne": [
    0.0,
-   13.1
+   13.4
   ],
   "nybro": [
-   4.6,
+   3.7,
    13.8
   ],
   "nyhamna": [
-   1.0,
-   7.0
+   1.45,
+   6.2
   ],
   "odin": [
-   0.0,
-   3.3
+   6.8,
+   1.2
   ],
   "ormen_lange": [
    0.0,
-   7.4
+   5.6
   ],
   "oseberg": [
    0.0,
-   4.4
+   4.2
   ],
   "pl_vtp": [
    5.6,
@@ -50444,51 +50444,51 @@
   ],
   "skarv": [
    6.8,
-   4.8
+   7.2
   ],
   "sleipner": [
-   3.0,
-   5.5
+   3.1,
+   2.6
   ],
   "smorbukk_nord": [
    6.8,
-   0.0
+   2.4
   ],
   "sns_fields": [
    4.0,
-   3.4
+   4.4
   ],
   "st_fergus": [
-   3.0,
+   2.15,
    0.0
   ],
   "statfjord": [
-   1.0,
-   10.6
+   0.55,
+   2.0
   ],
   "tjeldbergodden": [
    1.0,
-   11.6
+   11.2
   ],
   "tordis": [
    6.8,
-   8.4
+   10.8
   ],
   "trestakk": [
    6.8,
-   3.6
+   6.0
   ],
   "troll": [
    0.0,
-   8.6
+   8.4
   ],
   "visund": [
    0.0,
-   9.7
+   10.8
   ],
   "zeebrugge": [
    5.6,
-   4.6
+   3.2
   ]
  },
  "units": [
@@ -50695,6 +50695,8 @@
    "animation": true,
    "hide": [
     "pl_vtp",
+    "frigg",
+    "odin",
     "smorbukk_nord",
     "mikkel",
     "morvin",
@@ -132375,6 +132377,6 @@
   "nodes.csv": "id,name,type,country,lat,lon,operator,capacity_msm3d,status,startup,shutdown,source,notes,map_min_zoom,booked_msm3d\ntroll,Troll,field,NO,60.646,3.726,Equinor,120,operating,1995,,https://www.equinor.com/energy/troll,Largest gas field on the Norwegian shelf; gas is processed at Kollsnes,,\nkvitebjorn,Kvitebj\u00f8rn,field,NO,61.08,2.49,Equinor,20,operating,2004,,https://www.equinor.com/energy/kvitebjorn,,,\noseberg,Oseberg,field,NO,60.49,2.83,Equinor,30,operating,1988,,https://www.equinor.com/energy/oseberg,Gas exported through Oseberg Gas Transport,,\nstatfjord,Statfjord,field,NO,61.25,1.85,Equinor,15,operating,1979,,https://www.equinor.com/energy/statfjord,Straddles the Norway-UK median line,,\ngjoa,Gj\u00f8a,field,NO,61.33,3.90,V\u00e5r Energi,15,operating,2010,,https://www.norskpetroleum.no/en/facts/field/gjoa/,,,\nsleipner,Sleipner,field,NO,58.37,1.91,Equinor,30,operating,1993,,https://www.equinor.com/energy/sleipner,Field and riser hub for Langeled and Zeepipe,,\nekofisk,Ekofisk,field,NO,56.55,3.21,ConocoPhillips,25,operating,1972,,https://conocophillips.no/our-norway-operations/greater-ekofisk-area/ekofisk,Field complex and start of Norpipe,,\normen_lange,Ormen Lange,field,NO,63.40,5.35,Shell,50,operating,2007,,https://www.norskpetroleum.no/en/facts/field/ormen-lange/,Subsea field tied back to Nyhamna,,\nasgard,\u00c5sgard area,field,NO,65.07,6.79,Equinor,70,operating,1999,,https://www.equinor.com/energy/asgard,Norwegian Sea fields exporting through \u00c5sgard Transport,,\nsmorbukk_nord,Sm\u00f8rbukk Nord,field,NO,65.217531,6.907778,Equinor,0,operating,2024,,https://www.equinor.com/energy/asgard,Detailed geography only; tied into \u00c5sgard; supply remains in the \u00c5sgard area aggregate.,5.5,\nmikkel,Mikkel,field,NO,64.679851,7.672182,Equinor,0,operating,2003,,https://www.norskpetroleum.no/en/facts/field/mikkel/,Detailed geography only; well stream to \u00c5sgard B; supply remains in the \u00c5sgard area aggregate.,5.5,\nmorvin,Morvin,field,NO,65.150063,6.487561,Equinor,0,operating,2010,,https://www.norskpetroleum.no/en/facts/field/morvin/,Detailed geography only; well stream to \u00c5sgard B; supply remains in the \u00c5sgard area aggregate.,5.5,\ntrestakk,Trestakk,field,NO,64.851057,6.812276,Equinor,0,operating,2019,,https://www.norskpetroleum.no/en/facts/field/trestakk/,Detailed geography only; tied back to \u00c5sgard A; supply remains in the \u00c5sgard area aggregate.,5.5,\nskarv,Skarv,field,NO,65.697778,7.651086,Aker BP,0,operating,2013,,https://www.norskpetroleum.no/en/facts/field/skarv/,\"Detailed geography only; gas through the 80 km line into \u00c5sgard Transport at \u00c5sgard T, drawn as a tie-in to the \u00c5sgard area; supply remains in the \u00c5sgard aggregate.\",5.5,\naerfugl,\u00c6rfugl,field,NO,65.735626,7.575386,Aker BP,0,operating,2020,,https://www.norskpetroleum.no/en/facts/field/aerfugl/,Detailed geography only; tied to the Skarv FPSO; supply remains in the \u00c5sgard aggregate.,5.5,\ndraugen,Draugen,field,NO,64.353172,7.782606,OKEA,0,operating,1993,,https://www.norskpetroleum.no/en/facts/field/draugen/,\"Detailed geography only; gas into \u00c5sgard Transport at Draugen T, drawn as a tie-in to the \u00c5sgard area; supply remains in the \u00c5sgard aggregate.\",5.5,\naasta_hansteen,Aasta Hansteen,field,NO,67.07,6.98,Equinor,23,operating,2018,,https://equinor.com/energy/aasta-hansteen,Norwegian Sea field exporting through Polarled,,\ngullfaks,Gullfaks,field,NO,61.18,2.19,Equinor,10,operating,1986,,https://equinor.com/energy/gullfaks,Gas exported through Statfjord into Statpipe,,\ntordis,Tordis,field,NO,61.275633,2.118114,Equinor,0,operating,1994,,https://www.norskpetroleum.no/en/facts/field/tordis/,Detailed geography only; two pipelines to Gullfaks C; supply remains in the Gullfaks aggregate.,5.5,\ngullfaks_sor,Gullfaks S\u00f8r,field,NO,61.088951,2.155309,Equinor,0,operating,1998,,https://www.norskpetroleum.no/en/facts/field/gullfaks-sor/,Detailed geography only; SODIR template centroid; gas processed on Gullfaks C; supply remains in the Gullfaks aggregate.,5.5,\nvisund,Visund,field,NO,61.37,2.46,Equinor,12,operating,1999,,https://equinor.com/energy/visund,Gas exported through the Kvitebj\u00f8rn gas pipeline,,\njohan_sverdrup,Johan Sverdrup,field,NO,58.837,2.557,Equinor,6,operating,2019,,https://equinor.com/en/what-we-do/johan-sverdrup,Associated gas exported through Statpipe to K\u00e5rst\u00f8,,\ngudrun,Gudrun,field,NO,58.85,1.72,Equinor,5,operating,2014,,https://equinor.com/energy/gudrun,Gas exported to Sleipner,,\nedvard_grieg,Edvard Grieg,field,NO,58.84,2.25,Aker BP,6,operating,2015,,https://akerbp.com/en/asset/edvard-grieg-2,Gas exported through the Utsira High Gas Pipeline to SAGE,,\nheidrun,Heidrun,field,NO,65.33,7.32,Equinor,6,operating,1995,,https://equinor.com/energy/heidrun,Norwegian Sea; gas to Tjeldbergodden and \u00c5sgard Transport,,\nnorne,Norne,field,NO,66.02,8.08,Equinor,4,operating,1997,,https://equinor.com/energy/norne,Norwegian Sea; gas through the Norne Gas Transport System,,\nheimdal,Heimskringla tie-in,tee,NO,59.57,2.23,Gassco,,operating,1985,,https://equinor.com/energy/heimdal,The Heimdal platform is gone: only the T connection where Heimskringla from Oseberg splits to St Fergus and Draupner,,\nfrigg,Frigg,field,NO,59.880,2.065,TotalEnergies,,decommissioned,1977,2004,https://www.norskpetroleum.no/en/facts/field/frigg,Gas field straddling the UK-Norway median line; exported via the Frigg Norwegian Pipeline to St Fergus; position approximate,,\nodin,Odin,field,NO,60.077,2.166,TotalEnergies,,decommissioned,1984,1994,https://www.norskpetroleum.no/en/facts/field/odin,Gas treated at Frigg TCP2 before export to St Fergus; position approximate,,\ndraupner_s,Draupner S,hub,NO,58.189,2.473,Gassco,,operating,,,https://en.wikipedia.org/wiki/Draupner_platform,Riser platform bridge-linked to Draupner E,,\ndraupner_e,Draupner E,hub,NO,58.190,2.473,Gassco,,operating,,,https://en.wikipedia.org/wiki/Draupner_platform,Riser platform where Europipe I and Franpipe start,,\nkollsnes,Kollsnes,processing,NO,60.548,4.845,Gassco,144,operating,,,https://gassco.eu/en/prosessanlegg/kollsnes,Gas processing plant near Bergen,,\nkarsto,K\u00e5rst\u00f8,processing,NO,59.273,5.521,Gassco,88,operating,,,https://equinor.com/energy/karsto,Gas processing plant in Rogaland,,\nnyhamna,Nyhamna,processing,NO,62.848,6.954,Gassco,84,operating,,,https://equinor.com/energy/gas-terminals-and-storage,Processing plant for Ormen Lange and Polarled gas,,\nflags_brent,FLAGS North (Brent area),hub,GB,61.05,1.71,,,operating,,,https://en.wikipedia.org/wiki/FLAGS,Northern end of FLAGS; receives Tampen Link and Gj\u00f8a gas,,\nberyl,Beryl,field,GB,59.55,1.53,,10,operating,,,https://en.wikipedia.org/wiki/Beryl_oil_field,Start of SAGE,,\nsns_fields,Southern North Sea fields,field,GB,53.10,2.10,,15,operating,,,https://en.wikipedia.org/wiki/List%20of%20oil%20and%20gas%20fields%20of%20the%20North%20Sea,Aggregate of mature southern gas fields,,\nst_fergus,St Fergus,terminal,GB,57.553,-1.850,,,operating,,,https://en.wikipedia.org/wiki/St_Fergus_Gas_Plant,Gas terminal in Aberdeenshire,,\neasington,Easington,terminal,GB,53.642,0.156,,,operating,,,https://en.wikipedia.org/wiki/Easington_Gas_Terminal,Langeled receiving terminal,,\nbacton,Bacton,terminal,GB,52.86,1.46,,,operating,,,https://en.wikipedia.org/wiki/Bacton_Gas_Terminal,Terminal for SEAL and the IUK and BBL interconnectors,,\nemden,Emden,terminal,DE,53.377,7.219,,,operating,,,https://en.wikipedia.org/wiki/Norpipe,Norpipe receiving terminal (NPT),,\ndornum,Dornum,terminal,DE,53.648,7.327,,,operating,,,https://en.wikipedia.org/wiki/Europipe_II,Landfall of Europipe I and II,,\nzeebrugge,Zeebrugge,terminal,BE,51.340,3.178,Fluxys,,operating,,,https://fluxys.com/en/about-us/fluxys-belgium/infrastructure,Terminal for Zeepipe and IUK,,\ndunkirk,Dunkirk (Franpipe),terminal,FR,51.044,2.462,,,operating,,,https://en.wikipedia.org/wiki/Franpipe,Franpipe receiving terminal,,\nnybro,Nybro,processing,DK,55.67,8.42,Energinet,,operating,,,https://en.energinet.dk/about-our-news/news/2022/11/01/nybro-commissioning,Gas treatment plant and Baltic Pipe compression,,\nbaltic_tie,Baltic Pipe tie-in,tee,DK,55.814,6.512,,,operating,,,https://en.wikipedia.org/wiki/Baltic_Pipe,Subsea tie-in on Europipe II,,\npl_vtp,Poland VTP,market,PL,53.950,15.100,,,operating,,,https://gaz-system.pl/en/for-customers/market-information/data-exchange.html,\"Reached through Baltic Pipe; map placement is schematic. Booked: PGNiG (ORLEN) holds about 80% of the 10 bcm/y Baltic Pipe capacity to 2037 (https://en.wikipedia.org/wiki/Baltic_Pipe), about 22 MSm3/d; routing fills it before closer exits.\",,22\ntjeldbergodden,Tjeldbergodden,market,NO,63.395,8.655,Equinor,,operating,,,https://equinor.com/energy/tjeldbergodden,Methanol plant: the gas consumer at the end of Haltenpipe,,\nekofisk_tee,Ekofisk tie-in,tee,NO,56.54,3.23,Gassco,,operating,1977,,https://en.wikipedia.org/wiki/Norpipe,Where Ekofisk's gas joins the line from Draupner S to the Norpipe terminal (NPT) at Emden,,\n",
   "pipelines.csv": "id,name,from,to,type,length_km,diameter_in,capacity_msm3d,bidirectional,commissioned,status,operator,source,notes\ntroll_kollsnes,Troll - Kollsnes,troll,kollsnes,feeder,65,36,120,false,1996,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,Several parallel lines modelled as one\nkvitebjorn_kollsnes,Kvitebj\u00f8rn gas pipeline,kvitebjorn,kollsnes,feeder,147,30,33,false,2004,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,\nogt,Heimskringla,oseberg,heimdal,feeder,109,36,40,false,2000,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,From Oseberg to the T; was Oseberg Gas Transport to Heimdal\nstatpipe_rich,Statpipe (rich gas),statfjord,karsto,trunk,308,30,25,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,\nstatpipe_dry,Statpipe (dry gas),karsto,draupner_s,trunk,228,28,20,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,\nstatpipe_heimdal,Heimskringla (Draupner leg),heimdal,draupner_s,trunk,155,36,30,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,From the T to Draupner S; was the Heimdal leg of Statpipe\nstatpipe_ekofisk,Statpipe (Draupner S - Ekofisk tie-in),draupner_s,ekofisk_tee,trunk,203,36,30,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,\ndraupner_bridge,Draupner S - E bridge,draupner_s,draupner_e,link,0.1,,,true,1985,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,Platforms are bridge-linked\nsleipner_draupner,Sleipner - Draupner,sleipner,draupner_s,link,,,60,true,,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,Interconnection between the two riser hubs\nzeepipe_2a,Zeepipe IIA,kollsnes,sleipner,trunk,303,40,58,false,1996,operating,Gassco,https://en.wikipedia.org/wiki/Zeepipe,\nzeepipe_2b,Zeepipe IIB,kollsnes,draupner_e,trunk,300,40,70,false,1997,operating,Gassco,https://en.wikipedia.org/wiki/Zeepipe,\nlangeled_north,Langeled (north),nyhamna,sleipner,trunk,627,42,72,false,2007,operating,Gassco,https://en.wikipedia.org/wiki/Langeled_pipeline,\nasgard_transport,\u00c5sgard Transport,asgard,karsto,trunk,707,42,70,false,2000,operating,Gassco,https://en.wikipedia.org/wiki/\u00c5sgard_Transport,\npolarled,Polarled,aasta_hansteen,nyhamna,trunk,482,36,70,false,2018,operating,Gassco,https://en.wikipedia.org/wiki/Polarled,\normen_lange_nyhamna,Ormen Lange - Nyhamna,ormen_lange,nyhamna,feeder,120,30,70,false,2007,operating,Shell,https://en.wikipedia.org/wiki/Ormen_Lange,Two parallel lines modelled as one\ngullfaks_statfjord,Gullfaks gas export,gullfaks,statfjord,feeder,,,10,false,,operating,,\"approximate, public data\",Gullfaks gas joins Statpipe at Statfjord\ntordis_gullfaks,Tordis - Gullfaks C,tordis,gullfaks,feeder,,,,false,1994,operating,Equinor,https://www.norskpetroleum.no/en/facts/field/tordis/,Two physical pipelines modelled as one schematic tie-back; no incremental supply.\ngullfaks_sor_gullfaks,Gullfaks S\u00f8r - Gullfaks C,gullfaks_sor,gullfaks,feeder,,,,false,1998,operating,Equinor,https://www.norskpetroleum.no/en/facts/field/gullfaks-sor/,Schematic tie-back; no incremental supply.\nvisund_kvitebjorn,Visund gas export,visund,kvitebjorn,feeder,,,12,false,2005,operating,,\"approximate, public data\",Joins the Kvitebj\u00f8rn gas pipeline to Kollsnes\nsverdrup_karsto,Johan Sverdrup gas export,johan_sverdrup,karsto,feeder,,,6,false,2019,operating,,\"approximate, public data\",Through Statpipe to K\u00e5rst\u00f8\ngudrun_sleipner,Gudrun - Sleipner,gudrun,sleipner,feeder,,,5,false,2014,operating,,\"approximate, public data\",\nuhgp,Utsira High Gas Pipeline,edvard_grieg,beryl,feeder,,,6,false,2015,operating,,\"approximate, public data\",Ties into SAGE for St Fergus\nhaltenpipe,Haltenpipe,heidrun,tjeldbergodden,trunk,250,16,6,false,1996,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,Feeds the Tjeldbergodden methanol plant\nheidrun_asgard,Heidrun - \u00c5sgard Transport,heidrun,asgard,link,,,6,false,2001,operating,,\"approximate, public data\",\nngts,Norne Gas Transport System,norne,asgard,feeder,126,16,6,false,2001,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,Ties into \u00c5sgard Transport\nmikkel_asgard,Mikkel - \u00c5sgard B,mikkel,asgard,feeder,,,,false,2003,operating,Equinor,https://www.norskpetroleum.no/en/facts/field/mikkel/,Schematic tie-back; internal flowline geometry is not in the export register; no incremental supply.\nmorvin_asgard,Morvin - \u00c5sgard B,morvin,asgard,feeder,20,,,false,2010,operating,Equinor,https://www.norskpetroleum.no/en/facts/field/morvin/,Schematic 20 km tie-back; no incremental supply.\ntrestakk_asgard,Trestakk - \u00c5sgard A,trestakk,asgard,feeder,,,,false,2019,operating,Equinor,https://www.norskpetroleum.no/en/facts/field/trestakk/,Schematic tie-back; no incremental supply.\nsmorbukk_nord_asgard,Sm\u00f8rbukk Nord - \u00c5sgard,smorbukk_nord,asgard,feeder,,,,false,2024,operating,Equinor,https://www.equinor.com/energy/asgard,Schematic tie-back; no incremental supply.\nskarv_asgard,Skarv - \u00c5sgard Transport,skarv,asgard,feeder,80,26,,false,2013,operating,Gassco,https://www.norskpetroleum.no/en/facts/field/skarv/,\"26-inch line to \u00c5sgard T on \u00c5sgard Transport, drawn as a tie-in to the \u00c5sgard area; no incremental supply.\"\ndraugen_asgard,Draugen - \u00c5sgard Transport,draugen,asgard,feeder,,16,,false,2000,operating,Gassco,https://factpages.sodir.no/downloads/csv/pipLine.zip,\"16-inch line to Draugen T on \u00c5sgard Transport, drawn as a tie-in to the \u00c5sgard area; no incremental supply.\"\naerfugl_skarv,\u00c6rfugl - Skarv FPSO,aerfugl,skarv,feeder,,,,false,2020,operating,Aker BP,https://www.norskpetroleum.no/en/facts/field/aerfugl/,Schematic tie-back; no incremental supply.\nnorpipe,Norpipe Gas,ekofisk_tee,emden,export,440,36,44,false,1977,operating,Gassco,https://en.wikipedia.org/wiki/Norpipe,\neuropipe_1,Europipe I,draupner_e,dornum,export,660,40,46,false,1995,operating,Gassco,https://en.wikipedia.org/wiki/Europipe_I,\neuropipe_2_north,Europipe II (K\u00e5rst\u00f8 - Baltic tie-in),karsto,baltic_tie,export,400,42,71,false,1999,operating,Gassco,https://en.wikipedia.org/wiki/Europipe_II,Split at the Baltic Pipe tie-in\neuropipe_2_south,Europipe II (Baltic tie-in - Dornum),baltic_tie,dornum,export,258,42,71,false,1999,operating,Gassco,https://en.wikipedia.org/wiki/Europipe_II,Split at the Baltic Pipe tie-in\nfranpipe,Franpipe,draupner_e,dunkirk,export,840,42,55,false,1998,operating,Gassco,https://en.wikipedia.org/wiki/Franpipe,\nzeepipe_1,Zeepipe I,sleipner,zeebrugge,export,814,40,42,false,1993,operating,Gassco,https://en.wikipedia.org/wiki/Zeepipe,\nlangeled_south,Langeled (south),sleipner,easington,export,543,44,72,false,2006,operating,Gassco,https://en.wikipedia.org/wiki/Langeled_pipeline,\nvesterled,Heimskringla (St Fergus leg),heimdal,st_fergus,export,360,32,39,false,2001,operating,Gassco,https://gassco.eu/en/rorledningsnettverk/vesterled,From the T to St Fergus; was Vesterled (the Frigg Norwegian Pipeline until 2001)\nbaltic_pipe_ns,Baltic Pipe (North Sea leg),baltic_tie,nybro,export,110,,27,false,2022,operating,Energinet,https://www.baltic-pipe.eu/,Offshore leg plus the short onshore run to Nybro\nbaltic_pipe_east,Baltic Pipe (Denmark - Poland),nybro,pl_vtp,export,,,27,false,2022,operating,Energinet / GAZ-SYSTEM,https://www.baltic-pipe.eu/,Onshore Denmark plus the Baltic Sea offshore section\ntampen_link,Tampen Link,statfjord,flags_brent,link,23,32,25,false,2007,operating,,\"approximate, public data\",\ngjoa_flags,Gj\u00f8a gas export,gjoa,flags_brent,feeder,130,28,17,false,2010,operating,,https://gassco.no/en/our-activities/pipelines-and-platforms,\nflags,FLAGS,flags_brent,st_fergus,export,450,36,33,false,1982,operating,,https://en.wikipedia.org/wiki/FLAGS,\nsage,SAGE,beryl,st_fergus,export,323,30,30,false,1992,operating,,\"approximate, public data\",\nsns_bacton,Southern North Sea gathering,sns_fields,bacton,feeder,,,15,false,,operating,,\"approximate, public data\",Several pipelines modelled as one\niuk,Interconnector (IUK),bacton,zeebrugge,interconnector,235,40,70,true,1998,operating,,https://www.interconnector.com/,\nekofisk_tie_in,Ekofisk tie-in,ekofisk,ekofisk_tee,feeder,1,,,false,1977,operating,ConocoPhillips,https://en.wikipedia.org/wiki/Norpipe,Ekofisk's gas into the Draupner S - Norpipe line (Ray: tied in along it)\n",
   "units.toml": "# Units for level 2 (unit control): each groups the assets one operator desk looks after.\n# Every node belongs to exactly one unit; a pipeline belongs to the unit it leaves from.\n# Order here is the order on screen. `nora validate` checks every id.\n\n[units.norwegian_sea]\nname = \"Norwegian Sea\"\nnodes = [\n    \"aasta_hansteen\", \"norne\", \"heidrun\", \"asgard\", \"smorbukk_nord\", \"mikkel\", \"morvin\",\n    \"trestakk\", \"skarv\", \"aerfugl\", \"draugen\", \"ormen_lange\", \"nyhamna\", \"tjeldbergodden\",\n]\n\n[units.northern_north_sea]\nname = \"Northern North Sea\"\nnodes = [\n    \"gjoa\", \"visund\", \"statfjord\", \"gullfaks\", \"tordis\", \"gullfaks_sor\", \"flags_brent\", \"kvitebjorn\", \"troll\",\n    \"oseberg\", \"kollsnes\", \"heimdal\", \"beryl\", \"edvard_grieg\", \"frigg\", \"odin\",\n]\n\n[units.hubs]\nname = \"K\u00e5rst\u00f8, Sleipner and Draupner\"\nnodes = [\"karsto\", \"johan_sverdrup\", \"gudrun\", \"sleipner\", \"draupner_s\", \"draupner_e\", \"ekofisk\", \"ekofisk_tee\"]\n\n[units.uk]\nname = \"UK landings\"\nnodes = [\"st_fergus\", \"easington\", \"sns_fields\", \"bacton\"]\n\n[units.continent]\nname = \"Continental landings\"\nnodes = [\"dornum\", \"emden\", \"zeebrugge\", \"dunkirk\"]\n\n[units.denmark_poland]\nname = \"Denmark and Poland\"\nnodes = [\"baltic_tie\", \"nybro\", \"pl_vtp\"]\n",
-  "flow_layout.toml": "# Where each node sits in the Flow view: [across, down] in grid steps (one step across\n# is one square's width with room; one step down is one row of squares with names).\n# Laid out like the operators' Area D overview (Ray, 29 Oct): the UK and St Fergus on\n# the left, the Tampen, Nyhamna and Kollsnes corridors in the middle, K\u00e5rst\u00f8 and the\n# Norwegian Sea on the right; fields at the top, the hubs below them, the landings\n# along the bottom from west to east. Drag a node in the Flow view to move it, and\n# Save. A node not listed here is placed by layout.py. `nora validate` checks the ids.\n\n[positions]\n# fields and the corridors they feed\ngjoa = [1, 0]\nfrigg = [2.2, 0]\nodin = [3.3, 0]\noseberg = [4.4, 0]\naasta_hansteen = [6.1, 0]\normen_lange = [7.4, 0]\ntroll = [8.6, 0]\nvisund = [9.7, 0]\ngullfaks = [10.8, 0]\nheidrun = [12, 0]\nnorne = [13.1, 0]\nedvard_grieg = [0, 1]\nheimdal = [4.4, 1]\nnyhamna = [7, 1]\nkvitebjorn = [9, 1]\nstatfjord = [10.6, 1]\ntjeldbergodden = [11.6, 1]\nasgard = [12.7, 1]\nberyl = [0, 2]\nflags_brent = [1.5, 2]\ngudrun = [5, 2]\nkollsnes = [8.5, 2]\njohan_sverdrup = [11.2, 2]\nkarsto = [12.6, 2.2]\n# hubs and the southern fields\nst_fergus = [0, 3]\nsleipner = [5.5, 3]\ndraupner_s = [8, 3]\ndraupner_e = [9.5, 3]\nbaltic_tie = [12.6, 3.4]\nsns_fields = [3.4, 4]\nekofisk = [10.6, 4]\nekofisk_tee = [9.56, 4.56]  # on the line from Draupner S to Emden (Ray, 29 Oct, Area D)\nnybro = [13.8, 4.6]\n# the landings, west to east\neasington = [1, 5.6]\nbacton = [3.4, 5.6]\nzeebrugge = [4.6, 5.6]\ndunkirk = [5.8, 5.6]\nemden = [10.6, 5.6]\ndornum = [11.8, 5.6]\npl_vtp = [13.8, 5.6]\n# map-only detail (nora.toml [flow] hide): never drawn in the Flow view, kept apart here\nsmorbukk_nord = [0.0, 6.8]\nmikkel = [1.2, 6.8]\nmorvin = [2.4, 6.8]\ntrestakk = [3.6, 6.8]\nskarv = [4.8, 6.8]\naerfugl = [6.0, 6.8]\ndraugen = [7.2, 6.8]\ntordis = [8.4, 6.8]\ngullfaks_sor = [9.6, 6.8]\n"
+  "flow_layout.toml": "# Where each node sits in the Flow view: [across, down] in grid steps (one step across\n# is one square's width with room; one step down is one row of squares with names).\n# Laid out after the operators' Area D screen (Ray, 29 Oct: \"position the nodes better,\n# you already got an image from me\"): the fields across the top from Gj\u00f8a and Statfjord\n# to Heidrun and Norne, St Fergus and the UK on the left, Nyhamna and Kollsnes in the\n# middle, K\u00e5rst\u00f8 on the right, Sleipner, Draupner S and E across the middle, the landings\n# along the bottom from west to east. No line runs through another node. Drag a node in the Flow view to move it, and\n# Save. A node not listed here is placed by layout.py. `nora validate` checks the ids.\n\n[positions]\n# fields across the top, west to east\ngjoa = [0, 0]\nstatfjord = [2.0, 0.55]\ngullfaks = [3.0, 0]\noseberg = [4.2, 0]\normen_lange = [5.6, 0]\naasta_hansteen = [6.8, 0]\ntroll = [8.4, 0]\nkvitebjorn = [9.6, 0]\nvisund = [10.8, 0]\nheidrun = [12.2, 0]\nnorne = [13.4, 0]\n# St Fergus and the UK, the processing plants, K\u00e5rst\u00f8 and the Norwegian Sea\nflags_brent = [0.3, 1.0]\nberyl = [1.3, 1.6]\nedvard_grieg = [2.3, 1.55]\nst_fergus = [0, 2.15]\nheimdal = [3.4, 2.1]  # the Heimskringla T (Ray, 29 Oct)\nnyhamna = [6.2, 1.45]\nkollsnes = [9.0, 1.8]\ntjeldbergodden = [11.2, 1.0]\nasgard = [13.6, 1.0]\nkarsto = [12.6, 1.75]\njohan_sverdrup = [11.3, 2.5]\n# the hubs, Ekofisk and the southern fields\ngudrun = [1.2, 3.4]\nsleipner = [2.6, 3.1]\ndraupner_s = [6.6, 3.1]\ndraupner_e = [8.8, 3.1]\nekofisk = [5.4, 3.75]\nekofisk_tee = [7.4, 4.3]  # on the line from Draupner S to Emden (Area D)\nsns_fields = [4.4, 4.0]\nbaltic_tie = [12.6, 3.7]\nnybro = [13.8, 3.7]\n# the landings, west to east\neasington = [0.2, 5.6]\ndunkirk = [1.6, 5.6]\nzeebrugge = [3.2, 5.6]\nbacton = [4.4, 5.6]\nemden = [10.2, 5.6]\ndornum = [12.6, 5.6]\npl_vtp = [13.8, 5.6]\n# not drawn in the Flow view (nora.toml [flow] hide, or decommissioned with no line), kept apart here\nfrigg = [0.0, 6.8]\nodin = [1.2, 6.8]\nsmorbukk_nord = [2.4, 6.8]\nmikkel = [3.6, 6.8]\nmorvin = [4.8, 6.8]\ntrestakk = [6.0, 6.8]\nskarv = [7.2, 6.8]\naerfugl = [8.4, 6.8]\ndraugen = [9.6, 6.8]\ntordis = [10.8, 6.8]\ngullfaks_sor = [12.0, 6.8]\n"
  }
 }
