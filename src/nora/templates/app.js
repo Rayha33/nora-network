@@ -1776,9 +1776,6 @@ const App = (() => {
     const unitSelect = $("crumb-unit");
     unitSelect.value = s === "asset" || s === "diag" ? unitOf[route.asset] || "all" : route.unit;
     unitSelect.setAttribute("aria-current", s === "unit" ? "page" : "false");
-    const mapUnit = route.unit === "all" ? null : unitById[route.unit];
-    $("map-kicker").textContent = mapUnit ? "Operating unit" : "All operating units";
-    $("map-unit").textContent = mapUnit ? mapUnit.name : "North Sea gas network";
     const deep = s === "asset" || s === "diag";
     $("sep-asset").hidden = $("crumb-asset").hidden = !deep;
     $("sep-diag").hidden = $("crumb-diag").hidden = s !== "diag";
@@ -2301,8 +2298,6 @@ const App = (() => {
   function markTabs() {
     for (const tab of document.querySelectorAll("[data-view]")) tab.setAttribute("aria-selected", String(tab.dataset.view === state.view));
     for (const tab of document.querySelectorAll("[data-mode]")) tab.setAttribute("aria-selected", String(tab.dataset.mode === state.mode));
-    const modeLabels = { live: "Live operations", load: "Capacity load · model", risk: "Outage exposure · model", whatif: "What-if analysis", plain: "Network assets" };
-    $("map-mode-label").textContent = modeLabels[state.mode];
   }
 
   function start() {

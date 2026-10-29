@@ -306,8 +306,10 @@
     }
     ctx.restore();
   }
-  /* Zoomed-out semantic detail: keep direction and volume visible without repeating
-     every individual pipeline. Show incoming and outgoing totals on separate rows. */
+  /* Zoomed out: the gas coming in and going out, as two totals on their own rows, the
+     numbers alone (Ray, 29 Oct: "remove the out and in text from all boxes", "only keep
+     the flow numbers themselves"): incoming dim above, outgoing in full ink below, as
+     in the zoomed-in square. */
   function drawOverviewFlows(ctx, x, y, id, look, { half, total, positions = framePos }) {
     let incoming = 0, outgoing = 0;
     for (const line of lineReadings(id, positions)) {
@@ -316,8 +318,8 @@
       else if (line.direction === "in") incoming += line.value;
     }
     const labels = [];
-    if (incoming >= 0.05) labels.push({ text: `IN ${App.fmt(incoming, incoming < 10 ? 1 : 0)}M`, ink: look.dim });
-    if (outgoing >= 0.05) labels.push({ text: `OUT ${App.fmt(outgoing, outgoing < 10 ? 1 : 0)}M`, ink: look.ink });
+    if (incoming >= 0.05) labels.push({ text: `${App.fmt(incoming, incoming < 10 ? 1 : 0)}M`, ink: look.dim });
+    if (outgoing >= 0.05) labels.push({ text: `${App.fmt(outgoing, outgoing < 10 ? 1 : 0)}M`, ink: look.ink });
     if (!labels.length && total != null) labels.push({ text: `${App.fmt(total, total < 10 ? 1 : 0)}M`, ink: look.ink });
     const scale = network ? network.getScale() : 1, row = 7 / scale;
     ctx.save();

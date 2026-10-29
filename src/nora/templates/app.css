@@ -78,7 +78,7 @@ a { color: var(--text); text-underline-offset: 3px; }
    .stage are not zoomed (maps and canvases keep their own pixels); they draw at
    App.uiScale() themselves. Sizes below stay in unzoomed px; anything sized in vw
    inside zoomed chrome divides by the scale. */
-.bar, .player, .sidebar, .pop, .screen, .map-context, .map-note, .map2d-zoom, .ctx-menu { zoom: var(--ui-scale); }
+.bar, .player, .sidebar, .pop, .screen, .map-note, .map2d-zoom, .ctx-menu { zoom: var(--ui-scale); }
 .stage { position: fixed; inset: calc(var(--bar-h) * var(--ui-scale)) 0 0; }
 .has-player .stage { bottom: calc(var(--player-h) * var(--ui-scale)); }
 body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer when idle */
@@ -173,16 +173,6 @@ body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer 
 .badge.text-only { font-weight: 500; }
 
 /* Map and GIS chrome */
-.map-context {
-  position: absolute; z-index: 6; top: 14px; left: 14px; max-width: min(320px, calc(100% - 28px));
-  padding: 10px 14px; border: 1px solid var(--rule); border-radius: 8px;
-  background: var(--panel); box-shadow: var(--shadow-sm); pointer-events: none;
-}
-.map-context .eyebrow { display: block; margin-bottom: 2px; }
-.map-context h1 { margin: 0; font-size: 16px; line-height: 1.25; font-weight: 600; }
-.map-context-meta { display: flex; align-items: center; gap: 7px; margin-top: 4px; color: var(--text-dim); font-size: 11px; }
-.live-indicator { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); box-shadow: 0 0 0 3px var(--band); }
-.meta-separator { opacity: 0.55; }
 .map-note {
   position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 7;
   background: var(--panel); color: var(--text-dim); border: 1px solid var(--rule); border-radius: 7px;
@@ -467,8 +457,6 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
   .key-grid { grid-template-columns: 1fr; }
   .key-section.key-wide { grid-column: auto; }
   .pop { right: 12px; width: min(360px, calc((100vw - 24px) / var(--ui-scale))); }
-  .map-context { top: 14px; left: 14px; padding: 13px 15px; }
-  .map-context h1 { font-size: 18px; }
   .coord-readout { display: none; }
 }
 
@@ -489,7 +477,6 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
   .bar-secondary > .toolbar-label, .toolbar-rule { display: none; }
   .seg button { padding: 0 11px; }
   .year input { width: 110px; }
-  .map-context { display: none; } /* on a phone the map needs the room; the bar names the unit */
   .player { grid-template-columns: minmax(0, 1fr); grid-template-rows: 58px 44px; gap: 0 12px; padding: 0 14px 6px; }
   .transport { grid-column: 1; grid-row: 1; }
   .play { width: var(--ctl); height: var(--ctl); }
