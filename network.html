@@ -650,6 +650,8 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
       <option value="300">5 min / s</option>
       <option value="600">10 min / s</option>
       <option value="1800">30 min / s</option>
+      <option value="21600">6 h / s</option>
+      <option value="86400">1 day / s</option>
     </select>
   </label>
 </section>
@@ -1410,7 +1412,10 @@ const App = (() => {
     if (!seen) return null;
     return assets[id] && assets[id].supply ? Math.max(out, into) : into;
   }
-  function series(fn, n = 12) {
+  // The trends in the indicator banks: the last TREND_STEPS data steps (12 h of hourly
+  // data, 12 gas days of daily data), and their column says so.
+  const TREND_STEPS = 12;
+  function series(fn, n = TREND_STEPS + 1) {
     const out = [];
     for (let i = Math.max(0, live.index - n + 1); i <= live.index; i++) out.push(live.frames[i] ? fn(live.frames[i]) : null);
     return out;
@@ -2222,7 +2227,7 @@ const App = (() => {
     if (!indicators.length) return h("p", { class: "empty" }, empty);
     return h("div", { class: `bank${byMeasure ? " by-measure" : ""}` },
       h("div", { class: "head" }, byMeasure ? "" : "Asset"), h("div", { class: "head" }, "Value in its range"),
-      h("div", { class: "head" }, "Last 2 h"), h("div", { class: "head optional" }, "Change"), h("div", { class: "head optional" }, "State"),
+      h("div", { class: "head" }, `Last ${spanLabel(TREND_STEPS * stepHours() * 3600)}`), h("div", { class: "head optional" }, "Change"), h("div", { class: "head optional" }, "State"),
       ...indicators.flatMap((ind) => [
         byMeasure ? h("div", { class: "name measure" }, ind.measure || nameOf(ind.id))
           : h("div", pressable(`asset:${ind.id}`, () => go({ screen: "asset", asset: ind.id }), { class: "name", role: "link", title: "Open the asset" }), nameOf(ind.id)),
@@ -3073,15 +3078,22 @@ const App = (() => {
     live.speed = speeds.includes(Number(settings.speed))
       ? Number(settings.speed)
       : speeds.includes(C.screen.speed) ? C.screen.speed : speeds[0];
+    // A daily or monthly dataset at 10 min/s would take minutes per step: play it at the
+    // slowest speed that shows a step about every two seconds (the menu still changes it).
+    if (stream.step / live.speed > 30) live.speed = speeds.find((v) => stream.step / v <= 2) || Math.max(...speeds);
     $("speed").value = String(live.speed);
-    scrub.min = String(-4 * 3600);
-    scrub.max = String(4 * 3600);
-    scrub.step = "3600";
+    const half = timelineHalf(), retimed = stream.offset != null;
+    scrub.min = String(-half);
+    scrub.max = String(half);
+    scrub.step = String(Math.max(3600, stream.step));
     scrub.value = "0";
-    const retimed = stream.offset != null;
-    $("tl-past").textContent = "−4 h";
-    $("tl-now").textContent = "Real time · UTC";
-    $("tl-future").textContent = "+4 h";
+    $("tl-past").textContent = `−${spanLabel(half)}`;
+    // Only re-timed synthetic data has the wall clock at the centre; a recording has the time chosen.
+    $("tl-now").textContent = retimed ? "Real time · UTC" : "Selected time · UTC";
+    $("tl-future").textContent = `+${spanLabel(half)}`;
+    const centre = retimed ? "Real time" : "The selected time", oneStep = spanLabel(Math.max(3600, stream.step));
+    scrub.setAttribute("aria-label", `Move around ${retimed ? "real time" : "the selected time"}: ${spanLabel(half)} back or ahead`);
+    if (scrub.parentElement) scrub.parentElement.title = `${centre} stays in the centre. Drag right for later values or left for earlier ones. Arrow keys move ${oneStep.replace(/^1 /, "one ")}.`;
     seek(retimed ? nowPosition() : 0); // synthetic data opens at now; recordings keep their start
   }
   function seek(position) {
@@ -3149,11 +3161,15 @@ const App = (() => {
       + (future.length > 1 ? `<polyline points="${line(future)}" fill="none" stroke="${COLORS.text_dim}" stroke-width="1.2" stroke-dasharray="3 2"/>` : "")
       + `<line x1="${x(0)}" y1="1" x2="${x(0)}" y2="21" stroke="${COLORS.text_dim}" stroke-width="1"/>`; // built from numbers and palette colours only
   }
-  // The selected time is the real-time centre of an eight-hour window: four hours of
-  // history on the left and four hours ahead on the right.
+  /* The selected time is the centre of the timeline: four data steps of history on the
+     left and four ahead on the right, never less than four hours. Hourly data shows four
+     hours either way, a daily dataset four days, a monthly one four months. */
+  const timelineHalf = () => Math.max(4 * 3600, 4 * ((live.stream && live.stream.step) || 3600));
+  const spanLabel = (seconds) => (seconds < 2 * 86400 ? `${Math.round(seconds / 3600)} h`
+    : seconds < 60 * 86400 ? `${Math.round(seconds / 86400)} d` : `${Math.round(seconds / (30 * 86400))} mo`);
   function timelineWindow() {
-    const now = live.time == null ? 0 : live.time;
-    return { start: now - 4 * 3600, now, end: now + 4 * 3600 };
+    const now = live.time == null ? 0 : live.time, half = timelineHalf();
+    return { start: now - half, now, end: now + half };
   }
   // The track shows plan status and events within that moving eight-hour window.
   function drawSpark() {
@@ -3167,7 +3183,7 @@ const App = (() => {
     ctx.scale(ratio, ratio);
     const frames = live.frames, n = frames.length;
     if (n < 2) return;
-    const window8h = timelineWindow(), x = (t) => ((t - window8h.start) / (8 * 3600)) * width, mid = height / 2;
+    const window8h = timelineWindow(), span = window8h.end - window8h.start, x = (t) => ((t - window8h.start) / span) * width, mid = height / 2;
     ctx.fillStyle = COLORS.dots;
     ctx.fillRect(0, mid - 3, width / 2, 6);
     ctx.globalAlpha = 0.45;
@@ -3185,7 +3201,7 @@ const App = (() => {
       const lvl = f.plan ? f.plan.now[0] : 0;
       if (!lvl || f.t < window8h.start || f.t > window8h.end) return;
       ctx.fillStyle = LEVEL_COLOR[lvl];
-      ctx.fillRect(x(f.t), mid - 6, Math.max(1.5, ((live.stream ? live.stream.step : 3600) / (8 * 3600)) * width), 12);
+      ctx.fillRect(x(f.t), mid - 6, Math.max(1.5, ((live.stream ? live.stream.step : 3600) / span) * width), 12);
     });
     for (const event of (live.stream && live.stream.events) || []) {
       if (event.end < window8h.start || event.start > window8h.end) continue;
