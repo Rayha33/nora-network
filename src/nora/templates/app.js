@@ -1437,13 +1437,15 @@ const App = (() => {
       }
     } else if (mode === "load") {
       out.color = d.utilization == null ? COLORS.inactive : COLORS.active;
-      // How full, at a glance: a hairline when empty, thick when running full.
-      // Overload gets a badge; the route itself stays grey.
+      // How full, at a glance: a hairline when empty, thick when running full. A model
+      // answer, not an alarm: no badge, no alarm colour (review #49802; alarms are Live).
       if (d.utilization != null) out.width = 0.6 + 2.6 * Math.min(1, d.utilization);
-      out.level = level(d.utilization, T.load);
       out.label = d.utilization == null ? "" : `${fmt(d.utilization * 100)}%`;
     } else if (mode === "risk") {
-      out.level = onshore ? 0 : level(d.share, T.risk);
+      // What a trip would cost, by line weight and the number: the model's N-1 answer,
+      // never the alarm shapes and colours (review #49802: 15 red and orange badges
+      // here while the top bar counted 4 alarms).
+      if (d.lost && !onshore) out.width = 0.6 + 3.4 * Math.sqrt(d.lost / worst);
       out.label = d.lost ? `−${fmt(d.lost)}` : "";
     } else if (mode === "whatif") {
       if (whatif.offline.has(d.from) || whatif.offline.has(d.to)) {
@@ -1476,7 +1478,6 @@ const App = (() => {
     } else if (mode === "load" && d.modelFlow != null) {
       out.sub = `${fmt(d.modelFlow)} MSm³/d`;
     } else if (mode === "risk" && d.type !== "market") {
-      out.level = level(d.share, T.risk);
       out.scale = 0.75 + 0.9 * Math.sqrt(d.lost / worst);
       out.sub = d.lost ? `−${fmt(d.lost)} if it trips` : "No loss if it trips";
     } else if (mode === "whatif") {
