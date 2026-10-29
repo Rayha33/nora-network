@@ -2254,7 +2254,7 @@ const App = (() => {
             item(h("span", null, "▶"), "Play / scrub"),
             item(h("span", null, "↗"), "Click for details"),
             item(h("span", null, "⌁"), "What-if: click offline"),
-            item(h("span", null, "⋯"), "Right-click: add, connect or remove"))),
+            item(h("span", null, "⋯"), "Edit: drag to move; right-click to add, connect or remove"))),
         section("Moving", false, h("ul", null,
           item(svg("0 0 26 14", `<path d="M17 7l-8-4.5v9z" fill="${COLORS.pig}" stroke="${COLORS.casing}"/>`), "Pig"),
           item(svg("0 0 26 14", `<circle cx="13" cy="7" r="5" fill="${COLORS.h2s}" stroke="${COLORS.casing}"/>`), "H₂S · ppm"),
@@ -2770,7 +2770,7 @@ const App = (() => {
     });
     items.push({ label: "Open the full page", act: () => go({ screen: "asset", asset: id }) });
     if (d.kind === "node") items.push({ label: "Diagnostics", act: () => go({ screen: "diag", asset: id }) });
-    if (!embed) {
+    if (!embed && state.mode === "edit") { // changing the network only in Edit
       items.push("-");
       if (d.kind === "node" && ctx.connect) items.push({ label: "Connect to another node…", act: ctx.connect });
       items.push(d.kind === "node"
@@ -3031,8 +3031,11 @@ const App = (() => {
   }
   let editsBar = null, editMessage = "", confirmDiscard = false;
   function editNote(text) { editMessage = text; renderEditsBar(); }
+  /* The edits bar shows only in Edit (Ray, 29 Oct, of "13 changes to the network kept in
+     this browser until saved": "what is the purpose of this? maybe remove it?"). Edits are
+     made in Edit, where the bar lists them with Undo, Save and Discard. */
   function renderEditsBar() {
-    if (!edits.length) { if (editsBar) { editsBar.remove(); editsBar = null; } return; }
+    if (!edits.length || state.mode !== "edit") { if (editsBar) { editsBar.remove(); editsBar = null; } return; }
     if (!editsBar) {
       editsBar = h("div", { class: "edits-bar", role: "status", "aria-live": "polite" });
       document.body.append(editsBar);
@@ -3047,6 +3050,16 @@ const App = (() => {
     );
   }
 
+  // A mode tab: what the lines show (and Edit, where the network can be changed).
+  function setMode(mode) {
+    state.mode = mode;
+    markTabs();
+    restyle();
+    renderWhatif();
+    renderEditsBar();
+    renderSidebar();
+    if (route.screen !== "unit") go({ screen: "unit", unit: route.unit || "all" });
+  }
   function markTabs() {
     for (const tab of document.querySelectorAll("[data-view]")) tab.setAttribute("aria-selected", String(tab.dataset.view === state.view));
     for (const tab of document.querySelectorAll("[data-mode]")) tab.setAttribute("aria-selected", String(tab.dataset.mode === state.mode));
@@ -3070,16 +3083,7 @@ const App = (() => {
         else render();
       });
     }
-    for (const tab of document.querySelectorAll("[data-mode]")) {
-      tab.addEventListener("click", () => {
-        state.mode = tab.dataset.mode;
-        markTabs();
-        restyle();
-        renderWhatif();
-        renderSidebar();
-        if (route.screen !== "unit") go({ screen: "unit", unit: route.unit || "all" });
-      });
-    }
+    for (const tab of document.querySelectorAll("[data-mode]")) tab.addEventListener("click", () => setMode(tab.dataset.mode));
     addEventListener("resize", () => {
       if (applyDisplay()) { // a window dragged to another screen may change profile or scale
         buildSettings();
@@ -3091,12 +3095,12 @@ const App = (() => {
     });
     if (embed) document.body.classList.add("embed");
     if (views[params.get("view")]) state.view = params.get("view");
-    if (["live", "load", "risk", "whatif", "plain"].includes(params.get("mode"))) state.mode = params.get("mode");
+    if (["live", "load", "risk", "whatif", "plain", "edit"].includes(params.get("mode"))) state.mode = params.get("mode");
     state.year = new Date().getFullYear();
     restored = takeRestore(); // after an edit: the same view and mode as before the reload
     if (restored) {
       if (views[restored.view]) state.view = restored.view;
-      if (["live", "load", "risk", "whatif", "plain"].includes(restored.mode)) state.mode = restored.mode;
+      if (["live", "load", "risk", "whatif", "plain", "edit"].includes(restored.mode)) state.mode = restored.mode;
     }
     renderEditsBar();
     markTabs();
@@ -3170,7 +3174,7 @@ const App = (() => {
     // Flow through a node now (MSm³/d) and its pressure (bar), for the views to show.
     reading: (id) => cached("reading", id, () => ({ flow: throughput(id, frame().flows), pressure: metric("pressure_bar", id) })),
     frame: frameApi, cached,
-    dayDelivery, register, restyle, go, start, theme: () => theme,
+    dayDelivery, register, restyle, go, start, setMode, theme: () => theme,
     select: (id) => {
       if (!id || !assets[id]) { if (route.screen === "unit" && state.mode !== "whatif") closeSidebar(); return; }
       // In What-if mode a click takes a node offline or brings it back instead.
@@ -3188,7 +3192,7 @@ const App = (() => {
     // The editor: the Flow view's right-click on empty paper, its connect step, the
     // edited data files and network, and the viewport to restore after an edit.
     edit: {
-      canvasMenu: (ctx) => (embed ? [] : [{ label: "Add a node here", act: () => openNodeForm(ctx) }]),
+      canvasMenu: (ctx) => (embed || state.mode !== "edit" ? [] : [{ label: "Add a node here", act: () => openNodeForm(ctx) }]),
       lineForm: openLineForm,
       move: commitMove,
       list: () => edits.slice(),

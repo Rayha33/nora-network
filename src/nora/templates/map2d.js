@@ -148,7 +148,6 @@ function NoraCanvasMap(view) {
         ctx.lineWidth = 2 * u; ctx.strokeStyle = C.text; ctx.stroke();
       }
       ctx.globalAlpha = 1;
-      if (s.level) App.drawBadge(ctx, s.level, q.x + r + u, q.y - r - 10 * u, 7 * u);
       dots.push([q.x - r - u, q.y - r - u, q.x + r + u, q.y + r + u]);
       if (names && !s.dim) boxes.push({ id: n.id, x: q.x, y: q.y + r + 3 * u, level: s.level });
     }

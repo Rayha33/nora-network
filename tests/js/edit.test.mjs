@@ -28,6 +28,7 @@ test("edits: applied before anything reads the network", () => {
 
 test("edits: right-click offers remove, connect and add", () => {
   const { App, NORA } = loadApp();
+  App.state.mode = "edit";
   const node = App.menu.for("sleipner", { connect: () => {} }).map((item) => item.label);
   assert.ok(node.includes("Connect to another node…") && node.includes("Remove from the network"));
   assert.ok(!App.menu.for("sleipner").map((item) => item.label).includes("Connect to another node…"), "connect only where it can be done (the Flow view)");
@@ -39,12 +40,14 @@ test("edits: right-click offers remove, connect and add", () => {
 
 test("edits: removing a node from its menu keeps the step in the browser", () => {
   const { App, localStorage } = editedApp([]);
+  App.state.mode = "edit";
   App.menu.for("heimdal").find((item) => item.label === "Remove from the network").act();
   assert.deepEqual(JSON.parse(localStorage.store.get("nora-edits")), [{ op: "removeNode", id: "heimdal" }]);
 });
 
 test("edits: the new-node form checks its fields, then adds the node", () => {
   const { App, document, localStorage } = editedApp([]);
+  App.state.mode = "edit";
   App.edit.canvasMenu({ grid: [3, 4], near: "sleipner" })[0].act();
   const form = document.getElementById("side-body").children[0];
   const inputs = {};
@@ -157,4 +160,24 @@ test("edits: a hosted server's Save asks for its edit key once, then keeps it", 
   assert.equal(localStorage.store.get("nora-edit-key"), "s3cret", "kept for the next save");
   assert.ok(!localStorage.store.has("nora-edits"), "saved: the edits are cleared");
   assert.equal(App.edit.list().length, 0);
+});
+
+/* Ray, 29 Oct, of the bar "13 changes to the network kept in this browser until saved":
+   "what is the purpose of this? maybe remove it?". Changing the network is its own mode,
+   Edit (his "editing version of the flow map"); outside it nothing can be dragged or
+   removed by accident, and the bar does not show. */
+test("edits: only in Edit: the menu items, the canvas menu and the bar", () => {
+  const { App, document } = editedApp();
+  App.state.mode = "live";
+  App.go({ screen: "unit", unit: "all" });
+  const labels = (id) => App.menu.for(id, { connect: () => {} }).map((item) => item.label);
+  assert.ok(!labels("sleipner").includes("Remove from the network"), "no remove outside Edit");
+  assert.ok(!labels("sleipner").includes("Connect to another node…"));
+  assert.equal(App.edit.canvasMenu({ grid: [2, 3] }).length, 0, "no add outside Edit");
+  const bar = () => document.body.children.find((c) => /(^| )edits-bar( |$)/.test(c.className || ""));
+  assert.equal(bar(), undefined, "no edits bar outside Edit, though edits are kept");
+  assert.ok(App.edit.list().length > 0);
+  App.setMode("edit"); // the Edit tab
+  assert.ok(bar(), "in Edit the bar lists them");
+  assert.ok(labels("sleipner").includes("Remove from the network"));
 });

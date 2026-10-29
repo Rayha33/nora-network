@@ -6,6 +6,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import { loadApp, assertHealthy } from "./harness.mjs";
 
@@ -924,4 +925,47 @@ test("markers grow as the view zooms in, to twice their size (Ray, 29 Oct)", () 
   assert.equal(App.markerSize("pig", 1), 2 * base, "zoomed all the way in: twice");
   assert.equal(App.markerSize("pig", 5), 2 * base, "never more");
   assert.equal(App.markerSize("pig", -1), base, "never less");
+});
+
+test("exit nodes: zoomed in, each of the next 6 hours' nominations has its number", () => {
+  // Ray, 29 Oct: "when i zoom in the nomination graph should be become more detailed where
+  // i can see the actual number for each of the next 6 hours".
+  const { App, NORA } = loadApp();
+  loadFirstHour(App, NORA);
+  const stream = App.live.stream;
+  for (let k = 1; k <= 6; k++) {
+    const metrics = {};
+    for (const [name, block] of Object.entries(stream.metrics || {})) {
+      metrics[name] = {};
+      block.assets.forEach((id, j) => { if (block.values[k][j] != null) metrics[name][id] = block.values[k][j]; });
+    }
+    App.live.frames.push({ t: stream.times[k], flows: {}, metrics, plan: null });
+  }
+  const id = Object.keys(NORA.assets).find((a) => NORA.assets[a].exit && App.rampAhead(a) && App.rampAhead(a).hours.every((h) => h.value != null));
+  const draw = (scale) => {
+    const texts = [];
+    const ctx = new Proxy({}, {
+      get(target, key) {
+        if (key in target) return target[key];
+        if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
+        if (key === "fillText") return (text) => texts.push(String(text));
+        return () => {};
+      },
+      set(target, key, value) { target[key] = value; return true; },
+    });
+    App.views.flow.drawNominationSteps(ctx, id, 0, 0, 110, 20, App.colors.card.active, 1, scale);
+    return texts;
+  };
+  const hours = Array.from(App.rampAhead(id).hours, (h) => App.fmt(h.value, h.value < 10 ? 1 : 0));
+  assert.deepEqual(draw(1.75), hours, "zoomed in: the six numbers, in order");
+  assert.deepEqual(draw(1), [], "a step under 24 px: the line alone");
+});
+
+test("map: no alarm badges on the map; pigs and peaks stay", () => {
+  // Ray, 29 Oct: "remove all warning triangles from the map", "but keep pig and peaks".
+  const source = (name) => readFileSync(new URL(`../../src/nora/templates/${name}`, import.meta.url), "utf8");
+  assert.doesNotMatch(source("map2d.js"), /drawBadge/, "the canvas map draws no badge");
+  assert.doesNotMatch(source("map.js"), /nora-node-alarms|nora-alarm-|shapeMarkup/, "MapLibre has no badge layer");
+  assert.match(source("map.js"), /drawMarker/, "pigs and peaks are still drawn");
+  assert.match(source("map2d.js"), /drawMarker/);
 });

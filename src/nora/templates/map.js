@@ -64,10 +64,6 @@
       geometry: { type: "Point", coordinates: alongRoute(f.properties.asset, 0.5).at },
     })),
   };
-  // Badges have their own copy of the nodes, so updating them never re-places the names
-  // (that made every label fade out and in).
-  const badgeData = JSON.parse(JSON.stringify(NORA.geo.nodes));
-  for (const f of badgeData.features) f.properties.alarm = 0;
 
   const padding = () => ({ top: 30, left: 30, right: 30, bottom: 30 });
   const duration = (ms) => (App.reduceMotion ? 0 : ms);
@@ -103,24 +99,10 @@
     }
   }
 
-  function loadImage(name, uri, size) {
-    return new Promise((resolve) => {
-      if (map.hasImage(name)) return resolve();
-      const image = new Image(size, size);
-      image.onload = () => { map.addImage(name, image, { pixelRatio: 2 }); resolve(); };
-      image.onerror = resolve;
-      image.src = uri;
-    });
-  }
-  function badgeUri(lvl) {
-    const s = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 16 16">${App.shapeMarkup(lvl)}</svg>`;
-    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(s)}`;
-  }
 
   async function addLayers() {
     view.ready = false;
     calmBasemap();
-    await Promise.all([2, 3].map((l) => loadImage(`nora-alarm-${l}`, badgeUri(l), 32))); // no warning triangle
     const pipeGeo = {
       ...NORA.geo.pipes,
       features: NORA.geo.pipes.features.map((feature) => ({
@@ -130,7 +112,6 @@
     };
     map.addSource("nora-pipes", { type: "geojson", data: pipeGeo });
     map.addSource("nora-nodes", { type: "geojson", data: NORA.geo.nodes });
-    map.addSource("nora-node-badges", { type: "geojson", data: badgeData });
     map.addSource("nora-mids", { type: "geojson", data: mids });
     const state = (key, fallback) => ["coalesce", ["feature-state", key], fallback];
     const detailFilter = ["<=", ["coalesce", ["get", "minZoom"], 0], ["zoom"]]; // the same rule as nodeAtZoom
@@ -171,13 +152,8 @@
       paint: {
         "text-opacity": nodeOpacity, "text-color": C.text, "text-halo-color": C.paper, "text-halo-width": 2, // no line shows through a name
       } });
-    // Alarm badges: shape + number + colour, on nodes. Not on lines (Ray, 29 Oct: "remove
-    // the small red squares they serve no purpose").
-    for (const [id, source, offset] of [["nora-node-alarms", "nora-node-badges", [12, -12]]]) {
-      map.addLayer({ id, type: "symbol", source, filter: ["all", [">", ["get", "alarm"], 1], detailFilter],
-        layout: { "icon-image": ["concat", "nora-alarm-", ["to-string", ["get", "alarm"]]], "icon-size": 0.85, "icon-offset": offset,
-          "icon-allow-overlap": true, "icon-ignore-placement": true, "symbol-sort-key": ["-", 0, ["get", "alarm"]] } });
-    }
+    // No alarm badges on the map (Ray, 29 Oct: "remove all warning triangles from the map",
+    // "but keep pig and peaks"): a node's ring says it, the alarm list says what.
     alarmKey = "";
     view.ready = true;
     view.applySettings();
@@ -207,8 +183,6 @@
       "nora-selected": { paint: { "circle-radius": radius(5), "circle-stroke-width": 2 * k } },
       "nora-node-dots": { paint: { "circle-radius": radius(), "circle-stroke-width": ["*", k, state("edgeWidth", 1)] } },
       "nora-nodes": { layout: { "text-size": 11.5 * k }, paint: { "text-halo-width": 2 * k } },
-      "nora-node-alarms": { layout: { "icon-size": 0.85 * k } },
-      "nora-pipe-alarms": { layout: { "icon-size": 0.85 * k } },
     };
     for (const [id, { paint = {}, layout = {} }] of Object.entries(sizes)) {
       if (!map.getLayer(id)) continue;
@@ -403,9 +377,7 @@
     if (key !== alarmKey) {
       alarmKey = key;
       const lvl = Object.fromEntries(alarms.map((a) => [a.split(":")[0], Number(a.split(":")[1])]));
-      for (const f of badgeData.features) f.properties.alarm = lvl[f.properties.asset] || 0;
       for (const f of mids.features) f.properties.alarm = lvl[f.properties.asset] || 0;
-      map.getSource("nora-node-badges").setData(badgeData);
       map.getSource("nora-mids").setData(mids);
     }
   };

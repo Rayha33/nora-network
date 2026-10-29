@@ -85,7 +85,7 @@ DEFAULTS: dict = {
         "integrity": "#8e1b1b",  # dark red: a pressure at its integrity limit
         "h2s": "#8a7616",
         "co2": "#93463e",
-        "pig": "#9c8465",  # muted tan: a pig creeping along the line
+        "pig": "#5e4b31",  # dark umber: a pig creeping along the line; its label reads on the paper
         "peak": "#5f6d7a",  # neutral grey-blue: nominations in the next-6-hours chart
     },
     "colors_dark": {
