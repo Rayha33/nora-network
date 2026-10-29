@@ -44,9 +44,24 @@ test("pressure tags: the watched hubs always show their rate, zoomed out too", (
   App.state.mode = "live";
   const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 258, y: stage * 204 }]));
   const near = App.views.flow.pressureTags("sleipner", pos, 1.1, 64);
-  assert.ok(near.length && near.every((t) => /▲0\.5$/.test(t.text)), `zoomed in: ${near[0] && near[0].text}`);
+  // Ray, 29 Oct: "pressure on top and the change last 1 hour below": "152 bar", "▼ 0.1"
+  assert.ok(near.length && near.every((t) => /^\d[\d.,]* bar$/.test(t.text) && t.rate === "▲ 0.5"), `zoomed in: ${near[0] && near[0].text} / ${near[0] && near[0].rate}`);
   const far = App.views.flow.pressureTags("sleipner", pos, 0.6, 64);
-  assert.match(far[0].text, /▲0\.5$/, "zoomed out, a watched hub keeps its rate");
+  assert.equal(far[0].rate, "▲ 0.5", "zoomed out, a watched hub keeps its rate");
+  const plain = App.views.flow.pressureTags("sleipner", pos, 1.1, 64)[0], h = plain.box[3] - plain.box[1];
+  assert.ok(Math.abs(h * 1.1 - 29) < 1e-9, "two lines tall: the pressure, then its change");
+  const texts = [];
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "fillText") return (text, x, y) => texts.push({ text, y });
+      return () => {};
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  App.views.flow.drawPressureTags(ctx, [near[0]], { fill: "#fff", edge: "#000", ink: "#000" });
+  assert.deepEqual(texts.map((t) => t.text), [near[0].text, "▲ 0.5"]);
+  assert.ok(texts[0].y < texts[1].y, "the pressure on top");
 });
 
 test("inventory: a number and a hairline in the player", () => {
