@@ -6,6 +6,7 @@ Dutch and Danish gas to Europe's markets.
 
 **[Open the live site](https://rayha33.github.io/nora-network/)** ·
 [the app on its own](https://rayha33.github.io/nora-network/network.html) ·
+[mirror](https://factorlab.app/nora-network/) ·
 [contribute](CONTRIBUTING.md)
 
 [![CI](https://github.com/Rayha33/nora-network/actions/workflows/ci.yml/badge.svg)](https://github.com/Rayha33/nora-network/actions/workflows/ci.yml)

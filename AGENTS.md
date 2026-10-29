@@ -81,6 +81,24 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
   the complete proposed network before writing; preserve untouched CSV rows exactly.
 - Follow the style around you: plain names, short docstrings that say why, ruff clean.
 
+## Display rules (binding)
+
+The maintainer set these for the network views. Make every visual change smaller and
+calmer, never louder.
+
+- **Calm grey paper.** Colour appears only for abnormal states, in the ISO alarm order:
+  pre-alarm amber (triangle, "3"), medium orange (diamond, "2"), alarm red (square, "1").
+  Colour never stands alone: it always comes with a shape, a number and text. Normal
+  states are greys: light grey normal, dark grey closed, lightest grey active, never
+  pure white. Model answers (Load, Risk) never borrow the alarm palette.
+- **Hairline lines**, thin and minimal. Never put text over text; labels never fade.
+- **Visuals over absolute numbers:** the trend toward a limit, the last 2 hours and the
+  time to the limit.
+- **Pigs and peaks are small**: about 5 to 6 px, with a 4 px band from tail to head.
+  Only a few move at a time, and slowly.
+- **Configurable for any screen:** a control-room video wall, an operator desk and a
+  tablet (issue #59). The top bar keeps a fixed size. Light and dark modes both work.
+
 ## Typical tasks
 
 - *Add or fix assets:* edit the CSVs, add a `source`, run `make check`.
@@ -94,3 +112,10 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 
 Branch from `main`, open a pull request, and the CI and preview workflows run. A preview
 of the site is posted on the PR. Merging to `main` publishes the site automatically.
+
+The site is published twice from the same build: GitHub Pages
+(https://rayha33.github.io/nora-network/) and a mirror at
+https://factorlab.app/nora-network/ that pulls the `gh-pages` branch every 10 minutes.
+Nothing has to be deployed by hand. [HANDOVER.md](HANDOVER.md) records what has been
+done and decided so far; unmerged work in progress from earlier sessions is kept on
+`archive/*` branches.
