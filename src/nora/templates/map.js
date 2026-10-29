@@ -59,6 +59,7 @@
   const padding = () => ({ top: 30, left: 30, right: 30, bottom: 30 });
   const duration = (ms) => (App.reduceMotion ? 0 : ms);
 
+  const ENGLISH_NAME = ["coalesce", ["get", "name:en"], ["get", "name_en"], ["get", "name:latin"], ["get", "name"]];
   // Recolour the basemap to calm greys: land is paper, water a step darker, roads,
   // parks and points of interest hidden, place names in dim text.
   function calmBasemap() {
@@ -77,6 +78,9 @@
         } else if (layer.type === "raster") { /* fallback basemap: keep as drawn */ }
         else if (layer.type === "symbol") {
           if (/place|country|state|city|town|water_name|marine|ocean|sea/.test(id)) {
+            // English only, like the rest of the page: the style stacks the Latin name
+            // over the local script ("Baltic Sea / Балтийское море").
+            map.setLayoutProperty(id, "text-field", ENGLISH_NAME);
             map.setPaintProperty(id, "text-color", C.text_dim);
             map.setPaintProperty(id, "text-halo-color", C.paper);
             map.setPaintProperty(id, "icon-opacity", 0);
