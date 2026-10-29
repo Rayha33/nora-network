@@ -522,17 +522,34 @@ const App = (() => {
     const room = window.innerWidth / scale;
     document.documentElement.dataset.bar = room < 1060 ? "two" : room < 1240 ? "tight" : "one";
   }
+  /* Two rows may still not hold the bar on a phone: measure what its rows need, so no
+     control is cut off above the screen and the screens start below the bar. */
+  function fitBar(scale) {
+    const root = document.documentElement, bar = document.querySelector(".bar");
+    if (!bar) return;
+    root.style.removeProperty("--bar-h");
+    if (root.dataset.bar !== "two") return;
+    bar.style.height = "auto";
+    const needed = Math.ceil(bar.getBoundingClientRect().height / scale) + 16;
+    bar.style.height = "";
+    if (needed > parseFloat(getComputedStyle(root).getPropertyValue("--bar-h"))) root.style.setProperty("--bar-h", `${needed}px`);
+  }
   function applyDisplay() {
     const profile = chosenProfile(), scale = Math.round(chosenScale(profile) * 100) / 100;
     barLayout(scale);
-    if (profile === display.profile && scale === display.scale) return false;
-    display.profile = profile;
-    display.scale = scale;
-    document.documentElement.dataset.display = profile;
-    document.documentElement.style.setProperty("--ui-scale", String(scale));
-    return true;
+    const changed = profile !== display.profile || scale !== display.scale;
+    if (changed) {
+      display.profile = profile;
+      display.scale = scale;
+      document.documentElement.dataset.display = profile;
+      document.documentElement.style.setProperty("--ui-scale", String(scale));
+    }
+    fitBar(scale);
+    return changed;
   }
   applyDisplay();
+  // The web font changes how much room the bar's text takes: fit it again once loaded.
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitBar(display.scale));
   // Control rooms are dim: a wall starts dark unless the link or the operator chose.
   if (display.profile === "wall" && !params.get("theme") && !storedTheme() && theme !== "dark") {
     theme = "dark";
