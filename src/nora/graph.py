@@ -63,4 +63,16 @@ def build_graph(net: Network, statuses: Iterable[str] = ("operating",)) -> nx.Di
         graph.add_edge(pipe.from_id, pipe.to_id, **attrs)
         if pipe.bidirectional:
             graph.add_edge(pipe.to_id, pipe.from_id, **attrs)
+    # `exit`: gas leaves the network here. Every market, and every receiving terminal
+    # whose gas no onshore grid entry carries on to a market: the national grids behind
+    # the landings are not drawn (Ray, 29 Oct), so the terminal is where gas is
+    # delivered. Set on the whole graph, so taking a market out (a what-if) does not
+    # turn the terminals behind it into exits.
+    onward = {
+        attrs["from_id"] for _, _, attrs in graph.edges(data=True) if attrs["type"] == "onshore"
+    }
+    for node, attrs in graph.nodes(data=True):
+        attrs["exit"] = attrs["type"] == "market" or (
+            attrs["type"] == "terminal" and node not in onward
+        )
     return graph

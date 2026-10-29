@@ -97,26 +97,19 @@ SPLITS = {
     ),
 }
 
-# UK routes: NORA pipeline id -> NSTA's stable pipeline number. CATS is handled
-# separately because NORA divides PL774 at the Culzean/Stella tie-in (CATS T5).
+# UK routes: NORA pipeline id -> NSTA's stable pipeline number.
 NSTA_ROUTES = {
     "flags": "PL2",
     "sage": "PL762",
-    "culzean_cats": "PL4106",
     "seal": "PL1570",
     "iuk": "PL1339",
     "bbl": "PL2225",
 }
-NSTA_CATS = "PL774"
 
-# Dutch and Danish routes: NORA pipeline id -> EMODnet pipeline ids, in flow order.
-# NOGAT is two registered lines: F3-FB -> L2-FA -> Callantsoog/Den Helder.
+# Dutch routes: NORA pipeline id -> EMODnet pipeline ids, in flow order.
 EMODNET_ROUTES = {
-    "nogat": ["PL0090_PR", "PL0091_PR"],
     "ngt": ["PL0003_PR"],
     "wgt": ["PL0004_PR"],
-    "tyra_f3": ["PL0162_PR"],
-    "tyra_nybro": ["PL1017_PR"],
 }
 
 CREDITS = {
@@ -232,7 +225,7 @@ def split_route(
 def nsta_parts(data: dict) -> dict[str, list]:
     """The longest active gas pipeline for each needed NSTA number (spools and concrete
     mattresses can share a number with the trunk). ArcGIS paths are equivalent to parts."""
-    wanted = set(NSTA_ROUTES.values()) | {NSTA_CATS}
+    wanted = set(NSTA_ROUTES.values())
     chosen = {}
     for feature in data.get("features", []):
         attr = feature.get("attributes", {})
@@ -296,14 +289,6 @@ def build(text: str, nsta_data: dict | None = None, emodnet_data: dict | None = 
                 route_sources[pid] = "nsta"
             else:
                 missing.append(pid)
-        pieces = [("cats_north", "cats_t5"), ("cats", None)]
-        parts = found_nsta.get(NSTA_CATS)
-        route = walk(parts, where[starts[pieces[0][0]]]) if parts else None
-        if route:
-            routes.update(split_route(route, pieces, where))
-            route_sources.update({pid: "nsta" for pid, _ in pieces})
-        else:
-            missing += [pid for pid, _ in pieces]
 
     if emodnet_data is not None:
         found_emodnet = emodnet_parts(emodnet_data)
@@ -340,7 +325,7 @@ def download_json(url: str, params: dict, *, post: bool = False) -> dict:
 
 
 def download_nsta() -> dict:
-    numbers = sorted(set(NSTA_ROUTES.values()) | {NSTA_CATS})
+    numbers = sorted(set(NSTA_ROUTES.values()))
     quoted = ",".join(f"'{number}'" for number in numbers)
     return download_json(
         NSTA_URL,

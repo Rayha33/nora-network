@@ -10,10 +10,9 @@ def test_gas_flows_left_to_right(north_sea):
         if not pipe.bidirectional and kinds[pipe.from_id] != "market":
             assert column[pipe.from_id] <= column[pipe.to_id], pipe.id
     terminal = {column[n] for n in column if kinds[n] == "terminal"}
-    lng = {column[n] for n in column if kinds[n] == "lng"}
     market = {column[n] for n in column if kinds[n] == "market"}
-    assert len(terminal) == len(lng) == len(market) == 1
-    assert max(terminal) < min(lng) < min(market) == max(column.values())
+    assert len(terminal) == len(market) == 1  # the landings line up, the consumers after
+    assert max(terminal) < min(market) == max(column.values())
 
 
 def test_rows_are_spaced_without_overlap(north_sea):
@@ -30,8 +29,7 @@ def test_rows_are_spaced_without_overlap(north_sea):
 def test_pipelines_cross_as_little_as_possible(north_sea):
     # the layered layout trades row-geography for clarity: 23 straight-line
     # crossings on the real network, against 112 for the geographic order
-    # (the timeline's frigg, odin and irpa rows add 8)
-    # (the timeline's frigg, odin and irpa rows, and the storage sites, add 16)
+    # (the timeline's frigg and odin rows add some)
     assert crossings(north_sea, flow_positions(north_sea)) <= 35
 
 

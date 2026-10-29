@@ -1,16 +1,21 @@
-/* The top bar names the unit; the map has no card of its own (Ray, 29 Oct: "remove
-   this window, it doesnt serve any purpose"). */
+/* The map has no card of its own (Ray, 29 Oct: "remove this window, it doesnt serve any
+   purpose"), and the bar has no unit menu or year slider: one row, every unit on. */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { loadApp } from "./harness.mjs";
 
-test("map: no info card over the map; the bar names the unit", () => {
+test("map: no info card over the map; one bar row, every unit on", () => {
   const { App, NORA, document } = loadApp();
   const unit = NORA.units[0];
   App.go({ screen: "unit", unit: unit.id });
   assert.equal(document.getElementById("map-unit"), null, "the card is gone from the page");
-  assert.equal(document.getElementById("crumb-unit").value, unit.id, "the unit is named in the bar");
+  assert.equal(document.getElementById("crumb-unit"), null, "no unit menu (Ray, 29 Oct)");
+  assert.equal(document.getElementById("year"), null, "no network year slider");
+  const other = App.nodeIds.find((id) => !unit.nodes.includes(id));
+  assert.equal(App.nodeStyle(other).dim, false, "assets of other units are never dimmed");
+  const html = readFileSync(new URL("../../src/nora/templates/app.html.j2", import.meta.url), "utf8");
+  assert.doesNotMatch(html, /bar-secondary/, "everything in one row (Ray: on one line)");
 });
 
 test("live node style separates throughput and pressure for the Flow renderer", () => {
@@ -125,10 +130,11 @@ test("overview: an hour without nominations says so, never 'null'", () => {
 /* Ray, 28 Oct: "stick to N and E": positions always read °N and °E, west of Greenwich
    as a negative east. */
 test("asset facts: positions stick to N and E, west as a negative east", () => {
-  const { App, document } = loadApp();
-  App.go({ screen: "asset", asset: "teesside" });
+  const { App, NORA, document } = loadApp();
+  const west = App.nodeIds.find((id) => NORA.assets[id].lon < 0);
+  App.go({ screen: "asset", asset: west });
   const text = document.getElementById("screen-asset").textContent;
-  assert.match(text, /\d\.\d{4}°N, -1\.\d{4}°E/);
+  assert.match(text, /\d\.\d{4}°N, -\d\.\d{4}°E/);
   assert.doesNotMatch(text, /°W|°S/);
 });
 

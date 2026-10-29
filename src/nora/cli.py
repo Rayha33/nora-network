@@ -13,7 +13,7 @@ from pathlib import Path
 
 from .analysis import analyse
 from .config import load_config
-from .data import DATA_DIR, DataError, load_network
+from .data import DATA_DIR, DataError, load_network, suggest
 from .integrations import CONNECTORS, SOURCES
 from .live import POLL_SECONDS
 from .ops import plan_timeline
@@ -28,7 +28,12 @@ def _streams_dir(args) -> Path:
 
 def cmd_validate(args) -> int:
     net = load_network(args.data)
-    load_config()
+    config = load_config()
+    unknown = [n for n in config["flow"]["hide"] if n not in net.node_by_id]
+    if unknown:
+        raise DataError(
+            [f"nora.toml [flow] hide: no node {n!r}" + suggest(n, net.node_by_id) for n in unknown]
+        )
     units = load_units(net, args.data / "units.toml")
     names = list_streams(_streams_dir(args))
     for name in names:
@@ -54,8 +59,8 @@ def cmd_stats(args) -> int:
     )
     deliverable, supply = result["deliverable"], result["supply_capacity"]
     print(f"Deliverable: {deliverable:,.1f} of {supply:,.1f} MSm3/d supply")
-    for market, value in sorted(result["delivered"].items(), key=lambda kv: -kv[1]):
-        print(f"  {market:<8} {value:8.1f} MSm3/d")
+    for node, value in sorted(result["delivered"].items(), key=lambda kv: -kv[1]):
+        print(f"  {node:<14} {value:8.1f} MSm3/d")
     print("Biggest single points of failure (N-1):")
     for outage in result["outages"][: args.top]:
         print(

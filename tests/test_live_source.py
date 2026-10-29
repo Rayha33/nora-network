@@ -55,16 +55,15 @@ def api_url(monkeypatch):
     server.shutdown()
 
 
-def test_gassco_fetch_maps_countries_to_market_nodes(api_url, monkeypatch):
+def test_gassco_fetch_maps_single_terminal_countries_to_their_terminal(api_url, monkeypatch):
     monkeypatch.setenv("NORA_GASSCO_URL", api_url)
     now = datetime(2026, 10, 27, 12, 0, tzinfo=UTC)
     readings = list(gassco.fetch(now - timedelta(minutes=5), now))
     by_asset = {r.asset: r.value for r in readings}
+    # Germany and Great Britain land at two terminals each: no node, no invented split
     assert by_asset == {
-        "the": 156.78,  # Germany
-        "peg": 42.9,  # France
-        "ztp": 43.6,  # Belgium
-        "nbp": 62.1,  # Great Britain
+        "dunkirk": 42.9,  # France
+        "zeebrugge": 43.6,  # Belgium
     }
     assert all(r.metric == gassco.metric for r in readings)
     assert readings[0].when.tzinfo is not None  # epoch ms became an aware datetime
@@ -100,7 +99,7 @@ def test_poll_yields_frames_and_survives_a_dead_api(api_url, monkeypatch, capsys
     assert wait == 0.0
     when, flows, metrics, index = first
     assert index == 0
-    assert flows["nbp"] == 62.1
+    assert flows["dunkirk"] == 42.9
     # the API dies between polls: the feed reads as an SSE error event, not a crash
     monkeypatch.setenv("NORA_GASSCO_URL", api_url + "/down")
     wait, second = next(feed)
@@ -150,7 +149,7 @@ def test_serve_accepts_a_poller_instead_of_a_stream(api_url, monkeypatch, tmp_pa
     assert json.loads(lines[1][len("data: ") :])["name"] == "gassco"
     assert lines[3] == "event: frame"
     values = json.loads(lines[4][len("data: ") :])["values"]
-    assert values["the"] == 156.78
+    assert values["zeebrugge"] == 43.6
 
 
 def test_cli_offers_the_source_flag():
