@@ -8,7 +8,7 @@ The source is Natural Earth's 1:10m land polygons (public domain,
 https://www.naturalearthdata.com), as the TopoJSON file of the world-atlas package
 (pinned below). The script decodes the TopoJSON, clips every ring to the box around the
 network, simplifies it (Douglas-Peucker, in degrees) and rounds to 2 decimals, so the
-file stays small enough to ship inside network.html (about 60 KB).
+file stays small enough to ship inside network.html (about 150 KB).
 """
 
 from __future__ import annotations
@@ -20,7 +20,10 @@ from pathlib import Path
 
 URL = "https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/land-10m.json"
 OUT = Path(__file__).resolve().parents[1] / "data" / "geo" / "coastline.json"
-BOX = (-14.0, 46.0, 24.0, 71.0)  # west, south, east, north: the network with a margin
+# West, south, east, north: Greenland's coast to the Urals, North Africa to Svalbard.
+# Wide enough that a window up to about 2.6 times as wide as it is tall, zoomed out on
+# the network, never shows the box's edge (map2d.js keeps its view inside it).
+BOX = (-45.0, 30.0, 60.0, 80.0)
 TOLERANCE = 0.03  # degrees, about 3 km: invisible at the zooms the fallback map uses
 MIN_AREA = 0.03  # square degrees: drop islets smaller than this
 DECIMALS = 2  # about 1 km
@@ -52,6 +55,27 @@ def decode(topology: dict) -> list[list[tuple[float, float]]]:
         for polygon in polygons:
             rings.extend(ring(r) for r in polygon)
     return rings
+
+
+def unwrap(points: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    """Make a ring continuous across the date line before it is clipped.
+
+    Natural Earth cuts Eurasia at 180 (Chukotka), so its ring jumps from +180 to -180
+    and back. Clipped as straight lines in degrees, each jump crosses the whole map and
+    the Norwegian Sea between them (65-69 N) was filled as land. Here every jump adds or
+    removes 360 degrees, and the ring is then shifted whole so that most of it is where
+    it was: Chukotka ends up east of 180, outside the box, and Europe stays put."""
+    out: list[tuple[float, float]] = []
+    offset = 0.0
+    for i, (x, y) in enumerate(points):
+        if i and x - points[i - 1][0] > 180:
+            offset -= 360
+        elif i and x - points[i - 1][0] < -180:
+            offset += 360
+        out.append((x + offset, y))
+    middle = sorted(x for x, _ in out)[len(out) // 2]
+    shift = -360 * round(middle / 360)
+    return [(x + shift, y) for x, y in out]
 
 
 def clip(points: list[tuple[float, float]], box=BOX) -> list[tuple[float, float]]:
@@ -129,7 +153,7 @@ def area(points: list[tuple[float, float]]) -> float:
 def build(topology: dict) -> dict:
     rings = []
     for raw in decode(topology):
-        ring = simplify(clip(raw), TOLERANCE)
+        ring = simplify(clip(unwrap(raw)), TOLERANCE)
         if len(ring) >= 4 and area(ring) >= MIN_AREA:
             rings.append([[round(x, DECIMALS), round(y, DECIMALS)] for x, y in ring])
     return {
