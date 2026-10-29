@@ -17,8 +17,7 @@ Live: subclass Connector, implement `fetch`, and serve it with nora.live like `r
 (yield (wait, frame) pairs; the server writes keepalive comments while it waits).
 
 Public live sources need no credentials: `nora live --source gassco` polls aggregate
-Norwegian exports, and `nora live --source interconnector --poll-seconds 120` polls
-signed physical IUK flow from National Gas (see below).
+Norwegian exports.
 """
 
 from __future__ import annotations
@@ -30,7 +29,6 @@ import urllib.request
 from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from zoneinfo import ZoneInfo
 
 # Gassco's names for the exit points where Norwegian gas lands, mapped to NORA nodes.
 EXIT_POINTS = {
@@ -55,8 +53,6 @@ RECEIVING_COUNTRIES = {
     "France": "dunkirk",
     "Belgium": "zeebrugge",
 }
-# The UK gas day starts at 05:00 UK time; National Gas's tables run over one gas day.
-GAS_DAY_START_MINUTES = 5 * 60
 # NORA says who it is (review #49802: it used to pose as Chrome to get past the
 # Cloudflare check in front of gassco.eu). If Cloudflare refuses an honest client, the
 # feed reports the failed poll; asking Gassco for access is the way past that.
@@ -217,92 +213,11 @@ class GasscoRealTime(Connector):
                 yield Reading(when, asset, self.metric, float(node["value"]))
 
 
-class NationalGasInterconnector(Connector):
-    """Signed physical IUK flow from National Gas's public latest-flows API.
-
-    Bacton INT Export is Bacton -> Zeebrugge (positive, the pipeline CSV direction);
-    BACTON IC is Zeebrugge -> Bacton (negative). Both are mcm/day, numerically the
-    same unit as MSm3/d. National Gas updates the instantaneous readings every two
-    minutes. Zeebrugge/IUK is operated by Interconnector/Fluxys, not GTS.
-    """
-
-    name = "National Gas IUK physical flow"
-    metric = "flow_msm3d"
-    env = ()
-    url_default = "https://data.nationalgas.com/api/latest-gas-flows"
-    # National Gas answers a client that names itself: no need to pose as a browser.
-    user_agent = "nora-network (https://github.com/Rayha33/nora-network)"
-
-    def url(self) -> str:
-        return os.environ.get("NORA_NATIONAL_GAS_URL", self.url_default)
-
-    def status(self) -> str:
-        return f"ready ({self.url()})"
-
-    def meta(self) -> dict:
-        return {
-            "name": "interconnector",
-            "title": self.name,
-            "description": (
-                "Signed physical flow on Interconnector (IUK): positive Bacton to "
-                "Zeebrugge, negative Zeebrugge to Bacton. National Gas instantaneous "
-                "readings in MSm3/d; Zeebrugge/IUK is operated by Interconnector/Fluxys."
-            ),
-            "source": self.url_default,
-            "synthetic": False,
-        }
-
-    @staticmethod
-    def parse(payload: dict) -> tuple[datetime, float]:
-        data = payload["data"]
-
-        def latest(section: str, label: str) -> float:
-            for row in data[section]["data"]:
-                name = row.get("SYSTEM ENTRY NAME") or row.get("TERMINAL TOTALS")
-                if name and name.casefold() == label.casefold():
-                    readings = [
-                        (time, value)
-                        for time, value in row.items()
-                        if re.fullmatch(r"\d{2}:\d{2}", time) and isinstance(value, (int, float))
-                    ]
-                    if readings:
-                        # The table runs over a UK gas day, 05:00 to 05:00: after
-                        # midnight "00:02" is newer than "23:58", so order by the
-                        # minutes since 05:00, not by the text of the time.
-                        def in_gas_day(reading):
-                            hours, minutes = map(int, reading[0].split(":"))
-                            return (hours * 60 + minutes - GAS_DAY_START_MINUTES) % 1440
-
-                        return float(max(readings, key=in_gas_day)[1])
-            raise ValueError(f"National Gas: missing {label} reading")
-
-        published = data.get("publishedDate")
-        if not published:
-            raise ValueError("National Gas: missing publication timestamp")
-        local = datetime.strptime(published, "%d/%m/%Y %H:%M").replace(
-            tzinfo=ZoneInfo("Europe/London")
-        )
-        value = latest("Demand from interconnectors", "Bacton INT Export") - latest(
-            "Supply from entry points", "BACTON IC"
-        )
-        return local.astimezone(UTC), value
-
-    def fetch(self, start: datetime, end: datetime) -> Iterator[Reading]:
-        request = urllib.request.Request(
-            self.url(), headers={"User-Agent": self.user_agent, "Accept": "application/json"}
-        )
-        with urllib.request.urlopen(request, timeout=30) as response:
-            payload = json.load(response)
-        when, value = self.parse(payload)
-        yield Reading(when, "iuk", self.metric, value)
-
-
 gassco = GasscoRealTime()
-interconnector = NationalGasInterconnector()
 
 origo = Origo()
 
 # Live sources `nora live --source <name>` can poll.
-SOURCES = {"gassco": gassco, "interconnector": interconnector, "origo": origo}
+SOURCES = {"gassco": gassco, "origo": origo}
 
-CONNECTORS = (origo, GassocoBooking(), gassco, interconnector)
+CONNECTORS = (origo, GassocoBooking(), gassco)

@@ -4176,6 +4176,10 @@ const App = (() => {
     display: () => display.profile,
     uiScale: () => display.scale,
     mix, onPinch, checkBuild, // for tests
+    // Seconds between repaints of what moves while the data plays: about 20 a second, every
+    // third frame at 60 (Ray, 29 Oct: "fix performance, it is lagging"); a pan, a zoom or
+    // new data still draws at once. Under 0.05 so frame jitter never skips a fourth.
+    movingStep: 0.045,
     build: () => BUILD,
     notes: {
       list: () => notes.list, add: addNote, remove: removeNote, snap: snapToRoute, layer: noteLayer,

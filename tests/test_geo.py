@@ -22,7 +22,7 @@ def test_route_line_joins_both_nodes_and_falls_back_to_straight():
 
 def test_physical_pipelines_follow_their_laid_routes(north_sea):
     laid = routes()
-    assert len(laid) >= 35, "SODIR and NSTA routes for the physical network"
+    assert len(laid) >= 34, "SODIR and NSTA routes for the physical network"
     lines = {
         f["properties"]["asset"]: f["geometry"]["coordinates"]
         for f in map_geojson(north_sea)["pipes"]["features"]
@@ -43,8 +43,7 @@ def test_physical_pipelines_follow_their_laid_routes(north_sea):
 def test_european_trunks_do_not_fall_back_to_chords():
     expected = {
         "flags",
-        "sage",
-        "iuk",  # NSTA
+        "sage",  # NSTA
     }
     laid = routes()
     assert expected <= laid.keys()

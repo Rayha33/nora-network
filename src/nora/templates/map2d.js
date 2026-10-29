@@ -478,7 +478,13 @@ function NoraCanvasMap(view) {
   /* App's frame loop asks every frame. Only moving markers need that (live and playing);
      every other change (a restyle, the camera, settings, a resize) redraws on its own,
      so a paused map is not drawn 60 times a second. */
-  view.draw = () => { if (App.state.mode === "live" && App.live.playing) redrawMoving(); };
+  // While the data plays, what moves is repainted at most 20 times a second (App.movingStep).
+  let movedAt = -Infinity;
+  view.draw = () => {
+    if (App.state.mode !== "live" || !App.live.playing || App.live.clock - movedAt < App.movingStep) return;
+    movedAt = App.live.clock;
+    redrawMoving();
+  };
   view.applySettings = () => redraw();
   view.setUnit = (unit) => {
     if (!view.ready) return;

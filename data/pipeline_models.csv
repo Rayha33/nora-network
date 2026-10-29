@@ -7,7 +7,6 @@ flags,10.01,0,1,"Weymouth estimate from 450 km and 36 in (E 0.95, G 0.6, 5 °C, 
 franpipe,8.213,0,1,"Weymouth estimate from 840 km and 42 in (E 0.95, G 0.6, 5 °C, Z 0.85); replace with the PMS regression"
 gjoa_flags,11.05,0,1,"Weymouth estimate from 130 km and 28 in (E 0.95, G 0.6, 5 °C, Z 0.85); replace with the PMS regression"
 haltenpipe,420.6,0,1,"Weymouth estimate from 250 km and 16 in (E 0.95, G 0.6, 5 °C, Z 0.85); replace with the PMS regression"
-iuk,2.981,0,1,"Weymouth estimate from 235 km and 40 in (E 0.95, G 0.6, 5 °C, Z 0.85); replace with the PMS regression"
 kvitebjorn_kollsnes,8.65,0,1,"Weymouth estimate from 147 km and 30 in (E 0.95, G 0.6, 5 °C, Z 0.85); replace with the PMS regression"
 langeled_north,6.131,0,1,"Weymouth estimate from 627 km and 42 in (E 0.95, G 0.6, 5 °C, Z 0.85); replace with the PMS regression"
 langeled_south,4.143,0,1,"Weymouth estimate from 543 km and 44 in (E 0.95, G 0.6, 5 °C, Z 0.85); replace with the PMS regression"

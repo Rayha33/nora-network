@@ -71,7 +71,10 @@ test("flow frames: playing, the moving layer is repainted only when something on
   const view = App.views.flow;
   const repaints = (fn) => { const before = counts.clearRect || 0; fn(); return (counts.clearRect || 0) - before; };
   assert.equal(repaints(() => { for (let i = 0; i < 5; i++) view.draw(); }), 0, "nothing moved: nothing repainted");
-  assert.equal(repaints(() => { for (let i = 0; i < 3; i++) { App.live.time += 1800; view.draw(); } }), 3, "the markers moved: each frame repaints them");
+  assert.equal(repaints(() => { for (let i = 0; i < 3; i++) { App.live.time += 1800; App.live.clock += 0.05; view.draw(); } }), 3, "the markers moved: each frame repaints them");
+  // Ray, 29 Oct: "fix performance, it is lagging": at most 20 repaints a second.
+  assert.equal(repaints(() => { for (let i = 0; i < 6; i++) { App.live.time += 1800; App.live.clock += 1 / 60; view.draw(); } }), 2,
+    "60 frames a second: every third one repaints");
 });
 
 test("flow frames: a redraw vis asks for always repaints the moving layer", () => {
