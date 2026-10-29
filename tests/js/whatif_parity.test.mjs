@@ -12,7 +12,7 @@ test("what-if: booked exit capacity is served first, as in the Python routing", 
   assert.equal(NORA.assets.pl_vtp.booked, 22);
   const r = App.whatif.result();
   assert.equal(Math.round(r.delivered.pl_vtp), 22, "Baltic Pipe carries Poland's booking");
-  assert.equal(Math.round(r.value), 445, "the total is still the maximum");
+  assert.equal(Math.round(r.value), Math.round(NORA.deliverable), "the total is still the maximum (the analysis' deliverable)");
 });
 
 test("what-if: an asset that is not operating carries no gas, like an offline one", () => {
