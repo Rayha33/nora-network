@@ -1149,7 +1149,7 @@ const App = (() => {
       const d = assets[id];
       adj[id] = adj[id] || [];
       if (d.supply && d.capacity) add(WHATIF_SOURCE, id, d.capacity);
-      if (d.exit) sinkArc[id] = add(id, WHATIF_SINK, Infinity); // as analysis.flow_graph
+      if (d.exit) sinkArc[id] = add(id, WHATIF_SINK, d.capacity || Infinity); // as analysis.flow_graph
     }
     /* A processing plant with a capacity is a bottleneck (the Python side splits
        it the same way, see analysis.flow_graph): incoming arcs land on an entry

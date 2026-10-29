@@ -69,7 +69,9 @@ def flow_graph(graph: nx.DiGraph, supply: dict[str, float] | None = None) -> nx.
             if capacity:
                 flows.add_edge(SOURCE, node, capacity=capacity)
         elif node in exits:
-            flows.add_edge(node, SINK)
+            # an exit point with a capacity (a derated terminal) takes no more than that
+            limit = {"capacity": attrs["capacity_msm3d"]} if attrs["capacity_msm3d"] else {}
+            flows.add_edge(node, SINK, **limit)
         elif attrs["capacity_msm3d"]:
             out = node + OUT
             for _, target, edge in list(flows.out_edges(node, data=True)):

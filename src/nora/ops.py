@@ -77,8 +77,10 @@ def _plan_graph(graph: nx.DiGraph, exits: dict[str, float]) -> nx.DiGraph:
             flows.add_edge(node, out, capacity=attrs["capacity_msm3d"])
     for node, rate in exits.items():
         # An exit point an event took out is not in `graph`: it is still added, with
-        # nothing reaching it, so its whole nomination shows as short.
-        flows.add_edge(node, SINK, capacity=rate)
+        # nothing reaching it, so its whole nomination shows as short. One an event
+        # derated takes no more than its capacity.
+        own = graph.nodes[node].get("capacity_msm3d") if node in graph else None
+        flows.add_edge(node, SINK, capacity=min(rate, own) if own else rate)
     return flows
 
 
