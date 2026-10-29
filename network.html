@@ -587,7 +587,7 @@ table.data.alarm-table th, table.data.alarm-table td { text-align: left; }
 </head>
 <body>
 <header class="bar">
-  <a class="brand" id="brand" href="./" aria-label="NORA home">
+  <a class="brand" id="brand" href="#/unit/all" aria-label="NORA: the map of the whole network">
     <span class="brand-mark" aria-hidden="true">N</span>
     <strong class="brand-name">NORA</strong>
   </a>
@@ -779,13 +779,43 @@ const App = (() => {
     for (const [key, value] of Object.entries(attrs || {})) {
       if (value == null || value === false) continue;
       if (key === "class") node.className = value;
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+      else if (key.startsWith("on")) on(node, key.slice(2), value);
       else node.setAttribute(key, value);
     }
     for (const child of children.flat(Infinity)) {
       if (child != null && child !== false) node.append(child instanceof Node ? child : String(child));
     }
     return node;
+  }
+  // A listener through a small table on the node, so an update in place (morph) can hand
+  // the node the newer one.
+  function on(node, type, act) {
+    if (!node._on) node._on = {};
+    if (!(type in node._on)) node.addEventListener(type, (event) => node._on[type](event));
+    node._on[type] = act;
+  }
+  /* Update a screen in place, so what the pointer is over keeps its hover and focus while
+     the data plays, a few times a second (Ray, 29 Oct: "when mouse over here the field is
+     blinking a lot which looks bad"): only what changed is touched. */
+  function morph(into, from) {
+    if (into.nodeType !== from.nodeType || into.nodeName !== from.nodeName) { into.replaceWith(from); return; }
+    if (into.nodeType === 3 || into.nodeType === 8) { if (into.nodeValue !== from.nodeValue) into.nodeValue = from.nodeValue; return; }
+    if (into.nodeType !== 1) return;
+    for (const { name, value } of [...from.attributes]) if (into.getAttribute(name) !== value) into.setAttribute(name, value);
+    for (const { name } of [...into.attributes]) if (!from.hasAttribute(name)) into.removeAttribute(name);
+    for (const [type, act] of Object.entries(from._on || {})) on(into, type, act);
+    if (into.tagName === "INPUT" || into.tagName === "SELECT") {
+      if (document.activeElement !== into && into.value !== from.value) into.value = from.value;
+      if (into.checked !== from.checked) into.checked = from.checked;
+    }
+    const a = [...into.childNodes], b = [...from.childNodes];
+    b.forEach((node, i) => (a[i] ? morph(a[i], node) : into.appendChild(node)));
+    for (let i = b.length; i < a.length; i++) a[i].remove();
+  }
+  function patch(container, fresh) {
+    const old = container.firstChild;
+    if (old && container.childNodes.length === 1 && typeof old.isEqualNode === "function" && old.nodeName === fresh.nodeName) morph(old, fresh);
+    else container.replaceChildren(fresh);
   }
   /* A row or a name that opens something but is not a button reaches the keyboard as
      well: it takes focus, Enter and Space act as a click, and its key finds it again
@@ -2738,7 +2768,7 @@ const App = (() => {
       return h("button", { type: "button", "data-key": `unit:${u.id}`, onclick: () => go({ screen: "unit", unit: u.id }) },
         h("span", null, u.name), badge(Math.max(0, ...conds.map((c) => c.level)), conds.length ? `${conds.length} active` : "Normal"));
     });
-    keepFocus(screens.overview, () => screens.overview.replaceChildren(h("div", { class: "screen-body" },
+    keepFocus(screens.overview, () => patch(screens.overview, h("div", { class: "screen-body" },
       h("div", { class: `box banner${bannerLevel ? " alarm" : ""}`, style: bannerLevel ? `border-color:${LEVEL_COLOR[bannerLevel]}` : null },
         bannerLevel ? badge(bannerLevel, "") : null,
         h("div", null, h("div", { class: `big${plan ? "" : " dim"}` }, headline), h("div", { class: "context" }, context))),
@@ -3014,7 +3044,7 @@ const App = (() => {
   }
   function renderAsset() {
     const detail = assetDetail(route.asset);
-    if (detail) keepFocus(screens.asset, () => screens.asset.replaceChildren(detail));
+    if (detail) keepFocus(screens.asset, () => patch(screens.asset, detail));
   }
 
   /* The asset sidebar: a calm column that slides in from the right when a field,
@@ -3060,7 +3090,7 @@ const App = (() => {
       const body = $("side-body"), top = body.scrollTop, detail = markerDetail(side.marker);
       $("side-title").textContent = detail.title;
       $("side-sub").textContent = detail.sub;
-      keepFocus(body, () => body.replaceChildren(detail.body));
+      keepFocus(body, () => patch(body, detail.body));
       body.scrollTop = top;
       return;
     }
@@ -3070,7 +3100,7 @@ const App = (() => {
     $("side-sub").textContent = d.kind === "node"
       ? `${NORA.nodeTypes[d.type]} · ${d.operator || d.country}`
       : `${NORA.pipelineTypes[d.type]} · ${nameOf(d.from)} to ${nameOf(d.to)}`;
-    keepFocus(body, () => body.replaceChildren(assetDetail(side.id, true)));
+    keepFocus(body, () => patch(body, assetDetail(side.id, true)));
     body.scrollTop = top;
   }
   /* A pig or a peak in the sidebar (Ray, 28 Oct: "head ETA and tail ETA as well as
@@ -3565,6 +3595,17 @@ const App = (() => {
     url.searchParams.set("s", btoa(JSON.stringify(settings)));
     if (navigator.clipboard) navigator.clipboard.writeText(url.toString());
   }
+  // NORA: back to the map of the whole network (Ray, 29 Oct: "clicking on NORA should take
+  // me back to map overview and not download file"; it linked to the folder).
+  if ($("brand")) $("brand").addEventListener("click", (event) => {
+    event.preventDefault();
+    closePops();
+    closeSidebar();
+    state.view = "map";
+    markTabs();
+    go({ screen: "unit", unit: "all" });
+    if (views.map && views.map.ready && views.map.fit) views.map.fit();
+  });
   const POPS = [["key-toggle", "key"], ["settings-toggle", "settings"], ["alarm-counts", "alarms"]];
   function closePops() {
     for (const [button, panel] of POPS) { if ($(panel)) $(panel).hidden = true; if ($(button)) $(button).setAttribute("aria-expanded", "false"); }
@@ -5834,9 +5875,12 @@ function NoraCanvasMap(view) {
   const watched = new Set(NORA.config.flow.watch || []);
   function pressureText(id, unit = true) {
     const now = App.reading(id), value = now && now.pressure != null ? App.fmt(now.pressure) : "–";
-    const rate = App.settings().pressureChange ? App.pressureRate(id) : null; // Settings may leave it out
-    const show = rate != null && (watched.has(id) || Math.abs(rate) >= 0.1) && (unit || watched.has(id));
-    const trend = show ? `${rate >= 0.05 ? "▲" : rate <= -0.05 ? "▼" : "±"} ${App.fmt(Math.abs(rate), 1)}` : "";
+    // Zoomed in, always (Ray, 29 Oct: "the pressure change last hour only shows sometimes
+    // when zoomed in view, it should always show"): "± 0.0" when steady, "–" before an
+    // hour of data. Zoomed out, the watched hubs.
+    const wanted = App.settings().pressureChange && App.state.mode !== "whatif" && (unit || watched.has(id)); // a what-if is steady
+    const rate = wanted ? App.pressureRate(id) : null;
+    const trend = !wanted ? "" : rate == null ? (unit ? "–" : "") : `${rate >= 0.05 ? "▲" : rate <= -0.05 ? "▼" : "±"} ${App.fmt(Math.abs(rate), 1)}`;
     return { text: unit ? `${value} bar` : value, rate: trend };
   }
   function textWidth(text, font) {
@@ -6677,6 +6721,22 @@ function NoraCanvasMap(view) {
      first spot along its line, from the middle out, clear of the squares, their names
      and tags and the values already placed: never text on text. Returns the screen
      boxes, so marker labels and badges keep clear. */
+  /* Where a line's values go: beside it at its middle (or further along), on whichever
+     side is clear, `reach` (half the box, across the line) plus 12 px away. Screen px. */
+  function labelSpot(da, db, w, height, taken = []) {
+    const len = Math.hypot(db.x - da.x, db.y - da.y) || 1;
+    const nx = -(db.y - da.y) / len, ny = (db.x - da.x) / len; // across the line
+    const reach = Math.abs(nx) * (w / 2 + 3) + Math.abs(ny) * (height / 2);
+    for (const t of [0.5, 0.4, 0.6, 0.32, 0.68, 0.25, 0.75]) {
+      const at = { x: da.x + (db.x - da.x) * t, y: da.y + (db.y - da.y) * t };
+      for (const side of [1, -1]) {
+        const cx = at.x + side * nx * (reach + 12), cy = at.y + side * ny * (reach + 12);
+        const box = [cx - w / 2 - 3, cy - height / 2, cx + w / 2 + 3, cy + height / 2];
+        if (!taken.some((o) => overlaps(box, o))) return { at, box, cx, cy, side, nx, ny, reach };
+      }
+    }
+    return null;
+  }
   function drawLineValues(ctx, positions) {
     const scale = network.getScale(), boxes = [], taken = [...nodeBoxes(), ...(scale < 1 ? overviewBoxes : [])];
     const ratio = (network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
@@ -6690,19 +6750,28 @@ function NoraCanvasMap(view) {
       if (!s.label || lineHidden(id) || !a || !b) continue;
       const rows = s.pack ? [s.label, s.pack] : [s.label], w = Math.max(...rows.map((t) => ctx.measureText(t).width));
       const height = 16 * rows.length;
-      let spot = null;
-      for (const t of [0.5, 0.4, 0.6, 0.32, 0.68, 0.25, 0.75]) {
-        const at = network.canvasToDOM({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
-        const box = [at.x - w / 2 - 3, at.y - 8, at.x + w / 2 + 3, at.y - 8 + height];
-        if (!taken.some((o) => overlaps(box, o))) { spot = { at, box }; break; }
-      }
-      if (!spot) continue; // nowhere clear on this line at this zoom: zoom in to read it
+      /* Beside the line, not on it (Ray, 29 Oct: "settle out and pack rate covers too much
+         of the pipeline ... have it just outisde the pipeline with a thin line pointing to
+         the center of the pipe"): off to one side, a hairline back to the line. */
+      const spot = labelSpot(network.canvasToDOM(a), network.canvasToDOM(b), w, height, taken);
+      if (!spot) continue; // nowhere clear beside this line at this zoom: zoom in to read it
+      const { nx, ny, reach } = spot;
       ctx.globalAlpha = s.dim ? 0.35 : 1;
+      ctx.strokeStyle = C.text_dim; // the leader: from the box's edge to the line's centre
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(spot.cx - spot.side * nx * reach, spot.cy - spot.side * ny * reach);
+      ctx.lineTo(spot.at.x, spot.at.y);
+      ctx.stroke();
+      ctx.fillStyle = C.text_dim;
+      ctx.beginPath();
+      ctx.arc(spot.at.x, spot.at.y, 1.8, 0, Math.PI * 2);
+      ctx.fill();
       ctx.fillStyle = C.paper;
       ctx.fillRect(spot.box[0], spot.box[1], spot.box[2] - spot.box[0], height);
       rows.forEach((text, i) => {
         ctx.fillStyle = C.text; // full ink: the dim grey was hard to read on the paper
-        ctx.fillText(text, spot.at.x, spot.at.y + 16 * i);
+        ctx.fillText(text, spot.cx, spot.box[1] + 8 + 16 * i);
       });
       boxes.push(spot.box);
       taken.push(spot.box);
@@ -6803,6 +6872,7 @@ function NoraCanvasMap(view) {
   view.portDistance = portDistance;
   view.drawPressureTags = drawPressureTags;
   view.drawDayBar = drawDayBar;
+  view.labelSpot = labelSpot;
   view.drawNominationSteps = drawNominationSteps;
   view.badgeCorner = badgeCorner;
   view.pointAlong = pointAlong;
