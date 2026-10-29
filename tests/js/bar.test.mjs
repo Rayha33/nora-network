@@ -35,12 +35,9 @@ test("a bar whose rows fit keeps its own height", () => {
   assert.equal(loadAt(1440, 60).props["--bar-h"], undefined, "one row: the stylesheet's height");
 });
 
-test("the player's 'now' label is centred over the track, not over '−4 h'", () => {
+test("the ruler draws its own days; its ends and state are said for screen readers", () => {
   const css = readFileSync(`${TEMPLATES}/app.css`, "utf8");
-  const rule = css.match(/#tl-now\s*\{([^}]+)\}/);
-  assert.ok(rule, "the label has a rule");
-  // Absolutely placed and pulled back by half its width: it also needs to start at half the row.
-  assert.match(rule[1], /position:\s*absolute/);
-  assert.match(rule[1], /translateX\(-50%\)/);
-  assert.match(rule[1], /left:\s*50%/, "without left: 50% it sits at the row's start");
+  const rule = css.match(/\.timeline-label\s*\{([^}]+)\}/);
+  assert.ok(rule && /clip-path:\s*inset\(50%\)/.test(rule[1]) && /width:\s*1px/.test(rule[1]), "visually hidden, still read out");
+  assert.match(css, /\.track input\s*\{[^}]*pointer-events:\s*none/s, "the pointer works on the ruler; the keys on the input");
 });

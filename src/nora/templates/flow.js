@@ -1110,7 +1110,8 @@
       const mark = at && markAt(at.x, at.y); // a pig or a peak under the pointer wins
       if (mark) { App.selectMarker(mark.key); return; }
       const id = event.nodes[0] || event.edges[0] || (at && hitTest(at, network.getPositions(), (p) => network.canvasToDOM(p), network.getScale()));
-      if (id) App.select(id);
+      const box = container.getBoundingClientRect(); // where on the page, for What-if's window there
+      if (id) App.select(id, at ? { x: box.left + at.x, y: box.top + at.y } : null);
     });
     /* Right-click a node or a line: the same menu as on the Map. A plain DOM
        listener on the container (the reliable path for real right-clicks). */

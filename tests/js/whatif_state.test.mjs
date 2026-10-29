@@ -110,3 +110,27 @@ test("what-if: a line's pack now and then on the same pressures; a tie-in's from
   assert.ok(Math.abs(w.pack.norpipe.then - w.pack.norpipe.now) < 1e-6, "nothing changed: the same line pack");
   assert.ok(Math.abs(w.balance.offNominations) < 1, "on nominations, over the exits that have one");
 });
+
+test("what-if: a click on the view opens its numbers there; the timeline then shows any hour with them", () => {
+  // Ray, 29 Oct: "for the what if i should be able to add the number i want directly on the
+  // page view and then see what happens when i pull the timeline to the timeline in the
+  // future that i need to check".
+  const { App, document } = play();
+  const find = (el, test) => (test(el) ? el : (el.children || []).map((c) => (c && typeof c === "object" ? find(c, test) : null)).find(Boolean) || null);
+  App.select("troll", { x: 400, y: 300 });
+  const pop = find(document.body, (el) => String(el.className || "").includes("whatif-pop"));
+  assert.ok(pop, "a window on the view, not the side panel");
+  assert.match(pop.textContent, /Troll/);
+  const production = find(pop, (el) => el.attributes && el.attributes.get && el.attributes.get("data-key") === "whatif:supply:troll");
+  const made = App.whatif.state().supply.troll;
+  production.value = String(made - 30);
+  production._listeners.change[0]();
+  assert.ok(near(App.whatif.state().supply.troll, made - 30), "typed in, taken");
+  const scrub = document.getElementById("scrub");
+  scrub.value = String(24 * 3600); // a day ahead on the timeline
+  scrub._listeners.input[0]({ target: { value: scrub.value } });
+  const ahead = App.whatif.state();
+  assert.ok(near(ahead.supply.troll, made - 30), `your value holds at the later hour: ${ahead.supply.troll}`);
+  assert.equal(ahead.frame.t, App.live.frames[App.live.index].t, "the what-if is worked out for the hour shown");
+  assert.match(find(document.body, (el) => String(el.className || "").includes("whatif-pop")).textContent, /Troll/, "and the window stays, following it");
+});

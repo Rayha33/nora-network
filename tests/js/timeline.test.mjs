@@ -66,8 +66,9 @@ test("the player opens at now and says so", () => {
   assert.ok(ts && !ts.model, "at now nothing is the model's yet");
   assert.equal($("when").hidden, false);
   assert.equal($("when").textContent, "Now");
-  assert.equal($("tl-past").textContent, "−4 h");
-  assert.equal($("tl-future").textContent, "+4 h");
+  const window = App.timelineWindow(), s = App.live.stream;
+  assert.deepEqual([window.start, window.end], [s.times[0], s.times[s.times.length - 1]], "the ruler holds the whole week, now inside it");
+  assert.ok(window.start < App.live.time && App.live.time < window.end);
 });
 
 test("right of now is the model, left of it history", () => {
@@ -103,8 +104,7 @@ test("recorded real data keeps its own dates and has no now", () => {
   assert.equal(App.live.index, 0, "a recording plays from its start");
   assert.equal(App.timeState(), null);
   assert.equal($("when").hidden, true);
-  // Four steps of its own either way: a daily recording shows four days, not four hours.
-  assert.equal($("tl-past").textContent, s.step >= 86400 ? `−${Math.round((4 * s.step) / 86400)} d` : "−4 h");
+  assert.equal(App.timelineWindow().start, s.times[0], "the ruler starts at its first reading");
   assert.equal($("tl-now").textContent, "Selected time · UTC", "a recording is not real time");
 });
 
@@ -117,4 +117,18 @@ test("[screen] now_in_middle = false plays synthetic data at its own dates", () 
   assert.deepEqual([...s.times], original.times);
   assert.equal(App.live.index, 0);
   assert.equal(App.timeState(), null);
+});
+
+test("away from now, the chip beside the clock takes you back to now", () => {
+  // Ray, 29 Oct: "make up your own version and improve it" (the timeline).
+  const { App, NORA, choose, scrubTo, $ } = load();
+  choose(synthetic(NORA).name);
+  const here = App.live.index;
+  assert.equal($("when").getAttribute("role"), "status", "at now it only says so");
+  scrubTo(here + 7);
+  assert.equal($("when").getAttribute("role"), "button");
+  assert.equal($("when").title, "Back to now");
+  $("when")._listeners.click[0]();
+  assert.ok(Math.abs(App.live.time - wall()) < 5, "back at the wall clock");
+  assert.equal($("when").textContent, "Now");
 });

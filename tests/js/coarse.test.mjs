@@ -25,26 +25,28 @@ test("a daily dataset scrubs a day at a time, four days either way", () => {
   const { App, document } = open("denmark-gas-energinet");
   const scrub = document.getElementById("scrub");
   assert.deepEqual([scrub.min, scrub.max, scrub.step], [String(-4 * 86400), String(4 * 86400), "86400"]);
-  assert.deepEqual([text(document, "tl-past"), text(document, "tl-future")], ["−4 d", "+4 d"]);
   const start = App.live.index;
   scrub.value = "172800";
   scrub._listeners.input[0]({ target: { value: scrub.value } });
   assert.equal(App.live.index, start + 2, "two days on");
-  const window = App.timelineWindow();
-  assert.equal(window.end - window.start, 8 * 86400, "the track shows the eight days around it");
+  const window = App.timelineWindow(), s = App.live.stream;
+  assert.ok(window.end - window.start <= 240 * 86400 && window.start <= App.live.time && window.end >= App.live.time,
+    "the ruler shows up to 240 days, the playhead on it");
+  assert.equal(window.start, s.times[Math.max(0, Math.min(s.times.length - 241, Math.floor((App.live.playhead - 120) / 60) * 60))], "a page that moves a quarter at a time");
 });
 
-test("a monthly dataset shows four months either way", () => {
-  const { document } = open("sodir-field-production");
-  assert.deepEqual([text(document, "tl-past"), text(document, "tl-future")], ["−4 mo", "+4 mo"]);
+test("a monthly dataset's ruler spans its months, said for screen readers", () => {
+  const { App, document } = open("sodir-field-production");
+  const window = App.timelineWindow(), s = App.live.stream;
+  if (s.times.length <= 241) assert.deepEqual([window.start, window.end], [s.times[0], s.times[s.times.length - 1]], "all of it");
+  assert.ok(text(document, "tl-past") && text(document, "tl-future"), "its ends are named");
 });
 
 test("a recorded dataset is not labelled real time; the synthetic week still is", () => {
   assert.equal(text(open("denmark-gas-energinet").document, "tl-now"), "Selected time · UTC");
   const { document } = open("synthetic-week");
   assert.equal(text(document, "tl-now"), "Real time · UTC");
-  assert.deepEqual([text(document, "tl-past"), text(document, "tl-future")], ["−4 h", "+4 h"], "hourly data keeps its four hours");
-  assert.equal(document.getElementById("scrub").step, "3600");
+  assert.equal(document.getElementById("scrub").step, "3600", "the keys step an hour");
 });
 
 test("a daily dataset plays a day in about a second", () => {
