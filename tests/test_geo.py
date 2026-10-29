@@ -56,6 +56,32 @@ def test_culzean_joins_cats_at_the_real_t5_tee(north_sea):
     assert all(len(lines[pid]) > 2 for pid in ("culzean_cats", "cats_north", "cats"))
 
 
+def test_asgard_feeders_and_trunk_segments_meet_at_real_tees(north_sea):
+    where = {n.id: [n.lon, n.lat] for n in north_sea.nodes}
+    lines = {
+        f["properties"]["asset"]: f["geometry"]["coordinates"]
+        for f in map_geojson(north_sea)["pipes"]["features"]
+    }
+    assert lines["skarv_asgard_t"][-1] == where["asgard_t"]
+    assert (
+        lines["asgard_transport_inlet"][-1]
+        == lines["asgard_transport_upper"][0]
+        == where["asgard_t"]
+    )
+    assert lines["draugen_asgard_t"][-1] == where["draugen_t"]
+    assert lines["asgard_transport_upper"][-1] == lines["asgard_transport"][0] == where["draugen_t"]
+    assert all(
+        len(lines[pid]) > 2
+        for pid in (
+            "skarv_asgard_t",
+            "draugen_asgard_t",
+            "asgard_transport_inlet",
+            "asgard_transport_upper",
+            "asgard_transport",
+        )
+    )
+
+
 def test_european_trunks_do_not_fall_back_to_chords():
     expected = {
         "flags",

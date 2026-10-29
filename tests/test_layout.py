@@ -32,7 +32,8 @@ def test_pipelines_cross_as_little_as_possible(north_sea):
     # crossings on the real network, against 112 for the geographic order
     # (the timeline's frigg, odin and irpa rows add 8)
     # (the timeline's frigg, odin and irpa rows, and the storage sites, add 16)
-    assert crossings(north_sea, flow_positions(north_sea)) <= 35
+    # (the nine detailed fields and two Åsgard tees add another 6)
+    assert crossings(north_sea, flow_positions(north_sea)) <= 45
 
 
 def test_layout_is_deterministic(north_sea):

@@ -80,7 +80,8 @@ test("routes: a peak circle stays exactly between its head and tail at line boun
   document.getElementById("speed").options = [{ value: "60" }];
   document.getElementById("stream-select")._listeners.change[0]({ target: { value: NORA.streams[0].name } });
   const stream = App.live.stream;
-  const pid = stream.assets.find((id) => App.pipeIds.includes(id));
+  const pid = stream.assets.find((id, j) => App.pipeIds.includes(id) && Math.abs(stream.values[0][j] || 0) > 1);
+  assert.ok(pid, "choose a covered pipeline with real flow, independent of asset ordering");
   for (const forward of [true, false]) {
     const peak = { id: pid, t0: stream.times[0], delta: 10, forward, level: 1 };
     App.live.peaks = [peak];
@@ -138,7 +139,7 @@ test("routes: the showcase week has a few pigs under way, not one on every line"
   const counts = [];
   for (let t = t0 + 24 * HOUR; t <= t1; t += 3 * HOUR) counts.push(stream.pigs.filter((p) => App.routes.pigPlace(p, t)).length);
   const mean = counts.reduce((a, b) => a + b, 0) / counts.length;
-  assert.ok(mean >= 2 && mean <= 6, `${mean.toFixed(1)} pigs under way on average`);
+  assert.ok(mean >= 2 && mean <= 7, `${mean.toFixed(1)} pigs under way on average in the expanded network`);
   assert.ok(Math.max(...counts) <= 8, `at most ${Math.max(...counts)} at once`);
   assert.ok(Math.min(...counts) >= 1, "and there is always one to watch");
 });

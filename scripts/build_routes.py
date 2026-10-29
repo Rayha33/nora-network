@@ -64,7 +64,8 @@ SEGMENTS = {
     "zeepipe_2b": [("KOLLSNES", "DRAUPNER E")],
     "langeled_north": [("NYHAMNA", "SLEIPNER R")],
     "langeled_south": [("SLEIPNER R", "EASINGTON")],
-    "asgard_transport": [("ÅSGARD ERB", "KÅRSTØ")],
+    "skarv_asgard_t": [("SKARV ERB", "ÅSGARD T")],
+    "draugen_asgard_t": [("DRAUGEN", "DRAUGEN T")],
     "polarled": [("AASTA HANSTEEN PLEM", "NYHAMNA")],
     "ormen_lange_nyhamna": [("ORMEN LANGE A", "NYHAMNA")],
     "gudrun_sleipner": [("GUDRUN", "SLEIPNER A")],
@@ -87,6 +88,14 @@ SEGMENTS = {
 }
 # One SODIR line that NORA splits at a tie-in node: (whole route, [(nora id, until node)]).
 SPLITS = {
+    "asgard_transport": (
+        [("ÅSGARD ERB", "KÅRSTØ")],
+        [
+            ("asgard_transport_inlet", "asgard_t"),
+            ("asgard_transport_upper", "draugen_t"),
+            ("asgard_transport", None),
+        ],
+    ),
     "europipe_2": (
         [("KÅRSTØ", "EMDEN")],
         [("europipe_2_north", "baltic_tie"), ("europipe_2_south", None)],

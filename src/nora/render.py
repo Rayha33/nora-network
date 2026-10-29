@@ -121,6 +121,7 @@ def assets_payload(net: Network, analysis: dict) -> dict[str, dict]:
             "shutdown": node.shutdown,
             "source": node.source,
             "notes": node.notes,
+            "min_zoom": node.map_min_zoom,
             "line": node.line,
             "lost": outage.get("lost", 0.0),
             "share": outage.get("share", 0.0),
@@ -227,7 +228,12 @@ def map_geojson(net: Network) -> dict[str, dict]:
         {
             "type": "Feature",
             "id": i,
-            "properties": {"asset": node.id, "name": node.name, "type": node.type},
+            "properties": {
+                "asset": node.id,
+                "name": node.name,
+                "type": node.type,
+                "minZoom": node.map_min_zoom,
+            },
             "geometry": {"type": "Point", "coordinates": where[node.id]},
         }
         for i, node in enumerate(sorted(net.nodes, key=lambda n: n.id))
@@ -236,7 +242,14 @@ def map_geojson(net: Network) -> dict[str, dict]:
         {
             "type": "Feature",
             "id": i,
-            "properties": {"asset": pipe.id, "onshore": pipe.type == "onshore"},
+            "properties": {
+                "asset": pipe.id,
+                "onshore": pipe.type == "onshore",
+                "minZoom": max(
+                    net.node_by_id[pipe.from_id].map_min_zoom,
+                    net.node_by_id[pipe.to_id].map_min_zoom,
+                ),
+            },
             "geometry": {
                 "type": "LineString",
                 "coordinates": _route_line(
