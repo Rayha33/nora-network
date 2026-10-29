@@ -922,7 +922,6 @@
       const scale = network.getScale();
       ctx.save();
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-      clipValues(ctx, w, h);
       // At low zoom a stub outside its own node can cross a neighbour. Keep the fitted
       // overview calm; these decorative strokes only appear once the drawing has room.
       if (animateStubs(scale)) {
@@ -932,25 +931,22 @@
       }
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       drawMoving(ctx, framePos, scale);
+      uncover(ctx);
       ctx.restore();
     });
   }
   /* A line's value stays readable while a peak, a slug or a pig passes it (Ray, 29 Oct:
      "i cant see the settle out pressure when a peak is passing"): the moving layer is
-     drawn everywhere except on the values' paper patches (screen pixels). Nodes are on
-     top too (Ray, 29 Oct: "it should go behind a node, a node should be on top"): a peak
-     passes under a square, its tags and its name. */
-  function clipValues(ctx, w, h) {
-    const covers = [...lineValueBoxes];
+     erased on the values' paper patches (screen pixels). Nodes are on top too (Ray, 29
+     Oct: "it should go behind a node, a node should be on top"): a peak passes under a
+     square, its tags and its name. Erased after drawing, not clipped before: Safari
+     slows to a crawl redrawing under a clip made of many rectangles. */
+  function uncover(ctx) {
+    for (const [x0, y0, x1, y1] of lineValueBoxes) ctx.clearRect(x0, y0, x1 - x0, y1 - y0);
     for (const parts of Object.values(drawnParts)) for (const [x0, y0, x1, y1] of parts) {
       const a = network.canvasToDOM({ x: x0, y: y0 }), b = network.canvasToDOM({ x: x1, y: y1 });
-      covers.push([a.x, a.y, b.x, b.y]);
+      ctx.clearRect(a.x, a.y, b.x - a.x, b.y - a.y);
     }
-    if (!covers.length) return;
-    ctx.beginPath();
-    ctx.rect(0, 0, w, h);
-    for (const [x0, y0, x1, y1] of covers) ctx.rect(x0, y0, x1 - x0, y1 - y0);
-    ctx.clip("evenodd");
   }
   /* Simulated flow at the nodes, not on the lines (same as the Map view): short solid
      bands sliding into the icon where gas arrives and out of it where gas leaves, scaled
@@ -1250,6 +1246,8 @@
      boxes, so marker labels and badges keep clear. */
   // Does the segment a–b pass through the box? (Liang–Barsky clipping)
   function segmentHitsBox(a, b, [x0, y0, x1, y1]) {
+    // Most segments are nowhere near the box: rule those out before clipping.
+    if (Math.max(a.x, b.x) < x0 || Math.min(a.x, b.x) > x1 || Math.max(a.y, b.y) < y0 || Math.min(a.y, b.y) > y1) return false;
     let t0 = 0, t1 = 1;
     const dx = b.x - a.x, dy = b.y - a.y;
     for (const [p, q] of [[-dx, a.x - x0], [dx, x1 - a.x], [-dy, a.y - y0], [dy, y1 - a.y]]) {
@@ -1304,6 +1302,7 @@
       const p = NORA.assets[id], a = positions[p.from], b = positions[p.to];
       if (!lineHidden(id) && a && b) segments[id] = [network.canvasToDOM(a), network.canvasToDOM(b)];
     }
+    const lines = Object.values(segments);
     for (const id of App.pipeIds) {
       const s = App.pipeStyle(id), p = NORA.assets[id], a = positions[p.from], b = positions[p.to];
       if (!s.label || lineHidden(id) || !a || !b) continue;
@@ -1312,7 +1311,7 @@
       /* Beside the line, not on it (Ray, 29 Oct: "settle out and pack rate covers too much
          of the pipeline ... have it just outisde the pipeline with a thin line pointing to
          the center of the pipe"): off to one side, a hairline back to the line. */
-      const others = Object.entries(segments).filter(([other]) => other !== id).map(([, seg]) => seg);
+      const others = lines.filter((seg) => seg !== segments[id]);
       const spot = labelSpot(segments[id][0], segments[id][1], w, height, taken, others, leaders);
       if (!spot) continue; // nowhere clear beside this line at this zoom: zoom in to read it
       const [from, to] = spot.leader;

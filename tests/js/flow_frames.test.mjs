@@ -9,13 +9,18 @@ import assert from "node:assert/strict";
 import { loadApp } from "./harness.mjs";
 
 function setup() {
-  const counts = {};
+  const counts = {}, ops = [];
   const recorder = () => new Proxy({}, {
     get(target, key) {
       if (key in target) return target[key];
       if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
       if (key === "createLinearGradient") return () => ({ addColorStop() {} });
-      return () => { counts[key] = (counts[key] || 0) + 1; };
+      return (...args) => {
+        ops.push([key, args[2]]);
+        // A repaint clears the whole layer; the patches erased over values and nodes are smaller.
+        if (key === "clearRect" && !(args[2] >= 1000)) key = "uncover";
+        counts[key] = (counts[key] || 0) + 1;
+      };
     },
     set(target, key, value) { target[key] = value; return true; },
   });
@@ -61,7 +66,7 @@ function setup() {
   const network = App.views.flow.network;
   network.positions = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: stage * 300, y: rank * 200 }]));
   network.redraw(); // vis draws: the network, then the moving layer over it
-  return { App, counts, network };
+  return { App, counts, ops, network };
 }
 
 test("flow frames: playing, the moving layer is repainted only when something on it moved", () => {
@@ -82,4 +87,16 @@ test("flow frames: a redraw vis asks for always repaints the moving layer", () =
   const before = counts.clearRect || 0;
   network.redraw();
   assert.equal((counts.clearRect || 0) - before, 1, "after the network, the layer over it");
+});
+
+test("flow frames: values and nodes stay on top of the moving layer, erased after it, not clipped", () => {
+  const { network, ops } = setup();
+  ops.length = 0;
+  network.redraw();
+  const layer = ops.slice(ops.findLastIndex(([key, w]) => key === "clearRect" && w >= 1000));
+  // Ray, 29 Oct: "the flow page is extremely slow": Safari slowed to a crawl redrawing under a clip of many rectangles.
+  assert.ok(!layer.some(([key]) => key === "clip"), "no clip");
+  const lastInk = layer.findLastIndex(([key]) => key === "fill" || key === "stroke" || key === "fillText");
+  assert.ok(lastInk > 0, "the markers are drawn");
+  assert.ok(layer.slice(lastInk).some(([key]) => key === "clearRect"), "then erased where the values and nodes sit");
 });
