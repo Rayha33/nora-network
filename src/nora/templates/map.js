@@ -152,8 +152,9 @@
       paint: {
         "text-opacity": nodeOpacity, "text-color": C.text, "text-halo-color": C.paper, "text-halo-width": 2, // no line shows through a name
       } });
-    // Alarm badges: shape + number + colour, on nodes and at the middle of lines.
-    for (const [id, source, offset] of [["nora-node-alarms", "nora-node-badges", [12, -12]], ["nora-pipe-alarms", "nora-mids", [0, 0]]]) {
+    // Alarm badges: shape + number + colour, on nodes. Not on lines (Ray, 29 Oct: "remove
+    // the small red squares they serve no purpose").
+    for (const [id, source, offset] of [["nora-node-alarms", "nora-node-badges", [12, -12]]]) {
       map.addLayer({ id, type: "symbol", source, filter: [">", ["get", "alarm"], 0],
         layout: { "icon-image": ["concat", "nora-alarm-", ["to-string", ["get", "alarm"]]], "icon-size": 0.85, "icon-offset": offset,
           "icon-allow-overlap": true, "icon-ignore-placement": true, "symbol-sort-key": ["-", 0, ["get", "alarm"]] } });
@@ -493,7 +494,7 @@
     drawnMarks = [];
     for (const m of marks) {
       const p = project(m.id, m.along);
-      App.drawMarker(ctx, m, p.x, p.y, p.angle, App.markerSize(m.kind), detail, taken);
+      App.drawMarker(ctx, m, p.x, p.y, p.angle, App.markerSize(m.kind, (map.getZoom() - 6) / 4), detail, taken);
       if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
     }
   }

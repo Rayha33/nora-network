@@ -735,27 +735,6 @@
    "supply": false,
    "exit": true
   },
-  "balgzand": {
-   "kind": "node",
-   "name": "Balgzand",
-   "type": "terminal",
-   "country": "NL",
-   "lat": 52.86,
-   "lon": 4.9,
-   "operator": "",
-   "capacity": null,
-   "status": "operating",
-   "startup": null,
-   "shutdown": null,
-   "source": "https://en.wikipedia.org/wiki/BBL_Pipeline",
-   "notes": "BBL compressor station",
-   "line": 37,
-   "lost": 0.0,
-   "share": 0.0,
-   "modelFlow": 0.0,
-   "supply": false,
-   "exit": true
-  },
   "uithuizen": {
    "kind": "node",
    "name": "Uithuizen",
@@ -770,7 +749,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Uithuizen_Gas_Plant",
    "notes": "NGT receiving terminal",
-   "line": 38,
+   "line": 37,
    "lost": 10.0,
    "share": 0.0217,
    "modelFlow": 10.0,
@@ -791,7 +770,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Norpipe",
    "notes": "Norpipe receiving terminal",
-   "line": 39,
+   "line": 38,
    "lost": 44.0,
    "share": 0.0957,
    "modelFlow": 44.0,
@@ -812,7 +791,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Europipe_II",
    "notes": "Landfall of Europipe I and II",
-   "line": 40,
+   "line": 39,
    "lost": 90.0,
    "share": 0.1957,
    "modelFlow": 117.0,
@@ -833,7 +812,7 @@
    "shutdown": null,
    "source": "https://fluxys.com/en/about-us/fluxys-belgium/infrastructure",
    "notes": "Terminal for Zeepipe and IUK",
-   "line": 41,
+   "line": 40,
    "lost": 42.0,
    "share": 0.0913,
    "modelFlow": 42.0,
@@ -854,7 +833,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Franpipe",
    "notes": "Franpipe receiving terminal",
-   "line": 42,
+   "line": 41,
    "lost": 55.0,
    "share": 0.1196,
    "modelFlow": 55.0,
@@ -875,7 +854,7 @@
    "shutdown": null,
    "source": "https://en.energinet.dk/about-our-news/news/2022/11/01/nybro-commissioning",
    "notes": "Gas treatment plant and Baltic Pipe compression",
-   "line": 43,
+   "line": 42,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 0.0,
@@ -896,7 +875,7 @@
    "shutdown": null,
    "source": "https://en.wikipedia.org/wiki/Baltic_Pipe",
    "notes": "Subsea tie-in on Europipe II",
-   "line": 44,
+   "line": 43,
    "lost": 71.0,
    "share": 0.1543,
    "modelFlow": 71.0,
@@ -917,7 +896,7 @@
    "shutdown": null,
    "source": "https://gaz-system.pl/en/for-customers/market-information/data-exchange.html",
    "notes": "Reached through Baltic Pipe; map placement is schematic",
-   "line": 45,
+   "line": 44,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": null,
@@ -938,7 +917,7 @@
    "shutdown": null,
    "source": "https://equinor.com/energy/tjeldbergodden",
    "notes": "Methanol plant: the gas consumer at the end of Haltenpipe",
-   "line": 46,
+   "line": 45,
    "lost": 0.0,
    "share": 0.0,
    "modelFlow": 6.0,
@@ -1825,28 +1804,6 @@
    "utilization": 0.0,
    "km": 235.0
   },
-  "bbl": {
-   "kind": "pipeline",
-   "name": "BBL",
-   "type": "interconnector",
-   "from": "balgzand",
-   "to": "bacton",
-   "capacity": 53.0,
-   "length": 235.0,
-   "diameter": 36.0,
-   "commissioned": 2006,
-   "bidirectional": true,
-   "status": "operating",
-   "operator": "",
-   "source": "https://bblcompany.com/",
-   "notes": "Physical reverse flow added in 2019 at lower capacity",
-   "line": 42,
-   "lost": 0.0,
-   "share": 0.0,
-   "modelFlow": 0.0,
-   "utilization": 0.0,
-   "km": 235.0
-  },
   "ngt": {
    "kind": "pipeline",
    "name": "NGT",
@@ -1862,7 +1819,7 @@
    "operator": "",
    "source": "https://en.wikipedia.org/wiki/Noordgastransport",
    "notes": "Main line of the NGT system",
-   "line": 43,
+   "line": 42,
    "lost": 10.0,
    "share": 0.0217,
    "modelFlow": 10.0,
@@ -1884,7 +1841,7 @@
    "operator": "",
    "source": "approximate, public data",
    "notes": "",
-   "line": 44,
+   "line": 43,
    "lost": 5.0,
    "share": 0.0109,
    "modelFlow": 5.0,
@@ -1948,22 +1905,6 @@
      "type": "Feature",
      "id": 3,
      "properties": {
-      "asset": "balgzand",
-      "name": "Balgzand",
-      "type": "terminal"
-     },
-     "geometry": {
-      "type": "Point",
-      "coordinates": [
-       4.9,
-       52.86
-      ]
-     }
-    },
-    {
-     "type": "Feature",
-     "id": 4,
-     "properties": {
       "asset": "baltic_tie",
       "name": "Baltic Pipe tie-in",
       "type": "hub"
@@ -1978,7 +1919,7 @@
     },
     {
      "type": "Feature",
-     "id": 5,
+     "id": 4,
      "properties": {
       "asset": "beryl",
       "name": "Beryl",
@@ -1994,7 +1935,7 @@
     },
     {
      "type": "Feature",
-     "id": 6,
+     "id": 5,
      "properties": {
       "asset": "den_helder",
       "name": "Den Helder",
@@ -2010,7 +1951,7 @@
     },
     {
      "type": "Feature",
-     "id": 7,
+     "id": 6,
      "properties": {
       "asset": "dornum",
       "name": "Dornum",
@@ -2026,7 +1967,7 @@
     },
     {
      "type": "Feature",
-     "id": 8,
+     "id": 7,
      "properties": {
       "asset": "draupner_e",
       "name": "Draupner E",
@@ -2042,7 +1983,7 @@
     },
     {
      "type": "Feature",
-     "id": 9,
+     "id": 8,
      "properties": {
       "asset": "draupner_s",
       "name": "Draupner S",
@@ -2058,7 +1999,7 @@
     },
     {
      "type": "Feature",
-     "id": 10,
+     "id": 9,
      "properties": {
       "asset": "dunkirk",
       "name": "Dunkirk (Franpipe)",
@@ -2074,7 +2015,7 @@
     },
     {
      "type": "Feature",
-     "id": 11,
+     "id": 10,
      "properties": {
       "asset": "easington",
       "name": "Easington",
@@ -2090,7 +2031,7 @@
     },
     {
      "type": "Feature",
-     "id": 12,
+     "id": 11,
      "properties": {
       "asset": "edvard_grieg",
       "name": "Edvard Grieg",
@@ -2106,7 +2047,7 @@
     },
     {
      "type": "Feature",
-     "id": 13,
+     "id": 12,
      "properties": {
       "asset": "ekofisk",
       "name": "Ekofisk",
@@ -2122,7 +2063,7 @@
     },
     {
      "type": "Feature",
-     "id": 14,
+     "id": 13,
      "properties": {
       "asset": "elgin_franklin",
       "name": "Elgin-Franklin",
@@ -2138,7 +2079,7 @@
     },
     {
      "type": "Feature",
-     "id": 15,
+     "id": 14,
      "properties": {
       "asset": "emden",
       "name": "Emden",
@@ -2154,7 +2095,7 @@
     },
     {
      "type": "Feature",
-     "id": 16,
+     "id": 15,
      "properties": {
       "asset": "flags_brent",
       "name": "FLAGS North (Brent area)",
@@ -2170,7 +2111,7 @@
     },
     {
      "type": "Feature",
-     "id": 17,
+     "id": 16,
      "properties": {
       "asset": "frigg",
       "name": "Frigg",
@@ -2186,7 +2127,7 @@
     },
     {
      "type": "Feature",
-     "id": 18,
+     "id": 17,
      "properties": {
       "asset": "gjoa",
       "name": "Gj\u00f8a",
@@ -2202,7 +2143,7 @@
     },
     {
      "type": "Feature",
-     "id": 19,
+     "id": 18,
      "properties": {
       "asset": "gudrun",
       "name": "Gudrun",
@@ -2218,7 +2159,7 @@
     },
     {
      "type": "Feature",
-     "id": 20,
+     "id": 19,
      "properties": {
       "asset": "gullfaks",
       "name": "Gullfaks",
@@ -2234,7 +2175,7 @@
     },
     {
      "type": "Feature",
-     "id": 21,
+     "id": 20,
      "properties": {
       "asset": "heidrun",
       "name": "Heidrun",
@@ -2250,7 +2191,7 @@
     },
     {
      "type": "Feature",
-     "id": 22,
+     "id": 21,
      "properties": {
       "asset": "heimdal",
       "name": "Heimdal",
@@ -2266,7 +2207,7 @@
     },
     {
      "type": "Feature",
-     "id": 23,
+     "id": 22,
      "properties": {
       "asset": "johan_sverdrup",
       "name": "Johan Sverdrup",
@@ -2282,7 +2223,7 @@
     },
     {
      "type": "Feature",
-     "id": 24,
+     "id": 23,
      "properties": {
       "asset": "k13a",
       "name": "K13-A",
@@ -2298,7 +2239,7 @@
     },
     {
      "type": "Feature",
-     "id": 25,
+     "id": 24,
      "properties": {
       "asset": "karsto",
       "name": "K\u00e5rst\u00f8",
@@ -2314,7 +2255,7 @@
     },
     {
      "type": "Feature",
-     "id": 26,
+     "id": 25,
      "properties": {
       "asset": "kollsnes",
       "name": "Kollsnes",
@@ -2330,7 +2271,7 @@
     },
     {
      "type": "Feature",
-     "id": 27,
+     "id": 26,
      "properties": {
       "asset": "kvitebjorn",
       "name": "Kvitebj\u00f8rn",
@@ -2346,7 +2287,7 @@
     },
     {
      "type": "Feature",
-     "id": 28,
+     "id": 27,
      "properties": {
       "asset": "l10a",
       "name": "L10-A",
@@ -2362,7 +2303,7 @@
     },
     {
      "type": "Feature",
-     "id": 29,
+     "id": 28,
      "properties": {
       "asset": "norne",
       "name": "Norne",
@@ -2378,7 +2319,7 @@
     },
     {
      "type": "Feature",
-     "id": 30,
+     "id": 29,
      "properties": {
       "asset": "nybro",
       "name": "Nybro",
@@ -2394,7 +2335,7 @@
     },
     {
      "type": "Feature",
-     "id": 31,
+     "id": 30,
      "properties": {
       "asset": "nyhamna",
       "name": "Nyhamna",
@@ -2410,7 +2351,7 @@
     },
     {
      "type": "Feature",
-     "id": 32,
+     "id": 31,
      "properties": {
       "asset": "odin",
       "name": "Odin",
@@ -2426,7 +2367,7 @@
     },
     {
      "type": "Feature",
-     "id": 33,
+     "id": 32,
      "properties": {
       "asset": "ormen_lange",
       "name": "Ormen Lange",
@@ -2442,7 +2383,7 @@
     },
     {
      "type": "Feature",
-     "id": 34,
+     "id": 33,
      "properties": {
       "asset": "oseberg",
       "name": "Oseberg",
@@ -2458,7 +2399,7 @@
     },
     {
      "type": "Feature",
-     "id": 35,
+     "id": 34,
      "properties": {
       "asset": "pl_vtp",
       "name": "Poland VTP",
@@ -2474,7 +2415,7 @@
     },
     {
      "type": "Feature",
-     "id": 36,
+     "id": 35,
      "properties": {
       "asset": "sleipner",
       "name": "Sleipner",
@@ -2490,7 +2431,7 @@
     },
     {
      "type": "Feature",
-     "id": 37,
+     "id": 36,
      "properties": {
       "asset": "sns_fields",
       "name": "Southern North Sea fields",
@@ -2506,7 +2447,7 @@
     },
     {
      "type": "Feature",
-     "id": 38,
+     "id": 37,
      "properties": {
       "asset": "st_fergus",
       "name": "St Fergus",
@@ -2522,7 +2463,7 @@
     },
     {
      "type": "Feature",
-     "id": 39,
+     "id": 38,
      "properties": {
       "asset": "statfjord",
       "name": "Statfjord",
@@ -2538,7 +2479,7 @@
     },
     {
      "type": "Feature",
-     "id": 40,
+     "id": 39,
      "properties": {
       "asset": "tjeldbergodden",
       "name": "Tjeldbergodden",
@@ -2554,7 +2495,7 @@
     },
     {
      "type": "Feature",
-     "id": 41,
+     "id": 40,
      "properties": {
       "asset": "troll",
       "name": "Troll",
@@ -2570,7 +2511,7 @@
     },
     {
      "type": "Feature",
-     "id": 42,
+     "id": 41,
      "properties": {
       "asset": "uithuizen",
       "name": "Uithuizen",
@@ -2586,7 +2527,7 @@
     },
     {
      "type": "Feature",
-     "id": 43,
+     "id": 42,
      "properties": {
       "asset": "visund",
       "name": "Visund",
@@ -2602,7 +2543,7 @@
     },
     {
      "type": "Feature",
-     "id": 44,
+     "id": 43,
      "properties": {
       "asset": "zeebrugge",
       "name": "Zeebrugge",
@@ -2996,99 +2937,6 @@
      "type": "Feature",
      "id": 3,
      "properties": {
-      "asset": "bbl",
-      "onshore": false
-     },
-     "geometry": {
-      "type": "LineString",
-      "coordinates": [
-       [
-        4.9,
-        52.86
-       ],
-       [
-        4.716,
-        52.881
-       ],
-       [
-        4.658,
-        52.882
-       ],
-       [
-        4.617,
-        52.888
-       ],
-       [
-        4.345,
-        52.97
-       ],
-       [
-        3.998,
-        53.006
-       ],
-       [
-        3.491,
-        52.992
-       ],
-       [
-        2.602,
-        52.838
-       ],
-       [
-        2.574,
-        52.827
-       ],
-       [
-        2.547,
-        52.796
-       ],
-       [
-        2.521,
-        52.783
-       ],
-       [
-        2.265,
-        52.749
-       ],
-       [
-        2.091,
-        52.751
-       ],
-       [
-        2.062,
-        52.759
-       ],
-       [
-        2.011,
-        52.795
-       ],
-       [
-        1.98,
-        52.806
-       ],
-       [
-        1.609,
-        52.844
-       ],
-       [
-        1.506,
-        52.865
-       ],
-       [
-        1.468,
-        52.859
-       ],
-       [
-        1.46,
-        52.86
-       ]
-      ]
-     }
-    },
-    {
-     "type": "Feature",
-     "id": 4,
-     "properties": {
       "asset": "draupner_bridge",
       "onshore": false
      },
@@ -3108,7 +2956,7 @@
     },
     {
      "type": "Feature",
-     "id": 5,
+     "id": 4,
      "properties": {
       "asset": "europipe_1",
       "onshore": false
@@ -3233,7 +3081,7 @@
     },
     {
      "type": "Feature",
-     "id": 6,
+     "id": 5,
      "properties": {
       "asset": "europipe_2_north",
       "onshore": false
@@ -3374,7 +3222,7 @@
     },
     {
      "type": "Feature",
-     "id": 7,
+     "id": 6,
      "properties": {
       "asset": "europipe_2_south",
       "onshore": false
@@ -3455,7 +3303,7 @@
     },
     {
      "type": "Feature",
-     "id": 8,
+     "id": 7,
      "properties": {
       "asset": "flags",
       "onshore": false
@@ -3604,7 +3452,7 @@
     },
     {
      "type": "Feature",
-     "id": 9,
+     "id": 8,
      "properties": {
       "asset": "franpipe",
       "onshore": false
@@ -3777,7 +3625,7 @@
     },
     {
      "type": "Feature",
-     "id": 10,
+     "id": 9,
      "properties": {
       "asset": "gjoa_flags",
       "onshore": false
@@ -3826,7 +3674,7 @@
     },
     {
      "type": "Feature",
-     "id": 11,
+     "id": 10,
      "properties": {
       "asset": "gudrun_sleipner",
       "onshore": false
@@ -3883,7 +3731,7 @@
     },
     {
      "type": "Feature",
-     "id": 12,
+     "id": 11,
      "properties": {
       "asset": "gullfaks_statfjord",
       "onshore": false
@@ -3904,7 +3752,7 @@
     },
     {
      "type": "Feature",
-     "id": 13,
+     "id": 12,
      "properties": {
       "asset": "haltenpipe",
       "onshore": false
@@ -4141,7 +3989,7 @@
     },
     {
      "type": "Feature",
-     "id": 14,
+     "id": 13,
      "properties": {
       "asset": "heidrun_asgard",
       "onshore": false
@@ -4202,7 +4050,7 @@
     },
     {
      "type": "Feature",
-     "id": 15,
+     "id": 14,
      "properties": {
       "asset": "iuk",
       "onshore": false
@@ -4327,7 +4175,7 @@
     },
     {
      "type": "Feature",
-     "id": 16,
+     "id": 15,
      "properties": {
       "asset": "kvitebjorn_kollsnes",
       "onshore": false
@@ -4396,7 +4244,7 @@
     },
     {
      "type": "Feature",
-     "id": 17,
+     "id": 16,
      "properties": {
       "asset": "langeled_north",
       "onshore": false
@@ -4597,7 +4445,7 @@
     },
     {
      "type": "Feature",
-     "id": 18,
+     "id": 17,
      "properties": {
       "asset": "langeled_south",
       "onshore": false
@@ -4706,7 +4554,7 @@
     },
     {
      "type": "Feature",
-     "id": 19,
+     "id": 18,
      "properties": {
       "asset": "ngt",
       "onshore": false
@@ -4783,7 +4631,7 @@
     },
     {
      "type": "Feature",
-     "id": 20,
+     "id": 19,
      "properties": {
       "asset": "ngts",
       "onshore": false
@@ -4904,7 +4752,7 @@
     },
     {
      "type": "Feature",
-     "id": 21,
+     "id": 20,
      "properties": {
       "asset": "norpipe",
       "onshore": false
@@ -5005,7 +4853,7 @@
     },
     {
      "type": "Feature",
-     "id": 22,
+     "id": 21,
      "properties": {
       "asset": "ogt",
       "onshore": false
@@ -5070,7 +4918,7 @@
     },
     {
      "type": "Feature",
-     "id": 23,
+     "id": 22,
      "properties": {
       "asset": "ormen_lange_nyhamna",
       "onshore": false
@@ -5207,7 +5055,7 @@
     },
     {
      "type": "Feature",
-     "id": 24,
+     "id": 23,
      "properties": {
       "asset": "polarled",
       "onshore": false
@@ -5480,7 +5328,7 @@
     },
     {
      "type": "Feature",
-     "id": 25,
+     "id": 24,
      "properties": {
       "asset": "sage",
       "onshore": false
@@ -5609,7 +5457,7 @@
     },
     {
      "type": "Feature",
-     "id": 26,
+     "id": 25,
      "properties": {
       "asset": "seal",
       "onshore": false
@@ -5734,7 +5582,7 @@
     },
     {
      "type": "Feature",
-     "id": 27,
+     "id": 26,
      "properties": {
       "asset": "sleipner_draupner",
       "onshore": false
@@ -5771,7 +5619,7 @@
     },
     {
      "type": "Feature",
-     "id": 28,
+     "id": 27,
      "properties": {
       "asset": "sns_bacton",
       "onshore": false
@@ -5792,7 +5640,7 @@
     },
     {
      "type": "Feature",
-     "id": 29,
+     "id": 28,
      "properties": {
       "asset": "statpipe_dry",
       "onshore": false
@@ -5889,7 +5737,7 @@
     },
     {
      "type": "Feature",
-     "id": 30,
+     "id": 29,
      "properties": {
       "asset": "statpipe_ekofisk",
       "onshore": false
@@ -5946,7 +5794,7 @@
     },
     {
      "type": "Feature",
-     "id": 31,
+     "id": 30,
      "properties": {
       "asset": "statpipe_heimdal",
       "onshore": false
@@ -5983,7 +5831,7 @@
     },
     {
      "type": "Feature",
-     "id": 32,
+     "id": 31,
      "properties": {
       "asset": "statpipe_rich",
       "onshore": false
@@ -6120,7 +5968,7 @@
     },
     {
      "type": "Feature",
-     "id": 33,
+     "id": 32,
      "properties": {
       "asset": "sverdrup_karsto",
       "onshore": false
@@ -6141,7 +5989,7 @@
     },
     {
      "type": "Feature",
-     "id": 34,
+     "id": 33,
      "properties": {
       "asset": "tampen_link",
       "onshore": false
@@ -6190,7 +6038,7 @@
     },
     {
      "type": "Feature",
-     "id": 35,
+     "id": 34,
      "properties": {
       "asset": "troll_kollsnes",
       "onshore": false
@@ -6247,7 +6095,7 @@
     },
     {
      "type": "Feature",
-     "id": 36,
+     "id": 35,
      "properties": {
       "asset": "uhgp",
       "onshore": false
@@ -6296,7 +6144,7 @@
     },
     {
      "type": "Feature",
-     "id": 37,
+     "id": 36,
      "properties": {
       "asset": "vesterled",
       "onshore": false
@@ -6445,7 +6293,7 @@
     },
     {
      "type": "Feature",
-     "id": 38,
+     "id": 37,
      "properties": {
       "asset": "visund_kvitebjorn",
       "onshore": false
@@ -6494,7 +6342,7 @@
     },
     {
      "type": "Feature",
-     "id": 39,
+     "id": 38,
      "properties": {
       "asset": "wgt",
       "onshore": false
@@ -6547,7 +6395,7 @@
     },
     {
      "type": "Feature",
-     "id": 40,
+     "id": 39,
      "properties": {
       "asset": "zeepipe_1",
       "onshore": false
@@ -6692,7 +6540,7 @@
     },
     {
      "type": "Feature",
-     "id": 41,
+     "id": 40,
      "properties": {
       "asset": "zeepipe_2a",
       "onshore": false
@@ -6809,7 +6657,7 @@
     },
     {
      "type": "Feature",
-     "id": 42,
+     "id": 41,
      "properties": {
       "asset": "zeepipe_2b",
       "onshore": false
@@ -24471,10 +24319,6 @@
    5.6,
    3.4
   ],
-  "balgzand": [
-   5.6,
-   2.2
-  ],
   "baltic_tie": [
    3.4,
    12.6
@@ -24750,7 +24594,6 @@
     "l10a",
     "k13a",
     "den_helder",
-    "balgzand",
     "uithuizen",
     "dornum",
     "emden",
@@ -24758,7 +24601,6 @@
     "dunkirk"
    ],
    "pipelines": [
-    "bbl",
     "ngt",
     "wgt"
    ]
@@ -25069,147 +24911,140 @@
     {
      "label": "Pig on Baltic Pipe (Denmark - Poland)",
      "pipeline": "baltic_pipe_east",
-     "launch": 1792422981,
+     "launch": 1792425600,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Baltic Pipe (North Sea leg)",
      "pipeline": "baltic_pipe_ns",
-     "launch": 1792477963,
-     "speed": 4.0,
-     "every": 1209600
-    },
-    {
-     "label": "Pig on BBL",
-     "pipeline": "bbl",
-     "launch": 1792532945,
+     "launch": 1792483200,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Europipe II (K\u00e5rst\u00f8 - Baltic tie-in)",
      "pipeline": "europipe_2_north",
-     "launch": 1792587927,
+     "launch": 1792540800,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Europipe II (Baltic tie-in - Dornum)",
      "pipeline": "europipe_2_south",
-     "launch": 1792642909,
+     "launch": 1792598400,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on FLAGS",
      "pipeline": "flags",
-     "launch": 1792697890,
+     "launch": 1792656000,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Franpipe",
      "pipeline": "franpipe",
-     "launch": 1792752872,
+     "launch": 1792713600,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Haltenpipe",
      "pipeline": "haltenpipe",
-     "launch": 1792807854,
+     "launch": 1792771200,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Langeled (north)",
      "pipeline": "langeled_north",
-     "launch": 1792862836,
+     "launch": 1792828800,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on NGT",
      "pipeline": "ngt",
-     "launch": 1792917818,
+     "launch": 1792886400,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Norpipe Gas",
      "pipeline": "norpipe",
-     "launch": 1792972800,
+     "launch": 1792944000,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Polarled",
      "pipeline": "polarled",
-     "launch": 1793027781,
+     "launch": 1793001600,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on SAGE",
      "pipeline": "sage",
-     "launch": 1793082763,
+     "launch": 1793059200,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on SEAL",
      "pipeline": "seal",
-     "launch": 1793137745,
+     "launch": 1793116800,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Statpipe (dry gas)",
      "pipeline": "statpipe_dry",
-     "launch": 1793192727,
+     "launch": 1793174400,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Statpipe (Draupner - Ekofisk)",
      "pipeline": "statpipe_ekofisk",
-     "launch": 1793247709,
+     "launch": 1793232000,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Statpipe (Heimdal leg)",
      "pipeline": "statpipe_heimdal",
-     "launch": 1793302690,
+     "launch": 1793289600,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on WGT",
      "pipeline": "wgt",
-     "launch": 1793357672,
+     "launch": 1793347200,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Zeepipe I",
      "pipeline": "zeepipe_1",
-     "launch": 1793412654,
+     "launch": 1793404800,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Zeepipe IIA",
      "pipeline": "zeepipe_2a",
-     "launch": 1793467636,
+     "launch": 1793462400,
      "speed": 4.0,
      "every": 1209600
     },
     {
      "label": "Pig on Zeepipe IIB",
      "pipeline": "zeepipe_2b",
-     "launch": 1793522618,
+     "launch": 1793520000,
      "speed": 4.0,
      "every": 1209600
     }
@@ -25388,7 +25223,6 @@
     "asgard_transport",
     "baltic_pipe_east",
     "baltic_pipe_ns",
-    "bbl",
     "draupner_bridge",
     "europipe_1",
     "europipe_2_north",
@@ -25432,7 +25266,6 @@
    "values": [
     [
      61.87,
-     0.0,
      0.0,
      0.0,
      7.93,
@@ -25479,7 +25312,6 @@
      59.77,
      0.0,
      0.0,
-     0.0,
      2.65,
      46.0,
      64.63,
@@ -25522,7 +25354,6 @@
     ],
     [
      59.8,
-     0.0,
      0.0,
      0.0,
      -3.68,
@@ -25569,7 +25400,6 @@
      57.44,
      0.0,
      0.0,
-     0.0,
      -6.33,
      46.0,
      62.12,
@@ -25612,7 +25442,6 @@
     ],
     [
      57.92,
-     0.0,
      0.0,
      0.0,
      -6.18,
@@ -25659,7 +25488,6 @@
      57.97,
      0.0,
      0.0,
-     0.0,
      -2.83,
      46.0,
      62.67,
@@ -25702,7 +25530,6 @@
     ],
     [
      59.14,
-     0.0,
      0.0,
      0.0,
      3.38,
@@ -25749,7 +25576,6 @@
      59.71,
      0.0,
      0.0,
-     0.0,
      4.34,
      46.0,
      64.7,
@@ -25792,7 +25618,6 @@
     ],
     [
      61.3,
-     0.0,
      0.0,
      0.0,
      8.35,
@@ -25839,7 +25664,6 @@
      60.28,
      0.0,
      0.0,
-     0.0,
      10.87,
      46.0,
      65.44,
@@ -25882,7 +25706,6 @@
     ],
     [
      61.82,
-     0.0,
      0.0,
      0.0,
      11.15,
@@ -25929,7 +25752,6 @@
      63.33,
      0.0,
      0.0,
-     0.0,
      11.58,
      46.0,
      68.32,
@@ -25972,7 +25794,6 @@
     ],
     [
      62.76,
-     0.0,
      0.0,
      0.0,
      10.46,
@@ -26019,7 +25840,6 @@
      62.86,
      0.0,
      0.0,
-     0.0,
      12.95,
      46.0,
      68.04,
@@ -26062,7 +25882,6 @@
     ],
     [
      64.07,
-     0.0,
      0.0,
      0.0,
      13.68,
@@ -26109,7 +25928,6 @@
      65.3,
      0.0,
      0.0,
-     0.0,
      15.78,
      46.0,
      71.0,
@@ -26152,7 +25970,6 @@
     ],
     [
      67.11,
-     0.0,
      0.0,
      0.0,
      20.21,
@@ -26199,7 +26016,6 @@
      68.06,
      0.0,
      0.0,
-     0.0,
      23.7,
      46.0,
      71.0,
@@ -26242,7 +26058,6 @@
     ],
     [
      69.11,
-     0.0,
      0.0,
      0.0,
      28.75,
@@ -26289,7 +26104,6 @@
      70.0,
      0.0,
      0.0,
-     0.0,
      30.78,
      46.0,
      71.0,
@@ -26332,7 +26146,6 @@
     ],
     [
      69.2,
-     0.0,
      0.0,
      0.0,
      29.75,
@@ -26379,7 +26192,6 @@
      67.03,
      0.0,
      0.0,
-     0.0,
      24.49,
      46.0,
      71.0,
@@ -26422,7 +26234,6 @@
     ],
     [
      65.94,
-     0.0,
      0.0,
      0.0,
      19.92,
@@ -26469,7 +26280,6 @@
      63.1,
      0.0,
      0.0,
-     0.0,
      13.05,
      46.0,
      69.65,
@@ -26512,7 +26322,6 @@
     ],
     [
      62.16,
-     0.0,
      0.0,
      0.0,
      10.75,
@@ -26559,7 +26368,6 @@
      60.3,
      0.0,
      0.0,
-     0.0,
      5.94,
      46.0,
      65.42,
@@ -26602,7 +26410,6 @@
     ],
     [
      60.67,
-     0.0,
      0.0,
      0.0,
      0.09,
@@ -26649,7 +26456,6 @@
      59.8,
      0.0,
      0.0,
-     0.0,
      -1.18,
      46.0,
      64.64,
@@ -26692,7 +26498,6 @@
     ],
     [
      58.88,
-     0.0,
      0.0,
      0.0,
      -0.18,
@@ -26739,7 +26544,6 @@
      59.08,
      0.0,
      0.0,
-     0.0,
      -0.15,
      46.0,
      64.02,
@@ -26782,7 +26586,6 @@
     ],
     [
      59.86,
-     0.0,
      0.0,
      0.0,
      1.45,
@@ -26829,7 +26632,6 @@
      60.1,
      0.0,
      0.0,
-     0.0,
      2.52,
      46.0,
      65.09,
@@ -26872,7 +26674,6 @@
     ],
     [
      59.34,
-     0.0,
      0.0,
      0.0,
      6.04,
@@ -26919,7 +26720,6 @@
      60.02,
      0.0,
      0.0,
-     0.0,
      7.37,
      46.0,
      65.74,
@@ -26962,7 +26762,6 @@
     ],
     [
      60.22,
-     0.0,
      0.0,
      0.0,
      8.71,
@@ -27009,7 +26808,6 @@
      60.2,
      0.0,
      0.0,
-     0.0,
      9.51,
      46.0,
      66.43,
@@ -27052,7 +26850,6 @@
     ],
     [
      60.94,
-     0.0,
      0.0,
      0.0,
      10.2,
@@ -27099,7 +26896,6 @@
      63.5,
      0.0,
      0.0,
-     0.0,
      9.32,
      46.0,
      70.1,
@@ -27142,7 +26938,6 @@
     ],
     [
      63.49,
-     0.0,
      0.0,
      0.0,
      11.16,
@@ -27189,7 +26984,6 @@
      64.74,
      0.0,
      0.0,
-     0.0,
      14.91,
      46.0,
      71.0,
@@ -27232,7 +27026,6 @@
     ],
     [
      65.83,
-     0.0,
      0.0,
      0.0,
      20.18,
@@ -27279,7 +27072,6 @@
      67.48,
      0.0,
      0.0,
-     0.0,
      23.9,
      46.0,
      71.0,
@@ -27322,7 +27114,6 @@
     ],
     [
      68.88,
-     0.0,
      0.0,
      0.0,
      26.4,
@@ -27369,7 +27160,6 @@
      68.54,
      0.0,
      0.0,
-     0.0,
      27.2,
      46.0,
      71.0,
@@ -27412,7 +27202,6 @@
     ],
     [
      67.67,
-     0.0,
      0.0,
      0.0,
      25.52,
@@ -27459,7 +27248,6 @@
      66.78,
      0.0,
      0.0,
-     0.0,
      22.32,
      46.0,
      71.0,
@@ -27502,7 +27290,6 @@
     ],
     [
      63.47,
-     0.0,
      0.0,
      0.0,
      16.37,
@@ -27549,7 +27336,6 @@
      63.27,
      0.0,
      0.0,
-     0.0,
      12.57,
      46.0,
      70.5,
@@ -27592,7 +27378,6 @@
     ],
     [
      61.19,
-     0.0,
      0.0,
      0.0,
      9.09,
@@ -27639,7 +27424,6 @@
      60.26,
      0.0,
      0.0,
-     0.0,
      1.96,
      46.0,
      65.17,
@@ -27682,7 +27466,6 @@
     ],
     [
      58.44,
-     0.0,
      0.0,
      0.0,
      -1.4,
@@ -27729,7 +27512,6 @@
      58.57,
      0.0,
      0.0,
-     0.0,
      -3.25,
      46.0,
      63.37,
@@ -27774,7 +27556,6 @@
      58.19,
      0.0,
      0.0,
-     0.0,
      -6.24,
      46.0,
      62.98,
@@ -27817,7 +27598,6 @@
     ],
     [
      56.56,
-     0.0,
      0.0,
      0.0,
      -3.6,
@@ -27866,7 +27646,6 @@
      0.0,
      0.0,
      0.0,
-     0.0,
      61.29,
      61.29,
      32.31,
@@ -27907,7 +27686,6 @@
     ],
     [
      56.8,
-     0.0,
      0.0,
      0.0,
      0.0,
@@ -27956,7 +27734,6 @@
      0.0,
      0.0,
      0.0,
-     0.0,
      64.09,
      64.09,
      33.0,
@@ -27997,7 +27774,6 @@
     ],
     [
      59.81,
-     0.0,
      0.0,
      0.0,
      0.0,
@@ -28046,7 +27822,6 @@
      0.0,
      0.0,
      0.0,
-     0.0,
      67.44,
      67.44,
      33.0,
@@ -28087,7 +27862,6 @@
     ],
     [
      62.25,
-     0.0,
      0.0,
      0.0,
      0.0,
@@ -28136,7 +27910,6 @@
      0.0,
      0.0,
      0.0,
-     0.0,
      68.92,
      68.92,
      33.0,
@@ -28177,7 +27950,6 @@
     ],
     [
      61.91,
-     0.0,
      0.0,
      0.0,
      0.0,
@@ -28226,7 +27998,6 @@
      0.0,
      0.0,
      0.0,
-     0.0,
      69.75,
      69.75,
      33.0,
@@ -28267,7 +28038,6 @@
     ],
     [
      65.71,
-     0.0,
      0.0,
      0.0,
      0.7,
@@ -28314,7 +28084,6 @@
      66.94,
      0.0,
      0.0,
-     0.0,
      4.21,
      4.21,
      71.0,
@@ -28357,7 +28126,6 @@
     ],
     [
      68.36,
-     0.0,
      0.0,
      0.0,
      7.97,
@@ -28404,7 +28172,6 @@
      68.9,
      0.0,
      0.0,
-     0.0,
      10.86,
      10.86,
      71.0,
@@ -28447,7 +28214,6 @@
     ],
     [
      70.0,
-     0.0,
      0.0,
      0.0,
      28.15,
@@ -28494,7 +28260,6 @@
      68.31,
      0.0,
      0.0,
-     0.0,
      25.41,
      46.0,
      71.0,
@@ -28537,7 +28302,6 @@
     ],
     [
      67.96,
-     0.0,
      0.0,
      0.0,
      22.54,
@@ -28584,7 +28348,6 @@
      65.42,
      0.0,
      0.0,
-     0.0,
      16.23,
      46.0,
      71.0,
@@ -28627,7 +28390,6 @@
     ],
     [
      62.9,
-     0.0,
      0.0,
      0.0,
      12.9,
@@ -28674,7 +28436,6 @@
      61.3,
      0.0,
      0.0,
-     0.0,
      9.61,
      46.0,
      66.46,
@@ -28717,7 +28478,6 @@
     ],
     [
      60.65,
-     0.0,
      0.0,
      0.0,
      3.56,
@@ -28764,7 +28524,6 @@
      59.66,
      0.0,
      0.0,
-     0.0,
      -1.23,
      46.0,
      64.48,
@@ -28807,7 +28566,6 @@
     ],
     [
      58.41,
-     0.0,
      0.0,
      0.0,
      -1.27,
@@ -28854,7 +28612,6 @@
      58.32,
      0.0,
      0.0,
-     0.0,
      -1.05,
      46.0,
      63.15,
@@ -28897,7 +28654,6 @@
     ],
     [
      58.33,
-     0.0,
      0.0,
      0.0,
      -0.26,
@@ -28944,7 +28700,6 @@
      60.12,
      0.0,
      0.0,
-     0.0,
      2.48,
      46.0,
      65.19,
@@ -28987,7 +28742,6 @@
     ],
     [
      60.34,
-     0.0,
      0.0,
      0.0,
      3.55,
@@ -29034,7 +28788,6 @@
      62.31,
      0.0,
      0.0,
-     0.0,
      6.04,
      46.0,
      67.66,
@@ -29077,7 +28830,6 @@
     ],
     [
      60.54,
-     0.0,
      0.0,
      0.0,
      6.85,
@@ -29124,7 +28876,6 @@
      61.25,
      0.0,
      0.0,
-     0.0,
      7.19,
      46.0,
      66.87,
@@ -29167,7 +28918,6 @@
     ],
     [
      62.82,
-     0.0,
      0.0,
      0.0,
      8.98,
@@ -29214,7 +28964,6 @@
      64.82,
      0.0,
      0.0,
-     0.0,
      9.85,
      46.0,
      70.87,
@@ -29257,7 +29006,6 @@
     ],
     [
      64.72,
-     0.0,
      0.0,
      0.0,
      10.13,
@@ -29304,7 +29052,6 @@
      64.38,
      0.0,
      0.0,
-     0.0,
      12.7,
      46.0,
      71.0,
@@ -29347,7 +29094,6 @@
     ],
     [
      63.65,
-     0.0,
      0.0,
      0.0,
      14.89,
@@ -29394,7 +29140,6 @@
      64.23,
      0.0,
      0.0,
-     0.0,
      17.98,
      46.0,
      71.0,
@@ -29437,7 +29182,6 @@
     ],
     [
      64.76,
-     0.0,
      0.0,
      0.0,
      20.24,
@@ -29484,7 +29228,6 @@
      65.27,
      0.0,
      0.0,
-     0.0,
      22.02,
      46.0,
      71.0,
@@ -29527,7 +29270,6 @@
     ],
     [
      65.27,
-     0.0,
      0.0,
      0.0,
      22.84,
@@ -29574,7 +29316,6 @@
      66.06,
      0.0,
      0.0,
-     0.0,
      23.47,
      46.0,
      71.0,
@@ -29617,7 +29358,6 @@
     ],
     [
      65.45,
-     0.0,
      0.0,
      0.0,
      21.46,
@@ -29664,7 +29404,6 @@
      64.86,
      0.0,
      0.0,
-     0.0,
      16.98,
      46.0,
      71.0,
@@ -29707,7 +29446,6 @@
     ],
     [
      62.85,
-     0.0,
      0.0,
      0.0,
      11.25,
@@ -29754,7 +29492,6 @@
      61.08,
      0.0,
      0.0,
-     0.0,
      6.33,
      46.0,
      66.15,
@@ -29797,7 +29534,6 @@
     ],
     [
      60.43,
-     0.0,
      0.0,
      0.0,
      1.7,
@@ -29844,7 +29580,6 @@
      59.09,
      0.0,
      0.0,
-     0.0,
      -2.28,
      46.0,
      63.85,
@@ -29887,7 +29622,6 @@
     ],
     [
      59.11,
-     0.0,
      0.0,
      0.0,
      -5.24,
@@ -29934,7 +29668,6 @@
      59.37,
      0.0,
      0.0,
-     0.0,
      -1.89,
      46.0,
      63.98,
@@ -29977,7 +29710,6 @@
     ],
     [
      58.45,
-     0.0,
      0.0,
      0.0,
      -2.19,
@@ -30024,7 +29756,6 @@
      59.29,
      0.0,
      0.0,
-     0.0,
      0.54,
      46.0,
      63.95,
@@ -30067,7 +29798,6 @@
     ],
     [
      59.2,
-     0.0,
      0.0,
      0.0,
      4.07,
@@ -30114,7 +29844,6 @@
      59.15,
      0.0,
      0.0,
-     0.0,
      31.0,
      46.0,
      64.1,
@@ -30157,7 +29886,6 @@
     ],
     [
      60.86,
-     0.0,
      0.0,
      0.0,
      31.0,
@@ -30204,7 +29932,6 @@
      60.42,
      0.0,
      0.0,
-     0.0,
      31.0,
      46.0,
      66.13,
@@ -30247,7 +29974,6 @@
     ],
     [
      60.27,
-     0.0,
      0.0,
      0.0,
      31.0,
@@ -30294,7 +30020,6 @@
      60.19,
      0.0,
      0.0,
-     0.0,
      31.0,
      46.0,
      66.29,
@@ -30337,7 +30062,6 @@
     ],
     [
      60.47,
-     0.0,
      0.0,
      0.0,
      31.0,
@@ -30384,7 +30108,6 @@
      61.01,
      0.0,
      0.0,
-     0.0,
      31.0,
      46.0,
      67.73,
@@ -30427,7 +30150,6 @@
     ],
     [
      63.42,
-     0.0,
      0.0,
      0.0,
      31.0,
@@ -30474,7 +30196,6 @@
      63.53,
      0.0,
      0.0,
-     0.0,
      31.0,
      46.0,
      71.0,
@@ -30517,7 +30238,6 @@
     ],
     [
      62.58,
-     0.0,
      0.0,
      0.0,
      31.0,
@@ -30564,7 +30284,6 @@
      62.25,
      0.0,
      0.0,
-     0.0,
      31.0,
      46.0,
      71.0,
@@ -30607,7 +30326,6 @@
     ],
     [
      61.5,
-     0.0,
      0.0,
      0.0,
      31.0,
@@ -30654,7 +30372,6 @@
      61.83,
      0.0,
      0.0,
-     0.0,
      31.0,
      46.0,
      71.0,
@@ -30697,7 +30414,6 @@
     ],
     [
      62.35,
-     0.0,
      0.0,
      0.0,
      31.0,
@@ -30744,7 +30460,6 @@
      63.36,
      0.0,
      0.0,
-     0.0,
      31.0,
      46.0,
      71.0,
@@ -30787,7 +30502,6 @@
     ],
     [
      63.25,
-     0.0,
      0.0,
      0.0,
      31.0,
@@ -30834,7 +30548,6 @@
      58.74,
      0.0,
      0.0,
-     0.0,
      31.0,
      46.0,
      63.58,
@@ -30877,7 +30590,6 @@
     ],
     [
      57.15,
-     0.0,
      0.0,
      0.0,
      29.78,
@@ -30924,7 +30636,6 @@
      56.18,
      0.0,
      0.0,
-     0.0,
      26.56,
      46.0,
      60.86,
@@ -30967,7 +30678,6 @@
     ],
     [
      54.97,
-     0.0,
      0.0,
      0.0,
      23.22,
@@ -31014,7 +30724,6 @@
      57.14,
      0.0,
      0.0,
-     0.0,
      23.67,
      46.0,
      61.74,
@@ -31057,7 +30766,6 @@
     ],
     [
      56.72,
-     0.0,
      0.0,
      0.0,
      23.96,
@@ -31104,7 +30812,6 @@
      56.19,
      0.0,
      0.0,
-     0.0,
      23.74,
      46.0,
      60.88,
@@ -31147,7 +30854,6 @@
     ],
     [
      56.12,
-     0.0,
      0.0,
      0.0,
      26.86,
@@ -31194,7 +30900,6 @@
      56.33,
      0.0,
      0.0,
-     0.0,
      -12.64,
      46.0,
      61.08,
@@ -31237,7 +30942,6 @@
     ],
     [
      56.82,
-     0.0,
      0.0,
      0.0,
      -11.33,
@@ -31284,7 +30988,6 @@
      57.31,
      0.0,
      0.0,
-     0.0,
      -11.27,
      46.0,
      62.04,
@@ -31327,7 +31030,6 @@
     ],
     [
      57.12,
-     0.0,
      0.0,
      0.0,
      -9.17,
@@ -31374,7 +31076,6 @@
      57.64,
      0.0,
      0.0,
-     0.0,
      -7.08,
      46.0,
      62.24,
@@ -31417,7 +31118,6 @@
     ],
     [
      59.17,
-     0.0,
      0.0,
      0.0,
      -0.71,
@@ -31464,7 +31164,6 @@
      61.38,
      0.0,
      0.0,
-     0.0,
      2.12,
      46.0,
      66.07,
@@ -31507,7 +31206,6 @@
     ],
     [
      62.46,
-     0.0,
      0.0,
      0.0,
      3.43,
@@ -31554,7 +31252,6 @@
      63.58,
      0.0,
      0.0,
-     0.0,
      5.72,
      46.0,
      68.39,
@@ -31597,7 +31294,6 @@
     ],
     [
      64.42,
-     0.0,
      0.0,
      0.0,
      7.79,
@@ -31644,7 +31340,6 @@
      65.2,
      0.0,
      0.0,
-     0.0,
      8.81,
      46.0,
      70.98,
@@ -31687,7 +31382,6 @@
     ],
     [
      64.91,
-     0.0,
      0.0,
      0.0,
      10.14,
@@ -31734,7 +31428,6 @@
      65.07,
      0.0,
      0.0,
-     0.0,
      9.62,
      46.0,
      70.59,
@@ -31777,7 +31470,6 @@
     ],
     [
      64.33,
-     0.0,
      0.0,
      0.0,
      6.15,
@@ -31824,7 +31516,6 @@
      61.96,
      0.0,
      0.0,
-     0.0,
      0.51,
      46.0,
      66.65,
@@ -31867,7 +31558,6 @@
     ],
     [
      60.59,
-     0.0,
      0.0,
      0.0,
      -4.94,
@@ -31914,7 +31604,6 @@
      58.89,
      0.0,
      0.0,
-     0.0,
      -11.78,
      46.0,
      63.39,
@@ -31957,7 +31646,6 @@
     ],
     [
      56.85,
-     0.0,
      0.0,
      0.0,
      -19.1,
@@ -32004,7 +31692,6 @@
      56.01,
      0.0,
      0.0,
-     0.0,
      -21.6,
      46.0,
      60.31,
@@ -32047,7 +31734,6 @@
     ],
     [
      53.3,
-     0.0,
      0.0,
      0.0,
      -23.11,
@@ -32094,7 +31780,6 @@
      51.15,
      0.0,
      0.0,
-     0.0,
      -23.85,
      46.0,
      55.54,
@@ -32137,7 +31822,6 @@
     ],
     [
      50.89,
-     0.0,
      0.0,
      0.0,
      -23.3,
@@ -32184,7 +31868,6 @@
      52.75,
      0.0,
      0.0,
-     0.0,
      -20.67,
      46.0,
      57.09,
@@ -32227,7 +31910,6 @@
     ],
     [
      53.3,
-     0.0,
      0.0,
      0.0,
      -16.72,
@@ -32274,7 +31956,6 @@
      54.6,
      0.0,
      0.0,
-     0.0,
      -13.67,
      46.0,
      58.99,
@@ -32317,7 +31998,6 @@
     ],
     [
      54.93,
-     0.0,
      0.0,
      0.0,
      -12.91,
@@ -32364,7 +32044,6 @@
      56.76,
      0.0,
      0.0,
-     0.0,
      -12.45,
      46.0,
      61.3,
@@ -32407,7 +32086,6 @@
     ],
     [
      57.66,
-     0.0,
      0.0,
      0.0,
      -9.57,
@@ -32454,7 +32132,6 @@
      57.66,
      0.0,
      0.0,
-     0.0,
      -8.76,
      46.0,
      62.18,
@@ -32497,7 +32174,6 @@
     ],
     [
      56.76,
-     0.0,
      0.0,
      0.0,
      -5.14,
@@ -32544,7 +32220,6 @@
      56.65,
      0.0,
      0.0,
-     0.0,
      -1.65,
      46.0,
      61.38,
@@ -32587,7 +32262,6 @@
     ],
     [
      57.31,
-     0.0,
      0.0,
      0.0,
      0.07,
@@ -32634,7 +32308,6 @@
      59.56,
      0.0,
      0.0,
-     0.0,
      3.44,
      46.0,
      64.82,
@@ -32677,7 +32350,6 @@
     ],
     [
      60.36,
-     0.0,
      0.0,
      0.0,
      6.94,
@@ -32724,7 +32396,6 @@
      61.87,
      0.0,
      0.0,
-     0.0,
      11.98,
      46.0,
      68.64,
@@ -32767,7 +32438,6 @@
     ],
     [
      63.19,
-     0.0,
      0.0,
      0.0,
      12.82,
@@ -32814,7 +32484,6 @@
      64.51,
      0.0,
      0.0,
-     0.0,
      12.25,
      46.0,
      71.0,
@@ -32857,7 +32526,6 @@
     ],
     [
      61.8,
-     0.0,
      0.0,
      0.0,
      9.31,
@@ -32904,7 +32572,6 @@
      60.61,
      0.0,
      0.0,
-     0.0,
      5.04,
      46.0,
      66.19,
@@ -32947,7 +32614,6 @@
     ],
     [
      57.91,
-     0.0,
      0.0,
      0.0,
      -1.14,
@@ -43654,7 +43320,6 @@
     "nomination_msm3d": {
      "assets": [
       "bacton",
-      "balgzand",
       "den_helder",
       "dornum",
       "dunkirk",
@@ -43667,7 +43332,6 @@
      "values": [
       [
        24.7,
-       0.0,
        4.2,
        113.3,
        31.9,
@@ -43679,7 +43343,6 @@
       ],
       [
        24.3,
-       0.0,
        4.1,
        110.6,
        26.7,
@@ -43691,7 +43354,6 @@
       ],
       [
        23.6,
-       0.0,
        4.0,
        110.6,
        20.3,
@@ -43703,7 +43365,6 @@
       ],
       [
        23.6,
-       0.0,
        4.0,
        108.1,
        17.7,
@@ -43715,7 +43376,6 @@
       ],
       [
        23.4,
-       0.0,
        4.0,
        108.7,
        17.8,
@@ -43727,7 +43387,6 @@
       ],
       [
        23.5,
-       0.0,
        4.1,
        108.7,
        21.2,
@@ -43739,7 +43398,6 @@
       ],
       [
        23.8,
-       0.0,
        4.0,
        110.0,
        27.4,
@@ -43751,7 +43409,6 @@
       ],
       [
        24.2,
-       0.0,
        4.1,
        110.7,
        28.3,
@@ -43763,7 +43420,6 @@
       ],
       [
        24.2,
-       0.0,
        4.1,
        112.5,
        32.4,
@@ -43775,7 +43431,6 @@
       ],
       [
        24.3,
-       0.0,
        4.2,
        111.4,
        34.9,
@@ -43787,7 +43442,6 @@
       ],
       [
        24.6,
-       0.0,
        4.2,
        113.2,
        35.2,
@@ -43799,7 +43453,6 @@
       ],
       [
        24.4,
-       0.0,
        4.2,
        114.3,
        35.6,
@@ -43811,7 +43464,6 @@
       ],
       [
        24.3,
-       0.0,
        4.1,
        113.8,
        34.5,
@@ -43823,7 +43475,6 @@
       ],
       [
        24.8,
-       0.0,
        4.2,
        114.0,
        37.0,
@@ -43835,7 +43486,6 @@
       ],
       [
        25.7,
-       0.0,
        4.2,
        115.7,
        37.7,
@@ -43847,7 +43497,6 @@
       ],
       [
        26.6,
-       0.0,
        4.4,
        117.0,
        39.8,
@@ -43859,7 +43508,6 @@
       ],
       [
        27.0,
-       0.0,
        4.5,
        117.0,
        44.2,
@@ -43871,7 +43519,6 @@
       ],
       [
        27.0,
-       0.0,
        4.5,
        117.0,
        47.7,
@@ -43883,7 +43530,6 @@
       ],
       [
        27.4,
-       0.0,
        4.5,
        117.0,
        52.8,
@@ -43895,7 +43541,6 @@
       ],
       [
        27.3,
-       0.0,
        4.5,
        117.0,
        54.8,
@@ -43907,7 +43552,6 @@
       ],
       [
        27.3,
-       0.0,
        4.4,
        117.0,
        53.7,
@@ -43919,7 +43563,6 @@
       ],
       [
        27.1,
-       0.0,
        4.3,
        117.0,
        48.5,
@@ -43931,7 +43574,6 @@
       ],
       [
        26.0,
-       0.0,
        4.2,
        117.0,
        43.9,
@@ -43943,7 +43585,6 @@
       ],
       [
        25.5,
-       0.0,
        4.1,
        115.6,
        37.0,
@@ -43955,7 +43596,6 @@
       ],
       [
        24.4,
-       0.0,
        4.0,
        114.2,
        34.8,
@@ -43967,7 +43607,6 @@
       ],
       [
        23.8,
-       0.0,
        3.9,
        111.4,
        29.9,
@@ -43979,7 +43618,6 @@
       ],
       [
        22.9,
-       0.0,
        3.8,
        111.6,
        24.1,
@@ -43991,7 +43629,6 @@
       ],
       [
        22.7,
-       0.0,
        3.8,
        110.6,
        22.8,
@@ -44003,7 +43640,6 @@
       ],
       [
        22.7,
-       0.0,
        3.8,
        109.7,
        23.8,
@@ -44015,7 +43651,6 @@
       ],
       [
        23.1,
-       0.0,
        3.7,
        110.0,
        23.8,
@@ -44027,7 +43662,6 @@
       ],
       [
        23.8,
-       0.0,
        3.7,
        110.8,
        25.4,
@@ -44039,7 +43673,6 @@
       ],
       [
        24.1,
-       0.0,
        3.8,
        111.1,
        26.5,
@@ -44051,7 +43684,6 @@
       ],
       [
        24.5,
-       0.0,
        4.0,
        110.8,
        30.0,
@@ -44063,7 +43695,6 @@
       ],
       [
        24.4,
-       0.0,
        4.2,
        111.7,
        31.4,
@@ -44075,7 +43706,6 @@
       ],
       [
        24.8,
-       0.0,
        4.3,
        112.0,
        32.7,
@@ -44087,7 +43717,6 @@
       ],
       [
        25.0,
-       0.0,
        4.3,
        112.4,
        33.5,
@@ -44099,7 +43728,6 @@
       ],
       [
        25.0,
-       0.0,
        4.3,
        113.4,
        34.2,
@@ -44111,7 +43739,6 @@
       ],
       [
        25.3,
-       0.0,
        4.4,
        116.1,
        33.3,
@@ -44123,7 +43750,6 @@
       ],
       [
        26.1,
-       0.0,
        4.4,
        115.6,
        35.2,
@@ -44135,7 +43761,6 @@
       ],
       [
        26.3,
-       0.0,
        4.4,
        117.0,
        38.9,
@@ -44147,7 +43772,6 @@
       ],
       [
        26.7,
-       0.0,
        4.5,
        117.0,
        44.2,
@@ -44159,7 +43783,6 @@
       ],
       [
        26.9,
-       0.0,
        4.6,
        117.0,
        47.9,
@@ -44171,7 +43794,6 @@
       ],
       [
        27.4,
-       0.0,
        4.7,
        117.0,
        50.4,
@@ -44183,7 +43805,6 @@
       ],
       [
        27.5,
-       0.0,
        4.7,
        117.0,
        51.2,
@@ -44195,7 +43816,6 @@
       ],
       [
        27.6,
-       0.0,
        4.7,
        117.0,
        49.5,
@@ -44207,7 +43827,6 @@
       ],
       [
        26.5,
-       0.0,
        4.6,
        117.0,
        46.3,
@@ -44219,7 +43838,6 @@
       ],
       [
        26.1,
-       0.0,
        4.5,
        117.0,
        40.4,
@@ -44231,7 +43849,6 @@
       ],
       [
        25.1,
-       0.0,
        4.5,
        116.5,
        36.6,
@@ -44243,7 +43860,6 @@
       ],
       [
        24.1,
-       0.0,
        4.4,
        113.0,
        33.1,
@@ -44255,7 +43871,6 @@
       ],
       [
        23.7,
-       0.0,
        4.3,
        111.2,
        26.0,
@@ -44267,7 +43882,6 @@
       ],
       [
        23.5,
-       0.0,
        4.2,
        109.3,
        22.6,
@@ -44279,7 +43893,6 @@
       ],
       [
        22.9,
-       0.0,
        4.1,
        109.4,
        20.8,
@@ -44291,7 +43904,6 @@
       ],
       [
        23.2,
-       0.0,
        4.1,
        109.0,
        17.8,
@@ -44303,7 +43915,6 @@
       ],
       [
        23.0,
-       0.0,
        4.2,
        107.4,
        20.4,
@@ -44315,7 +43926,6 @@
       ],
       [
        23.6,
-       0.0,
        4.3,
        107.3,
        22.0,
@@ -44327,7 +43937,6 @@
       ],
       [
        24.0,
-       0.0,
        4.4,
        107.8,
        21.8,
@@ -44339,7 +43948,6 @@
       ],
       [
        24.0,
-       0.0,
        4.2,
        110.1,
        25.1,
@@ -44351,7 +43959,6 @@
       ],
       [
        24.4,
-       0.0,
        4.2,
        111.7,
        28.2,
@@ -44363,7 +43970,6 @@
       ],
       [
        24.6,
-       0.0,
        4.3,
        113.4,
        28.9,
@@ -44375,7 +43981,6 @@
       ],
       [
        25.1,
-       0.0,
        4.3,
        114.2,
        31.1,
@@ -44387,7 +43992,6 @@
       ],
       [
        24.9,
-       0.0,
        4.3,
        114.9,
        31.9,
@@ -44399,7 +44003,6 @@
       ],
       [
        24.7,
-       0.0,
        4.3,
        113.4,
        31.8,
@@ -44411,7 +44014,6 @@
       ],
       [
        25.2,
-       0.0,
        4.3,
        115.8,
        31.2,
@@ -44423,7 +44025,6 @@
       ],
       [
        26.2,
-       0.0,
        4.4,
        117.0,
        39.0,
@@ -44435,7 +44036,6 @@
       ],
       [
        26.4,
-       0.0,
        4.5,
        117.0,
        44.2,
@@ -44447,7 +44047,6 @@
       ],
       [
        27.1,
-       0.0,
        4.6,
        117.0,
        48.0,
@@ -44459,7 +44058,6 @@
       ],
       [
        27.1,
-       0.0,
        4.7,
        117.0,
        50.9,
@@ -44471,7 +44069,6 @@
       ],
       [
        27.8,
-       0.0,
        4.7,
        117.0,
        52.2,
@@ -44483,7 +44080,6 @@
       ],
       [
        27.6,
-       0.0,
        4.5,
        117.0,
        49.4,
@@ -44495,7 +44091,6 @@
       ],
       [
        27.3,
-       0.0,
        4.4,
        117.0,
        46.5,
@@ -44507,7 +44102,6 @@
       ],
       [
        26.5,
-       0.0,
        4.3,
        117.0,
        40.2,
@@ -44519,7 +44113,6 @@
       ],
       [
        25.6,
-       0.0,
        4.1,
        114.2,
        36.9,
@@ -44531,7 +44124,6 @@
       ],
       [
        25.1,
-       0.0,
        4.0,
        112.5,
        33.6,
@@ -44543,7 +44135,6 @@
       ],
       [
        24.3,
-       0.0,
        3.8,
        111.6,
        27.6,
@@ -44555,7 +44146,6 @@
       ],
       [
        24.0,
-       0.0,
        3.8,
        110.5,
        22.8,
@@ -44567,7 +44157,6 @@
       ],
       [
        23.6,
-       0.0,
        3.8,
        109.3,
        22.7,
@@ -44579,7 +44168,6 @@
       ],
       [
        23.0,
-       0.0,
        3.8,
        109.1,
        22.9,
@@ -44591,7 +44179,6 @@
       ],
       [
        23.0,
-       0.0,
        3.9,
        109.3,
        23.7,
@@ -44603,7 +44190,6 @@
       ],
       [
        24.0,
-       0.0,
        4.0,
        111.2,
        26.5,
@@ -44615,7 +44201,6 @@
       ],
       [
        24.2,
-       0.0,
        4.1,
        111.4,
        27.6,
@@ -44627,7 +44212,6 @@
       ],
       [
        24.1,
-       0.0,
        4.0,
        113.7,
        30.0,
@@ -44639,7 +44223,6 @@
       ],
       [
        23.9,
-       0.0,
        4.1,
        111.9,
        30.9,
@@ -44651,7 +44234,6 @@
       ],
       [
        23.8,
-       0.0,
        4.1,
        112.9,
        31.2,
@@ -44663,7 +44245,6 @@
       ],
       [
        23.9,
-       0.0,
        4.2,
        114.6,
        33.0,
@@ -44675,7 +44256,6 @@
       ],
       [
        24.2,
-       0.0,
        4.2,
        116.9,
        33.9,
@@ -44687,7 +44267,6 @@
       ],
       [
        24.3,
-       0.0,
        4.3,
        116.7,
        34.1,
@@ -44699,7 +44278,6 @@
       ],
       [
        24.5,
-       0.0,
        4.4,
        117.0,
        36.7,
@@ -44711,7 +44289,6 @@
       ],
       [
        25.2,
-       0.0,
        4.4,
        117.0,
        38.9,
@@ -44723,7 +44300,6 @@
       ],
       [
        25.3,
-       0.0,
        4.5,
        117.0,
        42.0,
@@ -44735,7 +44311,6 @@
       ],
       [
        26.1,
-       0.0,
        4.5,
        117.0,
        44.2,
@@ -44747,7 +44322,6 @@
       ],
       [
        26.4,
-       0.0,
        4.6,
        117.0,
        46.0,
@@ -44759,7 +44333,6 @@
       ],
       [
        26.4,
-       0.0,
        4.7,
        117.0,
        46.8,
@@ -44771,7 +44344,6 @@
       ],
       [
        26.6,
-       0.0,
        4.7,
        117.0,
        47.5,
@@ -44783,7 +44355,6 @@
       ],
       [
        26.4,
-       0.0,
        4.7,
        117.0,
        45.5,
@@ -44795,7 +44366,6 @@
       ],
       [
        25.7,
-       0.0,
        4.5,
        117.0,
        41.0,
@@ -44807,7 +44377,6 @@
       ],
       [
        25.0,
-       0.0,
        4.4,
        115.1,
        35.2,
@@ -44819,7 +44388,6 @@
       ],
       [
        23.9,
-       0.0,
        4.3,
        112.1,
        30.3,
@@ -44831,7 +44399,6 @@
       ],
       [
        22.8,
-       0.0,
        4.1,
        111.2,
        25.7,
@@ -44843,7 +44410,6 @@
       ],
       [
        22.0,
-       0.0,
        4.1,
        109.8,
        21.7,
@@ -44855,7 +44421,6 @@
       ],
       [
        22.1,
-       0.0,
        4.0,
        109.7,
        18.8,
@@ -44867,7 +44432,6 @@
       ],
       [
        21.8,
-       0.0,
        4.0,
        110.0,
        22.1,
@@ -44879,7 +44443,6 @@
       ],
       [
        22.2,
-       0.0,
        3.9,
        109.1,
        21.8,
@@ -44891,7 +44454,6 @@
       ],
       [
        22.7,
-       0.0,
        4.0,
        110.0,
        24.5,
@@ -44903,7 +44465,6 @@
       ],
       [
        23.1,
-       0.0,
        4.0,
        109.9,
        28.1,
@@ -44915,7 +44476,6 @@
       ],
       [
        23.5,
-       0.0,
        4.0,
        110.1,
        31.8,
@@ -44927,7 +44487,6 @@
       ],
       [
        24.0,
-       0.0,
        4.1,
        112.1,
        32.9,
@@ -44939,7 +44498,6 @@
       ],
       [
        24.0,
-       0.0,
        4.2,
        112.1,
        33.3,
@@ -44951,7 +44509,6 @@
       ],
       [
        24.2,
-       0.0,
        4.1,
        112.0,
        32.9,
@@ -44963,7 +44520,6 @@
       ],
       [
        23.8,
-       0.0,
        4.1,
        112.3,
        33.2,
@@ -44975,7 +44531,6 @@
       ],
       [
        24.3,
-       0.0,
        4.2,
        113.1,
        33.8,
@@ -44987,7 +44542,6 @@
       ],
       [
        24.8,
-       0.0,
        4.3,
        113.7,
        34.8,
@@ -44999,7 +44553,6 @@
       ],
       [
        25.3,
-       0.0,
        4.3,
        116.8,
        36.9,
@@ -45011,7 +44564,6 @@
       ],
       [
        25.8,
-       0.0,
        4.4,
        117.0,
        39.7,
@@ -45023,7 +44575,6 @@
       ],
       [
        26.5,
-       0.0,
        4.4,
        117.0,
        42.8,
@@ -45035,7 +44586,6 @@
       ],
       [
        26.8,
-       0.0,
        4.4,
        117.0,
        45.9,
@@ -45047,7 +44597,6 @@
       ],
       [
        26.9,
-       0.0,
        4.3,
        117.0,
        48.3,
@@ -45059,7 +44608,6 @@
       ],
       [
        27.1,
-       0.0,
        4.4,
        117.0,
        46.9,
@@ -45071,7 +44619,6 @@
       ],
       [
        26.8,
-       0.0,
        4.3,
        117.0,
        44.7,
@@ -45083,7 +44630,6 @@
       ],
       [
        26.4,
-       0.0,
        4.3,
        117.0,
        42.0,
@@ -45095,7 +44641,6 @@
       ],
       [
        26.3,
-       0.0,
        4.0,
        116.0,
        36.4,
@@ -45107,7 +44652,6 @@
       ],
       [
        24.1,
-       0.0,
        3.8,
        109.6,
        22.4,
@@ -45119,7 +44663,6 @@
       ],
       [
        23.7,
-       0.0,
        3.7,
        107.9,
        17.8,
@@ -45131,7 +44674,6 @@
       ],
       [
        22.7,
-       0.0,
        3.6,
        106.9,
        14.6,
@@ -45143,7 +44685,6 @@
       ],
       [
        22.1,
-       0.0,
        3.5,
        105.7,
        11.2,
@@ -45155,7 +44696,6 @@
       ],
       [
        22.2,
-       0.0,
        3.6,
        107.7,
        11.7,
@@ -45167,7 +44707,6 @@
       ],
       [
        22.0,
-       0.0,
        3.6,
        107.4,
        12.0,
@@ -45179,7 +44718,6 @@
       ],
       [
        21.7,
-       0.0,
        3.7,
        106.9,
        11.7,
@@ -45191,7 +44729,6 @@
       ],
       [
        22.1,
-       0.0,
        3.8,
        106.8,
        14.9,
@@ -45203,7 +44740,6 @@
       ],
       [
        22.2,
-       0.0,
        3.8,
        107.1,
        11.4,
@@ -45215,7 +44751,6 @@
       ],
       [
        22.3,
-       0.0,
        3.8,
        107.6,
        12.7,
@@ -45227,7 +44762,6 @@
       ],
       [
        22.7,
-       0.0,
        3.9,
        108.0,
        12.7,
@@ -45239,7 +44773,6 @@
       ],
       [
        23.0,
-       0.0,
        4.1,
        107.8,
        14.8,
@@ -45251,7 +44784,6 @@
       ],
       [
        23.4,
-       0.0,
        4.2,
        108.2,
        16.9,
@@ -45263,7 +44795,6 @@
       ],
       [
        23.4,
-       0.0,
        4.2,
        109.8,
        23.3,
@@ -45275,7 +44806,6 @@
       ],
       [
        24.1,
-       0.0,
        4.2,
        112.1,
        26.1,
@@ -45287,7 +44817,6 @@
       ],
       [
        24.1,
-       0.0,
        4.2,
        113.1,
        27.4,
@@ -45299,7 +44828,6 @@
       ],
       [
        24.2,
-       0.0,
        4.3,
        114.4,
        29.7,
@@ -45311,7 +44839,6 @@
       ],
       [
        24.4,
-       0.0,
        4.3,
        115.6,
        31.8,
@@ -45323,7 +44850,6 @@
       ],
       [
        25.0,
-       0.0,
        4.3,
        117.0,
        32.8,
@@ -45335,7 +44861,6 @@
       ],
       [
        25.2,
-       0.0,
        4.5,
        116.7,
        34.1,
@@ -45347,7 +44872,6 @@
       ],
       [
        25.5,
-       0.0,
        4.5,
        116.6,
        33.6,
@@ -45359,7 +44883,6 @@
       ],
       [
        25.3,
-       0.0,
        4.4,
        115.2,
        30.1,
@@ -45371,7 +44894,6 @@
       ],
       [
        24.7,
-       0.0,
        4.3,
        112.6,
        24.5,
@@ -45383,7 +44905,6 @@
       ],
       [
        24.2,
-       0.0,
        4.1,
        111.1,
        19.1,
@@ -45395,7 +44916,6 @@
       ],
       [
        23.5,
-       0.0,
        4.0,
        109.4,
        12.2,
@@ -45407,7 +44927,6 @@
       ],
       [
        22.3,
-       0.0,
        3.9,
        107.2,
        4.9,
@@ -45419,7 +44938,6 @@
       ],
       [
        22.0,
-       0.0,
        3.7,
        106.3,
        2.4,
@@ -45431,7 +44949,6 @@
       ],
       [
        22.3,
-       0.0,
        3.7,
        103.7,
        0.9,
@@ -45443,7 +44960,6 @@
       ],
       [
        22.7,
-       0.0,
        3.6,
        101.5,
        0.1,
@@ -45455,7 +44971,6 @@
       ],
       [
        22.5,
-       0.0,
        3.8,
        101.3,
        0.7,
@@ -45467,7 +44982,6 @@
       ],
       [
        23.2,
-       0.0,
        3.8,
        103.1,
        3.3,
@@ -45479,7 +44993,6 @@
       ],
       [
        23.5,
-       0.0,
        3.8,
        103.7,
        7.3,
@@ -45491,7 +45004,6 @@
       ],
       [
        23.5,
-       0.0,
        3.8,
        105.0,
        10.3,
@@ -45503,7 +45015,6 @@
       ],
       [
        23.8,
-       0.0,
        3.8,
        105.3,
        11.1,
@@ -45515,7 +45026,6 @@
       ],
       [
        23.9,
-       0.0,
        3.8,
        107.3,
        11.5,
@@ -45527,7 +45037,6 @@
       ],
       [
        24.0,
-       0.0,
        3.8,
        108.3,
        14.4,
@@ -45539,7 +45048,6 @@
       ],
       [
        24.7,
-       0.0,
        3.8,
        108.2,
        15.2,
@@ -45551,7 +45059,6 @@
       ],
       [
        24.3,
-       0.0,
        3.8,
        107.4,
        18.9,
@@ -45563,7 +45070,6 @@
       ],
       [
        24.9,
-       0.0,
        3.8,
        107.4,
        22.4,
@@ -45575,7 +45081,6 @@
       ],
       [
        25.8,
-       0.0,
        3.9,
        108.2,
        24.1,
@@ -45587,7 +45092,6 @@
       ],
       [
        26.1,
-       0.0,
        4.1,
        110.8,
        27.4,
@@ -45599,7 +45103,6 @@
       ],
       [
        26.0,
-       0.0,
        4.1,
        112.3,
        30.9,
@@ -45611,7 +45114,6 @@
       ],
       [
        26.2,
-       0.0,
        4.1,
        114.6,
        36.0,
@@ -45623,7 +45125,6 @@
       ],
       [
        26.2,
-       0.0,
        4.2,
        116.1,
        36.8,
@@ -45635,7 +45136,6 @@
       ],
       [
        25.7,
-       0.0,
        4.3,
        117.0,
        36.3,
@@ -45647,7 +45147,6 @@
       ],
       [
        25.3,
-       0.0,
        4.2,
        114.5,
        33.3,
@@ -45659,7 +45158,6 @@
       ],
       [
        24.6,
-       0.0,
        4.2,
        112.2,
        29.0,
@@ -45671,7 +45169,6 @@
       ],
       [
        24.0,
-       0.0,
        3.9,
        108.6,
        22.9,
@@ -58156,9 +57653,9 @@
   "storage"
  ],
  "sources": {
-  "nodes.csv": "id,name,type,country,lat,lon,operator,capacity_msm3d,status,startup,shutdown,source,notes\ntroll,Troll,field,NO,60.646,3.726,Equinor,120,operating,1995,,https://www.equinor.com/energy/troll,Largest gas field on the Norwegian shelf; gas is processed at Kollsnes\nkvitebjorn,Kvitebj\u00f8rn,field,NO,61.08,2.49,Equinor,20,operating,2004,,https://www.equinor.com/energy/kvitebjorn,\noseberg,Oseberg,field,NO,60.49,2.83,Equinor,30,operating,1988,,https://www.equinor.com/energy/oseberg,Gas exported through Oseberg Gas Transport\nstatfjord,Statfjord,field,NO,61.25,1.85,Equinor,15,operating,1979,,https://www.equinor.com/energy/statfjord,Straddles the Norway-UK median line\ngjoa,Gj\u00f8a,field,NO,61.33,3.90,V\u00e5r Energi,15,operating,2010,,https://www.norskpetroleum.no/en/facts/field/gjoa/,\nsleipner,Sleipner,field,NO,58.37,1.91,Equinor,30,operating,1993,,https://www.equinor.com/energy/sleipner,Field and riser hub for Langeled and Zeepipe\nekofisk,Ekofisk,field,NO,56.55,3.21,ConocoPhillips,25,operating,1972,,https://conocophillips.no/our-norway-operations/greater-ekofisk-area/ekofisk,Field complex and start of Norpipe\normen_lange,Ormen Lange,field,NO,63.40,5.35,Shell,50,operating,2007,,https://www.norskpetroleum.no/en/facts/field/ormen-lange/,Subsea field tied back to Nyhamna\nasgard,\u00c5sgard area,field,NO,65.07,6.79,Equinor,70,operating,1999,,https://www.equinor.com/energy/asgard,Norwegian Sea fields exporting through \u00c5sgard Transport\naasta_hansteen,Aasta Hansteen,field,NO,67.07,6.98,Equinor,23,operating,2018,,https://equinor.com/energy/aasta-hansteen,Norwegian Sea field exporting through Polarled\ngullfaks,Gullfaks,field,NO,61.18,2.19,Equinor,10,operating,1986,,https://equinor.com/energy/gullfaks,Gas exported through Statfjord into Statpipe\nvisund,Visund,field,NO,61.37,2.46,Equinor,12,operating,1999,,https://equinor.com/energy/visund,Gas exported through the Kvitebj\u00f8rn gas pipeline\njohan_sverdrup,Johan Sverdrup,field,NO,58.837,2.557,Equinor,6,operating,2019,,https://equinor.com/en/what-we-do/johan-sverdrup,Associated gas exported through Statpipe to K\u00e5rst\u00f8\ngudrun,Gudrun,field,NO,58.85,1.72,Equinor,5,operating,2014,,https://equinor.com/energy/gudrun,Gas exported to Sleipner\nedvard_grieg,Edvard Grieg,field,NO,58.84,2.25,Aker BP,6,operating,2015,,https://akerbp.com/en/asset/edvard-grieg-2,Gas exported through the Utsira High Gas Pipeline to SAGE\nheidrun,Heidrun,field,NO,65.33,7.32,Equinor,6,operating,1995,,https://equinor.com/energy/heidrun,Norwegian Sea; gas to Tjeldbergodden and \u00c5sgard Transport\nnorne,Norne,field,NO,66.02,8.08,Equinor,4,operating,1997,,https://equinor.com/energy/norne,Norwegian Sea; gas through the Norne Gas Transport System\nheimdal,Heimdal,hub,NO,59.57,2.23,Equinor,,operating,1985,,https://equinor.com/energy/heimdal,Riser and processing hub\nfrigg,Frigg,field,NO,59.880,2.065,TotalEnergies,,decommissioned,1977,2004,https://www.norskpetroleum.no/en/facts/field/frigg,Gas field straddling the UK-Norway median line; exported via the Frigg Norwegian Pipeline to St Fergus; position approximate\nodin,Odin,field,NO,60.077,2.166,TotalEnergies,,decommissioned,1984,1994,https://www.norskpetroleum.no/en/facts/field/odin,Gas treated at Frigg TCP2 before export to St Fergus; position approximate\ndraupner_s,Draupner S,hub,NO,58.189,2.473,Gassco,,operating,,,https://en.wikipedia.org/wiki/Draupner_platform,Riser platform bridge-linked to Draupner E\ndraupner_e,Draupner E,hub,NO,58.190,2.473,Gassco,,operating,,,https://en.wikipedia.org/wiki/Draupner_platform,Riser platform where Europipe I and Franpipe start\nkollsnes,Kollsnes,processing,NO,60.548,4.845,Gassco,144,operating,,,https://gassco.eu/en/prosessanlegg/kollsnes,Gas processing plant near Bergen\nkarsto,K\u00e5rst\u00f8,processing,NO,59.273,5.521,Gassco,88,operating,,,https://equinor.com/energy/karsto,Gas processing plant in Rogaland\nnyhamna,Nyhamna,processing,NO,62.848,6.954,Gassco,84,operating,,,https://equinor.com/energy/gas-terminals-and-storage,Processing plant for Ormen Lange and Polarled gas\nflags_brent,FLAGS North (Brent area),hub,GB,61.05,1.71,,,operating,,,https://en.wikipedia.org/wiki/FLAGS,Northern end of FLAGS; receives Tampen Link and Gj\u00f8a gas\nberyl,Beryl,field,GB,59.55,1.53,,10,operating,,,https://en.wikipedia.org/wiki/Beryl_oil_field,Start of SAGE\nelgin_franklin,Elgin-Franklin,field,GB,57.01,1.84,TotalEnergies,15,operating,,,https://en.wikipedia.org/wiki/Elgin%E2%80%93Franklin_fields,Exports through SEAL\nsns_fields,Southern North Sea fields,field,GB,53.10,2.10,,15,operating,,,https://en.wikipedia.org/wiki/List%20of%20oil%20and%20gas%20fields%20of%20the%20North%20Sea,Aggregate of mature southern gas fields\nst_fergus,St Fergus,terminal,GB,57.553,-1.850,,,operating,,,https://en.wikipedia.org/wiki/St_Fergus_Gas_Plant,Gas terminal in Aberdeenshire\neasington,Easington,terminal,GB,53.642,0.156,,,operating,,,https://en.wikipedia.org/wiki/Easington_Gas_Terminal,Langeled receiving terminal\nbacton,Bacton,terminal,GB,52.86,1.46,,,operating,,,https://en.wikipedia.org/wiki/Bacton_Gas_Terminal,Terminal for SEAL and the IUK and BBL interconnectors\nl10a,L10-A,field,NL,53.40,4.20,,10,operating,,,https://en.wikipedia.org/wiki/L10_gas_field,Main hub of the NGT system; aggregate of tied-in fields\nk13a,K13-A,field,NL,53.22,3.22,,5,operating,,,https://en.wikipedia.org/wiki/K13_gas_fields,Start of WGT; aggregate of tied-in fields\nden_helder,Den Helder,terminal,NL,52.95,4.76,,,operating,,,https://en.wikipedia.org/wiki/NOGAT_Pipeline_System,Terminal for NOGAT and WGT\nbalgzand,Balgzand,terminal,NL,52.86,4.90,,,operating,,,https://en.wikipedia.org/wiki/BBL_Pipeline,BBL compressor station\nuithuizen,Uithuizen,terminal,NL,53.42,6.67,,,operating,,,https://en.wikipedia.org/wiki/Uithuizen_Gas_Plant,NGT receiving terminal\nemden,Emden,terminal,DE,53.377,7.219,,,operating,,,https://en.wikipedia.org/wiki/Norpipe,Norpipe receiving terminal\ndornum,Dornum,terminal,DE,53.648,7.327,,,operating,,,https://en.wikipedia.org/wiki/Europipe_II,Landfall of Europipe I and II\nzeebrugge,Zeebrugge,terminal,BE,51.340,3.178,Fluxys,,operating,,,https://fluxys.com/en/about-us/fluxys-belgium/infrastructure,Terminal for Zeepipe and IUK\ndunkirk,Dunkirk (Franpipe),terminal,FR,51.044,2.462,,,operating,,,https://en.wikipedia.org/wiki/Franpipe,Franpipe receiving terminal\nnybro,Nybro,processing,DK,55.67,8.42,Energinet,,operating,,,https://en.energinet.dk/about-our-news/news/2022/11/01/nybro-commissioning,Gas treatment plant and Baltic Pipe compression\nbaltic_tie,Baltic Pipe tie-in,hub,DK,55.814,6.512,,,operating,,,https://en.wikipedia.org/wiki/Baltic_Pipe,Subsea tie-in on Europipe II\npl_vtp,Poland VTP,market,PL,53.950,15.100,,,operating,,,https://gaz-system.pl/en/for-customers/market-information/data-exchange.html,Reached through Baltic Pipe; map placement is schematic\ntjeldbergodden,Tjeldbergodden,market,NO,63.395,8.655,Equinor,,operating,,,https://equinor.com/energy/tjeldbergodden,Methanol plant: the gas consumer at the end of Haltenpipe\n",
-  "pipelines.csv": "id,name,from,to,type,length_km,diameter_in,capacity_msm3d,bidirectional,commissioned,status,operator,source,notes\ntroll_kollsnes,Troll - Kollsnes,troll,kollsnes,feeder,65,36,120,false,1996,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,Several parallel lines modelled as one\nkvitebjorn_kollsnes,Kvitebj\u00f8rn gas pipeline,kvitebjorn,kollsnes,feeder,147,30,33,false,2004,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,\nogt,Oseberg Gas Transport,oseberg,heimdal,feeder,109,36,40,false,2000,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,\nstatpipe_rich,Statpipe (rich gas),statfjord,karsto,trunk,308,30,25,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,\nstatpipe_dry,Statpipe (dry gas),karsto,draupner_s,trunk,228,28,20,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,\nstatpipe_heimdal,Statpipe (Heimdal leg),heimdal,draupner_s,trunk,155,36,30,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,\nstatpipe_ekofisk,Statpipe (Draupner - Ekofisk),draupner_s,ekofisk,trunk,203,36,30,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,\ndraupner_bridge,Draupner S - E bridge,draupner_s,draupner_e,link,0.1,,,true,1985,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,Platforms are bridge-linked\nsleipner_draupner,Sleipner - Draupner,sleipner,draupner_s,link,,,60,true,,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,Interconnection between the two riser hubs\nzeepipe_2a,Zeepipe IIA,kollsnes,sleipner,trunk,303,40,58,false,1996,operating,Gassco,https://en.wikipedia.org/wiki/Zeepipe,\nzeepipe_2b,Zeepipe IIB,kollsnes,draupner_e,trunk,300,40,70,false,1997,operating,Gassco,https://en.wikipedia.org/wiki/Zeepipe,\nlangeled_north,Langeled (north),nyhamna,sleipner,trunk,627,42,72,false,2007,operating,Gassco,https://en.wikipedia.org/wiki/Langeled_pipeline,\nasgard_transport,\u00c5sgard Transport,asgard,karsto,trunk,707,42,70,false,2000,operating,Gassco,https://en.wikipedia.org/wiki/\u00c5sgard_Transport,\npolarled,Polarled,aasta_hansteen,nyhamna,trunk,482,36,70,false,2018,operating,Gassco,https://en.wikipedia.org/wiki/Polarled,\normen_lange_nyhamna,Ormen Lange - Nyhamna,ormen_lange,nyhamna,feeder,120,30,70,false,2007,operating,Shell,https://en.wikipedia.org/wiki/Ormen_Lange,Two parallel lines modelled as one\ngullfaks_statfjord,Gullfaks gas export,gullfaks,statfjord,feeder,,,10,false,,operating,,\"approximate, public data\",Gullfaks gas joins Statpipe at Statfjord\nvisund_kvitebjorn,Visund gas export,visund,kvitebjorn,feeder,,,12,false,2005,operating,,\"approximate, public data\",Joins the Kvitebj\u00f8rn gas pipeline to Kollsnes\nsverdrup_karsto,Johan Sverdrup gas export,johan_sverdrup,karsto,feeder,,,6,false,2019,operating,,\"approximate, public data\",Through Statpipe to K\u00e5rst\u00f8\ngudrun_sleipner,Gudrun - Sleipner,gudrun,sleipner,feeder,,,5,false,2014,operating,,\"approximate, public data\",\nuhgp,Utsira High Gas Pipeline,edvard_grieg,beryl,feeder,,,6,false,2015,operating,,\"approximate, public data\",Ties into SAGE for St Fergus\nhaltenpipe,Haltenpipe,heidrun,tjeldbergodden,trunk,250,16,6,false,1996,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,Feeds the Tjeldbergodden methanol plant\nheidrun_asgard,Heidrun - \u00c5sgard Transport,heidrun,asgard,link,,,6,false,2001,operating,,\"approximate, public data\",\nngts,Norne Gas Transport System,norne,asgard,feeder,126,16,6,false,2001,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,Ties into \u00c5sgard Transport\nnorpipe,Norpipe Gas,ekofisk,emden,export,440,36,44,false,1977,operating,Gassco,https://en.wikipedia.org/wiki/Norpipe,\neuropipe_1,Europipe I,draupner_e,dornum,export,660,40,46,false,1995,operating,Gassco,https://en.wikipedia.org/wiki/Europipe_I,\neuropipe_2_north,Europipe II (K\u00e5rst\u00f8 - Baltic tie-in),karsto,baltic_tie,export,400,42,71,false,1999,operating,Gassco,https://en.wikipedia.org/wiki/Europipe_II,Split at the Baltic Pipe tie-in\neuropipe_2_south,Europipe II (Baltic tie-in - Dornum),baltic_tie,dornum,export,258,42,71,false,1999,operating,Gassco,https://en.wikipedia.org/wiki/Europipe_II,Split at the Baltic Pipe tie-in\nfranpipe,Franpipe,draupner_e,dunkirk,export,840,42,55,false,1998,operating,Gassco,https://en.wikipedia.org/wiki/Franpipe,\nzeepipe_1,Zeepipe I,sleipner,zeebrugge,export,814,40,42,false,1993,operating,Gassco,https://en.wikipedia.org/wiki/Zeepipe,\nlangeled_south,Langeled (south),sleipner,easington,export,543,44,72,false,2006,operating,Gassco,https://en.wikipedia.org/wiki/Langeled_pipeline,\nvesterled,Vesterled,heimdal,st_fergus,export,360,32,39,false,2001,operating,Gassco,https://gassco.eu/en/rorledningsnettverk/vesterled,Frigg Norwegian Pipeline adapted for other fields and renamed Vesterled in 2001\nbaltic_pipe_ns,Baltic Pipe (North Sea leg),baltic_tie,nybro,export,110,,27,false,2022,operating,Energinet,https://www.baltic-pipe.eu/,Offshore leg plus the short onshore run to Nybro\nbaltic_pipe_east,Baltic Pipe (Denmark - Poland),nybro,pl_vtp,export,,,27,false,2022,operating,Energinet / GAZ-SYSTEM,https://www.baltic-pipe.eu/,Onshore Denmark plus the Baltic Sea offshore section\ntampen_link,Tampen Link,statfjord,flags_brent,link,23,32,25,false,2007,operating,,\"approximate, public data\",\ngjoa_flags,Gj\u00f8a gas export,gjoa,flags_brent,feeder,130,28,17,false,2010,operating,,https://gassco.no/en/our-activities/pipelines-and-platforms,\nflags,FLAGS,flags_brent,st_fergus,export,450,36,33,false,1982,operating,,https://en.wikipedia.org/wiki/FLAGS,\nsage,SAGE,beryl,st_fergus,export,323,30,30,false,1992,operating,,\"approximate, public data\",\nseal,SEAL,elgin_franklin,bacton,export,474,34,35,false,2000,operating,,\"approximate, public data\",\nsns_bacton,Southern North Sea gathering,sns_fields,bacton,feeder,,,15,false,,operating,,\"approximate, public data\",Several pipelines modelled as one\niuk,Interconnector (IUK),bacton,zeebrugge,interconnector,235,40,70,true,1998,operating,,https://www.interconnector.com/,\nbbl,BBL,balgzand,bacton,interconnector,235,36,53,true,2006,operating,,https://bblcompany.com/,Physical reverse flow added in 2019 at lower capacity\nngt,NGT,l10a,uithuizen,export,,36,42,false,1975,operating,,https://en.wikipedia.org/wiki/Noordgastransport,Main line of the NGT system\nwgt,WGT,k13a,den_helder,export,,36,30,false,,operating,,\"approximate, public data\",\n",
-  "units.toml": "# Units for level 2 (unit control): each groups the assets one operator desk looks after.\n# Every node belongs to exactly one unit; a pipeline belongs to the unit it leaves from.\n# Order here is the order on screen. `nora validate` checks every id.\n\n[units.norwegian_sea]\nname = \"Norwegian Sea\"\nnodes = [\"aasta_hansteen\", \"norne\", \"heidrun\", \"asgard\", \"ormen_lange\", \"nyhamna\", \"tjeldbergodden\"]\n\n[units.northern_north_sea]\nname = \"Northern North Sea\"\nnodes = [\n    \"gjoa\", \"visund\", \"statfjord\", \"gullfaks\", \"flags_brent\", \"kvitebjorn\", \"troll\",\n    \"oseberg\", \"kollsnes\", \"heimdal\", \"beryl\", \"edvard_grieg\", \"frigg\", \"odin\",\n]\n\n[units.hubs]\nname = \"K\u00e5rst\u00f8, Sleipner and Draupner\"\nnodes = [\"karsto\", \"johan_sverdrup\", \"gudrun\", \"sleipner\", \"draupner_s\", \"draupner_e\", \"ekofisk\"]\n\n[units.uk]\nname = \"UK landings\"\nnodes = [\"st_fergus\", \"elgin_franklin\", \"easington\", \"sns_fields\", \"bacton\"]\n\n[units.continent]\nname = \"Continental landings\"\nnodes = [\n    \"l10a\", \"k13a\", \"den_helder\", \"balgzand\", \"uithuizen\", \"dornum\", \"emden\",\n    \"zeebrugge\", \"dunkirk\",\n]\n\n[units.denmark_poland]\nname = \"Denmark and Poland\"\nnodes = [\"baltic_tie\", \"nybro\", \"pl_vtp\"]\n",
-  "flow_layout.toml": "# Where each node sits in the Flow view: [across, down] in grid steps (one step across\n# is one square's width with room; one step down is one row of squares with names).\n# Laid out like the operators' Area D overview (Ray, 29 Oct): the UK and St Fergus on\n# the left, the Tampen, Nyhamna and Kollsnes corridors in the middle, K\u00e5rst\u00f8 and the\n# Norwegian Sea on the right; fields at the top, the hubs below them, the landings\n# along the bottom from west to east. Drag a node in the Flow view to move it, and\n# Save. A node not listed here is placed by layout.py. `nora validate` checks the ids.\n\n[positions]\n# fields and the corridors they feed\ngjoa = [1, 0]\nfrigg = [2.2, 0]\nodin = [3.3, 0]\noseberg = [4.4, 0]\naasta_hansteen = [6.1, 0]\normen_lange = [7.4, 0]\ntroll = [8.6, 0]\nvisund = [9.7, 0]\ngullfaks = [10.8, 0]\nheidrun = [12, 0]\nnorne = [13.1, 0]\nedvard_grieg = [0, 1]\nheimdal = [4.4, 1]\nnyhamna = [7, 1]\nkvitebjorn = [9, 1]\nstatfjord = [10.6, 1]\ntjeldbergodden = [11.6, 1]\nasgard = [12.7, 1]\nberyl = [0, 2]\nflags_brent = [1.5, 2]\ngudrun = [5, 2]\nkollsnes = [8.5, 2]\njohan_sverdrup = [11.2, 2]\nkarsto = [12.6, 2.2]\n# hubs and the southern fields\nst_fergus = [0, 3]\nsleipner = [5.5, 3]\ndraupner_s = [8, 3]\ndraupner_e = [9.5, 3]\nbaltic_tie = [12.6, 3.4]\nelgin_franklin = [1, 4]\nsns_fields = [3.4, 4]\nekofisk = [10.6, 4]\nk13a = [8.2, 4.6]\nl10a = [9.4, 4.6]\nnybro = [13.8, 4.6]\n# the landings, west to east\neasington = [1, 5.6]\nbalgzand = [2.2, 5.6]\nbacton = [3.4, 5.6]\nzeebrugge = [4.6, 5.6]\ndunkirk = [5.8, 5.6]\nden_helder = [8.2, 5.6]\nuithuizen = [9.4, 5.6]\nemden = [10.6, 5.6]\ndornum = [11.8, 5.6]\npl_vtp = [13.8, 5.6]\n"
+  "nodes.csv": "id,name,type,country,lat,lon,operator,capacity_msm3d,status,startup,shutdown,source,notes\ntroll,Troll,field,NO,60.646,3.726,Equinor,120,operating,1995,,https://www.equinor.com/energy/troll,Largest gas field on the Norwegian shelf; gas is processed at Kollsnes\nkvitebjorn,Kvitebj\u00f8rn,field,NO,61.08,2.49,Equinor,20,operating,2004,,https://www.equinor.com/energy/kvitebjorn,\noseberg,Oseberg,field,NO,60.49,2.83,Equinor,30,operating,1988,,https://www.equinor.com/energy/oseberg,Gas exported through Oseberg Gas Transport\nstatfjord,Statfjord,field,NO,61.25,1.85,Equinor,15,operating,1979,,https://www.equinor.com/energy/statfjord,Straddles the Norway-UK median line\ngjoa,Gj\u00f8a,field,NO,61.33,3.90,V\u00e5r Energi,15,operating,2010,,https://www.norskpetroleum.no/en/facts/field/gjoa/,\nsleipner,Sleipner,field,NO,58.37,1.91,Equinor,30,operating,1993,,https://www.equinor.com/energy/sleipner,Field and riser hub for Langeled and Zeepipe\nekofisk,Ekofisk,field,NO,56.55,3.21,ConocoPhillips,25,operating,1972,,https://conocophillips.no/our-norway-operations/greater-ekofisk-area/ekofisk,Field complex and start of Norpipe\normen_lange,Ormen Lange,field,NO,63.40,5.35,Shell,50,operating,2007,,https://www.norskpetroleum.no/en/facts/field/ormen-lange/,Subsea field tied back to Nyhamna\nasgard,\u00c5sgard area,field,NO,65.07,6.79,Equinor,70,operating,1999,,https://www.equinor.com/energy/asgard,Norwegian Sea fields exporting through \u00c5sgard Transport\naasta_hansteen,Aasta Hansteen,field,NO,67.07,6.98,Equinor,23,operating,2018,,https://equinor.com/energy/aasta-hansteen,Norwegian Sea field exporting through Polarled\ngullfaks,Gullfaks,field,NO,61.18,2.19,Equinor,10,operating,1986,,https://equinor.com/energy/gullfaks,Gas exported through Statfjord into Statpipe\nvisund,Visund,field,NO,61.37,2.46,Equinor,12,operating,1999,,https://equinor.com/energy/visund,Gas exported through the Kvitebj\u00f8rn gas pipeline\njohan_sverdrup,Johan Sverdrup,field,NO,58.837,2.557,Equinor,6,operating,2019,,https://equinor.com/en/what-we-do/johan-sverdrup,Associated gas exported through Statpipe to K\u00e5rst\u00f8\ngudrun,Gudrun,field,NO,58.85,1.72,Equinor,5,operating,2014,,https://equinor.com/energy/gudrun,Gas exported to Sleipner\nedvard_grieg,Edvard Grieg,field,NO,58.84,2.25,Aker BP,6,operating,2015,,https://akerbp.com/en/asset/edvard-grieg-2,Gas exported through the Utsira High Gas Pipeline to SAGE\nheidrun,Heidrun,field,NO,65.33,7.32,Equinor,6,operating,1995,,https://equinor.com/energy/heidrun,Norwegian Sea; gas to Tjeldbergodden and \u00c5sgard Transport\nnorne,Norne,field,NO,66.02,8.08,Equinor,4,operating,1997,,https://equinor.com/energy/norne,Norwegian Sea; gas through the Norne Gas Transport System\nheimdal,Heimdal,hub,NO,59.57,2.23,Equinor,,operating,1985,,https://equinor.com/energy/heimdal,Riser and processing hub\nfrigg,Frigg,field,NO,59.880,2.065,TotalEnergies,,decommissioned,1977,2004,https://www.norskpetroleum.no/en/facts/field/frigg,Gas field straddling the UK-Norway median line; exported via the Frigg Norwegian Pipeline to St Fergus; position approximate\nodin,Odin,field,NO,60.077,2.166,TotalEnergies,,decommissioned,1984,1994,https://www.norskpetroleum.no/en/facts/field/odin,Gas treated at Frigg TCP2 before export to St Fergus; position approximate\ndraupner_s,Draupner S,hub,NO,58.189,2.473,Gassco,,operating,,,https://en.wikipedia.org/wiki/Draupner_platform,Riser platform bridge-linked to Draupner E\ndraupner_e,Draupner E,hub,NO,58.190,2.473,Gassco,,operating,,,https://en.wikipedia.org/wiki/Draupner_platform,Riser platform where Europipe I and Franpipe start\nkollsnes,Kollsnes,processing,NO,60.548,4.845,Gassco,144,operating,,,https://gassco.eu/en/prosessanlegg/kollsnes,Gas processing plant near Bergen\nkarsto,K\u00e5rst\u00f8,processing,NO,59.273,5.521,Gassco,88,operating,,,https://equinor.com/energy/karsto,Gas processing plant in Rogaland\nnyhamna,Nyhamna,processing,NO,62.848,6.954,Gassco,84,operating,,,https://equinor.com/energy/gas-terminals-and-storage,Processing plant for Ormen Lange and Polarled gas\nflags_brent,FLAGS North (Brent area),hub,GB,61.05,1.71,,,operating,,,https://en.wikipedia.org/wiki/FLAGS,Northern end of FLAGS; receives Tampen Link and Gj\u00f8a gas\nberyl,Beryl,field,GB,59.55,1.53,,10,operating,,,https://en.wikipedia.org/wiki/Beryl_oil_field,Start of SAGE\nelgin_franklin,Elgin-Franklin,field,GB,57.01,1.84,TotalEnergies,15,operating,,,https://en.wikipedia.org/wiki/Elgin%E2%80%93Franklin_fields,Exports through SEAL\nsns_fields,Southern North Sea fields,field,GB,53.10,2.10,,15,operating,,,https://en.wikipedia.org/wiki/List%20of%20oil%20and%20gas%20fields%20of%20the%20North%20Sea,Aggregate of mature southern gas fields\nst_fergus,St Fergus,terminal,GB,57.553,-1.850,,,operating,,,https://en.wikipedia.org/wiki/St_Fergus_Gas_Plant,Gas terminal in Aberdeenshire\neasington,Easington,terminal,GB,53.642,0.156,,,operating,,,https://en.wikipedia.org/wiki/Easington_Gas_Terminal,Langeled receiving terminal\nbacton,Bacton,terminal,GB,52.86,1.46,,,operating,,,https://en.wikipedia.org/wiki/Bacton_Gas_Terminal,Terminal for SEAL and the IUK and BBL interconnectors\nl10a,L10-A,field,NL,53.40,4.20,,10,operating,,,https://en.wikipedia.org/wiki/L10_gas_field,Main hub of the NGT system; aggregate of tied-in fields\nk13a,K13-A,field,NL,53.22,3.22,,5,operating,,,https://en.wikipedia.org/wiki/K13_gas_fields,Start of WGT; aggregate of tied-in fields\nden_helder,Den Helder,terminal,NL,52.95,4.76,,,operating,,,https://en.wikipedia.org/wiki/NOGAT_Pipeline_System,Terminal for NOGAT and WGT\nuithuizen,Uithuizen,terminal,NL,53.42,6.67,,,operating,,,https://en.wikipedia.org/wiki/Uithuizen_Gas_Plant,NGT receiving terminal\nemden,Emden,terminal,DE,53.377,7.219,,,operating,,,https://en.wikipedia.org/wiki/Norpipe,Norpipe receiving terminal\ndornum,Dornum,terminal,DE,53.648,7.327,,,operating,,,https://en.wikipedia.org/wiki/Europipe_II,Landfall of Europipe I and II\nzeebrugge,Zeebrugge,terminal,BE,51.340,3.178,Fluxys,,operating,,,https://fluxys.com/en/about-us/fluxys-belgium/infrastructure,Terminal for Zeepipe and IUK\ndunkirk,Dunkirk (Franpipe),terminal,FR,51.044,2.462,,,operating,,,https://en.wikipedia.org/wiki/Franpipe,Franpipe receiving terminal\nnybro,Nybro,processing,DK,55.67,8.42,Energinet,,operating,,,https://en.energinet.dk/about-our-news/news/2022/11/01/nybro-commissioning,Gas treatment plant and Baltic Pipe compression\nbaltic_tie,Baltic Pipe tie-in,hub,DK,55.814,6.512,,,operating,,,https://en.wikipedia.org/wiki/Baltic_Pipe,Subsea tie-in on Europipe II\npl_vtp,Poland VTP,market,PL,53.950,15.100,,,operating,,,https://gaz-system.pl/en/for-customers/market-information/data-exchange.html,Reached through Baltic Pipe; map placement is schematic\ntjeldbergodden,Tjeldbergodden,market,NO,63.395,8.655,Equinor,,operating,,,https://equinor.com/energy/tjeldbergodden,Methanol plant: the gas consumer at the end of Haltenpipe\n",
+  "pipelines.csv": "id,name,from,to,type,length_km,diameter_in,capacity_msm3d,bidirectional,commissioned,status,operator,source,notes\ntroll_kollsnes,Troll - Kollsnes,troll,kollsnes,feeder,65,36,120,false,1996,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,Several parallel lines modelled as one\nkvitebjorn_kollsnes,Kvitebj\u00f8rn gas pipeline,kvitebjorn,kollsnes,feeder,147,30,33,false,2004,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,\nogt,Oseberg Gas Transport,oseberg,heimdal,feeder,109,36,40,false,2000,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,\nstatpipe_rich,Statpipe (rich gas),statfjord,karsto,trunk,308,30,25,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,\nstatpipe_dry,Statpipe (dry gas),karsto,draupner_s,trunk,228,28,20,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,\nstatpipe_heimdal,Statpipe (Heimdal leg),heimdal,draupner_s,trunk,155,36,30,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,\nstatpipe_ekofisk,Statpipe (Draupner - Ekofisk),draupner_s,ekofisk,trunk,203,36,30,false,1985,operating,Gassco,https://en.wikipedia.org/wiki/Statpipe,\ndraupner_bridge,Draupner S - E bridge,draupner_s,draupner_e,link,0.1,,,true,1985,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,Platforms are bridge-linked\nsleipner_draupner,Sleipner - Draupner,sleipner,draupner_s,link,,,60,true,,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,Interconnection between the two riser hubs\nzeepipe_2a,Zeepipe IIA,kollsnes,sleipner,trunk,303,40,58,false,1996,operating,Gassco,https://en.wikipedia.org/wiki/Zeepipe,\nzeepipe_2b,Zeepipe IIB,kollsnes,draupner_e,trunk,300,40,70,false,1997,operating,Gassco,https://en.wikipedia.org/wiki/Zeepipe,\nlangeled_north,Langeled (north),nyhamna,sleipner,trunk,627,42,72,false,2007,operating,Gassco,https://en.wikipedia.org/wiki/Langeled_pipeline,\nasgard_transport,\u00c5sgard Transport,asgard,karsto,trunk,707,42,70,false,2000,operating,Gassco,https://en.wikipedia.org/wiki/\u00c5sgard_Transport,\npolarled,Polarled,aasta_hansteen,nyhamna,trunk,482,36,70,false,2018,operating,Gassco,https://en.wikipedia.org/wiki/Polarled,\normen_lange_nyhamna,Ormen Lange - Nyhamna,ormen_lange,nyhamna,feeder,120,30,70,false,2007,operating,Shell,https://en.wikipedia.org/wiki/Ormen_Lange,Two parallel lines modelled as one\ngullfaks_statfjord,Gullfaks gas export,gullfaks,statfjord,feeder,,,10,false,,operating,,\"approximate, public data\",Gullfaks gas joins Statpipe at Statfjord\nvisund_kvitebjorn,Visund gas export,visund,kvitebjorn,feeder,,,12,false,2005,operating,,\"approximate, public data\",Joins the Kvitebj\u00f8rn gas pipeline to Kollsnes\nsverdrup_karsto,Johan Sverdrup gas export,johan_sverdrup,karsto,feeder,,,6,false,2019,operating,,\"approximate, public data\",Through Statpipe to K\u00e5rst\u00f8\ngudrun_sleipner,Gudrun - Sleipner,gudrun,sleipner,feeder,,,5,false,2014,operating,,\"approximate, public data\",\nuhgp,Utsira High Gas Pipeline,edvard_grieg,beryl,feeder,,,6,false,2015,operating,,\"approximate, public data\",Ties into SAGE for St Fergus\nhaltenpipe,Haltenpipe,heidrun,tjeldbergodden,trunk,250,16,6,false,1996,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,Feeds the Tjeldbergodden methanol plant\nheidrun_asgard,Heidrun - \u00c5sgard Transport,heidrun,asgard,link,,,6,false,2001,operating,,\"approximate, public data\",\nngts,Norne Gas Transport System,norne,asgard,feeder,126,16,6,false,2001,operating,Gassco,https://gassco.no/en/our-activities/pipelines-and-platforms,Ties into \u00c5sgard Transport\nnorpipe,Norpipe Gas,ekofisk,emden,export,440,36,44,false,1977,operating,Gassco,https://en.wikipedia.org/wiki/Norpipe,\neuropipe_1,Europipe I,draupner_e,dornum,export,660,40,46,false,1995,operating,Gassco,https://en.wikipedia.org/wiki/Europipe_I,\neuropipe_2_north,Europipe II (K\u00e5rst\u00f8 - Baltic tie-in),karsto,baltic_tie,export,400,42,71,false,1999,operating,Gassco,https://en.wikipedia.org/wiki/Europipe_II,Split at the Baltic Pipe tie-in\neuropipe_2_south,Europipe II (Baltic tie-in - Dornum),baltic_tie,dornum,export,258,42,71,false,1999,operating,Gassco,https://en.wikipedia.org/wiki/Europipe_II,Split at the Baltic Pipe tie-in\nfranpipe,Franpipe,draupner_e,dunkirk,export,840,42,55,false,1998,operating,Gassco,https://en.wikipedia.org/wiki/Franpipe,\nzeepipe_1,Zeepipe I,sleipner,zeebrugge,export,814,40,42,false,1993,operating,Gassco,https://en.wikipedia.org/wiki/Zeepipe,\nlangeled_south,Langeled (south),sleipner,easington,export,543,44,72,false,2006,operating,Gassco,https://en.wikipedia.org/wiki/Langeled_pipeline,\nvesterled,Vesterled,heimdal,st_fergus,export,360,32,39,false,2001,operating,Gassco,https://gassco.eu/en/rorledningsnettverk/vesterled,Frigg Norwegian Pipeline adapted for other fields and renamed Vesterled in 2001\nbaltic_pipe_ns,Baltic Pipe (North Sea leg),baltic_tie,nybro,export,110,,27,false,2022,operating,Energinet,https://www.baltic-pipe.eu/,Offshore leg plus the short onshore run to Nybro\nbaltic_pipe_east,Baltic Pipe (Denmark - Poland),nybro,pl_vtp,export,,,27,false,2022,operating,Energinet / GAZ-SYSTEM,https://www.baltic-pipe.eu/,Onshore Denmark plus the Baltic Sea offshore section\ntampen_link,Tampen Link,statfjord,flags_brent,link,23,32,25,false,2007,operating,,\"approximate, public data\",\ngjoa_flags,Gj\u00f8a gas export,gjoa,flags_brent,feeder,130,28,17,false,2010,operating,,https://gassco.no/en/our-activities/pipelines-and-platforms,\nflags,FLAGS,flags_brent,st_fergus,export,450,36,33,false,1982,operating,,https://en.wikipedia.org/wiki/FLAGS,\nsage,SAGE,beryl,st_fergus,export,323,30,30,false,1992,operating,,\"approximate, public data\",\nseal,SEAL,elgin_franklin,bacton,export,474,34,35,false,2000,operating,,\"approximate, public data\",\nsns_bacton,Southern North Sea gathering,sns_fields,bacton,feeder,,,15,false,,operating,,\"approximate, public data\",Several pipelines modelled as one\niuk,Interconnector (IUK),bacton,zeebrugge,interconnector,235,40,70,true,1998,operating,,https://www.interconnector.com/,\nngt,NGT,l10a,uithuizen,export,,36,42,false,1975,operating,,https://en.wikipedia.org/wiki/Noordgastransport,Main line of the NGT system\nwgt,WGT,k13a,den_helder,export,,36,30,false,,operating,,\"approximate, public data\",\n",
+  "units.toml": "# Units for level 2 (unit control): each groups the assets one operator desk looks after.\n# Every node belongs to exactly one unit; a pipeline belongs to the unit it leaves from.\n# Order here is the order on screen. `nora validate` checks every id.\n\n[units.norwegian_sea]\nname = \"Norwegian Sea\"\nnodes = [\"aasta_hansteen\", \"norne\", \"heidrun\", \"asgard\", \"ormen_lange\", \"nyhamna\", \"tjeldbergodden\"]\n\n[units.northern_north_sea]\nname = \"Northern North Sea\"\nnodes = [\n    \"gjoa\", \"visund\", \"statfjord\", \"gullfaks\", \"flags_brent\", \"kvitebjorn\", \"troll\",\n    \"oseberg\", \"kollsnes\", \"heimdal\", \"beryl\", \"edvard_grieg\", \"frigg\", \"odin\",\n]\n\n[units.hubs]\nname = \"K\u00e5rst\u00f8, Sleipner and Draupner\"\nnodes = [\"karsto\", \"johan_sverdrup\", \"gudrun\", \"sleipner\", \"draupner_s\", \"draupner_e\", \"ekofisk\"]\n\n[units.uk]\nname = \"UK landings\"\nnodes = [\"st_fergus\", \"elgin_franklin\", \"easington\", \"sns_fields\", \"bacton\"]\n\n[units.continent]\nname = \"Continental landings\"\nnodes = [\n    \"l10a\", \"k13a\", \"den_helder\", \"uithuizen\", \"dornum\", \"emden\",\n    \"zeebrugge\", \"dunkirk\",\n]\n\n[units.denmark_poland]\nname = \"Denmark and Poland\"\nnodes = [\"baltic_tie\", \"nybro\", \"pl_vtp\"]\n",
+  "flow_layout.toml": "# Where each node sits in the Flow view: [across, down] in grid steps (one step across\n# is one square's width with room; one step down is one row of squares with names).\n# Laid out like the operators' Area D overview (Ray, 29 Oct): the UK and St Fergus on\n# the left, the Tampen, Nyhamna and Kollsnes corridors in the middle, K\u00e5rst\u00f8 and the\n# Norwegian Sea on the right; fields at the top, the hubs below them, the landings\n# along the bottom from west to east. Drag a node in the Flow view to move it, and\n# Save. A node not listed here is placed by layout.py. `nora validate` checks the ids.\n\n[positions]\n# fields and the corridors they feed\ngjoa = [1, 0]\nfrigg = [2.2, 0]\nodin = [3.3, 0]\noseberg = [4.4, 0]\naasta_hansteen = [6.1, 0]\normen_lange = [7.4, 0]\ntroll = [8.6, 0]\nvisund = [9.7, 0]\ngullfaks = [10.8, 0]\nheidrun = [12, 0]\nnorne = [13.1, 0]\nedvard_grieg = [0, 1]\nheimdal = [4.4, 1]\nnyhamna = [7, 1]\nkvitebjorn = [9, 1]\nstatfjord = [10.6, 1]\ntjeldbergodden = [11.6, 1]\nasgard = [12.7, 1]\nberyl = [0, 2]\nflags_brent = [1.5, 2]\ngudrun = [5, 2]\nkollsnes = [8.5, 2]\njohan_sverdrup = [11.2, 2]\nkarsto = [12.6, 2.2]\n# hubs and the southern fields\nst_fergus = [0, 3]\nsleipner = [5.5, 3]\ndraupner_s = [8, 3]\ndraupner_e = [9.5, 3]\nbaltic_tie = [12.6, 3.4]\nelgin_franklin = [1, 4]\nsns_fields = [3.4, 4]\nekofisk = [10.6, 4]\nk13a = [8.2, 4.6]\nl10a = [9.4, 4.6]\nnybro = [13.8, 4.6]\n# the landings, west to east\neasington = [1, 5.6]\nbacton = [3.4, 5.6]\nzeebrugge = [4.6, 5.6]\ndunkirk = [5.8, 5.6]\nden_helder = [8.2, 5.6]\nuithuizen = [9.4, 5.6]\nemden = [10.6, 5.6]\ndornum = [11.8, 5.6]\npl_vtp = [13.8, 5.6]\n"
  }
 }

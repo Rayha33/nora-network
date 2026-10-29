@@ -846,7 +846,15 @@ test("flow: the camera stays over the network (Ray, 29 Oct)", () => {
   const bounds = App.views.flow.viewBounds;
   // a drawing 0..1000 wide in a 400-wide window: the window's centre stays 200..800 (+ margin)
   assert.deepEqual(Array.from(bounds(0, 1000, 400, 10)), [190, 810]);
-  // a drawing 0..300 wide in a 1000-wide window: it stays wholly in view
-  const [lo, hi] = bounds(0, 300, 1000, 10);
-  assert.ok(lo - 500 <= 0 - 10 + 1e-9 && hi + 500 >= 300 + 10 - 1e-9 && lo === -210 && hi === 510);
+  // a drawing 0..300 wide in a 1000-wide window: held in the middle, so zooming out
+  // past the whole network cannot slide it to one side (Ray, 29 Oct)
+  assert.deepEqual(Array.from(bounds(0, 300, 1000, 10)), [150, 150]);
+});
+
+test("markers grow as the view zooms in, to twice their size (Ray, 29 Oct)", () => {
+  const { App } = loadApp();
+  assert.equal(App.markerSize("pig"), 16, "zoomed out: the dense-view size");
+  assert.equal(App.markerSize("pig", 1), 32, "zoomed all the way in: twice");
+  assert.equal(App.markerSize("pig", 5), 32, "never more");
+  assert.equal(App.markerSize("pig", -1), 16, "never less");
 });

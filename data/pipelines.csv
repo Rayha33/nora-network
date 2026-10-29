@@ -39,6 +39,5 @@ sage,SAGE,beryl,st_fergus,export,323,30,30,false,1992,operating,,"approximate, p
 seal,SEAL,elgin_franklin,bacton,export,474,34,35,false,2000,operating,,"approximate, public data",
 sns_bacton,Southern North Sea gathering,sns_fields,bacton,feeder,,,15,false,,operating,,"approximate, public data",Several pipelines modelled as one
 iuk,Interconnector (IUK),bacton,zeebrugge,interconnector,235,40,70,true,1998,operating,,https://www.interconnector.com/,
-bbl,BBL,balgzand,bacton,interconnector,235,36,53,true,2006,operating,,https://bblcompany.com/,Physical reverse flow added in 2019 at lower capacity
 ngt,NGT,l10a,uithuizen,export,,36,42,false,1975,operating,,https://en.wikipedia.org/wiki/Noordgastransport,Main line of the NGT system
 wgt,WGT,k13a,den_helder,export,,36,30,false,,operating,,"approximate, public data",

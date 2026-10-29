@@ -28,18 +28,39 @@ function playToASlug() {
 }
 const panel = (document) => `${document.getElementById("side-title").textContent} | ${document.getElementById("side-body").textContent}`;
 
-test("peak panel: an H₂S or CO₂ peak shows head and tail ETAs, its volume and its origin", () => {
+/* Ray, 29 Oct: "volume (MSm3), Head KP, Tail KP, Sent (CET), ETA (CET), Duration,
+   Max/Min value, Avg value, Notified (yes/no), Origo ref number (5 digits), also Network,
+   Location and peakID as well description. make it look nice and easy to understand". */
+test("peak panel: an H₂S or CO₂ peak has all Ray's fields, plainly", () => {
   const { App, NORA, document, slug } = playToASlug();
   App.selectMarker(slug.key);
   assert.equal(App.sidebar.marker(), slug.key, "the sidebar follows this peak");
   const text = panel(document);
   assert.match(text, /(H₂S|CO₂) peak/);
-  assert.match(text, /Head reaches/);
-  assert.match(text, /Tail reaches/);
-  assert.match(text, /Total volume\d[\d.,]* MSm³ of gas/);
+  for (const field of ["Volume", "Head", "Tail", "Sent", "ETA", "Duration", "Max", "Min", "Average", "Notified", "Origo ref", "Network", "Location", "Peak ID"]) {
+    assert.ok(text.includes(field), `${field} is in the panel`);
+  }
+  assert.match(text, /KP \d[\d.,]* on /, "head and tail as a KP on their line");
+  assert.match(text, /\d\d:\d\d (CET|CEST|GMT\+\d)/, "times in CET");
+  assert.match(text, /(H2S|CO2)-[A-ZÆØÅ]{1,3}-\d{8}/, "a peak ID from the gas, the origin and when it was sent");
   const origin = App.live.slugs.get(slug.ref).origin;
-  assert.match(text, new RegExp(`Origin${NORA.assets[origin].name}, first seen`), "where it was first generated, and when");
+  assert.ok(text.includes(`from ${NORA.assets[origin].name}, sent`), "a description in words");
   assert.ok(App.live.slugs.get(slug.ref).volume > 0, "the volume is the field's gas while it was over the follow level");
+});
+
+test("peak panel: Notified and the Origo reference are kept per peak", () => {
+  const { App, document, slug } = playToASlug();
+  App.selectMarker(slug.key);
+  const find = (el, test) => (test(el) ? el : (el.children || []).map((c) => (c && typeof c === "object" ? find(c, test) : null)).find(Boolean) || null);
+  const body = document.getElementById("side-body");
+  find(body, (el) => el.attributes && /toggle/.test(el.className || ""))._listeners.click[0]();
+  const origo = find(document.getElementById("side-body"), (el) => el.className === "origo");
+  origo.value = "40217";
+  origo._listeners.change[0]();
+  App.selectMarker(slug.key);
+  const again = panel(document);
+  assert.match(again, /NotifiedYes/, "notified, after it was set");
+  assert.equal(find(document.getElementById("side-body"), (el) => el.className === "origo").value, "40217", "the reference is kept");
 });
 
 test("peak panel: a change in flow shows head and tail ETAs, volume and origin", () => {
