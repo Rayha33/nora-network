@@ -25,7 +25,7 @@ gudrun,Gudrun,field,NO,58.85,1.72,Equinor,5,operating,2014,,https://equinor.com/
 edvard_grieg,Edvard Grieg,field,NO,58.84,2.25,Aker BP,6,operating,2015,,https://akerbp.com/en/asset/edvard-grieg-2,Gas exported through the Utsira High Gas Pipeline to SAGE,,
 heidrun,Heidrun,field,NO,65.33,7.32,Equinor,6,operating,1995,,https://equinor.com/energy/heidrun,Norwegian Sea; gas to Tjeldbergodden and Åsgard Transport,,
 norne,Norne,field,NO,66.02,8.08,Equinor,4,operating,1997,,https://equinor.com/energy/norne,Norwegian Sea; gas through the Norne Gas Transport System,,
-heimdal,Heimdal,hub,NO,59.57,2.23,Equinor,,operating,1985,,https://equinor.com/energy/heimdal,Riser and processing hub,,
+heimdal,Heimskringla tie-in,tee,NO,59.57,2.23,Gassco,,operating,1985,,https://equinor.com/energy/heimdal,The Heimdal platform is gone: only the T connection where Heimskringla from Oseberg splits to St Fergus and Draupner,,
 frigg,Frigg,field,NO,59.880,2.065,TotalEnergies,,decommissioned,1977,2004,https://www.norskpetroleum.no/en/facts/field/frigg,Gas field straddling the UK-Norway median line; exported via the Frigg Norwegian Pipeline to St Fergus; position approximate,,
 odin,Odin,field,NO,60.077,2.166,TotalEnergies,,decommissioned,1984,1994,https://www.norskpetroleum.no/en/facts/field/odin,Gas treated at Frigg TCP2 before export to St Fergus; position approximate,,
 draupner_s,Draupner S,hub,NO,58.189,2.473,Gassco,,operating,,,https://en.wikipedia.org/wiki/Draupner_platform,Riser platform bridge-linked to Draupner E,,
