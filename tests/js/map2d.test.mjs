@@ -93,7 +93,7 @@ test("peaks: band sampling includes route vertices between head and tail", () =>
     "a raw route vertex is converted into the same node-trimmed coordinates as the marker");
 });
 
-test("peaks: pipeline names are drawn after the moving bands", () => {
+test("peaks: pipeline names stay above moving bands and peak markers", () => {
   const operations = [];
   const Path2D = class { moveTo() {} lineTo() {} closePath() {} };
   const loaded = loadApp({ globals: { Path2D } });
@@ -126,12 +126,17 @@ test("peaks: pipeline names are drawn after the moving bands", () => {
   assert.equal(view.canvasMap, true);
   const drawBand = App.drawBand;
   App.drawBand = (...args) => { operations.push({ op: "band" }); drawBand(...args); };
+  const drawMarker = App.drawMarker;
+  App.drawMarker = (...args) => { operations.push({ op: "marker" }); return drawMarker(...args); };
   operations.length = 0;
   view.restyle();
   const band = operations.findIndex((op) => op.op === "band");
+  const marker = operations.findIndex((op) => op.op === "marker");
   const pipelineName = operations.findIndex((op) => op.op === "fillText" && App.pipeIds.some((id) => App.pipeMapName(id) === op.text));
   assert.ok(band >= 0, "a moving band is drawn");
-  assert.ok(pipelineName > band, "the pipeline name is drawn on top of the band");
+  assert.ok(marker > band, "a peak marker crosses the route after its band");
+  assert.ok(pipelineName > band, "pipeline names are drawn on top of the band");
+  assert.ok(pipelineName > marker, "pipeline names are also drawn on top of the peak marker");
 });
 
 test("peaks: opaque ends taper to a quieter centre behind the dot", () => {

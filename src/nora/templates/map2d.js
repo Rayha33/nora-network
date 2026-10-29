@@ -175,17 +175,12 @@ function NoraCanvasMap(view) {
       ctx.textBaseline = "top";
     }
     // No alarm badges on lines (Ray, 29 Oct: "remove the small red squares they serve no purpose").
-    // Pigs, peaks and gas quality: bands first, then the pipeline names and markers.
+    // Pigs, peaks and gas quality: bands, then markers, then pipeline names on top, so a
+    // crossing peak can never erase a name.
     const z = zoom(), detail = z >= 6.5 ? 2 : z >= 5 ? 1 : 0, marks = live ? App.markers() : [];
     for (const m of marks) {
       if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]), 3.2 * u, bandPath(m.id, m.extent));
     }
-    ctx.textBaseline = "middle";
-    for (const label of pipeLabels) {
-      ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(label.text, label.x, label.y);
-      ctx.fillStyle = C.text; ctx.fillText(label.text, label.x, label.y);
-    }
-    ctx.textBaseline = "top";
     drawnMarks = [];
     const taken = [...placed, ...dots]; // marker labels keep clear of names and dots
     for (const m of marks) {
@@ -194,6 +189,12 @@ function NoraCanvasMap(view) {
       App.drawMarker(ctx, m, p.x, p.y, p.angle, App.markerSize(m.kind, (z - 6) / 4), detail, taken);
       if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
     }
+    ctx.textBaseline = "middle";
+    for (const label of pipeLabels) {
+      ctx.lineWidth = 4 * u; ctx.strokeStyle = C.paper; ctx.strokeText(label.text, label.x, label.y);
+      ctx.fillStyle = C.text; ctx.fillText(label.text, label.x, label.y);
+    }
+    ctx.textBaseline = "top";
   }
 
   // ------------------------------------------------------------------ camera
