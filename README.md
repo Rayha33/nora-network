@@ -22,7 +22,8 @@ Dutch and Danish gas to Europe's markets.
   deliver to each market (max flow) and how much is lost if any single asset trips (N-1).
   The *Load* and *Risk* modes show both, on the map and in the flow overview.
 - **Live replay.** Time series of flows, from a synthetic week to real daily flows from
-  Energinet, play back as if they were arriving live: lines
+  Energinet and a year of the Interconnector (IUK) both ways from National Gas, play
+  back as if they were arriving live: lines
   fill and empty, dots move with the gas, alarms fire when a flow drops. Add a real
   dataset with one command; `nora live` serves it as a real Server-Sent Events feed.
 - **One-file sharing.** `network.html` is a single file you can email or host anywhere;

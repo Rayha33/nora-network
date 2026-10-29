@@ -80,7 +80,8 @@ test("routes: a peak circle stays exactly between its head and tail at line boun
   document.getElementById("speed").options = [{ value: "60" }];
   document.getElementById("stream-select")._listeners.change[0]({ target: { value: NORA.streams[0].name } });
   const stream = App.live.stream;
-  const pid = stream.assets.find((id) => App.pipeIds.includes(id));
+  const pid = stream.assets.find((id, j) => App.pipeIds.includes(id) && Math.abs(stream.values[0][j] || 0) > 1);
+  assert.ok(pid, "choose a covered pipeline with real flow, independent of asset ordering");
   for (const forward of [true, false]) {
     const peak = { id: pid, t0: stream.times[0], delta: 10, forward, level: 1 };
     App.live.peaks = [peak];

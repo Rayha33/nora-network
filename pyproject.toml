@@ -10,6 +10,7 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
+    "jinja2>=3.1",  # site.py renders the home page itself, not only through pyvis
     "networkx>=3.4",
     # NORA renders through pyvis with its own template and inlines the vis-network
     # files bundled with pyvis, so the version is pinned. Bump it deliberately.

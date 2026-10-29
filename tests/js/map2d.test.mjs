@@ -93,7 +93,7 @@ test("peaks: band sampling includes route vertices between head and tail", () =>
     "a raw route vertex is converted into the same node-trimmed coordinates as the marker");
 });
 
-test("peaks: pipeline names are drawn after the moving bands", () => {
+test("peaks: pipeline names stay above moving bands and peak markers", () => {
   const operations = [];
   const Path2D = class { moveTo() {} lineTo() {} closePath() {} };
   const loaded = loadApp({ globals: { Path2D } });
@@ -126,12 +126,17 @@ test("peaks: pipeline names are drawn after the moving bands", () => {
   assert.equal(view.canvasMap, true);
   const drawBand = App.drawBand;
   App.drawBand = (...args) => { operations.push({ op: "band" }); drawBand(...args); };
+  const drawMarker = App.drawMarker;
+  App.drawMarker = (...args) => { operations.push({ op: "marker" }); return drawMarker(...args); };
   operations.length = 0;
   view.restyle();
   const band = operations.findIndex((op) => op.op === "band");
+  const marker = operations.findIndex((op) => op.op === "marker");
   const pipelineName = operations.findIndex((op) => op.op === "fillText" && App.pipeIds.some((id) => App.pipeMapName(id) === op.text));
   assert.ok(band >= 0, "a moving band is drawn");
-  assert.ok(pipelineName > band, "the pipeline name is drawn on top of the band");
+  assert.ok(marker > band, "a peak marker crosses the route after its band");
+  assert.ok(pipelineName > band, "pipeline names are drawn on top of the band");
+  assert.ok(pipelineName > marker, "pipeline names are also drawn on top of the peak marker");
 });
 
 test("peaks: opaque ends taper to a quieter centre behind the dot", () => {
@@ -590,6 +595,39 @@ test("exit nodes: the end-of-day bar is a track, a target band and a mark", () =
   assert.equal(rects[2].fill, App.levelColor[2], "outside the band it takes the alarm colour");
 });
 
+test("exit nodes: the day bar fits inside the square and covers no flow value", () => {
+  const { App, NORA } = loadApp();
+  loadFirstHour(App, NORA);
+  const half = App.views.flow.circleRadius(), y = -half * 0.52; // across the top (IMG_3589)
+  const exits = Object.keys(NORA.assets).filter((id) => NORA.assets[id].exit && NORA.grid[id]);
+  assert.ok(exits.length > 0);
+  for (const id of exits) {
+    const labels = [], fills = [];
+    const ctx = new Proxy({}, {
+      get(target, key) {
+        if (key in target) return target[key];
+        if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
+        if (key === "fillText") return (text, x, ty) => labels.push({ text: String(text), x, y: ty });
+        if (key === "fillRect") return (x, fy, width, height) => fills.push({ x, y: fy, width, height });
+        return () => {};
+      },
+      set(target, key, value) { target[key] = value; return true; },
+    });
+    App.views.flow.drawSquare(ctx, 0, 0, id, App.colors.card.active, { half, now: App.reading(id), day: App.dayDelivery(id) || { share: 0, level: 0 } });
+    assert.ok(labels.length > 0, `${id}: its flow is written in the square`);
+    const bar = fills.filter((f) => Math.abs(f.y + f.height / 2 - y) < 1e-9); // track, band and mark
+    assert.ok(bar.length >= 3, `${id}: the bar is drawn`);
+    for (const f of bar) {
+      assert.ok(f.x >= -half && f.x + f.width <= half && f.y >= -half && f.y + f.height <= half, `${id}: inside the square`);
+      for (const l of labels) {
+        const w = l.text.length * 6, box = [l.x - w / 2 - 2, l.y - 8, l.x + w / 2 + 2, l.y + 8];
+        assert.ok(!(box[0] < f.x + f.width && box[2] > f.x && box[1] < f.y + f.height && box[3] > f.y),
+          `${id}: "${l.text}" does not cover the day bar`);
+      }
+    }
+  }
+});
+
 /* One real hour of the first stream with pressures, the way `start()` loads it. */
 function loadFirstHour(App, nora) {
   const stream = nora.streams.find((s) => s.metrics && s.metrics.pressure_bar) || nora.streams[0];
@@ -820,7 +858,7 @@ test("map: a theme switch keeps the fallback basemap", () => {
 
 test("flow: Poland VTP is on the Map only (Ray, 29 Oct: \"remove poland vtp from flow only\")", () => {
   const { App, NORA } = loadApp();
-  assert.deepEqual(Array.from(NORA.config.flow.hide), ["pl_vtp"], "nora.toml [flow] hide names it");
+  assert.ok(Array.from(NORA.config.flow.hide).includes("pl_vtp"), "nora.toml [flow] hide names it");
   const { nodes, lines } = App.views.flow.changes();
   assert.equal(nodes.find((n) => n.id === "pl_vtp").hidden, true, "not drawn in the Flow view");
   const into = App.pipeIds.filter((pid) => NORA.assets[pid].to === "pl_vtp" || NORA.assets[pid].from === "pl_vtp");
