@@ -70,17 +70,6 @@
    "id": "beryl"
   },
   {
-   "name": "Den Helder",
-   "type": "terminal",
-   "country": "NL",
-   "lat": 52.95,
-   "lon": 4.76,
-   "capacity_msm3d": null,
-   "status": "operating",
-   "exit": true,
-   "id": "den_helder"
-  },
-  {
    "name": "Dornum",
    "type": "terminal",
    "country": "DE",
@@ -290,17 +279,6 @@
    "id": "johan_sverdrup"
   },
   {
-   "name": "K13-A",
-   "type": "field",
-   "country": "NL",
-   "lat": 53.22,
-   "lon": 3.22,
-   "capacity_msm3d": 5.0,
-   "status": "operating",
-   "exit": false,
-   "id": "k13a"
-  },
-  {
    "name": "K\u00e5rst\u00f8",
    "type": "processing",
    "country": "NO",
@@ -332,17 +310,6 @@
    "status": "operating",
    "exit": false,
    "id": "kvitebjorn"
-  },
-  {
-   "name": "L10-A",
-   "type": "field",
-   "country": "NL",
-   "lat": 53.4,
-   "lon": 4.2,
-   "capacity_msm3d": 10.0,
-   "status": "operating",
-   "exit": false,
-   "id": "l10a"
   },
   {
    "name": "Mikkel",
@@ -552,17 +519,6 @@
    "status": "operating",
    "exit": false,
    "id": "troll"
-  },
-  {
-   "name": "Uithuizen",
-   "type": "terminal",
-   "country": "NL",
-   "lat": 53.42,
-   "lon": 6.67,
-   "capacity_msm3d": null,
-   "status": "operating",
-   "exit": true,
-   "id": "uithuizen"
   },
   {
    "name": "Visund",
@@ -854,16 +810,6 @@
    "target": "karsto"
   },
   {
-   "pipeline": "wgt",
-   "name": "WGT",
-   "type": "export",
-   "from_id": "k13a",
-   "length_km": 107.14170388879774,
-   "capacity": 30.0,
-   "source": "k13a",
-   "target": "den_helder"
-  },
-  {
    "pipeline": "europipe_2_north",
    "name": "Europipe II (K\u00e5rst\u00f8 - Baltic tie-in)",
    "type": "export",
@@ -912,16 +858,6 @@
    "capacity": 33.0,
    "source": "kvitebjorn",
    "target": "kollsnes"
-  },
-  {
-   "pipeline": "ngt",
-   "name": "NGT",
-   "type": "export",
-   "from_id": "l10a",
-   "length_km": 163.72247758252496,
-   "capacity": 42.0,
-   "source": "l10a",
-   "target": "uithuizen"
   },
   {
    "pipeline": "mikkel_asgard",
