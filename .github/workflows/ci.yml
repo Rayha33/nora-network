@@ -38,3 +38,33 @@ jobs:
           name: site
           path: site
           retention-days: 14
+
+  # The built site in headless Chromium (tests/browser/README.md). Not a required check
+  # yet: it becomes one after it has been green on 3 pull requests.
+  browser:
+    name: browser smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e .
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: tests/browser/package-lock.json
+      - run: npm ci --prefix tests/browser
+      - name: Install Chromium
+        run: tests/browser/node_modules/.bin/playwright-core install --with-deps chromium
+      - name: Smoke check
+        run: node tests/browser/smoke.mjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: screenshots
+          path: tests/browser/screenshots
+          retention-days: 14
