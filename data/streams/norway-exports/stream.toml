@@ -1,9 +1,10 @@
-title = "Norwegian gas landings (FR & BE), Oct 2026"
-description = "Hourly physical flows where Norwegian gas lands on the continent: Dunkerque (Franpipe) and Zeebrugge ZPT (Zeepipe I). Real data from the ENTSOG Transparency Platform. The UK (St Fergus, Easington) and German (Dornum, Emden) points publish nothing here, so those pipelines have no readings in this dataset."
+title = "Norwegian gas landings on the continent, hourly, Oct 2026"
+description = "Hourly physical flows where Norwegian gas lands on the continent, 13 to 20 Oct 2026, as the receiving operators report them to the ENTSOG Transparency Platform: Dunkerque (Franpipe), Zeebrugge ZPT (Zeepipe I), Dornum (Europipe II), Emden EPT1 (Europipe I and Norpipe together: the operators have metered them as one point since Oct 2015, so the reading is on the Emden terminal, not split between the two lines) and Baltic Pipe's North Sea Entry into Denmark. The UK publishes daily values only: Easington is in the norway-exports-daily dataset, and St Fergus mixes Norwegian and UK gas, so Vesterled, FLAGS and SAGE have no readings here."
 source = "https://transparency.entsog.eu/"
 license = "ENTSOG Transparency Platform terms of use; credit ENTSOG as the source"
 
 # Refresh with: python scripts/fetch_entsog.py 2026-10-13 2026-10-20 data/streams/norway-exports/raw.csv
+# The points and why each one is (or is not) here: data/streams/README.md, issue #2.
 [import]
 file = "raw.csv"
 layout = "long"
@@ -13,6 +14,14 @@ value = "value"
 factor = 2.18e-6     # kWh/h -> MSm3/d at about 11 kWh per standard cubic metre
 timezone = "UTC"
 
+# Readings mapped to one asset are added: Emden's three receiving operators make up
+# the one landing. ENTSOG's pipe-in-pipe repeats (Thyssengas at Emden, Dornum / NETRA)
+# are not fetched, so nothing is counted twice.
 [import.assets]
 "Dunkerque" = "franpipe"
 "Zeebrugge ZPT" = "zeepipe_1"
+"Dornum GASPOOL" = "europipe_2_south"
+"Emden (EPT1) (OGE)" = "emden"
+"Emden (EPT1) (GUD)" = "emden"
+"Emden (EPT1) (GTS)" = "emden"
+"North Sea Entry" = "baltic_pipe_ns"

@@ -79,7 +79,7 @@ other UK entry or exit point.
 
 ```toml
 title = "Norwegian exports, one week"
-description = "Hourly physical flows at Gassco's exit points."
+description = "Hourly physical flows where Norwegian gas lands."
 source = "https://transparency.entsog.eu/"     # where the data came from
 synthetic = true             # optional: label made-up rows (a mock API's) as synthetic
 license = "..."                                 # the source's terms
@@ -100,7 +100,7 @@ directionKey = "exit"
 
 [import.assets]              # raw point -> NORA id; points mapped to "" are skipped
 "Easington" = "langeled_south"
-"Dornum (EPT1 & EPT2)" = "dornum"
+"Dornum GASPOOL" = "europipe_2_south"
 
 [[events]]                   # optional markers on the timeline
 label = "Planned maintenance"
@@ -271,30 +271,64 @@ Fields that map to a node in `data/nodes.csv` are committed; the others
 (Gullfaks Sør, Oseberg Sør/Øst, Statfjord Nord/Øst, Vest Ekofisk, Visund Sør
 and the rest of SODIR's 136 fields) are left out for now.
 
-### ENTSOG Transparency Platform: help wanted
+### ENTSOG Transparency Platform (Norwegian landings): in the repository
 
 ENTSOG publishes physical flows at Europe's interconnection points, including the
-terminals where Norwegian gas lands. Gassco publishes nothing for its own side, so the
-readings come from the receiving operators. `scripts/fetch_entsog.py` asks for them point
-by point (the platform's own rule):
+terminals where Norwegian gas lands. Gassco registers its own side of every landing but
+publishes nothing there (`hasData` is false for all of `NO-TSO-0001`), so the readings
+come from the receiving operators, under their own point keys. `scripts/fetch_entsog.py`
+asks for them point by point (the platform's own rule):
 
 ```bash
-python scripts/fetch_entsog.py 2026-10-13 2026-10-20 raw.csv
-nora stream new norway-exports --from raw.csv
+python scripts/fetch_entsog.py 2026-10-13 2026-10-20 data/streams/norway-exports/raw.csv
+python scripts/fetch_entsog.py 2026-10-01 2026-10-28 data/streams/norway-exports-daily/raw.csv --period day
 ```
 
-| ENTSOG point direction | NORA asset |
-| --- | --- |
-| UK-TSO-0001ITP-00022entry (St Fergus) | `vesterled` |
-| UK-TSO-0001ITP-00091entry (Easington) | `langeled_south` |
-| BE-TSO-0001ITP-00106entry (Zeebrugge ZPT) | `zeepipe_1` |
-| FR-TSO-0003ITP-00045entry (Dunkerque) | `franpipe` |
-| DE-TSO-0005/0009ITP-00208entry (Dornum) | `dornum` |
-| DE-TSO-0002/0005, NL-TSO-0001ITP-00210entry (Emden NPT) | `norpipe` |
+`norway-exports` is hourly (13 to 20 Oct 2026); `norway-exports-daily` is per gas day
+(1 to 28 Oct 2026) and adds Easington, which National Gas reports daily only. Means are
+for 13 to 20 Oct at about 11 kWh per Sm3.
 
-On 2026-10-27 the platform returned "No result found" for recent dates and timed out on
-older ones, so this dataset is not in the repository yet. If you get it working, see
-[issue #2](https://github.com/Rayha33/nora-network/issues/2).
+| Norwegian landing | ENTSOG point direction(s) | NORA asset | mean MSm3/d |
+| --- | --- | --- | --- |
+| Dunkerque (Franpipe) | FR-TSO-0003ITP-00045entry | `franpipe` | 47.0 |
+| Zeebrugge ZPT (Zeepipe I) | BE-TSO-0001ITP-00106entry | `zeepipe_1` | 42.5 |
+| Dornum (Europipe II) | DE-TSO-0009ITP-00525entry (Dornum GASPOOL) | `europipe_2_south` | 61.6 |
+| Emden EPT1 (Europipe I and Norpipe) | DE-TSO-0009ITP-00080entry (OGE), DE-TSO-0005ITP-00081entry (GUD), NL-TSO-0001ITP-00160entry (GTS), added | `emden` (the terminal) | 82.7 |
+| Baltic Pipe North Sea Entry | DK-TSO-0001ITP-00630entry | `baltic_pipe_ns` | 18.2 |
+| Easington (Langeled) | UK-TSO-0001ITP-00091entry, daily only | `langeled_south` (daily dataset) | 68.2 (1 to 28 Oct) |
+| St Fergus (Vesterled) | UK-TSO-0001ITP-00022entry, daily only | none: see below | |
+
+Why some points are not what they look like (checked 29 Oct 2026):
+
+- **Gassco's keys have no data.** `operatorpointdirections?tsoCountry=NO` lists Gassco
+  at Dornum (ITP-00208), Emden EPT1 (ITP-00209), Emden NPT (ITP-00210) and the other
+  landings, every one with `hasData: false`. The German operators report under their
+  own keys instead (`operatorpointdirections?tSOCountry=DE`, `?tSOCountry=NL`).
+- **Emden NPT ended in 2015.** Thyssengas, GUD and GTS's Emden (NPT) points are valid
+  to 2015-09-30; OGE's remark reads "From 01/10/2015 6 am point is merged with Emden
+  NPT". Norpipe and Europipe I have been metered together at Emden EPT1 since, so their
+  sum is read on the `emden` terminal and not split between the two lines.
+- **Pipe-in-pipe repeats.** Thyssengas's Emden (EPT1) (ITP-00105) is flagged pipe-in-pipe
+  with GUD's (ITP-00081) and reports the same flow hour by hour; Dornum / NETRA at OGE
+  (ITP-00126) and GUD (ITP-00188) repeat Dornum GASPOOL (ITP-00525). Adding them would
+  put Emden at about 108 MSm3/d and Dornum at about 127, far above the lines' capacity.
+  The fetched set matches ENTSOG's own dashboard list
+  ([Gas flows corridors and IPs used for the dashboards](https://www.entsog.eu/sites/default/files/2023-09/Gas%20flows%20corridors%20and%20IPs%20used%20for%20the%20dashboards_v18-09-2023.pdf)).
+- **The UK reports daily only.** National Gas still publishes Easington and St Fergus
+  on the platform, but an hourly query (`periodType=hour`) returns "No result found";
+  `periodType=day` works. National Gas's own data portal has the same daily values
+  (System Entry Volume, Easington-Langeled, D+1, PUBOBJ570) and hourly readings only
+  for the current gas day (the live instantaneous flows), so no hourly history exists.
+- **St Fergus is not Vesterled alone.** ENTSOG's dashboard list gives St Fergus's source
+  as "Norway+UK", and its flow (mean 43.2, up to 51.2 MSm3/d in Oct 2026) is above
+  Vesterled's 39 MSm3/d. National Gas splits St Fergus by sub-terminal (NSMP, Shell,
+  Mobil), and each takes UK gas as well (FUKA at NSMP, Fulmar at Shell), so no public
+  series measures Vesterled, FLAGS or SAGE alone. These lines have no readings.
+
+For a cross-check, Gassco's real-time figures on 29 Oct 2026 (Belgium 43.6, France 46,
+Germany 158.9 MSm3/d) were within 2 % of the ENTSOG readings for Belgium and France
+that day; ENTSOG's German points added up to about 139, some 12 % lower than Gassco's
+Germany figure, a gap these public data do not explain.
 
 ## Choosing the dataset that plays first
 

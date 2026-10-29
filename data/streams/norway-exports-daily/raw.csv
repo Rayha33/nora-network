@@ -1,0 +1,224 @@
+periodFrom,periodTo,pointKey,pointLabel,operatorKey,operatorLabel,directionKey,indicator,value,unit,flowStatus
+2026-10-01T06:00:00+02:00,2026-10-02T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,489429722,kWh/d,Provisional
+2026-10-01T06:00:00+02:00,2026-10-02T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,235780219.3,kWh/d,Provisional
+2026-10-01T06:00:00+02:00,2026-10-02T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,222888681,kWh/d,Provisional
+2026-10-01T06:00:00+02:00,2026-10-02T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,768529498,kWh/d,Provisional
+2026-10-01T06:00:00+02:00,2026-10-02T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,463773558,kWh/d,Confirmed
+2026-10-01T06:00:00+02:00,2026-10-02T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,355916594,kWh/d,Provisional
+2026-10-01T06:00:00+02:00,2026-10-02T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,693748912.8,kWh/d,Provisional
+2026-10-01T06:00:00+02:00,2026-10-02T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,179174731,kWh/d,Provisional
+2026-10-02T06:00:00+02:00,2026-10-03T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,528339166,kWh/d,Provisional
+2026-10-02T06:00:00+02:00,2026-10-03T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,279737803.7,kWh/d,Provisional
+2026-10-02T06:00:00+02:00,2026-10-03T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,223640913,kWh/d,Provisional
+2026-10-02T06:00:00+02:00,2026-10-03T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,761439832,kWh/d,Provisional
+2026-10-02T06:00:00+02:00,2026-10-03T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,469104098,kWh/d,Confirmed
+2026-10-02T06:00:00+02:00,2026-10-03T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,382511864,kWh/d,Provisional
+2026-10-02T06:00:00+02:00,2026-10-03T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,694664365.8,kWh/d,Provisional
+2026-10-02T06:00:00+02:00,2026-10-03T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,175953026,kWh/d,Provisional
+2026-10-03T06:00:00+02:00,2026-10-04T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,526762500,kWh/d,Provisional
+2026-10-03T06:00:00+02:00,2026-10-04T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,330700703.2,kWh/d,Provisional
+2026-10-03T06:00:00+02:00,2026-10-04T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,261169583,kWh/d,Provisional
+2026-10-03T06:00:00+02:00,2026-10-04T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,752367144,kWh/d,Provisional
+2026-10-03T06:00:00+02:00,2026-10-04T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,468567340,kWh/d,Confirmed
+2026-10-03T06:00:00+02:00,2026-10-04T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,303498988,kWh/d,Provisional
+2026-10-03T06:00:00+02:00,2026-10-04T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,688838655.6,kWh/d,Provisional
+2026-10-03T06:00:00+02:00,2026-10-04T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,188479933,kWh/d,Provisional
+2026-10-04T06:00:00+02:00,2026-10-05T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,526390000,kWh/d,Provisional
+2026-10-04T06:00:00+02:00,2026-10-05T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,353081357.6,kWh/d,Provisional
+2026-10-04T06:00:00+02:00,2026-10-05T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,248124771,kWh/d,Provisional
+2026-10-04T06:00:00+02:00,2026-10-05T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,779168181,kWh/d,Provisional
+2026-10-04T06:00:00+02:00,2026-10-05T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,464281672,kWh/d,Confirmed
+2026-10-04T06:00:00+02:00,2026-10-05T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,286015525,kWh/d,Provisional
+2026-10-04T06:00:00+02:00,2026-10-05T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,694462171.7,kWh/d,Provisional
+2026-10-04T06:00:00+02:00,2026-10-05T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,164791833,kWh/d,Provisional
+2026-10-05T06:00:00+02:00,2026-10-06T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,499495278,kWh/d,Provisional
+2026-10-05T06:00:00+02:00,2026-10-06T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,248941583.7,kWh/d,Provisional
+2026-10-05T06:00:00+02:00,2026-10-06T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,279236432,kWh/d,Provisional
+2026-10-05T06:00:00+02:00,2026-10-06T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,753007748,kWh/d,Provisional
+2026-10-05T06:00:00+02:00,2026-10-06T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,464148289,kWh/d,Confirmed
+2026-10-05T06:00:00+02:00,2026-10-06T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,352224306,kWh/d,Provisional
+2026-10-05T06:00:00+02:00,2026-10-06T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,697814227.5,kWh/d,Provisional
+2026-10-05T06:00:00+02:00,2026-10-06T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,162799407,kWh/d,Provisional
+2026-10-06T06:00:00+02:00,2026-10-07T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,499612778,kWh/d,Provisional
+2026-10-06T06:00:00+02:00,2026-10-07T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,213981643.7,kWh/d,Provisional
+2026-10-06T06:00:00+02:00,2026-10-07T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,289333989,kWh/d,Provisional
+2026-10-06T06:00:00+02:00,2026-10-07T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,775808612,kWh/d,Provisional
+2026-10-06T06:00:00+02:00,2026-10-07T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,465298380,kWh/d,Confirmed
+2026-10-06T06:00:00+02:00,2026-10-07T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,374752771,kWh/d,Provisional
+2026-10-06T06:00:00+02:00,2026-10-07T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,689104740,kWh/d,Provisional
+2026-10-06T06:00:00+02:00,2026-10-07T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,175932977,kWh/d,Provisional
+2026-10-07T06:00:00+02:00,2026-10-08T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,531138889,kWh/d,Provisional
+2026-10-07T06:00:00+02:00,2026-10-08T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,232173115.7,kWh/d,Provisional
+2026-10-07T06:00:00+02:00,2026-10-08T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,327868054,kWh/d,Provisional
+2026-10-07T06:00:00+02:00,2026-10-08T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,788207984,kWh/d,Provisional
+2026-10-07T06:00:00+02:00,2026-10-08T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,460217481,kWh/d,Confirmed
+2026-10-07T06:00:00+02:00,2026-10-08T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,323311742,kWh/d,Provisional
+2026-10-07T06:00:00+02:00,2026-10-08T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,699694449.5,kWh/d,Provisional
+2026-10-07T06:00:00+02:00,2026-10-08T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,182381028,kWh/d,Provisional
+2026-10-08T06:00:00+02:00,2026-10-09T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,533105277,kWh/d,Provisional
+2026-10-08T06:00:00+02:00,2026-10-09T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,239602097.4,kWh/d,Provisional
+2026-10-08T06:00:00+02:00,2026-10-09T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,328856035,kWh/d,Provisional
+2026-10-08T06:00:00+02:00,2026-10-09T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,719103747,kWh/d,Provisional
+2026-10-08T06:00:00+02:00,2026-10-09T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,459828533,kWh/d,Confirmed
+2026-10-08T06:00:00+02:00,2026-10-09T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,322772129,kWh/d,Provisional
+2026-10-08T06:00:00+02:00,2026-10-09T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,700795810.7,kWh/d,Provisional
+2026-10-08T06:00:00+02:00,2026-10-09T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,184978449,kWh/d,Provisional
+2026-10-09T06:00:00+02:00,2026-10-10T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,535308055,kWh/d,Provisional
+2026-10-09T06:00:00+02:00,2026-10-10T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,390965703.2,kWh/d,Provisional
+2026-10-09T06:00:00+02:00,2026-10-10T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,329325766,kWh/d,Provisional
+2026-10-09T06:00:00+02:00,2026-10-10T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,774052301,kWh/d,Provisional
+2026-10-09T06:00:00+02:00,2026-10-10T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,458204244,kWh/d,Confirmed
+2026-10-09T06:00:00+02:00,2026-10-10T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,175749025,kWh/d,Provisional
+2026-10-09T06:00:00+02:00,2026-10-10T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,701693685.8,kWh/d,Provisional
+2026-10-09T06:00:00+02:00,2026-10-10T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,185451985,kWh/d,Provisional
+2026-10-10T06:00:00+02:00,2026-10-11T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,532660000,kWh/d,Provisional
+2026-10-10T06:00:00+02:00,2026-10-11T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,384454671.9,kWh/d,Provisional
+2026-10-10T06:00:00+02:00,2026-10-11T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,304964767,kWh/d,Provisional
+2026-10-10T06:00:00+02:00,2026-10-11T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,796496330,kWh/d,Provisional
+2026-10-10T06:00:00+02:00,2026-10-11T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,465222775,kWh/d,Confirmed
+2026-10-10T06:00:00+02:00,2026-10-11T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,205745661,kWh/d,Provisional
+2026-10-10T06:00:00+02:00,2026-10-11T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,717725939.9,kWh/d,Provisional
+2026-10-10T06:00:00+02:00,2026-10-11T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,174600974,kWh/d,Provisional
+2026-10-11T06:00:00+02:00,2026-10-12T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,531318055,kWh/d,Provisional
+2026-10-11T06:00:00+02:00,2026-10-12T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,387599029.8,kWh/d,Provisional
+2026-10-11T06:00:00+02:00,2026-10-12T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,306709162,kWh/d,Provisional
+2026-10-11T06:00:00+02:00,2026-10-12T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,792846546,kWh/d,Provisional
+2026-10-11T06:00:00+02:00,2026-10-12T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,456350328,kWh/d,Confirmed
+2026-10-11T06:00:00+02:00,2026-10-12T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,175444790,kWh/d,Provisional
+2026-10-11T06:00:00+02:00,2026-10-12T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,675316999.7,kWh/d,Provisional
+2026-10-11T06:00:00+02:00,2026-10-12T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,168443116,kWh/d,Provisional
+2026-10-12T06:00:00+02:00,2026-10-13T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,529159166,kWh/d,Provisional
+2026-10-12T06:00:00+02:00,2026-10-13T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,421778983.7,kWh/d,Provisional
+2026-10-12T06:00:00+02:00,2026-10-13T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,290479947,kWh/d,Provisional
+2026-10-12T06:00:00+02:00,2026-10-13T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,845726610,kWh/d,Provisional
+2026-10-12T06:00:00+02:00,2026-10-13T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,464353647,kWh/d,Confirmed
+2026-10-12T06:00:00+02:00,2026-10-13T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,183339612,kWh/d,Provisional
+2026-10-12T06:00:00+02:00,2026-10-13T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,676379469.5,kWh/d,Provisional
+2026-10-12T06:00:00+02:00,2026-10-13T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,177124719,kWh/d,Provisional
+2026-10-13T06:00:00+02:00,2026-10-14T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,527836388,kWh/d,Provisional
+2026-10-13T06:00:00+02:00,2026-10-14T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,414386285.3,kWh/d,Provisional
+2026-10-13T06:00:00+02:00,2026-10-14T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,304001683,kWh/d,Provisional
+2026-10-13T06:00:00+02:00,2026-10-14T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,787632037,kWh/d,Provisional
+2026-10-13T06:00:00+02:00,2026-10-14T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,464305685,kWh/d,Confirmed
+2026-10-13T06:00:00+02:00,2026-10-14T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,175208450,kWh/d,Provisional
+2026-10-13T06:00:00+02:00,2026-10-14T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,697359979,kWh/d,Provisional
+2026-10-13T06:00:00+02:00,2026-10-14T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,197428115,kWh/d,Provisional
+2026-10-14T06:00:00+02:00,2026-10-15T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,539047778,kWh/d,Provisional
+2026-10-14T06:00:00+02:00,2026-10-15T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,370162811.2,kWh/d,Provisional
+2026-10-14T06:00:00+02:00,2026-10-15T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,320078190,kWh/d,Provisional
+2026-10-14T06:00:00+02:00,2026-10-15T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,705375555,kWh/d,Provisional
+2026-10-14T06:00:00+02:00,2026-10-15T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,465317596,kWh/d,Confirmed
+2026-10-14T06:00:00+02:00,2026-10-15T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,222675989,kWh/d,Provisional
+2026-10-14T06:00:00+02:00,2026-10-15T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,681988878.3,kWh/d,Provisional
+2026-10-14T06:00:00+02:00,2026-10-15T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,193794518,kWh/d,Provisional
+2026-10-15T06:00:00+02:00,2026-10-16T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,519206389,kWh/d,Provisional
+2026-10-15T06:00:00+02:00,2026-10-16T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,406732258,kWh/d,Provisional
+2026-10-15T06:00:00+02:00,2026-10-16T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,323603145,kWh/d,Provisional
+2026-10-15T06:00:00+02:00,2026-10-16T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,758868878,kWh/d,Provisional
+2026-10-15T06:00:00+02:00,2026-10-16T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,465749939,kWh/d,Confirmed
+2026-10-15T06:00:00+02:00,2026-10-16T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,181581320,kWh/d,Provisional
+2026-10-15T06:00:00+02:00,2026-10-16T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,664203361.5,kWh/d,Provisional
+2026-10-15T06:00:00+02:00,2026-10-16T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,216883399,kWh/d,Provisional
+2026-10-16T06:00:00+02:00,2026-10-17T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,518902500,kWh/d,Provisional
+2026-10-16T06:00:00+02:00,2026-10-17T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,378139442.2,kWh/d,Provisional
+2026-10-16T06:00:00+02:00,2026-10-17T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,284593502,kWh/d,Provisional
+2026-10-16T06:00:00+02:00,2026-10-17T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,786635957,kWh/d,Provisional
+2026-10-16T06:00:00+02:00,2026-10-17T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,464094247,kWh/d,Confirmed
+2026-10-16T06:00:00+02:00,2026-10-17T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,254634304,kWh/d,Provisional
+2026-10-16T06:00:00+02:00,2026-10-17T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,676302621.5,kWh/d,Provisional
+2026-10-16T06:00:00+02:00,2026-10-17T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,207591385,kWh/d,Provisional
+2026-10-17T06:00:00+02:00,2026-10-18T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,481273889,kWh/d,Provisional
+2026-10-17T06:00:00+02:00,2026-10-18T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,419252697.2,kWh/d,Provisional
+2026-10-17T06:00:00+02:00,2026-10-18T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,310963252,kWh/d,Provisional
+2026-10-17T06:00:00+02:00,2026-10-18T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,771664230,kWh/d,Provisional
+2026-10-17T06:00:00+02:00,2026-10-18T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,467893450,kWh/d,Confirmed
+2026-10-17T06:00:00+02:00,2026-10-18T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,172116589,kWh/d,Provisional
+2026-10-17T06:00:00+02:00,2026-10-18T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,693220031,kWh/d,Provisional
+2026-10-17T06:00:00+02:00,2026-10-18T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,199660715,kWh/d,Provisional
+2026-10-18T06:00:00+02:00,2026-10-19T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,523854444,kWh/d,Provisional
+2026-10-18T06:00:00+02:00,2026-10-19T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,433733383.6,kWh/d,Provisional
+2026-10-18T06:00:00+02:00,2026-10-19T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,301843778,kWh/d,Provisional
+2026-10-18T06:00:00+02:00,2026-10-19T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,819037854,kWh/d,Provisional
+2026-10-18T06:00:00+02:00,2026-10-19T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,466075672,kWh/d,Confirmed
+2026-10-18T06:00:00+02:00,2026-10-19T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,181188728,kWh/d,Provisional
+2026-10-18T06:00:00+02:00,2026-10-19T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,679110680.3,kWh/d,Provisional
+2026-10-18T06:00:00+02:00,2026-10-19T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,199806340,kWh/d,Provisional
+2026-10-19T06:00:00+02:00,2026-10-20T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,510643056,kWh/d,Provisional
+2026-10-19T06:00:00+02:00,2026-10-20T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,408107873.1,kWh/d,Provisional
+2026-10-19T06:00:00+02:00,2026-10-20T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,324534333,kWh/d,Provisional
+2026-10-19T06:00:00+02:00,2026-10-20T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,781751151,kWh/d,Provisional
+2026-10-19T06:00:00+02:00,2026-10-20T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,465878569,kWh/d,Confirmed
+2026-10-19T06:00:00+02:00,2026-10-20T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,183410291,kWh/d,Provisional
+2026-10-19T06:00:00+02:00,2026-10-20T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,656935785.3,kWh/d,Provisional
+2026-10-19T06:00:00+02:00,2026-10-20T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,183582749,kWh/d,Provisional
+2026-10-20T06:00:00+02:00,2026-10-21T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,519537222,kWh/d,Provisional
+2026-10-20T06:00:00+02:00,2026-10-21T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,433328092.3,kWh/d,Provisional
+2026-10-20T06:00:00+02:00,2026-10-21T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,320321990,kWh/d,Provisional
+2026-10-20T06:00:00+02:00,2026-10-21T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,787124973,kWh/d,Provisional
+2026-10-20T06:00:00+02:00,2026-10-21T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,465642100,kWh/d,Confirmed
+2026-10-20T06:00:00+02:00,2026-10-21T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,162946685,kWh/d,Provisional
+2026-10-20T06:00:00+02:00,2026-10-21T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,566531554.3,kWh/d,Provisional
+2026-10-20T06:00:00+02:00,2026-10-21T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,277439015,kWh/d,Provisional
+2026-10-21T06:00:00+02:00,2026-10-22T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,451385277,kWh/d,Provisional
+2026-10-21T06:00:00+02:00,2026-10-22T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,438886009.9,kWh/d,Provisional
+2026-10-21T06:00:00+02:00,2026-10-22T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,325704457,kWh/d,Provisional
+2026-10-21T06:00:00+02:00,2026-10-22T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,715391475,kWh/d,Provisional
+2026-10-21T06:00:00+02:00,2026-10-22T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,466545254,kWh/d,Confirmed
+2026-10-21T06:00:00+02:00,2026-10-22T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,157808347,kWh/d,Provisional
+2026-10-21T06:00:00+02:00,2026-10-22T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,530994579.4,kWh/d,Provisional
+2026-10-21T06:00:00+02:00,2026-10-22T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,303380007,kWh/d,Provisional
+2026-10-22T06:00:00+02:00,2026-10-23T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,492075834,kWh/d,Provisional
+2026-10-22T06:00:00+02:00,2026-10-23T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,404075936.5,kWh/d,Provisional
+2026-10-22T06:00:00+02:00,2026-10-23T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,329448138,kWh/d,Provisional
+2026-10-22T06:00:00+02:00,2026-10-23T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,518944628,kWh/d,Provisional
+2026-10-22T06:00:00+02:00,2026-10-23T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,462268719,kWh/d,Confirmed
+2026-10-22T06:00:00+02:00,2026-10-23T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,129074874,kWh/d,Provisional
+2026-10-22T06:00:00+02:00,2026-10-23T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,595903413.2,kWh/d,Provisional
+2026-10-22T06:00:00+02:00,2026-10-23T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,251541251,kWh/d,Provisional
+2026-10-23T06:00:00+02:00,2026-10-24T06:00:00+02:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,457770000,kWh/d,Provisional
+2026-10-23T06:00:00+02:00,2026-10-24T06:00:00+02:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,432030972.9,kWh/d,Provisional
+2026-10-23T06:00:00+02:00,2026-10-24T06:00:00+02:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,320920736,kWh/d,Provisional
+2026-10-23T06:00:00+02:00,2026-10-24T06:00:00+02:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,645319184,kWh/d,Provisional
+2026-10-23T06:00:00+02:00,2026-10-24T06:00:00+02:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,465693223,kWh/d,Confirmed
+2026-10-23T06:00:00+02:00,2026-10-24T06:00:00+02:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,92249231,kWh/d,Provisional
+2026-10-23T06:00:00+02:00,2026-10-24T06:00:00+02:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,613673255.7,kWh/d,Provisional
+2026-10-23T06:00:00+02:00,2026-10-24T06:00:00+02:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,247981041,kWh/d,Provisional
+2026-10-24T06:00:00+02:00,2026-10-25T06:00:00+01:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,445969096,kWh/d,Provisional
+2026-10-24T06:00:00+02:00,2026-10-25T06:00:00+01:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,437639214.2,kWh/d,Provisional
+2026-10-24T06:00:00+02:00,2026-10-25T06:00:00+01:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,331141744,kWh/d,Provisional
+2026-10-24T06:00:00+02:00,2026-10-25T06:00:00+01:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,664214286,kWh/d,Provisional
+2026-10-24T06:00:00+02:00,2026-10-25T06:00:00+01:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,483956394,kWh/d,Confirmed
+2026-10-24T06:00:00+02:00,2026-10-25T06:00:00+01:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,154474533,kWh/d,Provisional
+2026-10-24T06:00:00+02:00,2026-10-25T06:00:00+01:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,690823967.7,kWh/d,Provisional
+2026-10-24T06:00:00+02:00,2026-10-25T06:00:00+01:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,200518139,kWh/d,Provisional
+2026-10-25T06:00:00+01:00,2026-10-26T06:00:00+01:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,474843056,kWh/d,Provisional
+2026-10-25T06:00:00+01:00,2026-10-26T06:00:00+01:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,397444549.7,kWh/d,Provisional
+2026-10-25T06:00:00+01:00,2026-10-26T06:00:00+01:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,324492460,kWh/d,Provisional
+2026-10-25T06:00:00+01:00,2026-10-26T06:00:00+01:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,732029730,kWh/d,Provisional
+2026-10-25T06:00:00+01:00,2026-10-26T06:00:00+01:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,470463732,kWh/d,Confirmed
+2026-10-25T06:00:00+01:00,2026-10-26T06:00:00+01:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,148889535,kWh/d,Provisional
+2026-10-25T06:00:00+01:00,2026-10-26T06:00:00+01:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,660256724.4,kWh/d,Provisional
+2026-10-25T06:00:00+01:00,2026-10-26T06:00:00+01:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,183133960,kWh/d,Provisional
+2026-10-26T06:00:00+01:00,2026-10-27T06:00:00+01:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,488687222,kWh/d,Provisional
+2026-10-26T06:00:00+01:00,2026-10-27T06:00:00+01:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,434202601,kWh/d,Provisional
+2026-10-26T06:00:00+01:00,2026-10-27T06:00:00+01:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,318202420,kWh/d,Provisional
+2026-10-26T06:00:00+01:00,2026-10-27T06:00:00+01:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,751599481,kWh/d,Provisional
+2026-10-26T06:00:00+01:00,2026-10-27T06:00:00+01:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,473215788,kWh/d,Confirmed
+2026-10-26T06:00:00+01:00,2026-10-27T06:00:00+01:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,473168,kWh/d,Provisional
+2026-10-26T06:00:00+01:00,2026-10-27T06:00:00+01:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,741342539.6,kWh/d,Provisional
+2026-10-26T06:00:00+01:00,2026-10-27T06:00:00+01:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,180947885,kWh/d,Provisional
+2026-10-27T06:00:00+01:00,2026-10-28T06:00:00+01:00,ITP-00045,Dunkerque,FR-TSO-0003,NaTran,entry,Physical Flow,436928889,kWh/d,Provisional
+2026-10-27T06:00:00+01:00,2026-10-28T06:00:00+01:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,432382340.1,kWh/d,Provisional
+2026-10-27T06:00:00+01:00,2026-10-28T06:00:00+01:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,281929687,kWh/d,Provisional
+2026-10-27T06:00:00+01:00,2026-10-28T06:00:00+01:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,673977861,kWh/d,Provisional
+2026-10-27T06:00:00+01:00,2026-10-28T06:00:00+01:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,476240465,kWh/d,Confirmed
+2026-10-27T06:00:00+01:00,2026-10-28T06:00:00+01:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,64426453,kWh/d,Provisional
+2026-10-27T06:00:00+01:00,2026-10-28T06:00:00+01:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,739838973.4,kWh/d,Provisional
+2026-10-27T06:00:00+01:00,2026-10-28T06:00:00+01:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,214112306,kWh/d,Provisional
+2026-10-28T06:00:00+01:00,2026-10-29T06:00:00+01:00,ITP-00080,Emden (EPT1) (OGE),DE-TSO-0009,Open Grid Europe,entry,Physical Flow,433193259.6,kWh/d,Provisional
+2026-10-28T06:00:00+01:00,2026-10-29T06:00:00+01:00,ITP-00081,Emden (EPT1) (GUD),DE-TSO-0005,Gasunie Deutschland ,entry,Physical Flow,282298395,kWh/d,Provisional
+2026-10-28T06:00:00+01:00,2026-10-29T06:00:00+01:00,ITP-00091,Easington,UK-TSO-0001,National Gas TSO,entry,Physical Flow,800750683,kWh/d,Provisional
+2026-10-28T06:00:00+01:00,2026-10-29T06:00:00+01:00,ITP-00106,Zeebrugge ZPT,BE-TSO-0001,Fluxys Belgium,entry,Physical Flow,471751056,kWh/d,Confirmed
+2026-10-28T06:00:00+01:00,2026-10-29T06:00:00+01:00,ITP-00160,Emden (EPT1) (GTS),NL-TSO-0001,GTS,entry,Physical Flow,67722556,kWh/d,Provisional
+2026-10-28T06:00:00+01:00,2026-10-29T06:00:00+01:00,ITP-00525,Dornum GASPOOL,DE-TSO-0009,Open Grid Europe,entry,Physical Flow,738726002.1,kWh/d,Provisional
+2026-10-28T06:00:00+01:00,2026-10-29T06:00:00+01:00,ITP-00630,North Sea Entry,DK-TSO-0001,Energinet,entry,Physical Flow,223198977,kWh/d,Provisional
