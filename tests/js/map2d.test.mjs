@@ -366,6 +366,7 @@ test("flow nodes: each outgoing line's flow sits in the quadrant facing that lin
   App.live.values = App.live.frames[0].flows;
   // Positions as the Flow view lays them out: stages top to bottom, ranks left to right.
   const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 178, y: stage * 124 }]));
+  const mapOnly = new Set(NORA.config.flow.hide);
   let checked = 0;
   for (const id of App.nodeIds) {
     const q = App.views.flow.quadrants(id, pos);
@@ -373,6 +374,7 @@ test("flow nodes: each outgoing line's flow sits in the quadrant facing that lin
     for (const pid of App.pipeIds) {
       const p = NORA.assets[pid], v = App.live.values[pid];
       if (!v || Math.abs(v) < 0.05 || App.pipeStyle(pid).hidden) continue;
+      if (mapOnly.has(p.from) || mapOnly.has(p.to)) continue; // not in the Flow view (Poland VTP)
       if ((p.from === id && v > 0) || (p.to === id && v < 0)) out += Math.abs(v);
     }
     const shown = Object.values(q).reduce((a, b) => a + b, 0);

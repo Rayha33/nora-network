@@ -54,7 +54,7 @@ def test_parallel_lines_must_be_one_row(tmp_path):
 
 
 def test_unquoted_comma_is_explained(tmp_path):
-    nodes = [*NODES[:-1], "market,Market, big,market,DE,52,8,,,operating,,,,,"]
+    nodes = [*NODES[:-1], "market,Market, big,market,DE,52,8,,,operating,,,,,,"]
     assert any("wrap text containing commas" in p for p in problems_for(tmp_path, nodes=nodes))
 
 
