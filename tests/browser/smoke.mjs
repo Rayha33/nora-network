@@ -45,6 +45,8 @@ const NOW = new Date("2026-10-28T10:00:00Z");
    known failure that no longer happens fails the run too, so delete its entry in the
    same change as the fix and this list cannot go stale. */
 const KNOWN = [];
+// Issue #59's matrix: phone, tablet, laptop, desk, large desk, 4K wall cube, 4x2 wall of 1080p cubes.
+const SIZES = [[390, 844], [768, 1024], [1366, 768], [1920, 1080], [2560, 1440], [3840, 2160], [7680, 2160]];
 
 const failures = [];
 const passes = [];
@@ -386,6 +388,40 @@ async function main() {
       }
     }
     await setTheme(first);
+
+    // ---- every screen size of a control room (issue #59): a phone to a 4x2 wall of 1080p cubes
+    for (const [width, height] of SIZES) {
+      await page.setViewportSize({ width, height });
+      const bars = [];
+      for (const hash of ["#/overview", "#/unit/all"]) {
+        await page.evaluate((h) => { location.hash = h; }, hash);
+        await page.waitForTimeout(600);
+        bars.push(await page.evaluate(() => Math.round(document.querySelector("header.bar").getBoundingClientRect().height)));
+        const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+        check(over <= 1, `${width}×${height} ${hash}: nothing scrolls sideways`, `${over} px too wide`);
+        if (hash === "#/overview") {
+          // The chrome is zoomed by --ui-scale: what reaches the eye is font-size times the scale.
+          const smallest = await page.evaluate(() => {
+            const scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ui-scale")) || 1;
+            let least = Infinity;
+            for (const el of document.querySelectorAll("#screen-overview *")) {
+              if (!el.childNodes.length || ![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) continue;
+              const r = el.getBoundingClientRect();
+              if (!r.width || !r.height) continue;
+              least = Math.min(least, parseFloat(getComputedStyle(el).fontSize) * scale);
+            }
+            return Math.round(least * 10) / 10;
+          });
+          const floor = width >= 3840 ? 16 : 10;
+          check(smallest >= floor, `${width}×${height}: the smallest Overview text is at least ${floor} px as seen (${smallest})`, `${smallest} px`);
+          await page.screenshot({ path: join(shots, `overview-${width}x${height}.png`) });
+        } else await page.screenshot({ path: join(shots, `unit-${width}x${height}.png`) });
+      }
+      await showView("flow");
+      bars.push(await page.evaluate(() => Math.round(document.querySelector("header.bar").getBoundingClientRect().height)));
+      check(new Set(bars).size === 1, `${width}×${height}: the top bar keeps its height on Overview, Map and Flow`, bars.join(", "));
+    }
+    await page.setViewportSize({ width: 1440, height: 900 });
 
     check(!errors.length, "no console errors or uncaught exceptions while using the app", errors.join("\n     "));
   } catch (error) {
