@@ -578,9 +578,13 @@ const App = (() => {
   const DEFAULT_SETTINGS = {
     names: C.labels.names,
     lineValues: C.labels.line_values,
+    pack: C.labels.pack,
+    pressureChange: C.labels.pressure_change,
+    temperature: C.labels.temperature,
+    pigs: C.markers.pigs,
+    gasQuality: C.markers.gas_quality,
     hide: C.assets.hide,
     gridEntries: C.assets.grid_entries,
-    direction: C.flow.direction,
     density: C.flow.density,
     animation: C.flow.animation,
     speed: C.screen.speed || 60,  // default playback: data seconds per real second
@@ -1145,7 +1149,7 @@ const App = (() => {
   function markers() {
     const out = [];
     if (live.time == null) return out;
-    const pigs = (live.stream && live.stream.pigs) || live.feedPigs || [];
+    const pigs = settings.pigs ? (live.stream && live.stream.pigs) || live.feedPigs || [] : [];
     for (const pig of pigs) {
       const place = pigPlace(pig, live.time);
       if (!place) continue;
@@ -1170,6 +1174,7 @@ const App = (() => {
        to its front parcel. The dot and its label sit midway between the head and the tail
        (Ray, 29 Oct): where the gas that left the field halfway between them is now. The
        label still gives the slug's strongest reading and when that reaches its next stop. */
+    if (!settings.gasQuality) return out; // Settings: H₂S and CO₂ peaks off
     const leads = new Map(slugs().map((s) => [s.q.slug, s])), spans = new Map(), sent = new Map();
     for (const q of live.quality) {
       const t = q.arrived ? 1 : Math.min(1, (live.time - q.t0) / travelSeconds(q.pid)), at = q.forward ? t : 1 - t;
@@ -1750,7 +1755,7 @@ const App = (() => {
         out.label = sop == null ? "" : fmt(sop, 1);
         // shown only when the line packs or unpacks (in a what-if: your packing)
         const pack = w ? (w.lines[id] ? w.lines[id].into - w.lines[id].out : null) : packRate(id);
-        out.pack = pack != null && Math.abs(pack) >= 0.5 ? `pack ${signed(pack, 1)}` : "";
+        out.pack = settings.pack && pack != null && Math.abs(pack) >= 0.5 ? `pack ${signed(pack, 1)}` : "";
         out.level = w ? 0 : levelOf(id);
         if (d.bidirectional) Object.assign(out, { forward: v >= 0, backward: v < 0 });
       }
@@ -2724,25 +2729,35 @@ const App = (() => {
     $("key").hidden = true;
     $("key-toggle").setAttribute("aria-expanded", "false");
   }
+  /* Settings (Ray, 29 Oct: "options need to be updated and improved"): what is in the
+     network, what the squares and lines show, what moves along them, and the display.
+     Only the asset types the network has, by their short names; defaults from nora.toml. */
   function buildSettings() {
     const check = (label, key) => h("label", null, h("input", { type: "checkbox", checked: settings[key] ? "" : null, onchange: (e) => update({ [key]: e.target.checked }) }), label);
-    const choose = (label, key, options) => h("div", { class: "row" }, h("span", null, label),
-      h("select", { onchange: (e) => update({ [key]: e.target.value }) }, options.map(([v, t]) => h("option", { value: v, selected: settings[key] === v ? "" : null }, t))));
+    const choose = (label, key, options, act = (v) => update({ [key]: v }), value = settings[key]) => h("div", { class: "row" }, h("span", null, label),
+      h("select", { "aria-label": label, onchange: (e) => act(e.target.value) }, options.map(([v, t]) => h("option", { value: v, selected: value === v ? "" : null }, t))));
+    const path = ["field", "hub", "tee", "processing", "terminal", "market", "lng", "storage"]; // as the gas goes
+    const present = [...new Set([...path, ...Object.keys(NORA.nodeTypes)])].filter((type) => nodeIds.some((id) => assets[id].type === type));
     $("settings").replaceChildren(
-      h("h3", null, "Labels"),
-      check("Asset names and values", "names"),
-      choose("Values on lines", "lineValues", [["auto", "Auto"], ["on", "Always"], ["off", "Never"]]),
-      h("h3", null, "Show"),
-      ...Object.keys(NORA.nodeTypes).map((type) => h("label", null,
+      h("h3", null, "Network"),
+      ...present.map((type) => h("label", { title: NORA.nodeTypes[type] },
         h("input", { type: "checkbox", checked: settings.hide.includes(type) ? null : "",
           onchange: (e) => update({ hide: e.target.checked ? settings.hide.filter((t) => t !== type) : [...settings.hide, type] }) }),
-        NORA.nodeTypes[type])),
-      check("Notional grid entries", "gridEntries"),
-      h("h3", null, "Flow view"),
-      choose("Direction", "direction", [["vertical", "Top to bottom"], ["horizontal", "Left to right"], ["auto", "Follow the screen"]]),
-      choose("Spacing", "density", [["compact", "Compact"], ["comfortable", "Comfortable"], ["spacious", "Spacious"]]),
-      check("Flow bands in and out of the nodes", "animation"),
+        (NORA.plural || {})[type] || NORA.nodeTypes[type])),
+      h("h3", null, "On the squares"),
+      check("Names", "names"),
+      check("Pressure change in the last hour", "pressureChange"),
+      check("Outside temperature", "temperature"),
+      h("h3", null, "On the lines"),
+      choose("Values", "lineValues", [["auto", "Auto"], ["on", "Always"], ["off", "Never"]]),
+      check("Line pack change", "pack"),
+      check("Moving flow", "animation"),
+      h("h3", null, "Moving markers"),
+      check("Pigs", "pigs"),
+      check("H₂S and CO₂ peaks", "gasQuality"),
       h("h3", null, "Display"),
+      choose("Theme", "theme", [["light", "Light"], ["dark", "Dark"]], (v) => setTheme(v), theme),
+      choose("Spacing", "density", [["compact", "Compact"], ["comfortable", "Comfortable"], ["spacious", "Spacious"]]),
       choose("Screen", "display", [["auto", `Auto (${autoProfile(window.innerWidth)})`], ["desk", "Operator desk"], ["wall", "Video wall"], ["compact", "Tablet or phone"]]),
       choose("Size", "scale", [["auto", `Auto (${Math.round(autoScaleFor(chosenProfile()) * 100)} %)`],
         ...["1", "1.25", "1.5", "1.75", "2"].map((v) => [v, `${Number(v) * 100} %`])]),
@@ -3625,7 +3640,7 @@ const App = (() => {
     reading: (id) => cached("reading", id, () => { const f = viewFrame(); return { flow: throughput(id, f.flows), pressure: metric("pressure_bar", id, f) }; }),
     lineFlow, stateShown: () => state.mode === "live" || state.mode === "whatif",
     frame: frameApi, cached,
-    dayDelivery, register, restyle, go, start, setMode, theme: () => theme,
+    dayDelivery, register, restyle, go, start, setMode, theme: () => theme, buildSettings,
     select: (id) => {
       if (!id || !assets[id]) { if (route.screen === "unit" && state.mode !== "whatif") closeSidebar(); return; }
       // In What-if mode a click takes a node offline or brings it back instead.

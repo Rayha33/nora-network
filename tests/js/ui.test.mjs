@@ -183,3 +183,31 @@ test("flow: no hover popup on a node or a line", () => {
   const source = readFileSync(new URL("../../src/nora/templates/flow.js", import.meta.url), "utf8");
   assert.doesNotMatch(source, /hoverNode|title:\s*tooltip/, "flow.js sets no title on hover (tests/test_flow_network.py checks the network)");
 });
+
+/* Ray, 29 Oct (a screenshot of Settings): "options need to be updated and improved". Only
+   the asset types the network has, by their short names; what the squares and lines show;
+   what moves along them; no options that no longer do anything. */
+test("settings: the network's own types, and toggles that each change the screen", () => {
+  const { App, NORA, document } = loadApp();
+  App.buildSettings();
+  const panel = document.getElementById("settings");
+  const text = panel.textContent;
+  for (const gone of ["LNG", "storage", "Notional grid entries", "Direction", "Flow bands"]) assert.ok(!text.includes(gone), `no "${gone}"`);
+  for (const shown of ["Fields", "Riser hubs", "Tie-ins", "Gas plants", "Terminals", "Markets", "Pigs", "H₂S and CO₂ peaks", "Line pack change", "Pressure change in the last hour", "Outside temperature", "Theme"]) {
+    assert.ok(text.includes(shown), `"${shown}" in Settings`);
+  }
+  const box = (label) => {
+    const find = (el) => (el && el.tagName === "LABEL" && el.textContent === label ? el : (el && el.children || []).map(find).find(Boolean) || null);
+    const found = find(panel);
+    return found && found.children.find((c) => c && c.tagName === "INPUT");
+  };
+  App.state.mode = "live";
+  App.live.stream = NORA.streams.find((s) => s.synthetic);
+  App.live.time = App.live.stream.times[0];
+  box("Pigs")._listeners.change[0]({ target: { checked: false } });
+  assert.ok(!App.markers().some((m) => m.kind === "pig"), "pigs off: none drawn");
+  box("Line pack change")._listeners.change[0]({ target: { checked: false } });
+  assert.equal(App.settings().pack, false);
+  box("Pressure change in the last hour")._listeners.change[0]({ target: { checked: false } });
+  assert.equal(App.settings().pressureChange, false);
+});

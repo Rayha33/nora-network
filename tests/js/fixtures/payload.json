@@ -25180,7 +25180,14 @@
   },
   "labels": {
    "names": true,
-   "line_values": "auto"
+   "line_values": "auto",
+   "pack": true,
+   "pressure_change": true,
+   "temperature": true
+  },
+  "markers": {
+   "pigs": true,
+   "gas_quality": true
   },
   "assets": {
    "hide": [],

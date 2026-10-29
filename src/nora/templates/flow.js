@@ -55,7 +55,7 @@
   const nodeHidden = (id) => mapOnly.has(id) || App.nodeStyle(id).hidden;
   const lineHidden = (pid) => App.pipeStyle(pid).hidden || mapOnly.has(NORA.assets[pid].from) || mapOnly.has(NORA.assets[pid].to);
   function chooseDirection() {
-    const wanted = App.settings().direction;
+    const wanted = NORA.config.flow.direction; // the Area D layout reads top to bottom (nora.toml)
     if (wanted !== "auto") return wanted;
     return el && el.clientWidth > el.clientHeight * 1.3 ? "horizontal" : "vertical";
   }
@@ -306,7 +306,8 @@
   const watched = new Set(NORA.config.flow.watch || []);
   function pressureText(id, unit = true) {
     const now = App.reading(id), value = now && now.pressure != null ? App.fmt(now.pressure) : "–";
-    const rate = App.pressureRate(id), show = rate != null && (watched.has(id) || Math.abs(rate) >= 0.1) && (unit || watched.has(id));
+    const rate = App.settings().pressureChange ? App.pressureRate(id) : null; // Settings may leave it out
+    const show = rate != null && (watched.has(id) || Math.abs(rate) >= 0.1) && (unit || watched.has(id));
     const trend = show ? `${rate >= 0.05 ? "▲" : rate <= -0.05 ? "▼" : "±"} ${App.fmt(Math.abs(rate), 1)}` : "";
     return { text: unit ? `${value} bar` : value, rate: trend };
   }
@@ -722,7 +723,7 @@
         let width = Math.max(ctx.measureText(name).width, half);
         let sub = null;
         // live: the outside temperature under an onshore site's name (Ray, 29 Oct)
-        const temp = live && App.state.mode === "live" ? App.airTemp(id) : null;
+        const temp = live && App.state.mode === "live" && App.settings().temperature ? App.airTemp(id) : null;
         const subText = s.sub && !live ? s.sub : temp != null ? `${App.fmt(temp, 0)} °C` : null;
         if (subText) {
           ctx.font = SUB_FONT;

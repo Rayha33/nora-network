@@ -29,7 +29,14 @@ DEFAULTS: dict = {
         "wall_distance_m": 5.0,  # a video wall is read from this far
         "wall_width_m": 4.0,  # and its picture is this wide
     },
-    "labels": {"names": True, "line_values": "auto"},
+    "labels": {
+        "names": True,
+        "line_values": "auto",
+        "pack": True,  # a line's line-pack change under its settle-out pressure
+        "pressure_change": True,  # the last hour's change under a pressure tag's number
+        "temperature": True,  # the outside temperature under an onshore site's name
+    },
+    "markers": {"pigs": True, "gas_quality": True},  # what moves along the lines
     "assets": {"hide": [], "grid_entries": True},
     "flow": {
         "direction": "vertical",
