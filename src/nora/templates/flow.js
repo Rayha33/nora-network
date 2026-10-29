@@ -901,6 +901,7 @@
         return framePos[this.id] ? portDistance(this.id, -Math.cos(angle), -Math.sin(angle)) : shapeBorder.call(this, ctx, angle);
       };
     }
+    network.on("initRedraw", keepOnNetwork); // before vis applies the view to the frame
     network.on("beforeDrawing", paper);
     network.on("afterDrawing", overlay);
     /* vis's own hit test does not see the custom circle shape: what vis hit (edges)
@@ -1031,6 +1032,31 @@
     el.style.background = C.paper;
     view.restyle();
   };
+
+  /* The camera stays over the network (Ray, 29 Oct: "i should not be able to move the
+     camera way beyond what it shown on the screen"). Before every frame: a drawing
+     larger than the window keeps the window inside its edges, a smaller one stays
+     wholly in view, each with a margin for names and tags. A drag stops at the edge. */
+  function viewBounds(lo, hi, size, pad) {
+    return [Math.min(lo + size / 2, hi - size / 2) - pad, Math.max(lo + size / 2, hi - size / 2) + pad];
+  }
+  function keepOnNetwork() {
+    const view = network.body.view, w = el.clientWidth, h = el.clientHeight, scale = view.scale;
+    if (!w || !h || !scale) return;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const [id, p] of Object.entries(network.getPositions())) {
+      if (nodeHidden(id)) continue;
+      x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y);
+    }
+    if (!Number.isFinite(x0)) return;
+    const pad = (nodeHalf() * scale + 48) / scale; // a square and its name or tags, in canvas units
+    const cx = (w / 2 - view.translation.x) / scale, cy = (h / 2 - view.translation.y) / scale;
+    const [xa, xb] = viewBounds(x0, x1, w / scale, pad), [ya, yb] = viewBounds(y0, y1, h / scale, pad);
+    const x = Math.min(xb, Math.max(xa, cx)), y = Math.min(yb, Math.max(ya, cy));
+    if (x !== cx) view.translation.x = w / 2 - x * scale;
+    if (y !== cy) view.translation.y = h / 2 - y * scale;
+  }
+  view.viewBounds = viewBounds; // for tests
 
   // The scale at which the whole network fits the window, less a little margin.
   function minScale() {

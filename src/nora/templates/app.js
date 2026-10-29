@@ -239,34 +239,42 @@ const App = (() => {
     }
     return null;
   }
+  /* A gas-quality peak reads as three short lines (Ray, 29 Oct): the gas in its own
+     calm colour, the concentration with its unit, and when it reaches the next stop:
+       H2S
+       3.6 ppm
+       ETA 14:42
+     Other markers keep one line. No alarm tag beside a moving label (Ray: "remove the
+     red tag label"): the alarm shows on the asset it reaches. */
+  function markerRows(marker, detail) {
+    if (marker.kind === "quality") {
+      const gas = QUALITY[marker.gas];
+      return [[gas.name, COLORS[gas.color]], [`${marker.amount} ${gas.unit}`, COLORS.text], marker.eta ? [`ETA ${marker.eta}`, COLORS.text_dim] : null].filter(Boolean);
+    }
+    const parts = [marker.value, marker.eta, detail >= 2 ? marker.to : ""].filter(Boolean);
+    return [[parts.join("  "), COLORS.text]];
+  }
   function markerLabel(ctx, marker, x, y, size, detail, taken) {
     if (!marker.value || (!detail && !marker.level && marker.kind !== "quality")) return;
     const k = display.scale; // labels never under 11 px, larger on a wall
-    const font = 11 * k, gap = 4 * k;
-    const parts = [[marker.value, COLORS.text], [marker.eta || "", COLORS.text_dim]];
-    if (detail >= 2 && marker.to) parts.push([marker.to, COLORS.text_dim]);
-    const shown = parts.filter(([text]) => text);
+    const font = 11 * k, line = font + 3 * k, rows = markerRows(marker, detail);
     ctx.save();
     ctx.font = `${font}px Archivo, sans-serif`;
-    const widths = shown.map(([text]) => ctx.measureText(text).width);
-    const w = widths.reduce((a, b) => a + b, 0) + gap * (shown.length - 1) + (marker.level ? 12 * k : 0);
-    const spot = labelSpot(x, y, size * 0.9, w, font + 3 * k, taken);
+    const w = Math.max(...rows.map(([text]) => ctx.measureText(text).width));
+    const spot = labelSpot(x, y, size * 0.9, w, line * rows.length, taken);
     if (!spot) { ctx.restore(); return; }
-    const ly = spot[1];
-    let cx = spot[0];
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.lineJoin = "round";
     ctx.lineWidth = 3 * k;
     ctx.strokeStyle = COLORS.paper;
-    shown.forEach(([text, color], i) => {
-      ctx.strokeText(text, cx, ly);
+    rows.forEach(([text, color], i) => {
+      const ly = spot[1] + (i - (rows.length - 1) / 2) * line;
+      ctx.strokeText(text, spot[0], ly);
       ctx.fillStyle = color;
-      ctx.fillText(text, cx, ly);
-      cx += widths[i] + gap;
+      ctx.fillText(text, spot[0], ly);
     });
     ctx.restore();
-    if (marker.level) drawBadge(ctx, marker.level, cx + 2 * k, ly - font * 0.6, 4.5 * k);
   }
   // A gas quality parcel: a calm-coloured dot; the strongest parcel of a slug is labelled.
   function drawParcel(ctx, marker, x, y, size, detail, taken) {
@@ -934,7 +942,7 @@ const App = (() => {
       if (!lead) { out.push({ ...base, along: (lo + hi) / 2, lead: false, noDot: true, level: 0, value: "" }); continue; }
       const { s } = lead;
       out.push({ ...base, along: lead.at, lead: true, level: Math.max(s.level, s.exitLevel),
-        value: `${QUALITY[q.metric].name} ${fmt(lead.q.conc, QUALITY[q.metric].digits)}`,
+        value: `${QUALITY[q.metric].name} ${fmt(lead.q.conc, QUALITY[q.metric].digits)}`, amount: fmt(lead.q.conc, QUALITY[q.metric].digits),
         eta: lead.q.arrived ? "" : clock(s.next.t), to: nameOf(lead.q.arrived ? lead.q.arrived.node : s.next.node) });
     }
     return out.sort((a, b) => Number(Boolean(a.lead)) - Number(Boolean(b.lead)));

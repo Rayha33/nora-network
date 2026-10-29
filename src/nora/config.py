@@ -63,8 +63,8 @@ DEFAULTS: dict = {
         "warning": "#ffbf00",
         "medium": "#ff7a1a",
         "critical": "#e5322d",
-        "h2s": "#857c3a",
-        "co2": "#4d7391",
+        "h2s": "#8a7616",
+        "co2": "#93463e",
         "pig": "#9c8465",  # muted tan: a pig creeping along the line
         "peak": "#5f6d7a",  # neutral grey-blue: a change in flow moving with the gas
     },
@@ -81,8 +81,8 @@ DEFAULTS: dict = {
         "warning": "#ffbf00",
         "medium": "#ff7a1a",
         "critical": "#ff4d47",
-        "h2s": "#bcb26e",
-        "co2": "#86a8c4",
+        "h2s": "#d2bd5c",
+        "co2": "#d48c83",
         "pig": "#c4ae91",
         "peak": "#9fb1c1",
     },
