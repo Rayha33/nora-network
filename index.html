@@ -121,28 +121,36 @@
 <main>
   <section>
     <h1>An open model of the North Sea gas network</h1>
-    <p class="lede">NORA maps <span class="num">71</span> fields, platforms, plants, terminals and markets, joined by <span class="num">50</span> offshore pipelines with a combined length of <span class="num">12,726</span> km. It works out how much gas the network can deliver, what happens when any single part fails, and replays recorded flows as if they were arriving live.</p>
+    <p class="lede">NORA maps <span class="num">45</span> fields, platforms, plants and terminals, joined by <span class="num">43</span> offshore pipelines with a combined length of <span class="num">11,663</span> km. It works out how much gas the network can deliver, what happens when any single part fails, and replays recorded flows as if they were arriving live.</p>
     <p>It shows the network two ways: on a real map, and as a gas flow overview of the whole Gassco system drawn with pyvis. It is built in Python with networkx, and anyone can improve the data or the code. Every change is checked automatically and published here within minutes of being accepted.</p>
   </section>
 
   <section aria-labelledby="deliver">
-    <h2 id="deliver">What reaches each market</h2>
-    <p>With every field and LNG terminal at full capacity, the network can deliver <strong class="num">901 MSm³/d</strong> of the <span class="num">943</span> MSm³/d on offer. The rest is stranded behind full pipelines. Million standard cubic metres per day, from the max-flow model.</p>
+    <h2 id="deliver">What reaches each exit point</h2>
+    <p>With every field at full capacity, the network can deliver <strong class="num">460 MSm³/d</strong> of the <span class="num">502</span> MSm³/d on offer. The rest is stranded behind full pipelines. Million standard cubic metres per day, from the max-flow model.</p>
     <ul class="bars">
       
-      <li><span>NBP (Great Britain)</span><span class="bar" style="width: 100.0%"></span><span class="value">299</span></li>
+      <li><span>Dornum</span><span class="bar" style="width: 100.0%"></span><span class="value">117</span></li>
       
-      <li><span>TTF (Netherlands)</span><span class="bar" style="width: 72.2%"></span><span class="value">216</span></li>
+      <li><span>St Fergus</span><span class="bar" style="width: 67.5%"></span><span class="value">79</span></li>
       
-      <li><span>THE (Germany)</span><span class="bar" style="width: 64.2%"></span><span class="value">192</span></li>
+      <li><span>Easington</span><span class="bar" style="width: 61.5%"></span><span class="value">72</span></li>
       
-      <li><span>PEG (France)</span><span class="bar" style="width: 30.4%"></span><span class="value">91</span></li>
+      <li><span>Dunkirk (Franpipe)</span><span class="bar" style="width: 47.0%"></span><span class="value">55</span></li>
       
-      <li><span>ZTP (Belgium)</span><span class="bar" style="width: 24.1%"></span><span class="value">72</span></li>
+      <li><span>Emden</span><span class="bar" style="width: 37.6%"></span><span class="value">44</span></li>
       
-      <li><span>ETF (Denmark)</span><span class="bar" style="width: 8.4%"></span><span class="value">25</span></li>
+      <li><span>Zeebrugge</span><span class="bar" style="width: 35.9%"></span><span class="value">42</span></li>
       
-      <li><span>Tjeldbergodden</span><span class="bar" style="width: 2.0%"></span><span class="value">6</span></li>
+      <li><span>Bacton</span><span class="bar" style="width: 25.6%"></span><span class="value">30</span></li>
+      
+      <li><span>Uithuizen</span><span class="bar" style="width: 8.5%"></span><span class="value">10</span></li>
+      
+      <li><span>Tjeldbergodden</span><span class="bar" style="width: 5.1%"></span><span class="value">6</span></li>
+      
+      <li><span>Den Helder</span><span class="bar" style="width: 4.3%"></span><span class="value">5</span></li>
+      
+      <li><span>Balgzand</span><span class="bar" style="width: 0.0%"></span><span class="value">0</span></li>
       
       <li><span>Poland VTP</span><span class="bar" style="width: 0.0%"></span><span class="value">0</span></li>
       
@@ -151,7 +159,7 @@
 
   <section aria-labelledby="fragile">
     <h2 id="fragile">Single points of failure</h2>
-    <p>Each asset taken out on its own, with the gas the markets would lose. These are the places where one trip has the biggest effect. <a href="network.html?mode=risk">See them on the chart</a>.</p>
+    <p>Each asset taken out on its own, with the gas the exit points would lose. These are the places where one trip has the biggest effect. <a href="network.html?mode=risk">See them on the chart</a>.</p>
     <table>
       <thead><tr><th scope="col">Asset</th><th scope="col">Type</th><th scope="col" class="lost">Lost if it trips</th><th scope="col"><span class="sr-only">Share of deliverable gas</span></th></tr></thead>
       <tbody>
@@ -159,57 +167,57 @@
         <tr>
           <td>Sleipner</td>
           <td class="muted">Gas field or production hub</td>
-          <td class="lost">152 MSm³/d <span class="muted">(17%)</span></td>
+          <td class="lost">152 MSm³/d <span class="muted">(33%)</span></td>
           <td class="share"><div class="share-bar"><span style="width: 100.0%"></span></div></td>
-        </tr>
-        
-        <tr>
-          <td>Easington</td>
-          <td class="muted">Receiving terminal</td>
-          <td class="lost">117 MSm³/d <span class="muted">(13%)</span></td>
-          <td class="share"><div class="share-bar"><span style="width: 77.0%"></span></div></td>
         </tr>
         
         <tr>
           <td>Kollsnes</td>
           <td class="muted">Gas processing plant</td>
-          <td class="lost">115 MSm³/d <span class="muted">(13%)</span></td>
+          <td class="lost">115 MSm³/d <span class="muted">(25%)</span></td>
           <td class="share"><div class="share-bar"><span style="width: 75.7%"></span></div></td>
         </tr>
         
         <tr>
           <td>Draupner E</td>
           <td class="muted">Offshore riser or junction platform</td>
-          <td class="lost">101 MSm³/d <span class="muted">(11%)</span></td>
+          <td class="lost">101 MSm³/d <span class="muted">(22%)</span></td>
           <td class="share"><div class="share-bar"><span style="width: 66.4%"></span></div></td>
         </tr>
         
         <tr>
           <td>Dornum</td>
           <td class="muted">Receiving terminal</td>
-          <td class="lost">90 MSm³/d <span class="muted">(10%)</span></td>
+          <td class="lost">90 MSm³/d <span class="muted">(20%)</span></td>
           <td class="share"><div class="share-bar"><span style="width: 59.2%"></span></div></td>
         </tr>
         
         <tr>
           <td>Troll</td>
           <td class="muted">Gas field or production hub</td>
-          <td class="lost">83 MSm³/d <span class="muted">(9%)</span></td>
+          <td class="lost">83 MSm³/d <span class="muted">(18%)</span></td>
           <td class="share"><div class="share-bar"><span style="width: 54.6%"></span></div></td>
         </tr>
         
         <tr>
           <td>Troll - Kollsnes</td>
           <td class="muted">Field to hub or plant</td>
-          <td class="lost">83 MSm³/d <span class="muted">(9%)</span></td>
+          <td class="lost">83 MSm³/d <span class="muted">(18%)</span></td>
           <td class="share"><div class="share-bar"><span style="width: 54.6%"></span></div></td>
         </tr>
         
         <tr>
           <td>St Fergus</td>
           <td class="muted">Receiving terminal</td>
-          <td class="lost">79 MSm³/d <span class="muted">(9%)</span></td>
+          <td class="lost">79 MSm³/d <span class="muted">(17%)</span></td>
           <td class="share"><div class="share-bar"><span style="width: 52.0%"></span></div></td>
+        </tr>
+        
+        <tr>
+          <td>Easington</td>
+          <td class="muted">Receiving terminal</td>
+          <td class="lost">72 MSm³/d <span class="muted">(16%)</span></td>
+          <td class="share"><div class="share-bar"><span style="width: 47.4%"></span></div></td>
         </tr>
         
       </tbody>
@@ -223,15 +231,15 @@
       
       <li class="synthetic">
         <h3>A synthetic week<span class="tag">Synthetic</span></h3>
-        <div class="meta num">19 Oct 2026 to 25 Oct 2026, every 60 minutes, 74 assets, 2 scripted events</div>
+        <div class="meta num">19 Oct 2026 to 25 Oct 2026, every 60 minutes, 43 assets, 2 scripted events</div>
         <p>One week of hourly flows, pressures, hourly exit-point nominations and bookings generated from the network model, with an unplanned outage at Kollsnes, reduced capacity on Langeled, recurring H2S and CO2 excursions at four fields and a pigging programme on every trunk, export line and interconnector. Synthetic: use it to see how live operations look, not as a record of real flows.</p>
         <p><a href="network.html?stream=synthetic-week&amp;autoplay=1">Replay it on the chart</a></p>
       </li>
       
       <li class="real">
         <h3>Danish gas flows, Aug to Oct 2026<span class="tag">Real data</span></h3>
-        <div class="meta num">1 Aug 2026 to 26 Oct 2026, every 1440 minutes, 4 assets</div>
-        <p>Measured daily flows through the Danish gas system from Energinet: Tyra&#39;s output into Nybro, gas arriving from the North Sea (mostly Norwegian gas through Baltic Pipe), the onward flow to Poland and Danish consumption. Real data for four pipelines; the rest of the chart has no readings.</p>
+        <div class="meta num">1 Aug 2026 to 26 Oct 2026, every 1440 minutes, 2 assets</div>
+        <p>Measured daily flows through the Danish gas system from Energinet: gas arriving from the North Sea (mostly Norwegian gas through Baltic Pipe) and the onward flow to Poland. Real data for two pipelines; the rest of the chart has no readings.</p>
         <p><a href="network.html?stream=denmark-gas-energinet&amp;autoplay=1">Replay it on the chart</a> · <a href="https://www.energidataservice.dk/tso-gas/Gasflow">Source</a></p>
       </li>
       
@@ -266,7 +274,7 @@
     <div class="ways">
       <div>
         <h3>Fix or add data</h3>
-        <p>The network lives in two spreadsheets you can edit in the browser. Only <span class="num">146</span> of <span class="num">146</span> rows cite a source so far, so sources are the most useful contribution.</p>
+        <p>The network lives in two spreadsheets you can edit in the browser. Only <span class="num">88</span> of <span class="num">88</span> rows cite a source so far, so sources are the most useful contribution.</p>
         <a class="button quiet" href="https://github.com/Rayha33/nora-network/edit/main/data/nodes.csv">Edit nodes.csv</a>
       </div>
       <div>
@@ -284,7 +292,7 @@
 </main>
 
 <footer>
-  <p>Built from commit <a href="https://github.com/Rayha33/nora-network/commit/e071710"><code>e071710</code></a> on 2026-10-29. Asset positions, capacities and lengths are approximate figures compiled from public sources and are not suitable for operational decisions. Map data from OpenStreetMap contributors, tiles by OpenFreeMap. Code and data are MIT licensed. Download the <a href="data/network.json">graph</a>, <a href="data/analysis.json">analysis</a> or the <a href="data/nodes.csv">nodes</a> and <a href="data/pipelines.csv">pipelines</a> files.</p>
+  <p>Built from commit <a href="https://github.com/Rayha33/nora-network/commit/3b4b40a"><code>3b4b40a</code></a> on 2026-10-29. Asset positions, capacities and lengths are approximate figures compiled from public sources and are not suitable for operational decisions. Map data from OpenStreetMap contributors, tiles by OpenFreeMap. Code and data are MIT licensed. Download the <a href="data/network.json">graph</a>, <a href="data/analysis.json">analysis</a> or the <a href="data/nodes.csv">nodes</a> and <a href="data/pipelines.csv">pipelines</a> files.</p>
 </footer>
 </body>
 </html>

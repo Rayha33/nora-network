@@ -11,6 +11,7 @@
    "lon": 6.98,
    "capacity_msm3d": 23.0,
    "status": "operating",
+   "exit": false,
    "id": "aasta_hansteen"
   },
   {
@@ -21,6 +22,7 @@
    "lon": 6.79,
    "capacity_msm3d": 70.0,
    "status": "operating",
+   "exit": false,
    "id": "asgard"
   },
   {
@@ -31,6 +33,7 @@
    "lon": 1.46,
    "capacity_msm3d": null,
    "status": "operating",
+   "exit": true,
    "id": "bacton"
   },
   {
@@ -41,6 +44,7 @@
    "lon": 4.9,
    "capacity_msm3d": null,
    "status": "operating",
+   "exit": true,
    "id": "balgzand"
   },
   {
@@ -51,17 +55,8 @@
    "lon": 6.512,
    "capacity_msm3d": null,
    "status": "operating",
+   "exit": false,
    "id": "baltic_tie"
-  },
-  {
-   "name": "Bergermeer Gas Storage",
-   "type": "storage",
-   "country": "NL",
-   "lat": 52.62,
-   "lon": 4.75,
-   "capacity_msm3d": 57.0,
-   "status": "operating",
-   "id": "bergermeer"
   },
   {
    "name": "Beryl",
@@ -71,37 +66,8 @@
    "lon": 1.53,
    "capacity_msm3d": 10.0,
    "status": "operating",
+   "exit": false,
    "id": "beryl"
-  },
-  {
-   "name": "CATS Riser Platform",
-   "type": "hub",
-   "country": "GB",
-   "lat": 57.759,
-   "lon": 1.802,
-   "capacity_msm3d": null,
-   "status": "operating",
-   "id": "cats_riser"
-  },
-  {
-   "name": "CATS T5 (Stella tie-in)",
-   "type": "hub",
-   "country": "GB",
-   "lat": 57.029375,
-   "lon": 1.203222,
-   "capacity_msm3d": null,
-   "status": "operating",
-   "id": "cats_t5"
-  },
-  {
-   "name": "Culzean",
-   "type": "field",
-   "country": "GB",
-   "lat": 57.2,
-   "lon": 1.9,
-   "capacity_msm3d": 15.0,
-   "status": "operating",
-   "id": "culzean"
   },
   {
    "name": "Den Helder",
@@ -111,6 +77,7 @@
    "lon": 4.76,
    "capacity_msm3d": null,
    "status": "operating",
+   "exit": true,
    "id": "den_helder"
   },
   {
@@ -121,6 +88,7 @@
    "lon": 7.327,
    "capacity_msm3d": null,
    "status": "operating",
+   "exit": true,
    "id": "dornum"
   },
   {
@@ -131,6 +99,7 @@
    "lon": 2.473,
    "capacity_msm3d": null,
    "status": "operating",
+   "exit": false,
    "id": "draupner_e"
   },
   {
@@ -141,6 +110,7 @@
    "lon": 2.473,
    "capacity_msm3d": null,
    "status": "operating",
+   "exit": false,
    "id": "draupner_s"
   },
   {
@@ -151,17 +121,8 @@
    "lon": 2.462,
    "capacity_msm3d": null,
    "status": "operating",
+   "exit": true,
    "id": "dunkirk"
-  },
-  {
-   "name": "Dunkirk LNG",
-   "type": "lng",
-   "country": "FR",
-   "lat": 51.04,
-   "lon": 2.25,
-   "capacity_msm3d": 36.0,
-   "status": "operating",
-   "id": "dunkirk_lng"
   },
   {
    "name": "Easington",
@@ -171,6 +132,7 @@
    "lon": 0.156,
    "capacity_msm3d": null,
    "status": "operating",
+   "exit": true,
    "id": "easington"
   },
   {
@@ -181,17 +143,8 @@
    "lon": 2.25,
    "capacity_msm3d": 6.0,
    "status": "operating",
+   "exit": false,
    "id": "edvard_grieg"
-  },
-  {
-   "name": "Eemshaven LNG",
-   "type": "lng",
-   "country": "NL",
-   "lat": 53.45,
-   "lon": 6.83,
-   "capacity_msm3d": 22.0,
-   "status": "operating",
-   "id": "eemshaven_lng"
   },
   {
    "name": "Ekofisk",
@@ -201,6 +154,7 @@
    "lon": 3.21,
    "capacity_msm3d": 25.0,
    "status": "operating",
+   "exit": false,
    "id": "ekofisk"
   },
   {
@@ -211,6 +165,7 @@
    "lon": 1.84,
    "capacity_msm3d": 15.0,
    "status": "operating",
+   "exit": false,
    "id": "elgin_franklin"
   },
   {
@@ -221,37 +176,8 @@
    "lon": 7.219,
    "capacity_msm3d": null,
    "status": "operating",
+   "exit": true,
    "id": "emden"
-  },
-  {
-   "name": "ETF (Denmark)",
-   "type": "market",
-   "country": "DK",
-   "lat": 55.6,
-   "lon": 9.6,
-   "capacity_msm3d": null,
-   "status": "operating",
-   "id": "etf"
-  },
-  {
-   "name": "Etzel Gas-Lager",
-   "type": "storage",
-   "country": "DE",
-   "lat": 53.43,
-   "lon": 7.95,
-   "capacity_msm3d": 7.5,
-   "status": "operating",
-   "id": "etzel"
-  },
-  {
-   "name": "F3-FB",
-   "type": "hub",
-   "country": "NL",
-   "lat": 54.85,
-   "lon": 4.72,
-   "capacity_msm3d": null,
-   "status": "operating",
-   "id": "f3fb"
   },
   {
    "name": "FLAGS North (Brent area)",
@@ -261,6 +187,7 @@
    "lon": 1.71,
    "capacity_msm3d": null,
    "status": "operating",
+   "exit": false,
    "id": "flags_brent"
   },
   {
@@ -271,17 +198,8 @@
    "lon": 2.065,
    "capacity_msm3d": null,
    "status": "decommissioned",
+   "exit": false,
    "id": "frigg"
-  },
-  {
-   "name": "Gate terminal",
-   "type": "lng",
-   "country": "NL",
-   "lat": 51.96,
-   "lon": 4.03,
-   "capacity_msm3d": 44.0,
-   "status": "operating",
-   "id": "gate_lng"
   },
   {
    "name": "Gj\u00f8a",
@@ -291,17 +209,8 @@
    "lon": 3.9,
    "capacity_msm3d": 15.0,
    "status": "operating",
+   "exit": false,
    "id": "gjoa"
-  },
-  {
-   "name": "Grain LNG",
-   "type": "lng",
-   "country": "GB",
-   "lat": 51.45,
-   "lon": 0.71,
-   "capacity_msm3d": 58.0,
-   "status": "operating",
-   "id": "grain_lng"
   },
   {
    "name": "Gudrun",
@@ -311,6 +220,7 @@
    "lon": 1.72,
    "capacity_msm3d": 5.0,
    "status": "operating",
+   "exit": false,
    "id": "gudrun"
   },
   {
@@ -321,6 +231,7 @@
    "lon": 2.19,
    "capacity_msm3d": 10.0,
    "status": "operating",
+   "exit": false,
    "id": "gullfaks"
   },
   {
@@ -331,6 +242,7 @@
    "lon": 7.32,
    "capacity_msm3d": 6.0,
    "status": "operating",
+   "exit": false,
    "id": "heidrun"
   },
   {
@@ -341,27 +253,8 @@
    "lon": 2.23,
    "capacity_msm3d": null,
    "status": "operating",
+   "exit": false,
    "id": "heimdal"
-  },
-  {
-   "name": "Irpa",
-   "type": "field",
-   "country": "NO",
-   "lat": 67.027,
-   "lon": 5.306,
-   "capacity_msm3d": null,
-   "status": "planned",
-   "id": "irpa"
-  },
-  {
-   "name": "Jemgum Gas Storage",
-   "type": "storage",
-   "country": "DE",
-   "lat": 53.24,
-   "lon": 7.03,
-   "capacity_msm3d": 6.6,
-   "status": "operating",
-   "id": "jemgum"
   },
   {
    "name": "Johan Sverdrup",
@@ -371,6 +264,7 @@
    "lon": 2.557,
    "capacity_msm3d": 6.0,
    "status": "operating",
+   "exit": false,
    "id": "johan_sverdrup"
   },
   {
@@ -381,6 +275,7 @@
    "lon": 3.22,
    "capacity_msm3d": 5.0,
    "status": "operating",
+   "exit": false,
    "id": "k13a"
   },
   {
@@ -391,6 +286,7 @@
    "lon": 5.521,
    "capacity_msm3d": 88.0,
    "status": "operating",
+   "exit": false,
    "id": "karsto"
   },
   {
@@ -401,6 +297,7 @@
    "lon": 4.845,
    "capacity_msm3d": 144.0,
    "status": "operating",
+   "exit": false,
    "id": "kollsnes"
   },
   {
@@ -411,6 +308,7 @@
    "lon": 2.49,
    "capacity_msm3d": 20.0,
    "status": "operating",
+   "exit": false,
    "id": "kvitebjorn"
   },
   {
@@ -421,37 +319,8 @@
    "lon": 4.2,
    "capacity_msm3d": 10.0,
    "status": "operating",
+   "exit": false,
    "id": "l10a"
-  },
-  {
-   "name": "Lille Torup Gas Storage",
-   "type": "storage",
-   "country": "DK",
-   "lat": 57.06,
-   "lon": 9.1,
-   "capacity_msm3d": 7.2,
-   "status": "operating",
-   "id": "lille_torup"
-  },
-  {
-   "name": "NBP (Great Britain)",
-   "type": "market",
-   "country": "GB",
-   "lat": 52.6,
-   "lon": -1.2,
-   "capacity_msm3d": null,
-   "status": "operating",
-   "id": "nbp"
-  },
-  {
-   "name": "Norg Gas Storage",
-   "type": "storage",
-   "country": "NL",
-   "lat": 53.07,
-   "lon": 6.46,
-   "capacity_msm3d": 70.0,
-   "status": "operating",
-   "id": "norg"
   },
   {
    "name": "Norne",
@@ -461,6 +330,7 @@
    "lon": 8.08,
    "capacity_msm3d": 4.0,
    "status": "operating",
+   "exit": false,
    "id": "norne"
   },
   {
@@ -471,6 +341,7 @@
    "lon": 8.42,
    "capacity_msm3d": null,
    "status": "operating",
+   "exit": false,
    "id": "nybro"
   },
   {
@@ -481,6 +352,7 @@
    "lon": 6.954,
    "capacity_msm3d": 84.0,
    "status": "operating",
+   "exit": false,
    "id": "nyhamna"
   },
   {
@@ -491,6 +363,7 @@
    "lon": 2.166,
    "capacity_msm3d": null,
    "status": "decommissioned",
+   "exit": false,
    "id": "odin"
   },
   {
@@ -501,6 +374,7 @@
    "lon": 5.35,
    "capacity_msm3d": 50.0,
    "status": "operating",
+   "exit": false,
    "id": "ormen_lange"
   },
   {
@@ -511,17 +385,8 @@
    "lon": 2.83,
    "capacity_msm3d": 30.0,
    "status": "operating",
+   "exit": false,
    "id": "oseberg"
-  },
-  {
-   "name": "PEG (France)",
-   "type": "market",
-   "country": "FR",
-   "lat": 50.4,
-   "lon": 2.6,
-   "capacity_msm3d": null,
-   "status": "operating",
-   "id": "peg"
   },
   {
    "name": "Poland VTP",
@@ -531,17 +396,8 @@
    "lon": 15.1,
    "capacity_msm3d": null,
    "status": "operating",
+   "exit": true,
    "id": "pl_vtp"
-  },
-  {
-   "name": "Rough Gas Storage",
-   "type": "storage",
-   "country": "GB",
-   "lat": 53.85,
-   "lon": 0.37,
-   "capacity_msm3d": 45.0,
-   "status": "operating",
-   "id": "rough"
   },
   {
    "name": "Sleipner",
@@ -551,6 +407,7 @@
    "lon": 1.91,
    "capacity_msm3d": 30.0,
    "status": "operating",
+   "exit": false,
    "id": "sleipner"
   },
   {
@@ -561,6 +418,7 @@
    "lon": 2.1,
    "capacity_msm3d": 15.0,
    "status": "operating",
+   "exit": false,
    "id": "sns_fields"
   },
   {
@@ -571,6 +429,7 @@
    "lon": -1.85,
    "capacity_msm3d": null,
    "status": "operating",
+   "exit": true,
    "id": "st_fergus"
   },
   {
@@ -581,37 +440,8 @@
    "lon": 1.85,
    "capacity_msm3d": 15.0,
    "status": "operating",
+   "exit": false,
    "id": "statfjord"
-  },
-  {
-   "name": "Stenlille Gas Storage",
-   "type": "storage",
-   "country": "DK",
-   "lat": 55.55,
-   "lon": 11.6,
-   "capacity_msm3d": 7.9,
-   "status": "operating",
-   "id": "stenlille"
-  },
-  {
-   "name": "Teesside (CATS)",
-   "type": "terminal",
-   "country": "GB",
-   "lat": 54.612,
-   "lon": -1.195,
-   "capacity_msm3d": null,
-   "status": "operating",
-   "id": "teesside"
-  },
-  {
-   "name": "THE (Germany)",
-   "type": "market",
-   "country": "DE",
-   "lat": 52.7,
-   "lon": 8.7,
-   "capacity_msm3d": null,
-   "status": "operating",
-   "id": "the"
   },
   {
    "name": "Tjeldbergodden",
@@ -621,6 +451,7 @@
    "lon": 8.655,
    "capacity_msm3d": null,
    "status": "operating",
+   "exit": true,
    "id": "tjeldbergodden"
   },
   {
@@ -631,27 +462,8 @@
    "lon": 3.726,
    "capacity_msm3d": 120.0,
    "status": "operating",
+   "exit": false,
    "id": "troll"
-  },
-  {
-   "name": "TTF (Netherlands)",
-   "type": "market",
-   "country": "NL",
-   "lat": 52.25,
-   "lon": 5.6,
-   "capacity_msm3d": null,
-   "status": "operating",
-   "id": "ttf"
-  },
-  {
-   "name": "Tyra",
-   "type": "field",
-   "country": "DK",
-   "lat": 55.72,
-   "lon": 4.8,
-   "capacity_msm3d": 8.0,
-   "status": "operating",
-   "id": "tyra"
   },
   {
    "name": "Uithuizen",
@@ -661,6 +473,7 @@
    "lon": 6.67,
    "capacity_msm3d": null,
    "status": "operating",
+   "exit": true,
    "id": "uithuizen"
   },
   {
@@ -671,17 +484,8 @@
    "lon": 2.46,
    "capacity_msm3d": 12.0,
    "status": "operating",
+   "exit": false,
    "id": "visund"
-  },
-  {
-   "name": "Wilhelmshaven LNG",
-   "type": "lng",
-   "country": "DE",
-   "lat": 53.58,
-   "lon": 8.15,
-   "capacity_msm3d": 27.0,
-   "status": "operating",
-   "id": "wilhelmshaven_lng"
   },
   {
    "name": "Zeebrugge",
@@ -691,27 +495,8 @@
    "lon": 3.178,
    "capacity_msm3d": null,
    "status": "operating",
+   "exit": true,
    "id": "zeebrugge"
-  },
-  {
-   "name": "Zeebrugge LNG",
-   "type": "lng",
-   "country": "BE",
-   "lat": 51.35,
-   "lon": 3.17,
-   "capacity_msm3d": 30.0,
-   "status": "operating",
-   "id": "zeebrugge_lng"
-  },
-  {
-   "name": "ZTP (Belgium)",
-   "type": "market",
-   "country": "BE",
-   "lat": 50.9,
-   "lon": 4.4,
-   "capacity_msm3d": null,
-   "status": "operating",
-   "id": "ztp"
   }
  ],
  "edges": [
@@ -736,15 +521,6 @@
    "target": "karsto"
   },
   {
-   "pipeline": "bacton_nbp",
-   "name": "Bacton grid entry",
-   "type": "onshore",
-   "from_id": "bacton",
-   "length_km": 181.42234027469667,
-   "source": "bacton",
-   "target": "nbp"
-  },
-  {
    "pipeline": "bbl",
    "name": "BBL",
    "type": "interconnector",
@@ -763,15 +539,6 @@
    "capacity": 70.0,
    "source": "bacton",
    "target": "zeebrugge"
-  },
-  {
-   "pipeline": "balgzand_ttf",
-   "name": "Balgzand grid entry",
-   "type": "onshore",
-   "from_id": "balgzand",
-   "length_km": 82.70564941859021,
-   "source": "balgzand",
-   "target": "ttf"
   },
   {
    "pipeline": "bbl",
@@ -804,15 +571,6 @@
    "target": "dornum"
   },
   {
-   "pipeline": "bergermeer_ttf",
-   "name": "Bergermeer grid entry",
-   "type": "onshore",
-   "from_id": "bergermeer",
-   "length_km": 70.80199504425124,
-   "source": "bergermeer",
-   "target": "ttf"
-  },
-  {
    "pipeline": "sage",
    "name": "SAGE",
    "type": "export",
@@ -821,54 +579,6 @@
    "capacity": 30.0,
    "source": "beryl",
    "target": "st_fergus"
-  },
-  {
-   "pipeline": "cats_north",
-   "name": "CATS (riser - T5)",
-   "type": "export",
-   "from_id": "cats_riser",
-   "length_km": 89.5,
-   "capacity": 48.0,
-   "source": "cats_riser",
-   "target": "cats_t5"
-  },
-  {
-   "pipeline": "cats",
-   "name": "CATS (T5 - Teesside)",
-   "type": "export",
-   "from_id": "cats_t5",
-   "length_km": 315.0,
-   "capacity": 48.0,
-   "source": "cats_t5",
-   "target": "teesside"
-  },
-  {
-   "pipeline": "culzean_cats",
-   "name": "Culzean - CATS T5",
-   "type": "feeder",
-   "from_id": "culzean",
-   "length_km": 52.0,
-   "capacity": 15.0,
-   "source": "culzean",
-   "target": "cats_t5"
-  },
-  {
-   "pipeline": "den_helder_ttf",
-   "name": "Den Helder grid entry",
-   "type": "onshore",
-   "from_id": "den_helder",
-   "length_km": 96.31540363602883,
-   "source": "den_helder",
-   "target": "ttf"
-  },
-  {
-   "pipeline": "dornum_the",
-   "name": "Dornum grid entry",
-   "type": "onshore",
-   "from_id": "dornum",
-   "length_km": 139.58596951607817,
-   "source": "dornum",
-   "target": "the"
   },
   {
    "pipeline": "draupner_bridge",
@@ -929,42 +639,6 @@
    "target": "ekofisk"
   },
   {
-   "pipeline": "dunkirk_peg",
-   "name": "Dunkirk grid entry",
-   "type": "onshore",
-   "from_id": "dunkirk",
-   "length_km": 72.2654362203727,
-   "source": "dunkirk",
-   "target": "peg"
-  },
-  {
-   "pipeline": "dunkirk_lng_peg",
-   "name": "Dunkirk LNG grid entry",
-   "type": "onshore",
-   "from_id": "dunkirk_lng",
-   "length_km": 75.30931874778885,
-   "source": "dunkirk_lng",
-   "target": "peg"
-  },
-  {
-   "pipeline": "easington_nbp",
-   "name": "Easington grid entry",
-   "type": "onshore",
-   "from_id": "easington",
-   "length_km": 147.00684606553855,
-   "source": "easington",
-   "target": "nbp"
-  },
-  {
-   "pipeline": "rough_easington",
-   "name": "Rough - Easington",
-   "type": "link",
-   "from_id": "rough",
-   "length_km": 29.0,
-   "source": "easington",
-   "target": "rough"
-  },
-  {
    "pipeline": "uhgp",
    "name": "Utsira High Gas Pipeline",
    "type": "feeder",
@@ -973,15 +647,6 @@
    "capacity": 6.0,
    "source": "edvard_grieg",
    "target": "beryl"
-  },
-  {
-   "pipeline": "eemshaven_ttf",
-   "name": "Eemshaven grid entry",
-   "type": "onshore",
-   "from_id": "eemshaven_lng",
-   "length_km": 156.92339486829283,
-   "source": "eemshaven_lng",
-   "target": "ttf"
   },
   {
    "pipeline": "norpipe",
@@ -1004,52 +669,6 @@
    "target": "bacton"
   },
   {
-   "pipeline": "emden_the",
-   "name": "Emden grid entry",
-   "type": "onshore",
-   "from_id": "emden",
-   "length_km": 124.38039178417735,
-   "source": "emden",
-   "target": "the"
-  },
-  {
-   "pipeline": "lille_torup_etf",
-   "name": "Lille Torup grid entry",
-   "type": "onshore",
-   "from_id": "lille_torup",
-   "length_km": 165.24365460423428,
-   "source": "etf",
-   "target": "lille_torup"
-  },
-  {
-   "pipeline": "stenlille_etf",
-   "name": "Stenlille grid entry",
-   "type": "onshore",
-   "from_id": "stenlille",
-   "length_km": 125.84148642357492,
-   "source": "etf",
-   "target": "stenlille"
-  },
-  {
-   "pipeline": "etzel_the",
-   "name": "Etzel grid entry",
-   "type": "onshore",
-   "from_id": "etzel",
-   "length_km": 95.39426900467903,
-   "source": "etzel",
-   "target": "the"
-  },
-  {
-   "pipeline": "nogat",
-   "name": "NOGAT",
-   "type": "export",
-   "from_id": "f3fb",
-   "length_km": 260.0,
-   "capacity": 30.0,
-   "source": "f3fb",
-   "target": "den_helder"
-  },
-  {
    "pipeline": "flags",
    "name": "FLAGS",
    "type": "export",
@@ -1060,15 +679,6 @@
    "target": "st_fergus"
   },
   {
-   "pipeline": "gate_ttf",
-   "name": "Gate grid entry",
-   "type": "onshore",
-   "from_id": "gate_lng",
-   "length_km": 111.96861661641702,
-   "source": "gate_lng",
-   "target": "ttf"
-  },
-  {
    "pipeline": "gjoa_flags",
    "name": "Gj\u00f8a gas export",
    "type": "feeder",
@@ -1077,15 +687,6 @@
    "capacity": 17.0,
    "source": "gjoa",
    "target": "flags_brent"
-  },
-  {
-   "pipeline": "grain_nbp",
-   "name": "Grain grid entry",
-   "type": "onshore",
-   "from_id": "grain_lng",
-   "length_km": 182.82603002027102,
-   "source": "grain_lng",
-   "target": "nbp"
   },
   {
    "pipeline": "gudrun_sleipner",
@@ -1146,24 +747,6 @@
    "capacity": 39.0,
    "source": "heimdal",
    "target": "st_fergus"
-  },
-  {
-   "pipeline": "irpa_tieback",
-   "name": "Irpa tie-back",
-   "type": "feeder",
-   "from_id": "irpa",
-   "length_km": 80.0,
-   "source": "irpa",
-   "target": "aasta_hansteen"
-  },
-  {
-   "pipeline": "jemgum_the",
-   "name": "Jemgum grid entry",
-   "type": "onshore",
-   "from_id": "jemgum",
-   "length_km": 126.92786667154465,
-   "source": "jemgum",
-   "target": "the"
   },
   {
    "pipeline": "sverdrup_karsto",
@@ -1246,33 +829,6 @@
    "target": "uithuizen"
   },
   {
-   "pipeline": "lille_torup_etf",
-   "name": "Lille Torup grid entry",
-   "type": "onshore",
-   "from_id": "lille_torup",
-   "length_km": 165.24365460423428,
-   "source": "lille_torup",
-   "target": "etf"
-  },
-  {
-   "pipeline": "bacton_nbp",
-   "name": "Bacton grid entry",
-   "type": "onshore",
-   "from_id": "bacton",
-   "length_km": 181.42234027469667,
-   "source": "nbp",
-   "target": "bacton"
-  },
-  {
-   "pipeline": "norg_ttf",
-   "name": "Norg grid entry",
-   "type": "onshore",
-   "from_id": "norg",
-   "length_km": 108.0631308358113,
-   "source": "norg",
-   "target": "ttf"
-  },
-  {
    "pipeline": "ngts",
    "name": "Norne Gas Transport System",
    "type": "feeder",
@@ -1291,16 +847,6 @@
    "capacity": 27.0,
    "source": "nybro",
    "target": "pl_vtp"
-  },
-  {
-   "pipeline": "nybro_etf",
-   "name": "Nybro grid entry",
-   "type": "onshore",
-   "from_id": "nybro",
-   "length_km": 74.47014571694324,
-   "capacity": 10.0,
-   "source": "nybro",
-   "target": "etf"
   },
   {
    "pipeline": "langeled_north",
@@ -1331,15 +877,6 @@
    "capacity": 40.0,
    "source": "oseberg",
    "target": "heimdal"
-  },
-  {
-   "pipeline": "rough_easington",
-   "name": "Rough - Easington",
-   "type": "link",
-   "from_id": "rough",
-   "length_km": 29.0,
-   "source": "rough",
-   "target": "easington"
   },
   {
    "pipeline": "langeled_south",
@@ -1382,15 +919,6 @@
    "target": "bacton"
   },
   {
-   "pipeline": "st_fergus_nbp",
-   "name": "St Fergus grid entry",
-   "type": "onshore",
-   "from_id": "st_fergus",
-   "length_km": 552.293673653052,
-   "source": "st_fergus",
-   "target": "nbp"
-  },
-  {
    "pipeline": "statpipe_rich",
    "name": "Statpipe (rich gas)",
    "type": "trunk",
@@ -1411,42 +939,6 @@
    "target": "flags_brent"
   },
   {
-   "pipeline": "stenlille_etf",
-   "name": "Stenlille grid entry",
-   "type": "onshore",
-   "from_id": "stenlille",
-   "length_km": 125.84148642357492,
-   "source": "stenlille",
-   "target": "etf"
-  },
-  {
-   "pipeline": "teesside_nbp",
-   "name": "Teesside grid entry",
-   "type": "onshore",
-   "from_id": "teesside",
-   "length_km": 223.72443544727608,
-   "source": "teesside",
-   "target": "nbp"
-  },
-  {
-   "pipeline": "etzel_the",
-   "name": "Etzel grid entry",
-   "type": "onshore",
-   "from_id": "etzel",
-   "length_km": 95.39426900467903,
-   "source": "the",
-   "target": "etzel"
-  },
-  {
-   "pipeline": "jemgum_the",
-   "name": "Jemgum grid entry",
-   "type": "onshore",
-   "from_id": "jemgum",
-   "length_km": 126.92786667154465,
-   "source": "the",
-   "target": "jemgum"
-  },
-  {
    "pipeline": "troll_kollsnes",
    "name": "Troll - Kollsnes",
    "type": "feeder",
@@ -1455,62 +947,6 @@
    "capacity": 120.0,
    "source": "troll",
    "target": "kollsnes"
-  },
-  {
-   "pipeline": "balgzand_ttf",
-   "name": "Balgzand grid entry",
-   "type": "onshore",
-   "from_id": "balgzand",
-   "length_km": 82.70564941859021,
-   "source": "ttf",
-   "target": "balgzand"
-  },
-  {
-   "pipeline": "bergermeer_ttf",
-   "name": "Bergermeer grid entry",
-   "type": "onshore",
-   "from_id": "bergermeer",
-   "length_km": 70.80199504425124,
-   "source": "ttf",
-   "target": "bergermeer"
-  },
-  {
-   "pipeline": "norg_ttf",
-   "name": "Norg grid entry",
-   "type": "onshore",
-   "from_id": "norg",
-   "length_km": 108.0631308358113,
-   "source": "ttf",
-   "target": "norg"
-  },
-  {
-   "pipeline": "tyra_f3",
-   "name": "Tyra West - F3",
-   "type": "link",
-   "from_id": "tyra",
-   "length_km": 96.8721231958549,
-   "capacity": 10.0,
-   "source": "tyra",
-   "target": "f3fb"
-  },
-  {
-   "pipeline": "tyra_nybro",
-   "name": "Tyra - Nybro",
-   "type": "export",
-   "from_id": "tyra",
-   "length_km": 220.0,
-   "capacity": 30.0,
-   "source": "tyra",
-   "target": "nybro"
-  },
-  {
-   "pipeline": "uithuizen_ttf",
-   "name": "Uithuizen grid entry",
-   "type": "onshore",
-   "from_id": "uithuizen",
-   "length_km": 148.62878591991145,
-   "source": "uithuizen",
-   "target": "ttf"
   },
   {
    "pipeline": "visund_kvitebjorn",
@@ -1523,15 +959,6 @@
    "target": "kvitebjorn"
   },
   {
-   "pipeline": "wilhelmshaven_the",
-   "name": "Wilhelmshaven grid entry",
-   "type": "onshore",
-   "from_id": "wilhelmshaven_lng",
-   "length_km": 104.5016843101629,
-   "source": "wilhelmshaven_lng",
-   "target": "the"
-  },
-  {
    "pipeline": "iuk",
    "name": "Interconnector (IUK)",
    "type": "interconnector",
@@ -1540,33 +967,6 @@
    "capacity": 70.0,
    "source": "zeebrugge",
    "target": "bacton"
-  },
-  {
-   "pipeline": "zeebrugge_ztp",
-   "name": "Zeebrugge grid entry",
-   "type": "onshore",
-   "from_id": "zeebrugge",
-   "length_km": 98.32542019070479,
-   "source": "zeebrugge",
-   "target": "ztp"
-  },
-  {
-   "pipeline": "zeebrugge_lng_ztp",
-   "name": "Zeebrugge LNG grid entry",
-   "type": "onshore",
-   "from_id": "zeebrugge_lng",
-   "length_km": 99.35732584921122,
-   "source": "zeebrugge_lng",
-   "target": "ztp"
-  },
-  {
-   "pipeline": "zeebrugge_ztp",
-   "name": "Zeebrugge grid entry",
-   "type": "onshore",
-   "from_id": "zeebrugge",
-   "length_km": 98.32542019070479,
-   "source": "ztp",
-   "target": "zeebrugge"
   }
  ]
 }
