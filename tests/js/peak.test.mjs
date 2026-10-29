@@ -63,20 +63,6 @@ test("peak panel: Notified and the Origo reference are kept per peak", () => {
   assert.equal(find(document.getElementById("side-body"), (el) => el.className === "origo").value, "40217", "the reference is kept");
 });
 
-test("peak panel: a change in flow shows head and tail ETAs, volume and origin", () => {
-  const { App, NORA, document } = playToASlug();
-  const pid = App.pipeIds.find((id) => NORA.assets[id].type === "trunk" && NORA.assets[id].capacity);
-  App.live.peaks.push({ id: pid, t0: App.live.time - 60, delta: 6, level: 1, forward: true });
-  const peak = App.markers().find((m) => m.kind === "peak");
-  App.selectMarker(peak.key);
-  const text = panel(document);
-  assert.match(text, /Flow increase of 6\.0 MSm³\/d/);
-  const head = text.match(/Head reaches[^,]+, (?:\w{3} )?(\d\d:\d\d)/), tail = text.match(/Tail reaches[^,]+, (?:\w{3} )?(\d\d:\d\d)/);
-  assert.ok(head && tail && head[1] !== tail[1], "the head arrives before the tail");
-  assert.match(text, /Total volume0\.25 MSm³ more gas/, "6 MSm³/d over a one-hour step");
-  assert.match(text, new RegExp(`Origin${NORA.assets[pid].name}, first seen`));
-});
-
 /* Ray, 29 Oct: "a pig needs the same kind of setup for information as a peak on the
    screens ... Pig ID: 3420 / ETA: 23:21 / Speed: 5,3 m/s". */
 test("pig panel: ID, ETA and speed first, then where it is and when", () => {
@@ -167,4 +153,16 @@ test("peak: the H₂S or CO₂ dot sits midway between the head and the tail", (
     }
   }
   assert.ok(checked > 3, `checked ${checked} positions`);
+});
+
+/* Ray, 29 Oct, of a moving flow-change marker ("−50.7 16:31 Sleipner"): "what is this
+   suppose to be? ... mainly stick to illustrating H2S, CO2 and pigs". A change in flow
+   draws no marker; a large one is still an alarm. */
+test("markers: H₂S, CO₂ and pigs only, no flow-change markers", () => {
+  const { App } = playToASlug();
+  const pid = App.pipeIds.find((id) => App.live.values[id] > 1);
+  App.live.peaks.push({ id: pid, t0: App.live.time - 60, delta: 20, level: 2, forward: true });
+  const kinds = new Set(App.markers().map((m) => m.kind));
+  assert.ok(!kinds.has("peak"), "no flow-change marker");
+  assert.ok([...kinds].every((k) => k === "quality" || k === "pig"), `only H₂S, CO₂ and pigs: ${[...kinds]}`);
 });

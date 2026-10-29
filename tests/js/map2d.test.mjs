@@ -39,27 +39,6 @@ test("map: the page carries the coastline the canvas map fills as land", () => {
   }
 });
 
-test("peaks: a band from tail to head around the dot, ahead in the direction of travel", () => {
-  const loaded = loadApp();
-  const { App } = loaded;
-  loadFirstHour(App, loaded.NORA);
-  const stream = App.live.stream;
-  const pid = stream.assets.find((id) => App.pipeIds.includes(id) && App.live.frames[0].flows[id] > 1);
-  for (const forward of [true, false]) {
-    App.live.peaks = [{ id: pid, t0: stream.times[0], delta: 20, forward, level: 0 }];
-    App.live.time = stream.times[0] + 0.5 * HOUR;
-    const peak = App.markers().find((m) => m.kind === "peak");
-    assert.ok(peak, "the peak is on screen");
-    const [tail, head] = peak.extent;
-    for (const x of [tail, head]) assert.ok(x >= 0 && x <= 1, "the band stays on its line");
-    const lo = Math.min(tail, head), hi = Math.max(tail, head);
-    assert.ok(lo <= peak.along && peak.along <= hi, "the dot sits inside its band");
-    assert.ok(forward ? head >= tail : head <= tail, "the head is ahead of the tail, the way the gas flows");
-    assert.ok(hi - lo > 0, "the band has a length");
-  }
-  assert.equal(typeof App.drawBand, "function", "views draw the band with App.drawBand");
-});
-
 test("peaks: the band and head follow every bend in the pipeline path", () => {
   const { App } = loadApp();
   const lines = [], curves = [];
