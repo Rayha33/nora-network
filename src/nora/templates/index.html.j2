@@ -182,7 +182,11 @@
     <div class="ways">
       <div>
         <h3>Fix or add data</h3>
+        {% if a.sourced.rows < a.sourced.total %}
         <p>The network lives in two spreadsheets you can edit in the browser. Only <span class="num">{{ a.sourced.rows }}</span> of <span class="num">{{ a.sourced.total }}</span> rows cite a source so far, so sources are the most useful contribution.</p>
+        {% else %}
+        <p>The network lives in two spreadsheets you can edit in the browser. All <span class="num">{{ a.sourced.total }}</span> rows cite a source; a better source or a corrected value is the most useful contribution.</p>
+        {% endif %}
         <a class="button quiet" href="{{ links.edit }}/data/nodes.csv">Edit nodes.csv</a>
       </div>
       <div>

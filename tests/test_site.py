@@ -3,9 +3,10 @@ import re
 
 import pytest
 
+from nora.analysis import analyse
 from nora.cli import main
-from nora.data import DATA_DIR
-from nora.site import build_site
+from nora.data import DATA_DIR, load_network
+from nora.site import build_site, index_html, repo_links
 
 
 @pytest.fixture(scope="module")
@@ -92,3 +93,23 @@ def test_hostile_names_do_not_reach_the_page_as_html(tmp_path):
     # the label rides to the browser inside JSON, where `&` is \u0026; the
     # browser decodes it back to &lt; before vis-network sees the label
     assert "u0026lt;img" in html
+
+
+def _words(html: str) -> str:
+    """The page's text, tags dropped and whitespace collapsed."""
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", html))
+
+
+def test_home_page_says_every_row_has_a_source_when_every_row_does(site):
+    # Review, 29 Oct: with 88 of 88 rows sourced the page said "Only 88 of 88 rows".
+    net = load_network(DATA_DIR)
+    rows = len(net.nodes) + len(net.pipelines)
+    assert all(r.source for r in [*net.nodes, *net.pipelines]), "the repo's data is fully sourced"
+    words = _words((site / "index.html").read_text())
+    assert f"All {rows} rows cite a source" in words
+    assert "Only" not in words.split("Fix or add data")[1].split("Build a feature")[0]
+
+
+def test_home_page_asks_for_sources_while_rows_lack_them(tiny):
+    page = index_html(tiny, analyse(tiny), [], repo_links(), {"commit": "abc1234", "date": ""})
+    assert "Only 0 of 10 rows cite a source so far" in _words(page)
