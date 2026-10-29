@@ -113,3 +113,23 @@ def test_home_page_says_every_row_has_a_source_when_every_row_does(site):
 def test_home_page_asks_for_sources_while_rows_lack_them(tiny):
     page = index_html(tiny, analyse(tiny), [], repo_links(), {"commit": "abc1234", "date": ""})
     assert "Only 0 of 10 rows cite a source so far" in _words(page)
+
+
+def test_home_page_uses_the_apps_design_system(tiny):
+    """Review #49802: the home page had its own serif (Newsreader) and magenta palette.
+    It now takes the app's colours from nora.toml and its one typeface."""
+    from nora.config import load_config
+
+    config = load_config()
+    page = index_html(tiny, analyse(tiny), [], repo_links(), {"commit": "", "date": ""}, config)
+    assert "Newsreader" not in page and "serif" not in page.replace("sans-serif", "")
+    assert "magenta" not in page and "#a3266f" not in page
+    for role in ("paper", "text", "text_dim", "panel"):
+        assert config["colors"][role] in page, f"the light {role} comes from nora.toml"
+        assert config["colors_dark"][role] in page, f"the dark {role} comes from nora.toml"
+    # the theme follows nora.toml's, like the app's: light here, so no OS dark switch
+    assert config["screen"]["theme"] == "light"
+    assert "prefers-color-scheme" not in page
+    dark = {**config, "screen": {**config["screen"], "theme": "auto"}}
+    auto = index_html(tiny, analyse(tiny), [], repo_links(), {"commit": "", "date": ""}, dark)
+    assert "prefers-color-scheme: dark" in auto
