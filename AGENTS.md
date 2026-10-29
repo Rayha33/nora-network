@@ -49,7 +49,7 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 | `scripts/fetch_*.py` | download real data (ENTSOG, Energinet, SODIR, National Gas) into a stream's raw file |
 | `data/geo/coastline.json`, `scripts/build_coastline.py` | the land around the North Sea (Natural Earth, public domain) for the canvas map |
 | `data/geo/routes.json`, `scripts/build_routes.py` | laid pipeline routes from SODIR's register (NLOD), drawn on both maps |
-| `data/geo/bathymetry.json`, `scripts/build_bathymetry.py` | water depth under the map (EMODnet, CC BY 4.0) for the position readout ("WD 58 m") and asset facts |
+| `data/geo/bathymetry.json`, `scripts/build_bathymetry.py` | water depth under the map (EMODnet, CC BY 4.0) for the position readout ("ED 58 m") and asset facts |
 | `tests/` | pytest; `tests/conftest.py` has a five-node network to test against |
 | `tests/js/` | Node tests that load the real templates (`make test-js`); see its README |
 

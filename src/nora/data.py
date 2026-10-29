@@ -43,7 +43,7 @@ STATUSES = ("operating", "planned", "decommissioned")
 
 NODE_COLUMNS = (
     "id", "name", "type", "country", "lat", "lon", "operator",
-    "capacity_msm3d", "status", "startup", "shutdown", "source", "notes",
+    "capacity_msm3d", "status", "startup", "shutdown", "source", "notes", "map_min_zoom",
 )  # fmt: skip
 PIPELINE_COLUMNS = (
     "id", "name", "from", "to", "type", "length_km", "diameter_in", "capacity_msm3d",
@@ -78,6 +78,7 @@ class Node:
     source: str
     notes: str
     line: int
+    map_min_zoom: float = 0.0
 
     def active_in(self, year: int) -> bool:
         """Whether the asset was, is or is planned to be in operation in `year`.
@@ -263,6 +264,7 @@ def _read_nodes(path: Path, seen: dict[str, str], problems: list[str]) -> list[N
         capacity = row.number("capacity_msm3d", low=0)
         startup = row.number("startup", low=1900, high=2100)
         shutdown = row.number("shutdown", low=1900, high=2100)
+        map_min_zoom = row.number("map_min_zoom", low=0, high=12) or 0.0
         if startup is not None and shutdown is not None and shutdown < startup:
             row.problem(f"'shutdown' = {int(shutdown)} is before 'startup' = {int(startup)}")
         if kind in SUPPLY_TYPES and status == "operating" and not row.text("capacity_msm3d"):
@@ -282,6 +284,7 @@ def _read_nodes(path: Path, seen: dict[str, str], problems: list[str]) -> list[N
                 shutdown=int(shutdown) if shutdown is not None else None,
                 source=row.text("source"),
                 notes=row.text("notes"),
+                map_min_zoom=map_min_zoom,
                 line=int(row.where.rsplit(" ", 1)[1]),
             )
         )

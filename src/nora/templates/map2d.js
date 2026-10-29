@@ -29,6 +29,12 @@ function NoraCanvasMap(view) {
   const nodes = NORA.geo.nodes.features.map((f) => ({ id: f.properties.asset, lonlat: f.geometry.coordinates }));
   const pipes = NORA.geo.pipes.features.map((f) => ({ id: f.properties.asset, line: f.geometry.coordinates, onshore: f.properties.onshore }));
   const pipeById = Object.fromEntries(pipes.map((p) => [p.id, p]));
+  // Detailed fields (data/nodes.csv map_min_zoom) and their lines appear only when zoomed in.
+  const nodeAtZoom = (id) => zoom() >= ((NORA.assets[id] && NORA.assets[id].min_zoom) || 0);
+  const pipeAtZoom = (id) => {
+    const d = NORA.assets[id];
+    return d && nodeAtZoom(d.from) && nodeAtZoom(d.to);
+  };
 
   // The land as one Path2D in Mercator units, built once and drawn under a transform.
   function landPath() {
@@ -106,7 +112,7 @@ function NoraCanvasMap(view) {
     ctx.lineCap = "round";
     for (const p of pipes) {
       const s = App.pipeStyle(p.id);
-      if (s.hidden) continue;
+      if (s.hidden || !pipeAtZoom(p.id)) continue;
       const pts = p.line.map(([lon, lat]) => toScreen(lon, lat));
       const trace = () => { ctx.beginPath(); pts.forEach((q, i) => (i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y))); };
       ctx.globalAlpha = s.dim ? 0.3 : 1;
@@ -124,7 +130,7 @@ function NoraCanvasMap(view) {
     const r = nodeRadius(), names = App.settings().names, boxes = [], dots = [];
     for (const n of nodes) {
       const s = App.nodeStyle(n.id);
-      if (s.hidden) continue;
+      if (s.hidden || !nodeAtZoom(n.id)) continue;
       const q = toScreen(n.lonlat[0], n.lonlat[1]);
       if (q.x < -40 || q.y < -40 || q.x > width + 40 || q.y > height + 40) continue;
       const look = C.card[s.inactive ? "inactive" : live ? "active" : "normal"];
@@ -165,7 +171,7 @@ function NoraCanvasMap(view) {
       ctx.textBaseline = "middle";
       for (const p of pipes) {
         const s = App.pipeStyle(p.id), text = App.pipeMapName(p.id);
-        if (!text || s.hidden || s.dim) continue;
+        if (!text || s.hidden || s.dim || !pipeAtZoom(p.id)) continue;
         const m = along(p.id, 0.5), y = m.y - 9 * u;
         const w = ctx.measureText(text).width + 4 * u, box = [m.x - w / 2, y - 8 * u, m.x + w / 2, y + 8 * u];
         if (placed.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) continue;
@@ -175,10 +181,19 @@ function NoraCanvasMap(view) {
       ctx.textBaseline = "top";
     }
     // No alarm badges on lines (Ray, 29 Oct: "remove the small red squares they serve no purpose").
-    // Pigs, peaks and gas quality: bands first, then the pipeline names and markers.
+    // Pigs, peaks and gas quality: bands, then markers, then pipeline names on top, so a
+    // crossing peak can never erase a name.
     const z = zoom(), detail = z >= 6.5 ? 2 : z >= 5 ? 1 : 0, marks = live ? App.markers() : [];
     for (const m of marks) {
-      if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]), 3.2 * u, bandPath(m.id, m.extent));
+      if (m.extent && pipeById[m.id] && !App.pipeStyle(m.id).hidden && pipeAtZoom(m.id)) App.drawBand(ctx, m, along(m.id, m.extent[0]), along(m.id, m.extent[1]), 3.2 * u, bandPath(m.id, m.extent));
+    }
+    drawnMarks = [];
+    const taken = [...placed, ...dots]; // marker labels keep clear of names and dots
+    for (const m of marks) {
+      if (!pipeById[m.id] || App.pipeStyle(m.id).hidden || !pipeAtZoom(m.id)) continue;
+      const p = along(m.id, m.along);
+      App.drawMarker(ctx, m, p.x, p.y, p.angle, App.markerSize(m.kind, (z - 6) / 4), detail, taken);
+      if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
     }
     ctx.textBaseline = "middle";
     for (const label of pipeLabels) {
@@ -186,14 +201,6 @@ function NoraCanvasMap(view) {
       ctx.fillStyle = C.text; ctx.fillText(label.text, label.x, label.y);
     }
     ctx.textBaseline = "top";
-    drawnMarks = [];
-    const taken = [...placed, ...dots]; // marker labels keep clear of names and dots
-    for (const m of marks) {
-      if (!pipeById[m.id] || App.pipeStyle(m.id).hidden) continue;
-      const p = along(m.id, m.along);
-      App.drawMarker(ctx, m, p.x, p.y, p.angle, App.markerSize(m.kind, (z - 6) / 4), detail, taken);
-      if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
-    }
   }
 
   // ------------------------------------------------------------------ camera
@@ -242,13 +249,13 @@ function NoraCanvasMap(view) {
     const r = nodeRadius() + 5 * App.uiScale();
     let best = null, bestD = Infinity;
     for (const n of nodes) {
-      if (App.nodeStyle(n.id).hidden) continue;
+      if (App.nodeStyle(n.id).hidden || !nodeAtZoom(n.id)) continue;
       const q = toScreen(n.lonlat[0], n.lonlat[1]), d = Math.hypot(q.x - sx, q.y - sy);
       if (d <= r && d < bestD) { best = n.id; bestD = d; }
     }
     if (best) return best;
     for (const p of pipes) {
-      if (App.pipeStyle(p.id).hidden) continue;
+      if (App.pipeStyle(p.id).hidden || !pipeAtZoom(p.id)) continue;
       const pts = p.line.map(([lon, lat]) => toScreen(lon, lat));
       for (let i = 1; i < pts.length; i++) {
         const a = pts[i - 1], b = pts[i], dx = b.x - a.x, dy = b.y - a.y, len2 = dx * dx + dy * dy || 1;

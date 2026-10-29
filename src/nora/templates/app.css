@@ -31,7 +31,7 @@
   --ctl: 34px;              /* every control in the bars: one height, one text size */
   --ctl-font: 12.5px;
   --bar-h: 60px;
-  --player-h: 76px;
+  --player-h: 56px;
   --ui-scale: 1;            /* set by app.js from the display profile, the window or Settings */
   color-scheme: light;
 }
@@ -177,9 +177,11 @@ body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer 
 }
 .maplibregl-ctrl-scale { background: var(--panel) !important; color: var(--text-dim) !important; border-color: var(--text-dim) !important; }
 /* MapLibre's controls in the theme's greys, never its white (nora.toml: never pure
-   white; and a white box glared in the dark theme). Its icons are dark glyphs. */
-.maplibregl-ctrl-group { overflow: hidden; background: var(--raised) !important; border: 1px solid var(--rule); border-radius: 8px !important; box-shadow: var(--shadow-sm) !important; }
-.maplibregl-ctrl-group button { width: 34px; height: 34px; }
+   white; and a white box glared in the dark theme). Its icons are dark glyphs. Half
+   size (Ray, 28 Oct: "+ and - zoom buttons can be around half the size"). */
+.maplibregl-ctrl-group { overflow: hidden; background: var(--raised) !important; border: 1px solid var(--rule); border-radius: 6px !important; box-shadow: var(--shadow-sm) !important; }
+.maplibregl-ctrl-group button { width: 20px; height: 20px; padding: 0; font-size: 12px; line-height: 1; }
+.maplibregl-ctrl-group button .maplibregl-ctrl-icon { background-size: 12px 12px; }
 .maplibregl-ctrl-group button + button { border-top-color: var(--rule); }
 .maplibregl-ctrl-attrib { font: 11px var(--font); background: var(--panel) !important; }
 .maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib a { color: var(--text-dim) !important; }
@@ -317,28 +319,30 @@ table.data.quality td:nth-child(2) { white-space: nowrap; }
 /* Replay player */
 .player {
   position: fixed; inset: auto 0 0; height: var(--player-h); z-index: 20;
-  display: grid; grid-template-columns: minmax(280px, 340px) minmax(160px, 1fr) auto auto;
-  align-items: center; gap: 22px; padding: 0 20px;
-  background: var(--panel); border-top: 1px solid var(--rule); box-shadow: 0 -5px 20px rgba(18, 30, 38, 0.04);
+  display: grid; grid-template-columns: minmax(300px, 380px) minmax(160px, 1fr) auto auto;
+  align-items: center; gap: 16px; padding: 0 16px;
+  background: var(--panel); border-top: 1px solid var(--rule);
 }
-.transport { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.transport { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .inventory { display: grid; gap: 3px; line-height: 1.2; }
 .inventory-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text); white-space: nowrap; }
 .inventory svg { width: 96px; height: 22px; stroke: none; }
 .play {
-  display: grid; place-items: center; flex: none; width: 40px; height: 40px; padding: 0;
+  display: grid; place-items: center; flex: none; width: 32px; height: 32px; padding: 0;
   border: 0; border-radius: 50%; background: var(--selected-bg); color: var(--selected-text);
-  cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+  cursor: pointer; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 .play:hover { opacity: 0.88; }
-.play svg { fill: currentColor; stroke: none; width: 15px; height: 15px; }
+.play svg { fill: currentColor; stroke: none; width: 14px; height: 14px; }
 .play .when-playing, .playing .play .when-paused { display: none; }
 .playing .play .when-playing { display: block; }
-.now { display: grid; min-width: 0; line-height: 1.2; gap: 3px; }
-.now select { width: 100%; border: 0; background: transparent; padding: 0; font-weight: 600; min-width: 0; text-overflow: ellipsis; cursor: pointer; }
+/* The dataset and speed controls name themselves; Inventory keeps its label. */
+.now .player-label, .speed .player-label { display: none; }
+.now { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; line-height: 1.2; }
+.now select { flex: 1; width: auto; border: 0; background: transparent; padding: 0; font-weight: 600; min-width: 0; text-overflow: ellipsis; cursor: pointer; }
 .now select:disabled { appearance: none; opacity: 1; }
 .now time { color: var(--text-dim); font: 11.5px/1.3 var(--font); white-space: nowrap; }
-.clock-row { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.clock-row { display: flex; align-items: center; gap: 7px; min-width: 0; flex: none; }
 /* Where the playhead stands against the wall clock: "Now", "3 h ago", "Model · in 6 h".
    Grey like every normal state; the model's is dashed, as the look-ahead is in the trends. */
 .when {
@@ -348,9 +352,9 @@ table.data.quality td:nth-child(2) { white-space: nowrap; }
 .when.model { border: 1px dashed var(--text-dim); color: var(--text); }
 .model-time .bank .value { font-style: italic; }
 .timeline { min-width: 0; }
-.timeline-label { position: relative; display: flex; justify-content: space-between; margin-bottom: 3px; }
+.timeline-label { position: relative; display: flex; justify-content: space-between; margin-bottom: 2px; }
 #tl-now { position: absolute; top: 0; left: 50%; transform: translateX(-50%); white-space: nowrap; } /* it said "Real time4 UTC" over −4 h */
-.track { position: relative; height: 28px; min-width: 100px; }
+.track { position: relative; height: 22px; min-width: 100px; }
 .track:focus-within { outline: 2px solid var(--text); outline-offset: 2px; border-radius: 4px; }
 .track canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .track input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
@@ -370,9 +374,9 @@ div.vis-tooltip {
 canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch-action: none; }
 .map-note.quiet { position: absolute; left: 14px; top: auto; bottom: 14px; transform: none; box-shadow: none; z-index: 2; font-size: 11px; color: var(--text-dim);
   background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r); padding: 3px 8px; }
-.map2d-zoom { position: absolute; right: 10px; bottom: 34px; z-index: 2; display: grid; gap: 4px; }
-.map2d-zoom button { width: 28px; height: 28px; border: 1px solid var(--rule); border-radius: var(--r);
-  background: var(--raised); color: var(--text); font-size: 16px; line-height: 1; cursor: pointer; }
+.map2d-zoom { position: absolute; right: 10px; bottom: 30px; z-index: 2; display: grid; gap: 3px; }
+.map2d-zoom button { width: 20px; height: 20px; padding: 0; border: 1px solid var(--rule); border-radius: 5px;
+  background: var(--raised); color: var(--text); font-size: 13px; line-height: 1; cursor: pointer; }
 
 /* Asset sidebar: slides in from the right when a field, plant or line is clicked.
    It mirrors the asset page (schematic, values, facts) in one calm column. */
@@ -482,6 +486,8 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 
 @media (max-width: 1100px) {
   .player { grid-template-columns: minmax(240px, 300px) 1fr auto; gap: 16px; }
+  .now { display: grid; gap: 2px; }
+  .now select { width: 100%; }
   .player .speed { display: none; }
 }
 
@@ -518,7 +524,7 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
   .seg button { padding: 0 6px; min-width: 44px; } /* both switches on one row at 390 px */
   .player { grid-template-columns: minmax(0, 1fr); grid-template-rows: 58px 44px; gap: 0 12px; padding: 0 14px 6px; }
   .transport { grid-column: 1; grid-row: 1; }
-  .play { width: var(--ctl); height: var(--ctl); }
+  .play { width: 32px; height: 32px; }
   .timeline { grid-column: 1 / -1; grid-row: 2; align-self: start; }
   .now select { font-size: 11px; }
   .player .speed { display: none; }

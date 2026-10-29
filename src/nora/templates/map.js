@@ -14,6 +14,13 @@
     for (const d of drawnMarks) { const dist = Math.hypot(d.x - x, d.y - y); if (dist < bestD) { best = d.m; bestD = dist; } }
     return best;
   };
+  /* Detailed fields (data/nodes.csv map_min_zoom) appear only when zoomed in, and so do
+     the lines to them; everything else is always on the map. */
+  const nodeAtZoom = (id) => map && map.getZoom() >= ((NORA.assets[id] && NORA.assets[id].min_zoom) || 0);
+  const pipeAtZoom = (id) => {
+    const d = NORA.assets[id];
+    return d && nodeAtZoom(d.from) && nodeAtZoom(d.to);
+  };
 
   const featureOf = {}; // asset id -> { source, id }
   const ends = {}; // pipeline id -> its laid route, [[lon, lat], ...] from its `from` node
@@ -126,6 +133,7 @@
     map.addSource("nora-node-badges", { type: "geojson", data: badgeData });
     map.addSource("nora-mids", { type: "geojson", data: mids });
     const state = (key, fallback) => ["coalesce", ["feature-state", key], fallback];
+    const detailFilter = ["<=", ["coalesce", ["get", "minZoom"], 0], ["zoom"]]; // the same rule as nodeAtZoom
     // Hairlines at overview zoom, a little more weight only when zoomed in.
     const width = (k, extra = 0) => ["interpolate", ["linear"], ["zoom"],
       3, ["+", extra, ["*", 0.45 * k, state("width", 1)]],
@@ -133,28 +141,28 @@
       9, ["+", extra, ["*", 1.1 * k, state("width", 1)]]];
     const opacity = ["case", ["boolean", ["feature-state", "hide"], false], 0, ["boolean", ["feature-state", "dim"], false], 0.3, 1];
     // A dark casing under any line in alarm, so colour never stands alone.
-    map.addLayer({ id: "nora-casing", type: "line", source: "nora-pipes", layout: { "line-cap": "round" },
+    map.addLayer({ id: "nora-casing", type: "line", source: "nora-pipes", filter: detailFilter, layout: { "line-cap": "round" },
       paint: { "line-color": C.casing, "line-width": width(1, 1.6), "line-opacity": ["case", ["boolean", ["feature-state", "casing"], false], opacity, 0] } });
-    map.addLayer({ id: "nora-pipes-onshore", type: "line", source: "nora-pipes", filter: ["==", ["get", "onshore"], true],
+    map.addLayer({ id: "nora-pipes-onshore", type: "line", source: "nora-pipes", filter: ["all", detailFilter, ["==", ["get", "onshore"], true]],
       paint: { "line-color": ["to-color", state("color", C.inactive)], "line-width": width(0.8), "line-dasharray": [2, 2], "line-opacity": opacity } });
-    map.addLayer({ id: "nora-pipes", type: "line", source: "nora-pipes", filter: ["!=", ["get", "onshore"], true], layout: { "line-cap": "round" },
+    map.addLayer({ id: "nora-pipes", type: "line", source: "nora-pipes", filter: ["all", detailFilter, ["!=", ["get", "onshore"], true]], layout: { "line-cap": "round" },
       paint: { "line-color": ["to-color", state("color", C.normal)], "line-width": width(1), "line-opacity": opacity } });
-    map.addLayer({ id: "nora-pipes-hit", type: "line", source: "nora-pipes", paint: { "line-color": "#000", "line-opacity": 0, "line-width": 14 } });
+    map.addLayer({ id: "nora-pipes-hit", type: "line", source: "nora-pipes", filter: detailFilter, paint: { "line-color": "#000", "line-opacity": 0, "line-width": 14 } });
     /* Nodes are plain circles in their state grey, as in the Flow view: no icons (Ray,
        28 Oct). An alarm colours only the outline, and the badge carries the shape and
        number. Names are a separate text layer that is never reloaded. */
     const radius = (extra = 0) => ["interpolate", ["linear"], ["zoom"], 3, 3.5 + extra, 6, 5.5 + extra, 9, 8 + extra];
     const nodeOpacity = ["case", ["boolean", ["feature-state", "hide"], false], 0, ["boolean", ["feature-state", "dim"], false], 0.3, 1];
-    map.addLayer({ id: "nora-selected", type: "circle", source: "nora-nodes",
+    map.addLayer({ id: "nora-selected", type: "circle", source: "nora-nodes", filter: detailFilter,
       paint: { "circle-radius": radius(5), "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2, "circle-stroke-color": C.text,
         "circle-stroke-opacity": ["case", ["boolean", ["feature-state", "selected"], false], 1, 0] } });
-    map.addLayer({ id: "nora-node-dots", type: "circle", source: "nora-nodes",
+    map.addLayer({ id: "nora-node-dots", type: "circle", source: "nora-nodes", filter: detailFilter,
       paint: {
         "circle-radius": radius(), "circle-color": ["to-color", state("fill", C.normal)],
         "circle-stroke-color": ["to-color", state("edge", C.text_dim)], "circle-stroke-width": state("edgeWidth", 1),
         "circle-opacity": nodeOpacity, "circle-stroke-opacity": nodeOpacity,
       } });
-    map.addLayer({ id: "nora-nodes", type: "symbol", source: "nora-nodes",
+    map.addLayer({ id: "nora-nodes", type: "symbol", source: "nora-nodes", filter: detailFilter,
       layout: {
         "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 11.5,
         "text-offset": [0, 0.8], "text-anchor": "top", "text-optional": true, "text-max-width": 9,
@@ -165,7 +173,7 @@
     // Alarm badges: shape + number + colour, on nodes. Not on lines (Ray, 29 Oct: "remove
     // the small red squares they serve no purpose").
     for (const [id, source, offset] of [["nora-node-alarms", "nora-node-badges", [12, -12]]]) {
-      map.addLayer({ id, type: "symbol", source, filter: [">", ["get", "alarm"], 0],
+      map.addLayer({ id, type: "symbol", source, filter: ["all", [">", ["get", "alarm"], 0], detailFilter],
         layout: { "icon-image": ["concat", "nora-alarm-", ["to-string", ["get", "alarm"]]], "icon-size": 0.85, "icon-offset": offset,
           "icon-allow-overlap": true, "icon-ignore-placement": true, "symbol-sort-key": ["-", 0, ["get", "alarm"]] } });
     }
@@ -454,14 +462,14 @@
       ctx.lineCap = "round";
       for (const nid of App.nodeIds) {
         const node = NORA.assets[nid];
-        if (!node) continue;
+        if (!node || !nodeAtZoom(nid)) continue;
         const pn = map.project([node.lon, node.lat]);
         if (pn.x < -40 || pn.y < -40 || pn.x > canvas.clientWidth + 40 || pn.y > canvas.clientHeight + 40) continue;
         const k = App.uiScale();
         for (const pid of linesAt[nid] || []) {
           const v = App.live.values[pid], p = NORA.assets[pid];
           if (!v || Math.abs(v) < 0.05 || !p || (p.from !== nid && p.to !== nid)) continue;
-          if (App.pipeStyle(pid).hidden) continue;
+          if (App.pipeStyle(pid).hidden || !pipeAtZoom(pid)) continue;
           const line = ends[pid], other = map.project(p.from === nid ? line[1] : line[line.length - 2]);
           const dx = other.x - pn.x, dy = other.y - pn.y, len = Math.hypot(dx, dy);
           if (len < 8 * k) continue;
@@ -488,8 +496,8 @@
       }
       ctx.globalAlpha = 1;
     }
-    // Peaks as bands from tail to head, then pipeline names and every marker on top.
-    const marks = App.markers().filter((m) => ends[m.id] && !App.pipeStyle(m.id).hidden);
+    // Peaks as bands from tail to head, then every marker, then pipeline names on top.
+    const marks = App.markers().filter((m) => ends[m.id] && !App.pipeStyle(m.id).hidden && pipeAtZoom(m.id));
     const zoom = map.getZoom(), detail = zoom >= 6.5 ? 2 : zoom >= 5 ? 1 : 0, u = App.uiScale();
     // The node boxes only move with the camera or a restyle: work them out once per scene.
     const reserve = marks.length || App.settings().names;
@@ -503,7 +511,7 @@
       ctx.textBaseline = "middle";
       for (const id of App.pipeIds) {
         const style = App.pipeStyle(id), text = App.pipeMapName(id);
-        if (!text || style.hidden || style.dim) continue;
+        if (!text || style.hidden || style.dim || !pipeAtZoom(id)) continue;
         const point = project(id, 0.5), y = point.y - 9 * u;
         const w = ctx.measureText(text).width + 4 * u;
         const box = [point.x - w / 2, y - 8 * u, point.x + w / 2, y + 8 * u];
@@ -514,8 +522,13 @@
       ctx.restore();
     }
     for (const m of marks) if (m.extent) App.drawBand(ctx, m, project(m.id, m.extent[0]), project(m.id, m.extent[1]), 3.2 * u, projectBand(m.id, m.extent));
+    for (const m of marks) {
+      const p = project(m.id, m.along);
+      App.drawMarker(ctx, m, p.x, p.y, p.angle, App.markerSize(m.kind, (map.getZoom() - 6) / 4), detail, taken);
+      if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
+    }
     // MapLibre's own label layer would be below this canvas. Paint names here instead,
-    // after the bands, so a moving snake can never cross out a pipeline's name.
+    // last, so neither a moving band nor a peak marker can cross out a pipeline's name.
     ctx.save();
     ctx.font = `${11.5 * u}px Archivo, system-ui, sans-serif`;
     ctx.textAlign = "center";
@@ -526,11 +539,6 @@
       ctx.fillStyle = C.text; ctx.fillText(label.text, label.x, label.y);
     }
     ctx.restore();
-    for (const m of marks) {
-      const p = project(m.id, m.along);
-      App.drawMarker(ctx, m, p.x, p.y, p.angle, App.markerSize(m.kind, (map.getZoom() - 6) / 4), detail, taken);
-      if (!m.noDot) drawnMarks.push({ x: p.x, y: p.y, m });
-    }
   }
 
   /* Screen boxes of the node dots and their names, where MapLibre puts them (under the
@@ -542,7 +550,7 @@
     ctx.font = `${11.5 * k}px Archivo, system-ui, sans-serif`;
     for (const id of App.nodeIds) {
       const d = NORA.assets[id];
-      if (App.nodeStyle(id).hidden) continue;
+      if (App.nodeStyle(id).hidden || !nodeAtZoom(id)) continue;
       const p = map.project([d.lon, d.lat]);
       if (p.x < -150 || p.y < -60 || p.x > w0 + 150 || p.y > h0 + 60) continue;
       out.push([p.x - 6 * k, p.y - 6 * k, p.x + 6 * k, p.y + 6 * k]);

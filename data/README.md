@@ -41,6 +41,7 @@ One row per asset.
 | `shutdown` | the first year the asset was no longer in operation (it is shown up to and including the year before); blank while it operates |
 | `source` | link backing up the row |
 | `notes` | free text; wrap it in quotes if it contains a comma |
+| `map_min_zoom` | optional map zoom at which a detailed field or tie-in appears; blank means always visible |
 
 `market` nodes are where the analysis counts gas as delivered: virtual trading points
 (NBP, TTF, THE and so on, placed schematically on the map) and large consumers such as
@@ -127,7 +128,7 @@ by `scripts/build_coastline.py`. Rebuild it with `python scripts/build_coastline
 ## Water depth
 
 `geo/bathymetry.json` is the water depth under the map: the map's position readout
-shows it ("61.90055°N  4.25673°E  ·  WD 58 m"), and offshore assets list it in their
+shows it ("61.90055°N  4.25673°E  ·  ED 58 m"), and offshore assets list it in their
 facts. It is EMODnet's Digital Bathymetry (DTM), the European seabed model, licence CC
 BY 4.0 (credit: EMODnet Bathymetry Consortium), resampled to a 1 arc-minute grid over
 the map's bounds and stored in whole metres. A reading is the mean depth of the area
