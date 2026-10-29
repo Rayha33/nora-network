@@ -150,7 +150,7 @@ end = 2026-01-05T04:00:00Z
     assert flows[1] > 0 and flows[4] > 0
 
 
-def test_quality_excursions_ramp_hold_and_repeat(tiny, tmp_path):
+def test_quality_excursions_hold_and_repeat(tiny, tmp_path):
     toml = """
 [synthetic]
 start = 2026-01-05T00:00:00Z
@@ -170,26 +170,33 @@ every_hours = 6
     assets, values = stream.metrics["h2s_ppm"]
     assert list(assets) == ["gas"]  # readings at fields only
     h2s = [row[0] for row in values]
-    for hour in (2, 3, 8, 9):  # held for an hour, and again 6 hours on
+    for hour in (2, 8):  # for an hour, and again 6 hours on
         assert h2s[hour] == pytest.approx(5.0, abs=0.1)
-    assert max(h2s[:1] + h2s[5:7]) < 2  # back to its usual level in between
+    assert max(h2s[:2] + h2s[3:8] + h2s[9:]) < 2  # its usual level the rest of the time
     assert "co2_molpct" in stream.metrics
 
 
-def test_synthetic_co2_slugs_are_short(north_sea):
+def test_synthetic_peaks_are_short(north_sea):
     """Ray, 29 Oct: "some of the CO2 peaks are unrealisticly long, cut the longest in
-    half". No field's CO2 stays over the follow level for more than four hours."""
+    half", then "simulated peaks are too long". No field's H2S or CO2 stays over the
+    follow level for more than an hour: about 29 km of gas, not whole lines. Each
+    field still sends some."""
     from nora.config import load_config
 
     quality = load_config()["quality"]
-    follow = quality["co2_molpct"][0] * quality["follow_from"]
-    assets, values = load_stream("synthetic-week", north_sea).metrics["co2_molpct"]
-    for column, asset in enumerate(assets):
-        run = longest = 0
-        for row in values:
-            run = run + 1 if row[column] is not None and row[column] >= follow else 0
-            longest = max(longest, run)
-        assert longest <= 4, f"{asset}: CO2 over {follow:.2f} mol % for {longest} h"
+    stream = load_stream("synthetic-week", north_sea)
+    for metric in ("h2s_ppm", "co2_molpct"):
+        follow = quality[metric][0] * quality["follow_from"]
+        assets, values = stream.metrics[metric]
+        slugs = 0
+        for column, asset in enumerate(assets):
+            run = longest = 0
+            for row in values:
+                run = run + 1 if row[column] is not None and row[column] >= follow else 0
+                slugs += run == 1
+                longest = max(longest, run)
+            assert longest <= 1, f"{asset}: {metric} over {follow:.2f} for {longest} h"
+        assert slugs >= 4, f"{metric}: only {slugs} slugs in the week"
 
 
 def test_synthetic_week_breaches_limits_now_and_then(north_sea):
