@@ -175,13 +175,14 @@ COASTLINE = DATA_DIR / "geo" / "coastline.json"
 
 def coastline(path: Path = COASTLINE) -> dict:
     """The land around the network (scripts/build_coastline.py), for the map NORA draws
-    itself when the browser has no WebGL. Empty if the file is missing: the map still
-    draws the network, on plain water."""
+    itself when the browser has no WebGL, and the box it was clipped to (the map keeps its
+    view inside it). Empty if the file is missing: the map still draws the network, on
+    plain water."""
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
         return {"rings": []}
-    return {"rings": data["rings"], "source": data.get("source", "")}
+    return {"rings": data["rings"], "box": data.get("box"), "source": data.get("source", "")}
 
 
 BATHYMETRY = DATA_DIR / "geo" / "bathymetry.json"
