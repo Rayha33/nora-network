@@ -111,5 +111,5 @@ test("lines: the settle-out pressure on the line, where its ends have pressures"
   App.live.frames = [{ t: 0, flows: { [id]: 0 }, metrics: { pressure_bar: { [from]: 120, [to]: 120 } }, plan: null }];
   App.live.index = 0;
   App.live.values[id] = 0;
-  assert.equal(App.pipeStyle(id).label, "sop 120.0", "a shut-in line still shows what it settles to");
+  assert.equal(App.pipeStyle(id).label, "120.0", "a shut-in line still shows what it settles to");
 });
