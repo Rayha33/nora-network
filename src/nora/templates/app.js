@@ -248,6 +248,13 @@ const App = (() => {
      Other markers keep one line. No alarm tag beside a moving label (Ray: "remove the
      red tag label"): the alarm shows on the asset it reaches. */
   function markerRows(marker, detail) {
+    /* A pig the same way (Ray, 29 Oct: "Pig ID: 3420 / ETA: 23:21 / Speed: 5,3 m/s"):
+       its ID, when it reaches its receiver (CET), and its speed. */
+    if (marker.kind === "pig") {
+      return [[marker.pigId != null ? `Pig ${marker.pigId}` : "Pig", COLORS.pig],
+        [`ETA ${timeFormat(marker.arrives, { timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit" })}`, COLORS.text],
+        [`${fmt(marker.speed, 1)} m/s`, COLORS.text_dim]];
+    }
     if (marker.kind === "quality") {
       const gas = QUALITY[marker.gas];
       return [[gas.name, COLORS[gas.color]], [`${marker.amount} ${gas.unit}`, COLORS.text], marker.eta ? [`ETA ${marker.eta}`, COLORS.text_dim] : null].filter(Boolean);
@@ -256,7 +263,7 @@ const App = (() => {
     return [[parts.join("  "), COLORS.text]];
   }
   function markerLabel(ctx, marker, x, y, size, detail, taken) {
-    if (!marker.value || (!detail && !marker.level && marker.kind !== "quality")) return;
+    if (marker.kind !== "pig" && (!marker.value || (!detail && !marker.level && marker.kind !== "quality"))) return;
     const k = display.scale; // labels never under 11 px, larger on a wall
     const font = 11 * k, line = font + 3 * k, rows = markerRows(marker, detail);
     ctx.save();
@@ -461,7 +468,7 @@ const App = (() => {
     ctx.strokeStyle = COLORS.casing;
     ctx.stroke();
     ctx.restore();
-    if (marker.kind !== "pig") markerLabel(ctx, marker, x, y, size, detail, taken);
+    markerLabel(ctx, marker, x, y, size, detail, taken);
   }
 
   // ------------------------------------------------------------------ settings
@@ -982,8 +989,11 @@ const App = (() => {
     const pigs = (live.stream && live.stream.pigs) || live.feedPigs || [];
     for (const pig of pigs) {
       const place = pigPlace(pig, live.time);
-      if (place) out.push({ kind: "pig", id: place.pid, along: place.along, label: "", level: 0, title: pig.label,
-        eta: clock(place.exitAt), to: nameOf(place.next), key: `pig:${pig.label}|${pig.launch}`, ref: pig });
+      if (!place) continue;
+      const trip = pigTrip(pig, live.time);
+      out.push({ kind: "pig", id: place.pid, along: place.along, label: "", level: 0, title: pig.label,
+        eta: clock(place.exitAt), to: nameOf(place.next), key: `pig:${pig.label}|${pig.launch}`, ref: pig,
+        pigId: pig.id != null ? pig.id + trip.run : null, arrives: trip.arrives, speed: pig.speed });
     }
     /* Head and tail: a peak is a stretch of gas, not a point. A change in flow spreads
        over the gas that passed in one data step (velocity × step); the band is centred
@@ -1585,12 +1595,63 @@ const App = (() => {
       h("div", { class: "cols" },
         h("div", { class: "box" }, h("h2", null, "Exit points: actual flow against the hourly nomination"),
           bank(exits.map(exitIndicator), "No exit-point readings in this dataset.")),
+        nominationsBox(exits),
         h("div", { class: "box" }, h("h2", null, "Active alarms"), alarmList(live.conditions.slice(0, 12))),
         qualityBox(),
         h("div", { class: "box" }, h("h2", null, "Pressures at plants, hubs and terminals"),
           bank(pressures.slice(0, 10).map(pressureIndicator), "No pressure readings in this dataset.")),
         h("div", { class: "box" }, h("h2", null, "Busiest pipelines"), bank(loaded.map(loadIndicator), "No flow readings yet.")),
         h("div", { class: "box" }, h("h2", null, "Units"), h("div", { class: "units" }, units)))));
+  }
+
+  /* The next 6 hours of nominations at each exit point (Ray, 29 Oct: "origo integration
+     for hourly nominations from the shippers at each exitpoint, this should be shown in
+     both absolute numbers but in a visual minimalistic way. what is important are rate
+     of change at each exit point for the next 6 hours"). Per exit: the nomination now
+     and in six hours, the hourly steps as a hairline, and the steepest hourly change
+     ahead with when it starts; a fast ramp is marked (nora.toml [thresholds] step, as
+     a share of the nomination now). */
+  function rampAhead(id) {
+    const hours = nominationWindow(id);
+    if (hours[0].value == null) return null;
+    let steepest = null;
+    for (let k = 1; k < hours.length; k++) {
+      if (hours[k].value == null || hours[k - 1].value == null) continue;
+      const change = hours[k].value - hours[k - 1].value;
+      if (!steepest || Math.abs(change) > Math.abs(steepest.change)) steepest = { change, t: hours[k].t };
+    }
+    const values = hours.map((r) => r.value).filter((v) => v != null);
+    const share = steepest ? Math.abs(steepest.change) / Math.max(1, hours[0].value) : 0;
+    return { hours, now: hours[0].value, last: values[values.length - 1], steepest, level: level(share, T.step) };
+  }
+  function nominationSteps(hours) {
+    const values = hours.map((r) => r.value), known = values.filter((v) => v != null);
+    const lo = Math.min(...known), hi = Math.max(...known), span = hi - lo || 1;
+    const y = (v) => (18 - ((v - lo) / span) * 14).toFixed(1);
+    let path = "";
+    values.forEach((v, k) => {
+      if (v == null) return;
+      path += `${path ? "L" : "M"}${k * 18},${y(v)}H${(k + 1) * 18}`;
+    });
+    return svg("0 0 108 22", `<path d="${path}" fill="none" stroke="${COLORS.text}" stroke-width="1.2"/>`, "steps"); // numbers and palette colours only
+  }
+  function nominationsBox(exits) {
+    const rows = exits.map((id) => ({ id, ramp: rampAhead(id) })).filter((r) => r.ramp)
+      .sort((a, b) => b.ramp.level - a.ramp.level || Math.abs((b.ramp.steepest || {}).change || 0) - Math.abs((a.ramp.steepest || {}).change || 0));
+    const hm = (t) => timeFormat(t, { timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit" });
+    const source = live.feed ? "From Origo, the shippers' nominations." : `From the dataset${live.stream && live.stream.synthetic ? " (synthetic)" : ""}; live, from Origo.`;
+    return h("div", { class: "box" }, h("h2", null, "Nominations at the exit points, next 6 hours"),
+      rows.length ? h("ul", { class: "noms" }, rows.map(({ id, ramp }) => {
+        const s = ramp.steepest, steady = !s || Math.abs(s.change) < 0.05;
+        return h("li", { class: "nom-row", onclick: () => go({ screen: "asset", asset: id }), title: "Hourly nominations, now and the next 5 hours (MSm³/d)" },
+          h("span", { class: "name" }, nameOf(id)),
+          h("span", { class: "values" }, `${fmt(ramp.now, 1)} → ${fmt(ramp.last, 1)}`),
+          nominationSteps(ramp.hours),
+          h("span", { class: "ramp" }, steady ? h("span", { class: "dim" }, "steady")
+            : `${s.change > 0 ? "▲" : "▼"} ${fmt(Math.abs(s.change), 1)}/h at ${hm(s.t)}`),
+          ramp.level ? badge(ramp.level, "Fast ramp") : h("span", null));
+      })) : h("p", { class: "empty" }, "No nominations in this dataset."),
+      h("p", { class: "dim small" }, `${source} MSm³/d; times CET.`));
   }
 
   function nominationHistogram(id) {
@@ -1720,19 +1781,7 @@ const App = (() => {
     const v = C.pipelines.gas_velocity_mps, step = (live.stream && live.stream.step) || 3600;
     const volume = (msm3) => `${fmt(msm3, msm3 < 1 ? 2 : 1)} MSm³`;
     if (!m) return { title: "Left the network", sub: "", body: h("div", { class: "side-detail" }, h("p", { class: "empty" }, "This pig or peak has left the network, or the data moved past it. Click another on the map or in the Flow.")) };
-    if (m.kind === "pig") {
-      const pig = m.ref, trip = pigTrip(pig, live.time);
-      return { title: pig.label, sub: `Pig on ${nameOf(m.id)}`, body: h("div", { class: "side-detail" },
-        box("Where it is going",
-          row("Now on", nameOf(m.id)),
-          row("Next stop", at(trip.next, trip.nextAt)),
-          row("Receiver", at(trip.receiver, trip.arrives))),
-        box("Run",
-          row("Launched", formatTime(trip.start)),
-          row("Speed", `${fmt(pig.speed, 1)} m/s`),
-          pig.every ? row("Relaunched", `every ${fmt(pig.every / 3600)} h`) : []),
-        note("Estimate from the pig's speed and the route the gas takes through each node.")) };
-    }
+    if (m.kind === "pig") return pigDetail(m, { row, box, note });
     if (m.kind === "peak") {
       const peak = m.ref, place = peakPlace(peak), pad = step / 2, d = assets[place.pid];
       const next = place.forward ? d.to : d.from, end = peakEnd(peak);
@@ -1775,6 +1824,39 @@ const App = (() => {
     const all = peakNotes();
     all[slug] = { ...(all[slug] || {}), ...change };
     try { localStorage.setItem(PEAK_NOTES, JSON.stringify(all)); } catch (error) { /* kept for this view only */ }
+  }
+  /* A pig set out like a peak (Ray, 29 Oct: "a pig needs the same kind of setup for
+     information as a peak"): its ID, ETA and speed first, its run as Launched → now →
+     ETA, a line in words, then where it is and when. */
+  function pigDetail(m, { row, box, note }) {
+    const pig = m.ref, trip = pigTrip(pig, live.time), d = assets[m.id];
+    const hm = (t) => timeFormat(t, { timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit" });
+    const kp = (d.km || 0) * Math.max(0, Math.min(1, m.along));
+    const stat = (label, value, sub) => h("div", { class: "stat" }, h("span", { class: "label" }, label), h("strong", null, value), sub ? h("span", { class: "sub" }, sub) : null);
+    const origin = trip.start != null ? (assets[pig.pipeline] || {}).from : null;
+    const id = m.pigId != null ? String(m.pigId) : "–";
+    return { title: m.pigId != null ? `Pig ${m.pigId}` : pig.label, sub: `${pig.label} · ${nameOf(origin)} to ${nameOf(trip.receiver)}`,
+      body: h("div", { class: "side-detail peak-detail" },
+        h("div", { class: "peak-stats" },
+          stat("Pig ID", id, pig.every ? `run ${trip.run + 1}` : ""),
+          stat("ETA", hm(trip.arrives), `CET · ${nameOf(trip.receiver)}`),
+          stat("Speed", `${fmt(pig.speed, 1)} m/s`, `${fmt(pig.speed * 3.6, 1)} km/h`)),
+        h("ol", { class: "journey" },
+          h("li", null, h("span", { class: "label" }, "Launched"), h("strong", null, nameOf(origin)), h("span", { class: "sub" }, cet(trip.start))),
+          h("li", { class: "now" }, h("span", { class: "label" }, "Now"), h("strong", null, nameOf(m.id)), h("span", { class: "sub" }, `KP ${fmt(kp, 0)}`)),
+          h("li", null, h("span", { class: "label" }, "ETA"), h("strong", null, nameOf(trip.receiver)), h("span", { class: "sub" }, cet(trip.arrives)))),
+        h("p", { class: "peak-description" }, `${pig.label}, launched ${cet(trip.start)}, now on ${nameOf(m.id)} at KP ${fmt(kp, 0)}. Next ${nameOf(trip.next)} ${cet(trip.nextAt)}; expected at ${nameOf(trip.receiver)} ${cet(trip.arrives)}.`),
+        box("Position",
+          row("Location", nameOf(m.id)),
+          row("KP", `${fmt(kp, 1)} of ${fmt(d.km || 0)} km`),
+          row("Next stop", `${nameOf(trip.next)}, ${cet(trip.nextAt)}`),
+          row("Network", unitOf[m.id] ? unitById[unitOf[m.id]].name : origin && unitOf[origin] ? unitById[unitOf[origin]].name : "–")),
+        box("Timing (CET)",
+          row("Launched", cet(trip.start)),
+          row("ETA", `${cet(trip.arrives)}, ${nameOf(trip.receiver)}`),
+          row("Run", `${fmt((trip.arrives - trip.start) / 3600, 1)} h`),
+          pig.every ? row("Relaunched", `every ${fmt(pig.every / 3600)} h`) : []),
+        note("Estimate from the pig's speed and the route the gas takes through each node.")) };
   }
   function qualityDetail(m, { row, box, note, volume }) {
     const slug = live.slugs.get(m.ref), parcels = live.quality.filter((q) => q.slug === m.ref), q0 = QUALITY[m.gas];
@@ -1847,7 +1929,7 @@ const App = (() => {
     const run = every ? Math.floor(since / every) : 0, start = pig.launch + run * every;
     const place = pigPlace(pig, time), route = pigRoute(pig, run, Infinity), last = route[route.length - 1];
     return {
-      start, next: place.next, nextAt: place.exitAt,
+      run, start, next: place.next, nextAt: place.exitAt,
       receiver: last.forward ? assets[last.pid].to : assets[last.pid].from,
       arrives: start + (last.m + lineMetres(last.pid)) / pig.speed,
     };
@@ -2939,6 +3021,7 @@ const App = (() => {
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
+    rampAhead, // the next 6 hours of nominations at an exit point
     pipeStyle, pipeMapName, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
     timeState, timelineWindow,

@@ -528,3 +528,13 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+/* Nominations at the exit points, next 6 hours: name, now → in 6 h, the hourly steps,
+   the steepest hourly change ahead, and a badge only for a fast ramp. */
+.noms { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.nom-row { display: grid; grid-template-columns: minmax(90px, 1.2fr) minmax(90px, 1fr) 108px minmax(110px, 1fr) auto; align-items: center; gap: 12px; padding: 6px 8px; margin: 0 -8px; border-radius: 7px; cursor: pointer; font-size: 13px; }
+.nom-row:hover { background: var(--band); }
+.nom-row .values { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nom-row .ramp { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.nom-row svg.steps { width: 108px; height: 22px; stroke: none; }
+@media (max-width: 600px) { .nom-row { grid-template-columns: 1fr auto; } .nom-row svg.steps, .nom-row .values { display: none; } }

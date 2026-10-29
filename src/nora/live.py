@@ -34,6 +34,8 @@ from urllib.parse import urlsplit
 from .integrations import Connector
 from .stream import Stream
 
+# (when, flows, metrics, index), and from a poller optionally the hours ahead:
+# {metric: {asset: [the next hours' values]}} (Origo's nominations).
 Frame = tuple[datetime, dict[str, float], dict[str, dict[str, float]], int]
 PacedFrame = tuple[float, Frame]  # wall-seconds to wait, then the frame itself
 PolledItem = Frame | dict  # a dict is an error event: {"error": message}
@@ -73,7 +75,7 @@ def replay(stream: Stream, speed: float = 3600.0, loop: bool = True) -> Iterator
             time.sleep(1.0)
 
 
-def nominations_ahead(stream: Stream, index: int, hours: float = 2.0) -> dict:
+def nominations_ahead(stream: Stream, index: int, hours: float = 6.0) -> dict:
     """Nominations already sent for the next `hours`, per exit point: shippers nominate
     ahead, so a live feed knows them before the gas flows."""
     if "nomination_msm3d" not in stream.metrics or len(stream.times) < 2:
@@ -107,9 +109,17 @@ def poll(
             readings = list(source.fetch(now - timedelta(seconds=poll_seconds), now))
             if not readings:
                 raise ValueError(f"{source.name}: empty response")
-            when = max(r.when for r in readings)
-            flows = {r.asset: r.value for r in readings}
-            yield wait, (when, flows, {source.metric: dict(flows)}, index)
+            # What holds now (the latest reading per asset up to now) and, from a
+            # source that knows them (Origo's nominations), the hours ahead.
+            current = [r for r in readings if r.when <= now] or readings
+            latest = {r.asset: r.value for r in sorted(current, key=lambda r: r.when)}
+            later: dict[str, list[float]] = {}
+            for r in sorted((r for r in readings if r.when > now), key=lambda r: r.when):
+                later.setdefault(r.asset, []).append(r.value)
+            when = max(r.when for r in current)
+            flows = dict(latest) if source.flows else {}
+            item = (when, flows, {source.metric: latest}, index)
+            yield wait, (*item, {source.metric: later}) if later else item
             index += 1
         except Exception as error:  # noqa: BLE001 - the feed must outlive any one poll
             print(f"{source.name}: poll failed: {error}", file=sys.stderr)
@@ -141,11 +151,13 @@ class _Handler(SimpleHTTPRequestHandler):
                 if isinstance(item, dict):  # a poller failure: tell the browser, keep serving
                     self._send("error", item)
                     continue
-                when, values, metrics, index = item
+                when, values, metrics, index, *polled = item
                 frame = {"t": int(when.timestamp()), "values": values, "metrics": metrics}
                 if self.plan:
                     frame["plan"] = self.plan[index]
-                if self.ahead:
+                if polled:  # a poller that knows the hours ahead (Origo)
+                    frame["ahead"] = polled[0]
+                elif self.ahead:
                     frame["ahead"] = self.ahead(index)
                 self._send("frame", frame)
         except (BrokenPipeError, ConnectionResetError):
