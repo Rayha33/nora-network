@@ -12,7 +12,8 @@ then a `frame` event per time step:
 
 Anything that yields (timestamp, flows, metrics, index) frames can be served the same
 way, so a real feed (a SCADA historian, Origo, or a TSO's transparency API; see
-integrations.py) can replace `replay` without touching the browser side. Long gaps
+integrations.py and entsog.py) can replace `replay` without touching the browser
+side. Long gaps
 between frames are filled with SSE `: keepalive` comments (about one every 15 s), so
 browsers and proxies don't reap an idle connection.
 """
@@ -27,11 +28,23 @@ from datetime import datetime
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import NamedTuple
 from urllib.parse import urlsplit
 
 from .stream import Stream
 
-Frame = tuple[datetime, dict[str, float], dict[str, dict[str, float]], int]
+
+class Frame(NamedTuple):
+    """One time step of a feed. `stale` (live sources) marks a repeated frame
+    served while the API behind it is down; the browser shows the age anyway."""
+
+    when: datetime
+    values: dict[str, float]
+    metrics: dict[str, dict[str, float]]
+    index: int
+    stale: bool = False
+
+
 PacedFrame = tuple[float, Frame]  # wall-seconds to wait, then the frame itself
 
 KEEPALIVE_SECONDS = 15.0  # max silence before an SSE comment keeps the line warm
@@ -52,7 +65,7 @@ def replay(stream: Stream, speed: float = 3600.0, loop: bool = True) -> Iterator
             wait = 0.0 if previous is None else max(0.0, (when - previous).total_seconds() / speed)
             previous = when
             steps += 1
-            yield wait, (when, flows, metrics, index)
+            yield wait, Frame(when, flows, metrics, index)
         if not loop:
             return
         if not steps:
@@ -96,14 +109,20 @@ class _Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         try:
             self._send("meta", self.meta)
-            for wait, (when, values, metrics, index) in self.frames():
+            for wait, frame in self.frames():
                 self._pause(wait)
-                frame = {"t": int(when.timestamp()), "values": values, "metrics": metrics}
+                event = {
+                    "t": int(frame.when.timestamp()),
+                    "values": frame.values,
+                    "metrics": frame.metrics,
+                }
                 if self.plan:
-                    frame["plan"] = self.plan[index]
+                    event["plan"] = self.plan[frame.index]
                 if self.ahead:
-                    frame["ahead"] = self.ahead(index)
-                self._send("frame", frame)
+                    event["ahead"] = self.ahead(frame.index)
+                if frame.stale:
+                    event["stale"] = True
+                self._send("frame", event)
         except (BrokenPipeError, ConnectionResetError):
             pass  # the browser went away
 
@@ -136,9 +155,14 @@ def serve(
     keepalive: float = KEEPALIVE_SECONDS,
     open_browser: bool = True,
     plan: list | None = None,
+    frames: Callable[[], Iterator[PacedFrame]] | None = None,
 ) -> None:
+    """Serve the site and `stream` as a live feed. Without `frames` the stream is
+    replayed at `speed`; pass another generator (e.g. entsog.poll_entsog) to serve
+    a live source instead, the way `replay` serves a recording."""
     hidden = ("times", "values", "metrics", "plan")
     meta = {k: v for k, v in stream.payload().items() if k not in hidden}
+    feed = frames or partial(replay, stream, speed)
     handler = type(
         "StreamHandler",
         (_Handler,),
@@ -146,14 +170,15 @@ def serve(
             "meta": meta,
             "plan": plan,
             "ahead": staticmethod(partial(nominations_ahead, stream)),
-            "frames": staticmethod(partial(replay, stream, speed)),
+            "frames": staticmethod(feed),
             "keepalive": keepalive,
         },
     )
     server = ThreadingHTTPServer((host, port), partial(handler, directory=str(site_dir)))
     server.daemon_threads = True
     url = f"http://{host}:{port}/network.html?live=/stream"
-    print(f"Replaying '{stream.title}' at {speed:g}x as a live feed")
+    how = "as a live feed" if frames else f"at {speed:g}x as a live feed"
+    print(f"{'Serving' if frames else 'Replaying'} '{stream.title}' {how}")
     print(f"  map:  {url}")
     print(f"  feed: http://{host}:{port}/stream  (Ctrl-C to stop)")
     if open_browser:

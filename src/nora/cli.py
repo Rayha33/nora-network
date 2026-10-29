@@ -93,6 +93,8 @@ def cmd_serve(args) -> int:
 
 
 def cmd_live(args) -> int:
+    from functools import partial
+
     from .live import serve
 
     # build_site has already loaded the network and every stream; reuse them
@@ -107,14 +109,26 @@ def cmd_live(args) -> int:
     if stream is None:
         # a `--stream` name that is not a stream: let load_stream report it
         stream = load_stream(name, summary["net"], _streams_dir(args))
+    frames = None
+    if args.source == "entsog":
+        from .entsog import default_cache, poll_entsog, read_mapping
+
+        mapping, factor = read_mapping(_streams_dir(args) / name / "stream.toml")
+        polled = ", ".join(sorted(mapping)) or "nothing"
+        print(f"Polling ENTSOG every {args.interval:g} s for: {polled}")
+        # the plan indexes recorded frames, which a live feed has none of
+        frames = partial(
+            poll_entsog, mapping, factor, interval=args.interval, cache=default_cache(name)
+        )
     serve(
         args.out,
         stream,
-        plan=plan_timeline(stream, summary["net"], load_config()),
+        plan=None if frames else plan_timeline(stream, summary["net"], load_config()),
         host=args.host,
         port=args.port,
         speed=args.speed,
         open_browser=not args.no_browser,
+        frames=frames,
     )
     return 0
 
@@ -188,6 +202,18 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=3600.0,
         help="data seconds per real second (default 3600: an hour a second)",
+    )
+    live.add_argument(
+        "--source",
+        choices=["replay", "entsog"],
+        default="replay",
+        help="replay a stream, or poll the ENTSOG Transparency Platform for real flows",
+    )
+    live.add_argument(
+        "--interval",
+        type=float,
+        default=900.0,
+        help="seconds between ENTSOG polls (default 900: every 15 minutes)",
     )
     live.set_defaults(run=cmd_live)
 
