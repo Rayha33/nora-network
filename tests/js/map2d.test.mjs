@@ -201,7 +201,7 @@ test("flow overview: a name uses a shifted side slot when vertical slots are ful
   assert.ok(!blockers.some((other) => box[0] < other[2] && box[2] > other[0] && box[1] < other[3] && box[3] > other[1]), "the side slot is collision-free");
 });
 
-test("flow overview: incoming and outgoing totals are readable inside the square", () => {
+test("flow overview: flow in above, flow out below, under the pressure tag", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;
   loadFirstHour(App, NORA);
@@ -218,26 +218,36 @@ test("flow overview: incoming and outgoing totals are readable inside the square
     },
     set(target, key, value) { target[key] = value; return true; },
   });
-  const half = 120;
+  const half = 60, scale = 0.4;
   const id = App.nodeIds.find((node) => {
     const lines = App.views.flow.lineReadings(node, pos);
     return lines.some((line) => line.direction === "in") && lines.some((line) => line.direction === "out");
   });
   assert.ok(id, "the fixture has a node with both incoming and outgoing gas");
-  App.views.flow.drawOverviewFlows(ctx, 0, 0, id, App.colors.card.active, { half, total: 50, positions: pos });
-  const flows = labels.filter((label) => /^[\d.,]+M$/.test(label.text));
-  assert.equal(flows.length, 2, "incoming and outgoing totals, each on its own row");
-  assert.ok(labels.every((label) => !/\b(in|out)\b/i.test(label.text)), "the numbers alone: no in or out text (Ray, 29 Oct)");
-  assert.ok(labels.every((label) => Math.abs(label.x) <= half && Math.abs(label.y) <= half), "both totals stay inside the square");
+  const tag = { box: [-30, -76, 30, -44] };
+  App.views.flow.drawOverviewFlows(ctx, 0, 0, id, App.colors.card.active, { half, total: 50, tag, positions: pos, scale });
+  // Ray, 29 Oct: "when zoomed out i should still be able to see flow in and out of a
+  // node, in above and out below"
+  assert.equal(labels.length, 2, "flow in and flow out");
+  assert.ok(labels.every((label) => /^[\d.,]+M$/.test(label.text)), "the numbers alone: no in or out text");
+  const [first, second] = [...labels].sort((a, b) => a.y - b.y);
+  const lines = App.views.flow.lineReadings(id, pos), sum = (dir) => lines.filter((l) => l.direction === dir && l.value >= 0.05).reduce((t, l) => t + l.value, 0);
+  assert.equal(first.text, `${App.fmt(sum("in"), sum("in") < 10 ? 1 : 0)}M`, "in above");
+  assert.equal(second.text, `${App.fmt(sum("out"), sum("out") < 10 ? 1 : 0)}M`, "out below");
+  assert.ok(first.y > tag.box[3] && second.y < half, "under the pressure tag, inside the square");
   assert.ok(labels.every((label) => parseFloat(label.font) >= 11), "overview flows meet the readability floor");
 });
 
-test("flow overview: squares retain room for two flow rows when zoomed out", () => {
+test("flow overview: a square fits its cell, with room for its name", () => {
   const { App } = loadApp();
-  const half = App.views.flow.overviewSquareHalf(0.27);
-  assert.ok(half * 0.27 >= 32, "the square is at least 64 px wide on screen");
-  assert.equal(App.views.flow.overviewSquareHalf(1), 64, "the established detailed square size is unchanged");
-  assert.equal(App.views.flow.overviewSquareHalf(1.1), 64, "zooming in keeps the detailed size");
+  const flow = App.views.flow;
+  assert.ok(flow.overviewSquareHalf(0.27) * 0.27 >= 22, "at least 22 px a half on screen when there is room");
+  const cell = { down: 215, across: 246 }, scale = 0.34;
+  const half = flow.overviewSquareHalf(scale, cell) * scale;
+  assert.ok(2 * half + 30 <= cell.down * scale + 1e-9, "square and name fit between two rows (they overlapped)");
+  assert.ok(2 * half + 16 <= cell.across * scale + 1e-9, "and between neighbours");
+  assert.equal(flow.overviewSquareHalf(1), 64, "the established detailed square size is unchanged");
+  assert.equal(flow.overviewSquareHalf(1.1), 64, "zooming in keeps the detailed size");
 });
 
 test("flow pressures: endpoint labels remain visible when zoomed out", () => {
@@ -246,59 +256,68 @@ test("flow pressures: endpoint labels remain visible when zoomed out", () => {
   assert.equal(App.views.flow.pressureVisibility("load", 0.25), false, "non-live modes still have no live pressure labels");
 });
 
-test("flow overview: pressure is a stronger label above the square", () => {
+/* Ray, 29 Oct: "pressures need to be like this at every end of lines but they should
+   be inside their own small rectangle where the line comes in or leaves". */
+function busiest(App, pos) {
+  return App.nodeIds.reduce((best, id) => (App.views.flow.lineReadings(id, pos).length > App.views.flow.lineReadings(best, pos).length ? id : best));
+}
+const overlap = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
+
+test("flow pressures: a tag on the square's edge at every line end, zoomed in", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;
   loadFirstHour(App, NORA);
   App.state.mode = "live";
-  App.live.values = App.live.frames[0].flows;
-  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: stage * 250, y: rank * 72 }]));
-  const labels = [];
-  const ctx = new Proxy({}, {
-    get(target, key) {
-      if (key in target) return target[key];
-      if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
-      if (key === "fillText") return (text, x, y) => labels.push({ text, x, y, font: target.font });
-      return () => {};
-    },
-    set(target, key, value) { target[key] = value; return true; },
-  });
-  App.views.flow.drawEndpointPressures(ctx, 0, 0, "ttf", App.colors.card.active, { half: 120, positions: pos, placed: [], zoom: 0.27 });
-  assert.equal(labels.length, 1, "one overview pressure, not seven repeated values");
-  assert.ok(labels[0].y < -120, "the pressure is consistently above the square");
-  assert.ok(parseFloat(labels[0].font) >= 12, "the overview pressure is prominent and readable");
+  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 258, y: stage * 204 }]));
+  const flow = App.views.flow, half = 64;
+  for (const id of App.nodeIds) {
+    const p = pos[id], tags = flow.pressureTags(id, pos, 1.1, half), lines = flow.lineReadings(id, pos);
+    assert.equal(tags.length, lines.length, `${id}: one tag per line end`);
+    for (const tag of tags) {
+      const [x0, y0, x1, y1] = tag.box;
+      const onEdge = [y1 - (p.y - half), y0 - (p.y + half), x0 - (p.x + half), x1 - (p.x - half)].some((d) => Math.abs(d) < 1e-6);
+      assert.ok(onEdge, `${id}: the tag sits on the square's edge`);
+      assert.match(tag.text, /^(\d[\d.,]*|–) bar$/, "the node's pressure, with its unit");
+    }
+    for (let i = 0; i < tags.length; i++) for (let j = i + 1; j < tags.length; j++) {
+      assert.ok(!overlap(tags[i].box, tags[j].box), `${id}: tags ${i} and ${j} do not overlap`);
+    }
+  }
+  const id = busiest(App, pos);
+  assert.ok(flow.pressureTags(id, pos, 1.1, half).length >= 5, "a busy hub has a tag at each of its lines");
 });
 
-test("flow detail: line-end pressures grow to a readable 13 px", () => {
+test("flow pressures: zoomed out, one tag on the square's top edge, the number alone", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;
   loadFirstHour(App, NORA);
   App.state.mode = "live";
-  App.live.values = App.live.frames[0].flows;
-  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: stage * 250, y: rank * 72 }]));
-  const labels = [];
-  const ctx = new Proxy({}, {
-    get(target, key) {
-      if (key in target) return target[key];
-      if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
-      if (key === "fillText") return (text, x, y) => labels.push({ text, x, y, font: target.font });
-      return () => {};
-    },
-    set(target, key, value) { target[key] = value; return true; },
-  });
-  App.views.flow.drawEndpointPressures(ctx, 0, 0, "ttf", App.colors.card.active, { half: 64, positions: pos, placed: [], zoom: 1.1 });
-  assert.equal(labels.length, 7, "all seven detailed line-end pressures are present");
-  assert.ok(labels.every((label) => parseFloat(label.font) >= 13), "zooming in must not make pressures smaller");
+  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 258, y: stage * 204 }]));
+  const id = App.nodeIds.find((node) => App.reading(node).pressure != null), p = pos[id];
+  const half = 64, scale = 0.6;
+  const tags = App.views.flow.pressureTags(id, pos, scale, half);
+  assert.equal(tags.length, 1, "one pressure per node in the overview");
+  const [x0, y0, x1, y1] = tags[0].box;
+  assert.ok(x0 > p.x - half && x1 < p.x + half, "no wider than the square");
+  assert.ok(Math.abs((y0 + y1) / 2 - (p.y - half)) < 1e-6, "on the middle of its top edge, where lines arrive");
+  assert.equal(tags[0].text, App.fmt(App.reading(id).pressure), "the number alone; the tag says bar on zoom in");
+  assert.equal(App.views.flow.pressureTags(id, pos, 0.2, 20).length, 0, "no tag where it would not fit");
 });
 
-test("flow pressures: one value per node in the overview, every line end on zoom in", () => {
+test("flow pressures: a line ends at its tag, so the arrow touches it", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;
   loadFirstHour(App, NORA);
   App.state.mode = "live";
-  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: stage * 250, y: rank * 72 }]));
-  assert.equal(App.views.flow.pressureReadings("ttf", pos, 0.27).length, 1, "the overview avoids repeating the same node pressure");
-  assert.equal(App.views.flow.pressureReadings("ttf", pos, 1.1).length, 7, "the detailed view keeps every line-end pressure");
+  const flow = App.views.flow, pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 258, y: stage * 204 }]));
+  const id = busiest(App, pos), p = pos[id];
+  for (const line of flow.lineReadings(id, pos)) {
+    const d = flow.portDistance(id, line.ux, line.uy, pos), x = p.x + line.ux * d, y = p.y + line.uy * d;
+    const tag = flow.pressureTags(id, pos, 1, 64).find((t) => x >= t.box[0] - 1e-6 && x <= t.box[2] + 1e-6 && y >= t.box[1] - 1e-6 && y <= t.box[3] + 1e-6);
+    assert.ok(tag, `${line.pid}: the line ends on a tag`);
+    const beyond = { x: p.x + line.ux * (d + 0.5), y: p.y + line.uy * (d + 0.5) };
+    assert.ok(!(beyond.x > tag.box[0] && beyond.x < tag.box[2] && beyond.y > tag.box[1] && beyond.y < tag.box[3]), `${line.pid}: at its outer side`);
+  }
 });
 
 test("flow nodes: live flow (MSm³/d) and pressure (bar) for each node", () => {
@@ -321,7 +340,6 @@ test("map: major pipelines have concise persistent names", () => {
   assert.equal(App.pipeMapName("iuk"), "Interconnector (IUK)");
   assert.equal(App.pipeMapName("ogt"), "Oseberg Gas Transport");
   assert.equal(App.pipeMapName("troll_kollsnes"), "", "small feeders stay quiet");
-  assert.equal(App.pipeMapName("bacton_nbp"), "", "notional grid entries stay quiet");
 });
 
 test("pipelines: alarms never recolor the whole route", () => {
@@ -430,12 +448,12 @@ test("flow squares: every connected pipeline gets its own flow value inside the 
   App.state.mode = "live";
   App.live.values = App.live.frames[0].flows;
   const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 258, y: stage * 204 }]));
-  const id = "ttf"; // seven connected lines: the case quadrant totals cannot represent
+  const id = busiest(App, pos); // many connected lines: the case quadrant totals cannot represent
   const expected = App.pipeIds.filter((pid) => {
     const p = NORA.assets[pid];
     return (p.from === id || p.to === id) && !App.pipeStyle(pid).hidden;
   });
-  assert.equal(expected.length, 7);
+  assert.ok(expected.length >= 5);
   const labels = [];
   const ctx = new Proxy({}, {
     get(target, key) {
@@ -592,87 +610,8 @@ function loadFirstHour(App, nora) {
   App.live.time = stream.times[0];
 }
 
-test("flow squares: every line end has its node pressure just outside the square", () => {
-  const loaded = loadApp();
-  const { App, NORA } = loaded;
-  loadFirstHour(App, NORA);
-  App.state.mode = "live";
-  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 258, y: stage * 204 }]));
-  const id = "sleipner";
-  const expected = App.pipeIds.filter((pid) => {
-    const p = NORA.assets[pid];
-    return (p.from === id || p.to === id) && !App.pipeStyle(pid).hidden;
-  });
-  const labels = [];
-  const ctx = new Proxy({}, {
-    get(target, key) {
-      if (key in target) return target[key];
-      if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
-      if (key === "fillText") return (text, x, y) => labels.push({ text, x, y });
-      return () => {};
-    },
-    set(target, key, value) { target[key] = value; return true; },
-  });
-  const half = App.views.flow.circleRadius(id);
-  App.views.flow.drawEndpointPressures(ctx, 0, 0, id, App.colors.card.active, { half, positions: pos });
-  const pressures = labels.filter((label) => label.text === `${App.fmt(App.reading(id).pressure)} bar`);
-  assert.equal(pressures.length, expected.length, "one pressure for every pipeline end at this node");
-  assert.ok(pressures.every((label) => Math.max(Math.abs(label.x), Math.abs(label.y)) > half), "each pressure is outside the square");
-});
-
-test("flow squares: endpoint pressure labels at a node never overlap each other", () => {
-  const loaded = loadApp();
-  const { App, NORA } = loaded;
-  loadFirstHour(App, NORA);
-  App.state.mode = "live";
-  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: stage * 204, y: rank * 258 }]));
-  const ctx = new Proxy({}, {
-    get(target, key) {
-      if (key in target) return target[key];
-      if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
-      return () => {};
-    },
-    set(target, key, value) { target[key] = value; return true; },
-  });
-  const collisions = [];
-  for (const id of App.nodeIds) {
-    const boxes = App.views.flow.drawEndpointPressures(ctx, 0, 0, id, App.colors.card.active, { half: 64, positions: pos });
-    for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
-      const a = boxes[i], b = boxes[j];
-      if (a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1]) collisions.push(`${id}: ${i}/${j}`);
-    }
-  }
-  assert.deepEqual(collisions, [], "every pressure remains readable, even at a busy hub");
-});
-
-test("flow squares: pressure labels also avoid labels from neighbouring nodes", () => {
-  const loaded = loadApp();
-  const { App, NORA } = loaded;
-  loadFirstHour(App, NORA);
-  App.state.mode = "live";
-  const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: stage * 250, y: rank * 72 }]));
-  pos.grain_lng = { x: -1350, y: 1344 };
-  pos.nbp = { x: -1466, y: 1536 };
-  const ctx = new Proxy({}, {
-    get(target, key) {
-      if (key in target) return target[key];
-      if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
-      return () => {};
-    },
-    set(target, key, value) { target[key] = value; return true; },
-  });
-  const placed = [];
-  App.views.flow.drawEndpointPressures(ctx, pos.grain_lng.x, pos.grain_lng.y, "grain_lng", App.colors.card.active, { half: 64, positions: pos, placed });
-  App.views.flow.drawEndpointPressures(ctx, pos.nbp.x, pos.nbp.y, "nbp", App.colors.card.active, { half: 64, positions: pos, placed });
-  assert.equal(placed.length, 6, "both nodes register every endpoint label in the shared layout");
-  for (let i = 0; i < placed.length; i++) for (let j = i + 1; j < placed.length; j++) {
-    const a = placed[i], b = placed[j];
-    assert.ok(!(a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1]), `pressure boxes ${i} and ${j} do not overlap`);
-  }
-});
-
-/* A live node is a square holding one flow value per line, with pressure repeated outside
-   at every line end; the rate and trend remain where there is room, and the name sits below. */
+/* A live node is a square holding one flow value per line, with pressure in a tag at
+   every line end; the rate and trend remain where there is room, and the name sits below. */
 test("flow squares: rate, flows and trend sit inside, pressure moves to the line ends", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;
@@ -808,7 +747,7 @@ test("map: navigation keeps working after the canvas map takes over", () => {
   assert.equal(App.views.map.canvasMap, true, "the canvas map took over");
   const unit = NORA.units[1];
   assert.doesNotThrow(() => App.go({ screen: "unit", unit: unit.id }), "navigating after the fallback");
-  assert.equal(document.getElementById("crumb-unit").value, unit.id, "the bar names the unit");
+  assert.equal(document.getElementById("crumb-unit"), null, "no unit menu: every unit is always on (Ray, 29 Oct)");
   assert.doesNotThrow(() => App.go({ screen: "overview" }), "and on to the overview");
 });
 
@@ -880,4 +819,16 @@ test("map: a theme switch keeps the fallback basemap", () => {
   assert.ok(fallback && fallback.sources && fallback.sources.osm, "it fell back to raster tiles");
   App.views.map.theme();
   assert.equal(map.styles.at(-1), fallback, "the theme switch reloads the raster style, not the one that failed");
+});
+
+test("flow: Poland VTP is on the Map only (Ray, 29 Oct: \"remove poland vtp from flow only\")", () => {
+  const { App, NORA } = loadApp();
+  assert.deepEqual(Array.from(NORA.config.flow.hide), ["pl_vtp"], "nora.toml [flow] hide names it");
+  const { nodes, lines } = App.views.flow.changes();
+  assert.equal(nodes.find((n) => n.id === "pl_vtp").hidden, true, "not drawn in the Flow view");
+  const into = App.pipeIds.filter((pid) => NORA.assets[pid].to === "pl_vtp" || NORA.assets[pid].from === "pl_vtp");
+  assert.ok(into.length && into.every((pid) => lines.find((l) => l.id === pid).hidden), "nor the lines to it");
+  assert.equal(App.nodeStyle("pl_vtp").hidden, false, "the Map still shows it");
+  const pos = { nybro: { x: 0, y: 0 }, pl_vtp: { x: 0, y: 300 } };
+  assert.ok(!App.views.flow.lineReadings("nybro", pos).some((l) => l.otherId === "pl_vtp"), "Nybro has no reading or tag for it");
 });

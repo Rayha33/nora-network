@@ -126,6 +126,7 @@ def assets_payload(net: Network, analysis: dict) -> dict[str, dict]:
             "share": outage.get("share", 0.0),
             "modelFlow": model.get(node.id),
             "supply": node.type in SUPPLY_TYPES,
+            "exit": node.id in analysis["delivered"],  # where gas leaves (exit_points)
         }
     for pipe in net.pipelines:
         outage = outages.get(("pipeline", pipe.id), {})

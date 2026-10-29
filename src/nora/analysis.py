@@ -2,7 +2,7 @@
 
 All quantities are in MSm3/d (million standard cubic metres per day).
 
-  max_flow     the most gas the supply side can push into the markets
+  max_flow     the most gas the supply side can push to the exit points
   routed_flow  the same amount, routed along the fewest pipeline-kilometres; the
                routing stays stable from step to step, so streams use it
   n_minus_1    for every single asset outage, the deliverable gas that is lost
@@ -32,7 +32,7 @@ OUT = "__out__"  # suffix for the out-side of a capacitated node
 class Flow:
     value: float
     pipelines: dict[str, float]  # net flow, positive along the pipeline's from -> to
-    delivered: dict[str, float]  # per market node
+    delivered: dict[str, float]  # per exit point (exit_points)
     supplied: dict[str, float]  # per supply node
 
 
@@ -45,9 +45,14 @@ class Outage:
     share: float  # lost as a share of the intact network's deliverable gas
 
 
+def exit_points(graph: nx.DiGraph) -> set[str]:
+    """Where gas leaves the network (see the `exit` attribute in graph.build_graph)."""
+    return {node for node, attrs in graph.nodes(data=True) if attrs.get("exit")}
+
+
 def flow_graph(graph: nx.DiGraph, supply: dict[str, float] | None = None) -> nx.DiGraph:
     """The graph plus a super-source feeding every supplier and a super-sink behind
-    every market. `supply` overrides the suppliers' capacities (MSm3/d).
+    every exit point. `supply` overrides the suppliers' capacities (MSm3/d).
 
     A node with its own capacity (a processing plant) cannot be represented as a
     networkx node, whose capacity is infinite, so it is split: incoming edges keep
@@ -57,12 +62,13 @@ def flow_graph(graph: nx.DiGraph, supply: dict[str, float] | None = None) -> nx.
     flows = graph.copy()
     flows.add_node(SOURCE)
     flows.add_node(SINK)
+    exits = exit_points(graph)
     for node, attrs in graph.nodes(data=True):
         if attrs["type"] in SUPPLY_TYPES:
             capacity = attrs["capacity_msm3d"] if supply is None else supply.get(node, 0.0)
             if capacity:
                 flows.add_edge(SOURCE, node, capacity=capacity)
-        elif attrs["type"] == "market":
+        elif node in exits:
             flows.add_edge(node, SINK)
         elif attrs["capacity_msm3d"]:
             out = node + OUT
@@ -116,11 +122,11 @@ def _summarise(
         sign = 1 if u == attrs["from_id"] else -1
         pipe = attrs["pipeline"]
         pipelines[pipe] = pipelines.get(pipe, 0.0) + sign * flow[tail].get(v, 0.0)
-    markets = [n for n, attrs in graph.nodes(data=True) if attrs["type"] == "market"]
+    exits = sorted(exit_points(graph))
     return Flow(
         value=round(value, 6),
         pipelines={pipe: round(f, 6) for pipe, f in pipelines.items()},
-        delivered={market: round(flow[market].get(SINK, 0.0), 6) for market in markets},
+        delivered={node: round(flow[node].get(SINK, 0.0), 6) for node in exits},
         supplied={node: round(f, 6) for node, f in flow[SOURCE].items()},
     )
 

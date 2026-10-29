@@ -422,8 +422,16 @@ const App = (() => {
   // A wall is read from 5-10 m: body text at least about 20 px (13 px × 1.5).
   const autoScaleFor = (profile) => (profile === "wall" ? Math.max(1.5, autoScale(window.innerWidth)) : autoScale(window.innerWidth));
   // Returns true when the profile or scale changed, so the views can re-fit.
+  /* The bar is one row while it fits (Ray, 29 Oct: "everything here should be on one
+     line"). The UI scale zooms it, so a 1440 px wall screen at 1.5 has 960 px of room:
+     the fit is judged on that, which a media query cannot see. */
+  function barLayout(scale) {
+    const room = window.innerWidth / scale;
+    document.documentElement.dataset.bar = room < 1060 ? "two" : room < 1240 ? "tight" : "one";
+  }
   function applyDisplay() {
     const profile = chosenProfile(), scale = Math.round(chosenScale(profile) * 100) / 100;
+    barLayout(scale);
     if (profile === display.profile && scale === display.scale) return false;
     display.profile = profile;
     display.scale = scale;
@@ -462,39 +470,16 @@ const App = (() => {
   const route = { screen: "overview", unit: "all", asset: null, focus: null };
   const state = { view: C.screen.network_view, mode: C.screen.network_mode, year: null };
 
-  // ---------------------------------------------------------------- timeline
-  /* Planned and decommissioned assets on a timeline: the year on the track
-     decides which assets both views show, on top of App.nodeStyle / pipeStyle.
-     A node is shown from its startup year until the year before its shutdown
-     year; a blank year means the data does not know, so the asset has always
-     been there. The track is data-driven and deterministic: it spans the years
-     in the CSVs, starts at today and only restyles (no animation). */
-  const YEARS = [...nodeIds, ...pipeIds].flatMap((id) => {
-    const d = assets[id];
-    return [d.startup, d.shutdown, d.commissioned].filter((y) => y != null);
-  });
-  const yearInput = $("year"), yearOut = $("year-out");
+  // ---------------------------------------------------------------- the year shown
+  /* The network as it stands this year: planned assets appear from their startup year,
+     decommissioned ones are gone from their shutdown year (a blank year: always there).
+     Ray removed the year slider (29 Oct), so this is today's year, in the browser. */
   function yearActive(id) {
     const d = assets[id], year = state.year;
     if (year == null) return true;
     if (d.kind === "pipeline") return yearActive(d.from) && yearActive(d.to);
     return !(d.startup && year < d.startup) && !(d.shutdown && year >= d.shutdown);
   }
-  function setYear(year) {
-    state.year = year;
-    whatif.cache = null;  // the what-if network is the one standing in that year
-    yearInput.value = String(year);
-    const appearing = nodeIds.filter((id) => assets[id].startup === year);
-    const shutting = nodeIds.filter((id) => assets[id].shutdown === year);
-    yearOut.replaceChildren(String(year), h("span", { class: "dim" },
-      `${appearing.length ? ` +${appearing.length}` : ""}${shutting.length ? ` −${shutting.length}` : ""}`));
-    yearInput.title = [
-      appearing.length ? `Appearing in ${year}: ${appearing.map(nameOf).join(", ")}` : "",
-      shutting.length ? `No longer shown from ${year}: ${shutting.map(nameOf).join(", ")}` : "",
-    ].filter(Boolean).join("; ") || "No asset starts or shuts down in this year";
-    restyle();
-  }
-  yearInput.addEventListener("input", () => setYear(Number(yearInput.value)));
   const live = {
     stream: null, // recorded stream being replayed
     feed: null, // EventSource when connected to a live feed
@@ -1017,7 +1002,7 @@ const App = (() => {
       const d = assets[id];
       adj[id] = adj[id] || [];
       if (d.supply && d.capacity) add(WHATIF_SOURCE, id, d.capacity);
-      if (d.type === "market") sinkArc[id] = add(id, WHATIF_SINK, Infinity);
+      if (d.exit) sinkArc[id] = add(id, WHATIF_SINK, Infinity); // as analysis.flow_graph
     }
     /* A processing plant with a capacity is a bottleneck (the Python side splits
        it the same way, see analysis.flow_graph): incoming arcs land on an entry
@@ -1134,7 +1119,7 @@ const App = (() => {
       color: COLORS.normal, width: d.capacity ? 0.6 + 0.9 * Math.sqrt(d.capacity / maxCapacity) : 0.6,
       dashed: onshore || d.status !== "operating", label: "", level: 0,
       forward: true, backward: Boolean(d.bidirectional),
-      hidden: !visible(id), dim: route.unit !== "all" && unitOf[id] !== route.unit,
+      hidden: !visible(id), dim: false, // every unit is always on (Ray, 29 Oct)
     };
     if (d.status !== "operating") out.color = COLORS.inactive;
     if (mode === "live") {
@@ -1177,7 +1162,7 @@ const App = (() => {
   function nodeStyleNow(id) {
     const d = assets[id], mode = state.mode;
     const out = { level: 0, inactive: d.status !== "operating", sub: NORA.short[d.type], scale: 1,
-      hidden: !visible(id), dim: route.unit !== "all" && unitOf[id] !== route.unit };
+      hidden: !visible(id), dim: false };
     if (mode === "live") {
       const f = frame(), through = throughput(id, f.flows), p = metric("pressure_bar", id, f);
       const nom = metric("nomination_msm3d", id, f);
@@ -1194,7 +1179,7 @@ const App = (() => {
       out.sub = d.lost ? `−${fmt(d.lost)} if it trips` : "No loss if it trips";
     } else if (mode === "whatif") {
       if (whatif.offline.has(id)) { out.inactive = true; out.sub = "offline"; }
-      else if (d.type === "market") out.sub = `${fmt(whatifResult().delivered[id] || 0, 1)} MSm³/d`;
+      else if (d.exit) out.sub = `${fmt(whatifResult().delivered[id] || 0, 1)} MSm³/d`;
     }
     if (!settings.names) out.sub = "";
     return out;
@@ -1773,9 +1758,6 @@ const App = (() => {
     for (const [key, el] of Object.entries(containers)) el.hidden = !(s === "unit" && key === state.view);
     // The Map/Flow and mode tabs stay in the bar on every screen: one constant top bar.
     $("crumb-overview").setAttribute("aria-current", s === "overview" ? "page" : "false");
-    const unitSelect = $("crumb-unit");
-    unitSelect.value = s === "asset" || s === "diag" ? unitOf[route.asset] || "all" : route.unit;
-    unitSelect.setAttribute("aria-current", s === "unit" ? "page" : "false");
     const deep = s === "asset" || s === "diag";
     $("sep-asset").hidden = $("crumb-asset").hidden = !deep;
     $("sep-diag").hidden = $("crumb-diag").hidden = s !== "diag";
@@ -1824,7 +1806,8 @@ const App = (() => {
     const item = (icon, text) => h("li", null, icon, h("span", null, text));
     const section = (title, wide, ...children) => h("section", { class: `key-section${wide ? " key-wide" : ""}` }, h("h3", null, title), ...children);
     const timeline = svg("0 0 280 58", `<path d="M9 9l7 5-7 5z" fill="${COLORS.text}"/><line x1="28" y1="28" x2="268" y2="28" stroke="${COLORS.text_dim}"/><line x1="148" y1="17" x2="148" y2="39" stroke="${COLORS.text}" stroke-width="2"/><circle cx="148" cy="28" r="4" fill="${COLORS.text}"/><g fill="${COLORS.text_dim}" font-size="11" font-family="Archivo, sans-serif"><text x="28" y="49">← History</text><text x="148" y="49" text-anchor="middle" fill="${COLORS.text}">Now</text><text x="268" y="49" text-anchor="end">Model →</text></g>`);
-    const flow = svg("0 0 280 96", `<line x1="12" y1="34" x2="94" y2="34" stroke="${COLORS.text_dim}"/><line x1="166" y1="34" x2="268" y2="34" stroke="${COLORS.text_dim}"/><path d="M82 30l10 4-10 4zM188 30l10 4-10 4z" fill="${COLORS.text_dim}"/><rect x="94" y="0" width="72" height="72" rx="4" fill="${COLORS.card.active.fill}" stroke="${COLORS.card.active.edge}"/><polyline points="102,62 112,58 122,60 130,54 138,56" fill="none" stroke="${COLORS.card.active.ink}" stroke-width="1.2"/><polyline points="138,56 148,55 158,55" fill="none" stroke="${COLORS.card.active.ink}" stroke-width="1.2" stroke-dasharray="3 2"/><g fill="${COLORS.card.active.dim}" font-size="10" font-family="Archivo, sans-serif"><text x="100" y="14">82 bar</text><text x="160" y="14" text-anchor="end">▼ 0.4/h</text></g><g fill="${COLORS.card.active.ink}" font-size="11" font-family="Archivo, sans-serif" text-anchor="middle"><text x="113" y="38">34M</text><text x="147" y="38">30M</text><text x="130" y="88" fill="${COLORS.text}">Asset</text></g>`);
+    const tag = (x, y) => `<rect x="${x}" y="${y}" width="40" height="15" rx="2" fill="${COLORS.card.active.fill}" stroke="${COLORS.card.active.edge}"/><text x="${x + 20}" y="${y + 11}" text-anchor="middle" fill="${COLORS.card.active.ink}" font-size="9.5" font-family="Archivo, sans-serif">82 bar</text>`;
+    const flow = svg("0 0 280 96", `<line x1="6" y1="34" x2="54" y2="34" stroke="${COLORS.text_dim}"/><path d="M45 30l9 4-9 4z" fill="${COLORS.text_dim}"/>${tag(54, 27)}<rect x="94" y="0" width="72" height="72" rx="4" fill="${COLORS.card.active.fill}" stroke="${COLORS.card.active.edge}"/>${tag(166, 27)}<line x1="206" y1="34" x2="274" y2="34" stroke="${COLORS.text_dim}"/><path d="M265 30l9 4-9 4z" fill="${COLORS.text_dim}"/><polyline points="102,62 112,58 122,60 130,54 138,56" fill="none" stroke="${COLORS.card.active.ink}" stroke-width="1.2"/><polyline points="138,56 148,55 158,55" fill="none" stroke="${COLORS.card.active.ink}" stroke-width="1.2" stroke-dasharray="3 2"/><g font-size="10" font-family="Archivo, sans-serif"><text x="160" y="14" text-anchor="end" fill="${COLORS.card.active.dim}">▼ 0.4/h</text></g><g font-size="11" font-family="Archivo, sans-serif" text-anchor="middle"><text x="113" y="38" fill="${COLORS.card.active.dim}">34M</text><text x="147" y="38" fill="${COLORS.card.active.ink}">34M</text><text x="130" y="88" fill="${COLORS.text}">Asset</text></g>`);
     const exit = svg("0 0 280 30", `<line x1="65" y1="14" x2="215" y2="14" stroke="${COLORS.text_dim}"/><line x1="105" y1="7" x2="105" y2="21" stroke="${COLORS.text_dim}"/><line x1="175" y1="7" x2="175" y2="21" stroke="${COLORS.text_dim}"/><line x1="145" y1="4" x2="145" y2="24" stroke="${COLORS.text}" stroke-width="3"/><g fill="${COLORS.text_dim}" font-size="11" font-family="Archivo, sans-serif"><text x="65" y="28">min</text><text x="140" y="28" fill="${COLORS.text}">now</text><text x="202" y="28">max</text></g>`);
     $("key").replaceChildren(
       h("button", { type: "button", class: "text close", onclick: closeGuide }, "Close"),
@@ -1846,7 +1829,7 @@ const App = (() => {
           item(sample(COLORS.normal, 3), "Normal"),
           item(sample(COLORS.inactive, 3), "Inactive"),
           item(sample(COLORS.inactive, 1.5, ' stroke-dasharray="3 3"'), "No data"))),
-        section("Flow", true, flow, h("p", { class: "key-caption" }, "MSm³/d · position shows direction"), exit, h("p", { class: "key-caption" }, "Exit delivery")),
+        section("Flow", true, flow, h("p", { class: "key-caption" }, "Flow in MSm³/d: incoming faint, outgoing full · line ends: pressure"), exit, h("p", { class: "key-caption" }, "Exit delivery")),
         section("Indicators", true, rangeBar({ min: 0, max: 10, value: 6, band: [3, 7], ticks: [{ at: 1.5, level: 3 }, { at: 8.5, level: 3 }], target: 5 }),
           h("p", { class: "key-caption" }, "Band: normal · ◇ target · pointer: now"),
           h("p", { class: "key-caption" }, "Solid: history · dashed: model"))));
@@ -2302,10 +2285,6 @@ const App = (() => {
 
   function start() {
     $("crumb-overview").addEventListener("click", () => go({ screen: "overview" }));
-    const unitSelect = $("crumb-unit");
-    unitSelect.replaceChildren(h("option", { value: "all" }, "2 All units"), ...NORA.units.map((u) => h("option", { value: u.id }, `2 ${u.name}`)));
-    unitSelect.addEventListener("change", () => go({ screen: "unit", unit: unitSelect.value }));
-    unitSelect.addEventListener("mousedown", () => { if (route.screen !== "unit") go({ screen: "unit", unit: unitSelect.value }); });
     $("crumb-asset").addEventListener("click", () => go({ screen: "asset", asset: route.asset }));
     $("plan-chip").addEventListener("click", () => {
       // In What-if the chip is the restore-all control; otherwise it opens the overview.
@@ -2351,12 +2330,7 @@ const App = (() => {
     if (embed) document.body.classList.add("embed");
     if (views[params.get("view")]) state.view = params.get("view");
     if (["live", "load", "risk", "whatif", "plain"].includes(params.get("mode"))) state.mode = params.get("mode");
-    if (YEARS.length) {
-      const today = new Date().getFullYear(); // the default view is today, in the browser
-      yearInput.min = String(Math.min(...YEARS));
-      yearInput.max = String(Math.max(...YEARS, today));
-      setYear(Math.min(Math.max(today, Number(yearInput.min)), Number(yearInput.max)));
-    } else $("year-wrap").hidden = true;
+    state.year = new Date().getFullYear();
     markTabs();
     renderWhatif();
     buildKey();

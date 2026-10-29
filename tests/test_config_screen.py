@@ -36,3 +36,15 @@ def test_display_profile_is_one_of_the_choices(tmp_path):
     with pytest.raises(DataError) as error:
         load_config(path)
     assert "display: must be one of auto, desk, wall, compact" in str(error.value)
+
+
+def test_flow_hide_is_a_list_of_node_ids(tmp_path):
+    """[flow] hide: nodes on the Map only (Ray, 29 Oct: "remove poland vtp from flow only")."""
+    path = tmp_path / "nora.toml"
+    path.write_text('[flow]\nhide = ["pl_vtp"]\n', encoding="utf-8")
+    assert load_config(path)["flow"]["hide"] == ["pl_vtp"]
+    assert load_config()["flow"]["hide"] == ["pl_vtp"]  # the shipped nora.toml
+    path.write_text('[flow]\nhide = "pl_vtp"\n', encoding="utf-8")
+    with pytest.raises(DataError) as error:
+        load_config(path)
+    assert "hide: must be a list of node ids" in str(error.value)

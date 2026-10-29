@@ -44,14 +44,16 @@ EXIT_POINTS = {
     "Dunkirk": "dunkirk",
 }
 
-# Gassco's real-time endpoint aggregates flow by receiving country, not by terminal;
-# a country total lands on that country's market node. "Other" and "Total" have no node.
+# Gassco's real-time endpoint aggregates flow by receiving country, not by terminal.
+# Where Norwegian gas lands at one terminal only, the country total is that terminal's
+# flow. Germany (Emden, Dornum) and Great Britain (St Fergus, Easington) land at two,
+# and the market nodes that took their totals are no longer in the network (Ray, 29
+# Oct), so those totals have no node: NORA does not invent a split. "Other" and
+# "Total" have no node either.
 GASSCO_URL = "https://gassco.eu/wp-json/gassco/v1/realTimeGraphData"
 RECEIVING_COUNTRIES = {
-    "Germany": "the",
-    "France": "peg",
-    "Belgium": "ztp",
-    "Great Britain": "nbp",
+    "France": "dunkirk",
+    "Belgium": "zeebrugge",
 }
 # The UK gas day starts at 05:00 UK time; National Gas's tables run over one gas day.
 GAS_DAY_START_MINUTES = 5 * 60
@@ -119,10 +121,9 @@ class GasscoRealTime(Connector):
     publishes every 5 minutes, so that is the poll interval the CLI defaults to.
     Cloudflare blocks requests without a browser User-Agent, so `fetch` sends one.
 
-    The endpoint aggregates per country, not per terminal, so a reading lands on the
-    receiving country's market node (a country total is closest to "gas delivered
-    there") rather than pretending a single terminal measured it. NORA keeps no
-    record of which share went to which terminal; the map shows the honest aggregate.
+    The endpoint aggregates per country, not per terminal, so only a country with a
+    single receiving terminal (France: Dunkirk, Belgium: Zeebrugge) gets a reading;
+    NORA does not split the German or British totals between their two terminals.
     """
 
     name = "Gassco real-time exports"
@@ -143,8 +144,9 @@ class GasscoRealTime(Connector):
             "title": self.name,
             "description": (
                 "Aggregate Norwegian export flow by receiving country, polled from "
-                "Gassco's real-time endpoint; a country total lands on that country's "
-                "market node (THE, PEG, ZTP, NBP). Values in MSm3/d."
+                "Gassco's real-time endpoint; France lands at Dunkirk and Belgium at "
+                "Zeebrugge. Germany and Great Britain land at two terminals each, so "
+                "their totals are not shown. Values in MSm3/d."
             ),
             "source": GASSCO_URL,
             "synthetic": False,

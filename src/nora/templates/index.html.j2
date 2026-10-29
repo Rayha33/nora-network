@@ -121,13 +121,13 @@
 <main>
   <section>
     <h1>An open model of the North Sea gas network</h1>
-    <p class="lede">NORA maps <span class="num">{{ a.assets }}</span> fields, platforms, plants, terminals and markets, joined by <span class="num">{{ a.pipelines }}</span> offshore pipelines with a combined length of <span class="num">{{ "{:,}".format(a.pipeline_km) }}</span> km. It works out how much gas the network can deliver, what happens when any single part fails, and replays recorded flows as if they were arriving live.</p>
+    <p class="lede">NORA maps <span class="num">{{ a.assets }}</span> fields, platforms, plants and terminals, joined by <span class="num">{{ a.pipelines }}</span> offshore pipelines with a combined length of <span class="num">{{ "{:,}".format(a.pipeline_km) }}</span> km. It works out how much gas the network can deliver, what happens when any single part fails, and replays recorded flows as if they were arriving live.</p>
     <p>It shows the network two ways: on a real map, and as a gas flow overview of the whole Gassco system drawn with pyvis. It is built in Python with networkx, and anyone can improve the data or the code. Every change is checked automatically and published here within minutes of being accepted.</p>
   </section>
 
   <section aria-labelledby="deliver">
-    <h2 id="deliver">What reaches each market</h2>
-    <p>With every field and LNG terminal at full capacity, the network can deliver <strong class="num">{{ "{:,.0f}".format(a.deliverable) }} MSm³/d</strong> of the <span class="num">{{ "{:,.0f}".format(a.supply_capacity) }}</span> MSm³/d on offer. The rest is stranded behind full pipelines. Million standard cubic metres per day, from the max-flow model.</p>
+    <h2 id="deliver">What reaches each exit point</h2>
+    <p>With every field at full capacity, the network can deliver <strong class="num">{{ "{:,.0f}".format(a.deliverable) }} MSm³/d</strong> of the <span class="num">{{ "{:,.0f}".format(a.supply_capacity) }}</span> MSm³/d on offer. The rest is stranded behind full pipelines. Million standard cubic metres per day, from the max-flow model.</p>
     <ul class="bars">
       {% for market, value in delivered %}
       <li><span>{{ names[market] }}</span><span class="bar" style="width: {{ (100 * value / top_delivery)|round(1) }}%"></span><span class="value">{{ "{:,.0f}".format(value) }}</span></li>
@@ -137,7 +137,7 @@
 
   <section aria-labelledby="fragile">
     <h2 id="fragile">Single points of failure</h2>
-    <p>Each asset taken out on its own, with the gas the markets would lose. These are the places where one trip has the biggest effect. <a href="network.html?mode=risk">See them on the chart</a>.</p>
+    <p>Each asset taken out on its own, with the gas the exit points would lose. These are the places where one trip has the biggest effect. <a href="network.html?mode=risk">See them on the chart</a>.</p>
     <table>
       <thead><tr><th scope="col">Asset</th><th scope="col">Type</th><th scope="col" class="lost">Lost if it trips</th><th scope="col"><span class="sr-only">Share of deliverable gas</span></th></tr></thead>
       <tbody>

@@ -80,14 +80,14 @@ publishes the site to GitHub Pages. Details for contributors and AI assistants a
 The [issues](https://github.com/Rayha33/nora-network/issues) are the roadmap. Directions:
 
 - **Realtime.** Connect live sources such as the ENTSOG Transparency Platform.
-- **Data quality.** Sources for every row, then storage sites and onshore grids.
+- **Data quality.** Sources for every row.
 - **Scenarios.** What-if outages and demand cases run in the browser.
 - **Operations.** Line pack, pressure and alarms closer to a real control room.
 
 ## About the data
 
 Positions, capacities and lengths are approximate figures compiled from public sources,
-and many rows still need a citation. Market positions are schematic. Map data is from
+and many rows still need a citation. Map data is from
 [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, with tiles by [OpenFreeMap](https://openfreemap.org/). NORA is for
 learning, exploration and discussion, and is not suitable for operational decisions.
 

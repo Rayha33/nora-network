@@ -30,7 +30,7 @@
   --gap: 8px;
   --ctl: 34px;              /* every control in the bars: one height, one text size */
   --ctl-font: 12.5px;
-  --bar-h: 112px;
+  --bar-h: 60px;
   --player-h: 76px;
   --ui-scale: 1;            /* set by app.js from the display profile, the window or Settings */
   color-scheme: light;
@@ -63,6 +63,7 @@ button { transition: background 140ms ease, border-color 140ms ease, color 140ms
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; }
 svg .fill { fill: currentColor; stroke: none; }
+svg text { stroke: none; } /* the outline above would smudge every SVG label (the guide's) */
 .dim { color: var(--text-dim); }
 .small { font-size: 12px; }
 a { color: var(--text); text-underline-offset: 3px; }
@@ -87,48 +88,43 @@ body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer 
 .dots-layer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
 .notice { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; color: var(--text-dim); text-align: center; }
 
-/* The top bar: navigation and status on the first row, what the network view shows
-   on the second. Every control is one height (--ctl) and one text size, and neither
-   row changes size between pages or modes (Ray: "the boxes have different sizes"). */
+/* The top bar: one row (Ray, 29 Oct: "everything here should be on one line"; "we
+   want a minimalistic approach"): where you are, what the network view shows, then
+   status and tools. Every control is one height (--ctl) and one text size, and the bar
+   never changes size between pages or modes (Ray: "the boxes have different sizes"). */
 .bar {
   position: fixed; inset: 0 0 auto; height: var(--bar-h); z-index: 20;
+  display: flex; align-items: center; gap: 16px; padding: 0 20px;
   background: var(--panel); border-bottom: 1px solid var(--rule);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.035);
 }
-.bar-primary {
-  height: 60px; display: flex; align-items: center; gap: 20px; padding: 0 20px;
-  border-bottom: 1px solid var(--rule);
-}
+.bar-views { display: flex; align-items: center; gap: 8px; flex: none; }
 .brand { display: flex; align-items: center; gap: 10px; flex: none; color: inherit; text-decoration: none; }
 .brand-mark {
   display: grid; place-items: center; width: 32px; height: 32px; border-radius: 7px;
   background: var(--selected-bg); color: var(--selected-text); font-size: 16px; font-weight: 700;
   letter-spacing: -0.04em; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
-.brand-copy { display: grid; line-height: 1; gap: 5px; }
-.brand-copy strong { font-size: 15px; font-stretch: 125%; letter-spacing: 0.13em; }
-.brand-copy small, .toolbar-label, .player-label, .timeline-label, .eyebrow {
+.brand-name { font-size: 15px; font-stretch: 125%; letter-spacing: 0.13em; line-height: 1; }
+.player-label, .timeline-label, .eyebrow {
   font-size: 11px; font-weight: 400; color: var(--text-dim);
 }
-.crumbs { display: flex; align-items: center; gap: 3px; min-width: 0; }
-.crumbs button, .crumbs select {
+.crumbs { display: flex; align-items: center; gap: 3px; min-width: 0; flex: none; }
+.crumbs button {
   height: var(--ctl); border: 0; background: transparent; padding: 0 8px; border-radius: 6px; cursor: pointer;
   font-size: var(--ctl-font); color: var(--text-dim); white-space: nowrap; max-width: 240px; overflow: hidden; text-overflow: ellipsis;
 }
-.crumbs button:hover, .crumbs select:hover { background: var(--band); color: var(--text); }
+.crumbs button:hover { background: var(--band); color: var(--text); }
 .crumbs .level {
   display: inline-grid; place-items: center; width: 17px; height: 17px; margin-right: 6px;
   border: 1px solid var(--rule-strong); border-radius: 4px; font: 600 11px/1 var(--mono);
 }
-.crumbs button[aria-current="page"], .crumbs select[aria-current="page"] { color: var(--text); font-weight: 600; }
+.crumbs button[aria-current="page"] { color: var(--text); font-weight: 600; }
 .crumbs .sep { color: var(--text-dim); opacity: 0.55; }
 .crumbs button:disabled { cursor: default; opacity: 0.5; }
 .primary-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; min-width: 0; }
 .utility-actions { display: flex; gap: 2px; padding-left: 5px; border-left: 1px solid var(--rule); }
 
-.bar-secondary { height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 20px; }
-.toolbar-label { flex: none; margin-right: 1px; }
-.toolbar-rule { width: 1px; height: 20px; margin: 0 5px; background: var(--rule); }
 .spacer { flex: 1; }
 .seg { display: flex; gap: 2px; height: var(--ctl); padding: 3px; background: var(--band); border: 1px solid var(--rule); border-radius: 8px; flex: none; }
 .seg button {
@@ -139,10 +135,6 @@ body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer 
 .seg button:hover { color: var(--text); background: var(--surface); }
 .seg button[aria-selected="true"] { background: var(--selected-bg); color: var(--selected-text); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14); }
 
-.year { display: flex; align-items: center; gap: 10px; flex: none; height: var(--ctl); }
-.year input { width: 140px; height: 20px; margin: 0; accent-color: var(--text); cursor: ew-resize; }
-.year output { font: 500 var(--ctl-font)/1 var(--font); min-width: 72px; }
-.year output .dim { font-weight: 400; }
 .icon {
   display: grid; place-items: center; width: var(--ctl); height: var(--ctl); padding: 0; border: 0;
   border-radius: 7px; background: transparent; color: var(--text-dim); cursor: pointer;
@@ -421,33 +413,28 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 }
 .sidebar .actions button:hover { background: var(--raised); }
 
+/* data-bar (app.js barLayout): the room the bar has at its UI scale. */
+:root[data-bar="tight"] .bar, :root[data-bar="two"] .bar { gap: 12px; }
+:root[data-bar="tight"] .brand-name, :root[data-bar="two"] .brand-name { display: none; }
+:root[data-bar="tight"] .plan-chip { max-width: 220px; }
+:root[data-bar="tight"] .seg button { min-width: 44px; padding: 0 10px; }
+/* Too narrow for one row: the view and mode switches move to a second row. */
+:root[data-bar="two"] { --bar-h: 104px; }
+:root[data-bar="two"] .bar { flex-wrap: wrap; align-content: center; row-gap: 8px; padding: 0 14px; }
+:root[data-bar="two"] .bar-views { order: 1; width: 100%; overflow-x: auto; scrollbar-width: none; }
+:root[data-bar="two"] .bar-views::-webkit-scrollbar { display: none; }
+
 @media (max-width: 1100px) {
-  .brand-copy small { display: none; }
-  .bar-primary { gap: 14px; }
-  .plan-chip { max-width: 280px; }
-  .year > .toolbar-label { display: none; }
   .player { grid-template-columns: minmax(240px, 300px) 1fr auto; gap: 16px; }
   .player .speed { display: none; }
 }
 
 @media (max-width: 860px) {
-  :root { --bar-h: 164px; }
-  .bar-primary { height: 112px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px 12px; padding: 10px 14px; }
-  .brand-copy small { display: none; }
   .brand-mark { width: 30px; height: 30px; }
-  .crumbs { justify-self: end; min-width: 0; }
-  .crumbs button, .crumbs select { max-width: 180px; }
-  .primary-actions { grid-column: 1 / -1; width: 100%; margin: 0; }
-  .plan-chip { flex: 1; max-width: none; justify-content: flex-start; }
+  .crumbs button { max-width: 180px; }
   .search { flex: none; }
   .search:focus-within { width: 150px; }
   .search:focus-within input, .search input:not(:placeholder-shown) { width: 105px; }
-  .utility-actions { margin-left: auto; }
-  .bar-secondary { height: 52px; padding: 0 14px; overflow-x: auto; scrollbar-width: none; }
-  .bar-secondary::-webkit-scrollbar { display: none; }
-  .bar-secondary .spacer { min-width: 4px; }
-  .seg { flex: none; }
-  .year { padding-right: 4px; }
   .cols { grid-template-columns: minmax(0, 1fr); }
   .screen-body { padding: 22px 18px 40px; }
   .bank { grid-template-columns: minmax(90px, 1fr) minmax(110px, 1.6fr) 70px; }
@@ -462,10 +449,8 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 
 @media (max-width: 600px) {
   :root { --player-h: 112px; }
-  .brand-copy { display: none; }
-  .bar-primary { column-gap: 8px; }
-  .crumbs { justify-self: stretch; }
-  .crumbs button, .crumbs select { max-width: 145px; padding: 0 5px; }
+  .bar { column-gap: 8px; }
+  .crumbs button { max-width: 145px; padding: 0 5px; }
   .crumbs .level { display: none; }
   .primary-actions { gap: 4px; }
   .plan-chip { padding: 0 9px; }
@@ -473,10 +458,8 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
   .search { padding: 0 7px; }
   .search:focus-within { position: absolute; left: 14px; right: 14px; top: 66px; width: auto; z-index: 2; }
   .search:focus-within input { width: 100%; }
-  .bar-secondary { gap: 7px; }
-  .bar-secondary > .toolbar-label, .toolbar-rule { display: none; }
+  .bar-views { gap: 7px; }
   .seg button { padding: 0 11px; }
-  .year input { width: 110px; }
   .player { grid-template-columns: minmax(0, 1fr); grid-template-rows: 58px 44px; gap: 0 12px; padding: 0 14px 6px; }
   .transport { grid-column: 1; grid-row: 1; }
   .play { width: var(--ctl); height: var(--ctl); }

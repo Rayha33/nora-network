@@ -41,16 +41,14 @@ test("a market's own reading wins over its inbound pipeline readings", () => {
   assertHealthy(assert, loaded);
   const { App, NORA } = loaded;
 
+  // Any node fed by two lines (the market hubs and their onshore entries are gone).
   const feedersByMarket = App.nodeIds
-    .filter((id) => NORA.assets[id].type === "market")
     .map((m) => ({
       market: m,
-      feeders: App.pipeIds.filter(
-        (pid) => NORA.assets[pid].type === "onshore" && NORA.assets[pid].to === m,
-      ),
+      feeders: App.pipeIds.filter((pid) => NORA.assets[pid].to === m),
     }));
   const chosen = feedersByMarket.find((f) => f.feeders.length >= 2);
-  assert.ok(chosen, "some market has at least two inbound onshore pipelines");
+  assert.ok(chosen, "some node has at least two inbound pipelines");
   const market = chosen.market;
   const feeders = chosen.feeders;
 

@@ -102,10 +102,3 @@ pipeline = "iuk"
 launch = 2026-10-19T02:00:00Z
 speed_mps = 4.5
 every_hours = 54
-
-[[pigs]]
-label = "Inspection pig, NOGAT"
-pipeline = "nogat"
-launch = 2026-10-19T08:00:00Z
-speed_mps = 4.0
-every_hours = 60

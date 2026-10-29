@@ -117,7 +117,7 @@ test("sidebar: the asset picture gives every line its own row, clear of the line
   assertHealthy(assert, loaded);
   const { App, document } = loaded;
   App.go({ screen: "unit", unit: "all" });
-  for (const id of ["ttf", "sleipner", "draupner_s", "karsto"]) {
+  for (const id of ["kollsnes", "sleipner", "draupner_s", "karsto"]) {
     App.select(id);
     const markup = [];
     const walk = (node) => {

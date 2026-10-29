@@ -6,7 +6,7 @@ import sys
 from nora.analysis import analyse, max_flow, n_minus_1, routed_flow
 from nora.data import load_network
 from nora.graph import build_graph, great_circle_km
-from tests.conftest import NODES, write_network
+from tests.conftest import NODES, PIPELINES, write_network
 
 
 def test_max_flow_is_limited_by_the_export_lines(tiny):
@@ -14,6 +14,15 @@ def test_max_flow_is_limited_by_the_export_lines(tiny):
     assert flow.value == 60  # supply 60 fits through 40 + 30 of export capacity
     assert flow.delivered == {"market": 60}
     assert flow.pipelines["feed"] == 60
+
+
+def test_a_terminal_without_a_grid_entry_is_an_exit_point(tmp_path):
+    """Ray, 29 Oct: the market hubs behind the landings are gone, so the gas is
+    delivered at the terminals. Behind a grid entry (the tiny network) it is not."""
+    net = load_network(write_network(tmp_path / "data", nodes=NODES[:4], pipelines=PIPELINES[:3]))
+    flow = routed_flow(build_graph(net))
+    assert flow.value == 60
+    assert flow.delivered == {"a_terminal": 40, "b_terminal": 20}  # A is the shorter line
 
 
 def test_routed_flow_prefers_the_shorter_route(tiny):

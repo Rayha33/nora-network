@@ -4,7 +4,7 @@
 
 [units.norwegian_sea]
 name = "Norwegian Sea"
-nodes = ["aasta_hansteen", "norne", "heidrun", "asgard", "ormen_lange", "nyhamna", "tjeldbergodden", "irpa"]
+nodes = ["aasta_hansteen", "norne", "heidrun", "asgard", "ormen_lange", "nyhamna", "tjeldbergodden"]
 
 [units.northern_north_sea]
 name = "Northern North Sea"
@@ -19,20 +19,15 @@ nodes = ["karsto", "johan_sverdrup", "gudrun", "sleipner", "draupner_s", "draupn
 
 [units.uk]
 name = "UK landings"
-nodes = [
-    "st_fergus", "cats_riser", "cats_t5", "culzean", "elgin_franklin", "teesside", "easington",
-    "sns_fields", "bacton", "grain_lng", "nbp", "rough",
-]
+nodes = ["st_fergus", "elgin_franklin", "easington", "sns_fields", "bacton"]
 
 [units.continent]
 name = "Continental landings"
 nodes = [
-    "f3fb", "l10a", "k13a", "den_helder", "balgzand", "uithuizen", "eemshaven_lng",
-    "dornum", "emden", "wilhelmshaven_lng", "gate_lng", "zeebrugge", "zeebrugge_lng",
-    "dunkirk", "dunkirk_lng", "ttf", "the", "ztp", "peg", "norg", "bergermeer",
-    "etzel", "jemgum",
+    "l10a", "k13a", "den_helder", "balgzand", "uithuizen", "dornum", "emden",
+    "zeebrugge", "dunkirk",
 ]
 
 [units.denmark_poland]
 name = "Denmark and Poland"
-nodes = ["tyra", "baltic_tie", "nybro", "etf", "pl_vtp", "stenlille", "lille_torup"]
+nodes = ["baltic_tie", "nybro", "pl_vtp"]

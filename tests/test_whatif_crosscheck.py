@@ -42,7 +42,7 @@ CASES: list[tuple[str, ...]] = [
     ("kollsnes",),
     ("karsto", "nyhamna"),
     ("nybro",),
-    ("nbp",),
+    ("easington",),
     ("statfjord", "gullfaks"),
 ]
 
