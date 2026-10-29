@@ -484,8 +484,9 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 /* Too narrow for one row: the view and mode switches move to a second row. */
 :root[data-bar="two"] { --bar-h: 104px; }
 :root[data-bar="two"] .bar { flex-wrap: wrap; align-content: center; row-gap: 8px; padding: 0 14px; }
-:root[data-bar="two"] .bar-views { order: 1; width: 100%; overflow-x: auto; scrollbar-width: none; }
-:root[data-bar="two"] .bar-views::-webkit-scrollbar { display: none; }
+/* The switches wrap rather than scroll out of sight; app.js fitBar() gives the bar the
+   height its rows need (three or four on a phone). */
+:root[data-bar="two"] .bar-views { order: 1; width: 100%; flex-wrap: wrap; row-gap: 8px; }
 
 @media (max-width: 1100px) {
   .player { grid-template-columns: minmax(240px, 300px) 1fr auto; gap: 16px; }
@@ -522,7 +523,7 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
   .search:focus-within { position: absolute; left: 14px; right: 14px; top: 66px; width: auto; z-index: 2; }
   .search:focus-within input { width: 100%; }
   .bar-views { gap: 7px; }
-  .seg button { padding: 0 11px; }
+  .seg button { padding: 0 6px; min-width: 44px; } /* both switches on one row at 390 px */
   .player { grid-template-columns: minmax(0, 1fr); grid-template-rows: 58px 44px; gap: 0 12px; padding: 0 14px 6px; }
   .transport { grid-column: 1; grid-row: 1; }
   .play { width: var(--ctl); height: var(--ctl); }
@@ -1198,17 +1199,34 @@ const App = (() => {
     const room = window.innerWidth / scale;
     document.documentElement.dataset.bar = room < 1060 ? "two" : room < 1240 ? "tight" : "one";
   }
+  /* Two rows may still not hold the bar on a phone: measure what its rows need, so no
+     control is cut off above the screen and the screens start below the bar. */
+  function fitBar(scale) {
+    const root = document.documentElement, bar = document.querySelector(".bar");
+    if (!bar) return;
+    root.style.removeProperty("--bar-h");
+    if (root.dataset.bar !== "two") return;
+    bar.style.height = "auto";
+    const needed = Math.ceil(bar.getBoundingClientRect().height / scale) + 16;
+    bar.style.height = "";
+    if (needed > parseFloat(getComputedStyle(root).getPropertyValue("--bar-h"))) root.style.setProperty("--bar-h", `${needed}px`);
+  }
   function applyDisplay() {
     const profile = chosenProfile(), scale = Math.round(chosenScale(profile) * 100) / 100;
     barLayout(scale);
-    if (profile === display.profile && scale === display.scale) return false;
-    display.profile = profile;
-    display.scale = scale;
-    document.documentElement.dataset.display = profile;
-    document.documentElement.style.setProperty("--ui-scale", String(scale));
-    return true;
+    const changed = profile !== display.profile || scale !== display.scale;
+    if (changed) {
+      display.profile = profile;
+      display.scale = scale;
+      document.documentElement.dataset.display = profile;
+      document.documentElement.style.setProperty("--ui-scale", String(scale));
+    }
+    fitBar(scale);
+    return changed;
   }
   applyDisplay();
+  // The web font changes how much room the bar's text takes: fit it again once loaded.
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitBar(display.scale));
   // Control rooms are dim: a wall starts dark unless the link or the operator chose.
   if (display.profile === "wall" && !params.get("theme") && !storedTheme() && theme !== "dark") {
     theme = "dark";
