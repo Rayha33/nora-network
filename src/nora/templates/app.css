@@ -344,6 +344,12 @@ table.data.quality td:nth-child(2) { white-space: nowrap; }
 .clock-row { display: flex; align-items: center; gap: 7px; min-width: 0; flex: none; }
 /* Where the playhead stands against the wall clock: "Now", "3 h ago", "Model · in 6 h".
    Grey like every normal state; the model's is dashed, as the look-ahead is in the trends. */
+/* A newer build is published (app.js checkBuild): a quiet way to take it. */
+.update {
+  flex: none; height: 24px; padding: 0 10px; border: 1px solid var(--rule); border-radius: 999px;
+  background: var(--raised); color: var(--text); font-size: 12px; cursor: pointer; white-space: nowrap;
+}
+.update[hidden] { display: none; }
 .when {
   flex: none; padding: 0 6px; border: 1px solid var(--rule); border-radius: 999px;
   color: var(--text-dim); font-size: 11px; line-height: 15px; white-space: nowrap;

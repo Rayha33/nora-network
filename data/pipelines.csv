@@ -45,6 +45,5 @@ tampen_link,Tampen Link,statfjord,flags_brent,link,23,32,25,false,2007,operating
 gjoa_flags,Gjøa gas export,gjoa,flags_brent,feeder,130,28,17,false,2010,operating,,https://gassco.no/en/our-activities/pipelines-and-platforms,
 flags,FLAGS,flags_brent,st_fergus,export,450,36,33,false,1982,operating,,https://en.wikipedia.org/wiki/FLAGS,
 sage,SAGE,beryl,st_fergus,export,323,30,30,false,1992,operating,,"approximate, public data",
-sns_bacton,Southern North Sea gathering,sns_fields,bacton,feeder,,,15,false,,operating,,"approximate, public data",Several pipelines modelled as one
 iuk,Interconnector (IUK),bacton,zeebrugge,interconnector,235,40,70,true,1998,operating,,https://www.interconnector.com/,
 ekofisk_tie_in,Ekofisk tie-in,ekofisk,ekofisk_tee,feeder,1,,,false,1977,operating,ConocoPhillips,https://en.wikipedia.org/wiki/Norpipe,Ekofisk's gas into the Draupner S - Norpipe line (Ray: tied in along it)

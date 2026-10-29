@@ -22,7 +22,7 @@ nodes = ["karsto", "johan_sverdrup", "gudrun", "sleipner", "draupner_s", "draupn
 
 [units.uk]
 name = "UK landings"
-nodes = ["st_fergus", "easington", "sns_fields", "bacton"]
+nodes = ["st_fergus", "easington", "bacton"]
 
 [units.continent]
 name = "Continental landings"

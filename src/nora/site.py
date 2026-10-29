@@ -56,6 +56,12 @@ def repo_links() -> dict:
     }
 
 
+def build_id() -> str:
+    """The commit the site is built from (empty outside git and CI)."""
+    sha = os.environ.get("GITHUB_SHA") or _git("rev-parse", "HEAD")
+    return sha[:12] if re.fullmatch(r"[0-9a-f]{7,40}", sha or "") else ""
+
+
 def build_site(out_dir: Path, data_dir: Path = DATA_DIR) -> dict:
     """Validate the data, run the analysis, and write the site. Returns a summary."""
     data_dir = Path(data_dir)
@@ -69,18 +75,17 @@ def build_site(out_dir: Path, data_dir: Path = DATA_DIR) -> dict:
     out = Path(out_dir)
     (out / "data" / "streams").mkdir(parents=True, exist_ok=True)
     config = load_config()
-    (out / "network.html").write_text(
-        network_html(
-            net,
-            analysis,
-            streams,
-            links,
-            config,
-            load_units(net, data_dir / "units.toml"),
-            data_dir,
-        ),
-        encoding="utf-8",
+    page = network_html(
+        net, analysis, streams, links, config, load_units(net, data_dir / "units.toml"), data_dir
     )
+    # Which build this is, so a tab left open can tell a newer one is published and
+    # reload (Ray, 29 Oct: his tab showed bugs fixed hours before). The commit, never a
+    # wall-clock time: the same commit builds the same site.
+    build = build_id()
+    if build:
+        page = page.replace("<head>", f'<head>\n<meta name="nora-build" content="{build}">', 1)
+        (out / "version.json").write_text(json.dumps({"build": build}) + "\n", encoding="utf-8")
+    (out / "network.html").write_text(page, encoding="utf-8")
     (out / "index.html").write_text(index_html(config), encoding="utf-8")
     for name in ("nodes.csv", "pipelines.csv"):
         shutil.copyfile(data_dir / name, out / "data" / name)

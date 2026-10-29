@@ -113,7 +113,7 @@ critical = "#e5322d"     # red: critical alarm (priority 1)
 integrity = "#8e1b1b"    # dark red: a pressure at its integrity limit
 h2s = "#8a7616"          # muted mustard yellow: an H2S peak moving with the gas (Ray: "H2S should be yellow")
 co2 = "#93463e"          # muted brick red: a CO2 peak (Ray: "CO2 red, but not strong colors"); not alarm red
-pig = "#5e4b31"          # dark umber: a pig creeping along the line; its label reads on the paper
+pig = "#5a3d82"          # muted purple: a pig creeping along the line (Ray, 29 Oct: "change pig color to purple"); 5:1 on the paper
 peak = "#5f6d7a"          # neutral grey-blue: nominations in the next-6-hours chart
 
 # The same roles on dark grey paper, for the dark theme.
@@ -133,7 +133,7 @@ critical = "#ff4d47"
 integrity = "#b0242a"
 h2s = "#d2bd5c"
 co2 = "#d48c83"
-pig = "#c4ae91"
+pig = "#b9a0e0"
 peak = "#9fb1c1"
 
 [map]
