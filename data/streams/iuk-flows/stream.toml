@@ -1,0 +1,21 @@
+title = "Interconnector (IUK) flows, Oct 2025 to Oct 2026"
+description = "Measured daily physical flow on the Interconnector (IUK) between Bacton and Zeebrugge, from National Gas Transmission's data portal: positive from Bacton to Zeebrugge (UK exports, most of the year), negative from Zeebrugge to Bacton (UK imports, on cold winter days). Real data for one pipeline; the rest of the chart has no readings. For the flow right now, run `nora live --source interconnector`."
+source = "https://data.nationalgas.com/find-gas-data"
+license = "National Gas Transmission data portal (terms: https://www.nationalgas.com/our-policies/terms-and-conditions); credit National Gas Transmission as the source"
+
+# Refresh with: python scripts/fetch_nationalgas.py 2025-10-01 2026-10-28 data/streams/iuk-flows/raw.csv
+[import]
+file = "raw.csv"
+layout = "long"
+timestamp = "gas_day"        # 05:00 UK time on the gas day
+asset = "point"
+value = "value"
+factor = 1.0                 # million cubic metres per gas day: MSm3/d
+timezone = "Europe/London"   # the gas day starts at 05:00 UK time, BST or GMT
+
+# Both directions land on the one pipeline: Bacton -> Zeebrugge is the line's own
+# direction (from -> to in pipelines.csv), Zeebrugge -> Bacton is flipped with "-".
+# They are never both above zero on one day, so their sum is the signed flow.
+[import.assets]
+"NTS Physical Flows, Bacton, Interconnector" = "iuk"        # PUBOB2038
+"System Entry Volume, BactonInterconnector, D+1" = "-iuk"   # PUBOBJ592

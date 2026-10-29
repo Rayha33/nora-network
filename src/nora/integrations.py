@@ -230,6 +230,8 @@ class NationalGasInterconnector(Connector):
     metric = "flow_msm3d"
     env = ()
     url_default = "https://data.nationalgas.com/api/latest-gas-flows"
+    # National Gas answers a client that names itself: no need to pose as a browser.
+    user_agent = "nora-network (https://github.com/Rayha33/nora-network)"
 
     def url(self) -> str:
         return os.environ.get("NORA_NATIONAL_GAS_URL", self.url_default)
@@ -287,7 +289,7 @@ class NationalGasInterconnector(Connector):
 
     def fetch(self, start: datetime, end: datetime) -> Iterator[Reading]:
         request = urllib.request.Request(
-            self.url(), headers={"User-Agent": USER_AGENT, "Accept": "application/json"}
+            self.url(), headers={"User-Agent": self.user_agent, "Accept": "application/json"}
         )
         with urllib.request.urlopen(request, timeout=30) as response:
             payload = json.load(response)
