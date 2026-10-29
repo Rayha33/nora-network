@@ -176,10 +176,14 @@ body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer 
   padding: 4px 9px; font: 11px/1.5 var(--mono); white-space: nowrap; box-shadow: var(--shadow-sm); pointer-events: none;
 }
 .maplibregl-ctrl-scale { background: var(--panel) !important; color: var(--text-dim) !important; border-color: var(--text-dim) !important; }
-.maplibregl-ctrl-group { overflow: hidden; border: 1px solid var(--rule); border-radius: 8px !important; box-shadow: var(--shadow-sm) !important; }
+/* MapLibre's controls in the theme's greys, never its white (nora.toml: never pure
+   white; and a white box glared in the dark theme). Its icons are dark glyphs. */
+.maplibregl-ctrl-group { overflow: hidden; background: var(--raised) !important; border: 1px solid var(--rule); border-radius: 8px !important; box-shadow: var(--shadow-sm) !important; }
 .maplibregl-ctrl-group button { width: 34px; height: 34px; }
 .maplibregl-ctrl-group button + button { border-top-color: var(--rule); }
-.maplibregl-ctrl-attrib { font: 11px var(--font); }
+.maplibregl-ctrl-attrib { font: 11px var(--font); background: var(--panel) !important; }
+.maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib a { color: var(--text-dim) !important; }
+:root[data-theme="dark"] .maplibregl-ctrl-icon, :root[data-theme="dark"] .maplibregl-ctrl-attrib-button { filter: invert(0.88); }
 .maplibregl-popup-content {
   font: 12px/1.4 var(--font); color: var(--text); background: var(--panel);
   border: 1px solid var(--rule); border-radius: 7px; box-shadow: var(--shadow-lg); padding: 7px 10px;
