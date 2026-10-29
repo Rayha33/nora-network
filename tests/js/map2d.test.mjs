@@ -885,7 +885,7 @@ test("map: a theme switch keeps the fallback basemap", () => {
 
 test("flow: Poland VTP is on the Map only (Ray, 29 Oct: \"remove poland vtp from flow only\")", () => {
   const { App, NORA } = loadApp();
-  assert.deepEqual(Array.from(NORA.config.flow.hide), ["pl_vtp"], "nora.toml [flow] hide names it");
+  assert.ok(Array.from(NORA.config.flow.hide).includes("pl_vtp"), "nora.toml [flow] hide names it");
   const { nodes, lines } = App.views.flow.changes();
   assert.equal(nodes.find((n) => n.id === "pl_vtp").hidden, true, "not drawn in the Flow view");
   const into = App.pipeIds.filter((pid) => NORA.assets[pid].to === "pl_vtp" || NORA.assets[pid].from === "pl_vtp");

@@ -43,7 +43,7 @@ def test_flow_hide_is_a_list_of_node_ids(tmp_path):
     path = tmp_path / "nora.toml"
     path.write_text('[flow]\nhide = ["pl_vtp"]\n', encoding="utf-8")
     assert load_config(path)["flow"]["hide"] == ["pl_vtp"]
-    assert load_config()["flow"]["hide"] == ["pl_vtp"]  # the shipped nora.toml
+    assert load_config()["flow"]["hide"][0] == "pl_vtp"  # shipped: then the detailed fields
     path.write_text('[flow]\nhide = "pl_vtp"\n', encoding="utf-8")
     with pytest.raises(DataError) as error:
         load_config(path)

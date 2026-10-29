@@ -471,6 +471,7 @@ def make_handler(data_dir: Path, out_dir: Path):
 def _node(values: dict) -> Node:
     _check_fields(values, (*NODE_COLUMNS, "line"))
     row = {column: values.get(column, "") for column in NODE_COLUMNS}
+    row["map_min_zoom"] = row["map_min_zoom"] or 0.0
     return Node(**row, line=_line(values))
 
 
@@ -529,7 +530,10 @@ def _pipeline_values(value, partial: bool = False) -> dict:
 
 
 def _node_values(node) -> dict:
-    return {column: getattr(node, column) for column in NODE_COLUMNS}
+    values = {column: getattr(node, column) for column in NODE_COLUMNS}
+    if not values["map_min_zoom"]:
+        values["map_min_zoom"] = ""  # blank: on the map at every zoom
+    return values
 
 
 def _pipeline_record_values(pipeline) -> dict:
