@@ -223,32 +223,19 @@ def _flow_view(net: Network) -> PyvisNetwork:
     return view
 
 
-def network_html(
+def nora_payload(
     net: Network,
     analysis: dict,
     streams: Sequence[Stream] = (),
     links: dict | None = None,
     config: dict | None = None,
     units: list[dict] | None = None,
-) -> str:
-    """The app as a single HTML document."""
+) -> dict:
+    """The `NORA` payload both views read: everything the page knows about the network."""
     config = config or load_config()
     units = units if units is not None else load_units(net)
-    view = _flow_view(net)
-    view.set_template_dir(str(TEMPLATES), "app.html.j2")
-    vis = PYVIS_DIR / "templates" / "lib" / "vis-9.1.2"
-    # Scripts and styles go in as plain strings, so Jinja never parses their braces.
-    view.templateEnv.globals["inline"] = {
-        "vis_css": (vis / "vis-network.css").read_text(encoding="utf-8"),
-        "vis_js": (vis / "vis-network.min.js").read_text(encoding="utf-8"),
-        "css": (TEMPLATES / "app.css").read_text(encoding="utf-8"),
-        "app_js": (TEMPLATES / "app.js").read_text(encoding="utf-8"),
-        "map_js": (TEMPLATES / "map.js").read_text(encoding="utf-8"),
-        "flow_js": (TEMPLATES / "flow.js").read_text(encoding="utf-8"),
-    }
-    view.templateEnv.globals["maplibre"] = MAPLIBRE
     worst = max((o["lost"] for o in analysis["outages"]), default=0.0)
-    view.templateEnv.globals["nora"] = {
+    return {
         "assets": assets_payload(net, analysis),
         "geo": map_geojson(net),
         "grid": flow_grid(net),
@@ -277,4 +264,29 @@ def network_html(
         ],
         "links": links or {},
     }
+
+
+def network_html(
+    net: Network,
+    analysis: dict,
+    streams: Sequence[Stream] = (),
+    links: dict | None = None,
+    config: dict | None = None,
+    units: list[dict] | None = None,
+) -> str:
+    """The app as a single HTML document."""
+    view = _flow_view(net)
+    view.set_template_dir(str(TEMPLATES), "app.html.j2")
+    vis = PYVIS_DIR / "templates" / "lib" / "vis-9.1.2"
+    # Scripts and styles go in as plain strings, so Jinja never parses their braces.
+    view.templateEnv.globals["inline"] = {
+        "vis_css": (vis / "vis-network.css").read_text(encoding="utf-8"),
+        "vis_js": (vis / "vis-network.min.js").read_text(encoding="utf-8"),
+        "css": (TEMPLATES / "app.css").read_text(encoding="utf-8"),
+        "app_js": (TEMPLATES / "app.js").read_text(encoding="utf-8"),
+        "map_js": (TEMPLATES / "map.js").read_text(encoding="utf-8"),
+        "flow_js": (TEMPLATES / "flow.js").read_text(encoding="utf-8"),
+    }
+    view.templateEnv.globals["maplibre"] = MAPLIBRE
+    view.templateEnv.globals["nora"] = nora_payload(net, analysis, streams, links, config, units)
     return view.generate_html()
