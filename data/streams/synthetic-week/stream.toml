@@ -75,10 +75,16 @@ capacity_factor = 0.5
 
 # Pig runs: launched into a pipeline, they travel at their own speed and show on the
 # map and the Flow view. `every_hours` relaunches them: a pigging programme.
+# Each has a tag, a kind and a receiving station that NORA sends synthetic messages:
+# a launch notice, an ETA update every `notify_every_hours` (6 by default) and the
+# arrival confirmation.
 [[pigs]]
 label = "Cleaning pig, Langeled (south)"
 id = 3420
 pipeline = "langeled_south"
+tag = "PIG-LGS-014"
+kind = "cleaning"
+receiver = "easington"
 launch = 2026-10-19T01:00:00Z
 speed_mps = 4.5
 every_hours = 108
@@ -87,6 +93,10 @@ every_hours = 108
 label = "Inspection pig, Europipe I"
 id = 3511
 pipeline = "europipe_1"
+tag = "PIG-EP1-031"
+kind = "inspection"
+receiver = "dornum"
+notify_every_hours = 4
 launch = 2026-10-19T03:00:00Z
 speed_mps = 4.0
 every_hours = 126
@@ -95,14 +105,18 @@ every_hours = 126
 label = "Cleaning pig, Statpipe (rich gas)"
 id = 2874
 pipeline = "statpipe_rich"
+kind = "cleaning"
+receiver = "karsto"
 launch = 2026-10-19T00:00:00Z
 speed_mps = 4.0
 every_hours = 72
 
 [[pigs]]
-label = "Cleaning pig, Vesterled"
+label = "Gauging pig, Vesterled"
 id = 3166
 pipeline = "vesterled"
+kind = "gauging"
+receiver = "st_fergus"
 launch = 2026-10-19T06:00:00Z
 speed_mps = 5.0
 every_hours = 72

@@ -279,6 +279,8 @@ table.data tbody tr:hover { background: var(--band); }
    table fits its box at any width; only the value stays on one line. */
 table.data.quality th, table.data.quality td { white-space: normal; }
 table.data.quality td:nth-child(2) { white-space: nowrap; }
+table.data.pigs th, table.data.pigs td { text-align: left; white-space: normal; }
+table.data.pigs td:first-child { white-space: nowrap; }
 .facts { display: grid; grid-template-columns: minmax(90px, auto) 1fr; gap: 8px 18px; margin: 0; }
 .facts dt { color: var(--text-dim); }
 .facts dd { margin: 0; }
@@ -455,6 +457,14 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 .peak-detail .toggle { height: 26px; min-width: 52px; padding: 0 10px; border: 1px solid var(--rule-strong); border-radius: 13px; background: var(--raised); color: var(--text); font-size: 12px; cursor: pointer; }
 .peak-detail .toggle.on { background: var(--selected-bg); color: var(--selected-text); border-color: var(--selected-bg); }
 .peak-detail .origo-field { display: inline-grid; gap: 3px; }
+/* A pig's messages to its receiving station: the state in rows, then the log under them. */
+.peak-detail button.link { border: 0; padding: 0; background: none; color: var(--text); font: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.peak-detail .pig-drift { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.peak-detail .pig-log-head { grid-column: 1 / -1; margin-top: 6px; }
+.peak-detail .pig-log-cell { grid-column: 1 / -1; }
+.peak-detail table.pig-log th, .peak-detail table.pig-log td { padding: 4px 6px; text-align: left; }
+.peak-detail table.pig-log td:last-child, .peak-detail table.pig-log th:last-child { text-align: right; }
+.peak-detail table.pig-log tbody tr:hover { background: none; }
 .peak-detail .origo { width: 90px; height: 28px; padding: 0 8px; border: 1px solid var(--rule-strong); border-radius: 6px; background: var(--raised); color: var(--text); font: 12.5px var(--mono); letter-spacing: 0.08em; }
 .sidebar .state-quiet { margin: 0; font-size: 12px; color: var(--text-dim); }
 .sidebar .facts { gap: 5px 16px; }
