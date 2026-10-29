@@ -14,7 +14,8 @@ Anything that yields (timestamp, flows, metrics, index) frames can be served the
 way, so a real feed (a SCADA historian, Origo, or a TSO's transparency API; see
 integrations.py) can replace `replay` without touching the browser side. Or push:
 `nora live --ingest` takes readings POSTed as JSON to /ingest from any system (see
-docs/live-data.md). Long gaps
+docs/live-data.md). `nora live --now` replays a stream re-timed to the wall clock,
+looping, as a showcase (NowReplay; a new `meta` event per loop). Long gaps
 between frames are filled with SSE `: keepalive` comments (about one every 15 s), so
 browsers and proxies don't reap an idle connection.
 """
@@ -22,12 +23,14 @@ browsers and proxies don't reap an idle connection.
 from __future__ import annotations
 
 import hmac
+import itertools
 import json
 import math
 import sys
 import threading
 import time
 import webbrowser
+from bisect import bisect_right
 from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
 from functools import partial
@@ -78,6 +81,134 @@ def replay(stream: Stream, speed: float = 3600.0, loop: bool = True) -> Iterator
             # An empty stream would otherwise spin at 100% CPU until the
             # client disconnects; nap instead and try again.
             time.sleep(1.0)
+
+
+class Meta(dict):
+    """A `meta` event sent part-way through a feed: `nora live --now` sends one per loop,
+    with that loop's pigs and events re-timed. A plain dict item is an error event."""
+
+
+class NowReplay:
+    """Replay a stream as if it were happening now (`nora live --now`): a showcase.
+
+    The stream's hour k is stamped origin + k*step, where origin is the wall-clock hour
+    the server started in, so the app's clock reads true. The stream loops for ever
+    and the times keep rising across loops. Pigs and events move with their loop.
+    speed is data-seconds per wall-second (1 = real time; above 1 the clock runs ahead).
+
+    One instance serves every browser, so they all see the same time. Each reader
+    first gets the last `history_hours` at once, so trends have their past. Synthetic
+    data stays labelled synthetic and a recording says it is one: re-timed is not live.
+    """
+
+    def __init__(
+        self,
+        stream: Stream,
+        speed: float = 1.0,
+        clock: Callable[[], float] = time.time,
+        history_hours: float = 24.0,
+    ):
+        self.stream, self.speed, self.clock = stream, speed, clock
+        times = stream.times
+        self.step = (times[1] - times[0]).total_seconds() if len(times) > 1 else 3600.0
+        # Each frame's place within one loop (irregular streams keep their spacing);
+        # a loop lasts the stream's span plus one step before it starts over.
+        self.offsets = [(t - times[0]).total_seconds() for t in times]
+        self.period = (self.offsets[-1] if times else 0.0) + self.step
+        self.started = clock()
+        align = min(self.step, 3600.0)  # on the hour (or on the step, for finer data)
+        self.origin = math.floor(self.started / align) * align
+        self.history = min(max(0, len(times) - 1), round(history_hours * 3600 / self.step))
+        hidden = ("times", "values", "metrics", "plan")
+        self.payload = {k: v for k, v in stream.payload().items() if k not in hidden}
+
+    def when(self, position: int) -> float:
+        """Epoch seconds of the feed's frame number `position` (0 = the stream's first
+        frame in the first loop; negative positions are the loop before)."""
+        loop, index = divmod(position, len(self.offsets))
+        return self.origin + loop * self.period + self.offsets[index]
+
+    def now(self) -> float:
+        """The feed's clock: the wall clock at speed 1."""
+        return self.started + (self.clock() - self.started) * self.speed
+
+    def position(self) -> int:
+        """The frame that holds now: the latest one stamped at or before the feed's clock."""
+        loop, into = divmod(self.now() - self.origin, self.period)
+        return int(loop) * len(self.offsets) + bisect_right(self.offsets, into) - 1
+
+    def meta(self, loop: int) -> Meta:
+        """The meta event for a loop: the pigs and events of it and of the loop before (a
+        pig launched then may still be on its way; the history a reader gets reaches back).
+
+        Each run of a relaunched pig goes out as a pig of its own (`every` 0, its run's
+        id): left relaunching, last loop's pigs would run on beside this loop's.
+        """
+        shift = self.origin - self.stream.times[0].timestamp()  # the first loop's
+        meta = Meta(self.payload)
+        meta["pigs"] = []
+        for n in (loop - 1, loop):
+            ends = self.origin + (n + 1) * self.period
+            for pig in self.payload["pigs"]:
+                launch, every = pig["launch"] + shift + n * self.period, pig["every"]
+                runs = math.ceil((ends - launch) / every) if every > 0 else 1
+                meta["pigs"] += [
+                    {
+                        **pig,
+                        "launch": round(launch + run * every),
+                        "every": 0,
+                        "id": None if pig["id"] is None else pig["id"] + run,
+                    }
+                    for run in range(max(0, runs))
+                ]
+        meta["events"] = [
+            {
+                **event,
+                "start": round(event["start"] + shift + n * self.period),
+                "end": round(event["end"] + shift + n * self.period),
+            }
+            for n in (loop - 1, loop)
+            for event in self.payload["events"]
+        ]
+        kind = "synthetic" if self.stream.synthetic else "recorded"
+        meta["title"] = f"{self.stream.title} ({kind}, re-timed to now)"
+        meta["description"] = (
+            f"{self.stream.description} Replayed with its times moved to now "
+            f"(nora live --now), looping: not live readings."
+        ).strip()
+        meta["retimed"] = {"origin": round(self.origin), "speed": self.speed, "loop": loop}
+        return meta
+
+    def frames(self) -> Iterator[tuple[float, Frame | Meta]]:
+        """One reader's feed: the meta, the recent history at once, then each frame when
+        the feed's clock reaches it; a new meta before the first frame of each loop."""
+        n = len(self.offsets)
+        if not n:
+            return
+        current = self.position()
+        loop = current // n
+        yield 0.0, self.meta(loop)
+        for position in itertools.count(current - self.history):
+            wait = max(0.0, (self.when(position) - self.now()) / self.speed)
+            index = position % n
+            if position > current and position // n != loop:  # history is in the first meta
+                loop = position // n
+                yield wait, self.meta(loop)
+                wait = 0.0
+            when = datetime.fromtimestamp(self.when(position), tz=UTC)
+            yield wait, (when, *self._row(index), index)
+
+    def _row(self, index: int) -> tuple[dict, dict]:
+        flows = {
+            a: v
+            for a, v in zip(self.stream.assets, self.stream.values[index], strict=True)
+            if v is not None
+        }
+        metrics = {
+            metric: {a: v for a, v in zip(assets, values[index], strict=True) if v is not None}
+            for metric, (assets, values) in self.stream.metrics.items()
+        }
+        return flows, metrics
 
 
 def nominations_ahead(stream: Stream, index: int, hours: float = 6.0) -> dict:
@@ -369,7 +500,8 @@ class _Handler(SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         try:
-            self._send("meta", self.meta)
+            if self.meta:  # `nora live --now` sends its own, re-timed, from the feed
+                self._send("meta", self.meta)
             for wait, item in self.frames():
                 self._pause(wait)
                 if callable(item):  # a SharedPoll reader: the result after the wait
@@ -378,6 +510,9 @@ class _Handler(SimpleHTTPRequestHandler):
                         self.wfile.write(b": keepalive\n\n")
                         self.wfile.flush()
                         continue
+                if isinstance(item, Meta):  # a new loop of `nora live --now`
+                    self._send("meta", item)
+                    continue
                 if isinstance(item, dict):  # a poller failure: tell the browser, keep serving
                     self._send("error", item)
                     continue
@@ -437,13 +572,18 @@ def serve(
     plan: list | None = None,
     inbox: Inbox | None = None,
     token: str = "",
+    now: bool = False,
 ) -> None:
     """Serve the site and a feed on /stream: replay a `stream`, or poll a live source.
 
     A poller (see `poll`) passes `meta` and `frames` instead of a `stream`, so
     `nora live --source gassco` serves real data without touching the browser side.
+    `now` replays the stream re-timed to the wall clock, looping (NowReplay).
     """
     hidden = ("times", "values", "metrics", "plan")
+    if now:
+        assert stream is not None, "--now replays a stream"
+        meta, frames = {}, NowReplay(stream, speed).frames  # one clock for every reader
     if meta is None:
         assert stream is not None, "serve needs a stream, or meta and frames"
         meta = {k: v for k, v in stream.payload().items() if k not in hidden}
@@ -465,7 +605,10 @@ def serve(
     server = ThreadingHTTPServer((host, port), partial(handler, directory=str(site_dir)))
     server.daemon_threads = True
     url = f"http://{host}:{port}/network.html?live=/stream"
-    if stream:
+    if stream and now:
+        pace = "real time" if speed == 1 else f"{speed:g}x real time"
+        print(f"Replaying '{stream.title}' re-timed to now, at {pace}, looping")
+    elif stream:
         print(f"Replaying '{stream.title}' at {speed:g}x as a live feed")
     else:
         print(f"Serving '{meta.get('title', 'live feed')}' as a live feed")
