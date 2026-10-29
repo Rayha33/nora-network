@@ -22,6 +22,12 @@
     featureOf[f.properties.asset] = { source: "nora-pipes", id: f.id };
     ends[f.properties.asset] = f.geometry.coordinates;
   }
+  // The lines at each node, once: the flow stubs look only at a node's own lines.
+  const linesAt = {};
+  for (const pid of App.pipeIds) {
+    const p = NORA.assets[pid];
+    for (const end of new Set([p.from, p.to])) (linesAt[end] = linesAt[end] || []).push(pid);
+  }
   /* A point part-way along a pipeline's laid route (0..1 from its first point), in
      lon/lat, with the segment it falls on: lines follow their real route, not a chord. */
   const routeLengths = {};
@@ -264,11 +270,14 @@
        Zooming out is capped separately (limitZoom). */
     const [[w, s], [e, n]] = NORA.config.map.bounds, padLon = Math.max(40, (e - w) * 2), padLat = (n - s) * 0.5;
     try {
+      /* fadeDuration 0: names appear and go at once instead of fading in over 300 ms.
+         With a fade, MapLibre kept repainting the whole map while the data stepped
+         (4 times a second): about 40 repaints a second instead of 4. */
       map = new maplibregl.Map({
         container: el, style: NORA.config.map.style, bounds: NORA.config.map.bounds,
         fitBoundsOptions: { padding: padding() }, attributionControl: { compact: true },
         cooperativeGestures: App.embed, dragRotate: false, pitchWithRotate: false, minZoom: 2, maxZoom: 12,
-        maxBounds: [[w - padLon, s - padLat], [e + padLon, Math.min(85, n + padLat)]],
+        maxBounds: [[w - padLon, s - padLat], [e + padLon, Math.min(85, n + padLat)]], fadeDuration: 0,
       });
     } catch { canvasFallback(el); return; } // MapLibre throws when it cannot get a WebGL context
     // WebGL lost and not back within 3 s (a GPU restart): carry on with the canvas map.
@@ -360,6 +369,7 @@
 
   view.restyle = () => {
     if (!view.ready) return;
+    changed();
     const alarms = [];
     for (const id of App.pipeIds) {
       const s = App.pipeStyle(id);
@@ -388,12 +398,30 @@
     }
   };
 
-  // Pigs and peaks (and, if switched on, faint flow dots) on a canvas over the map.
-  view.draw = () => App.frame.run(drawNow);
-  function drawNow() {
-    if (!ctx) return;
+  /* Pigs and peaks (and, if switched on, faint flow dots) on a canvas over the map.
+     App's frame loop asks for a draw every frame and so does every MapLibre repaint (a
+     pan, a zoom, a restyle), so the layer always follows the map. It is drawn again
+     only when what it shows can have changed: the camera, the canvas, the data or
+     settings (restyle), the mode, or, while playing, the clock. That was ~100 draws a
+     second while playing and 60 while paused with nothing moving. */
+  let revision = 0, drawnKey = "", boxesKey = "", boxes = [];
+  const changed = () => { revision++; };
+  function sceneKey() {
+    const c = map.getCenter(), el = map.getContainer();
+    return [revision, App.state.mode, c.lng, c.lat, map.getZoom(), map.getBearing(), map.getPitch(),
+      el.clientWidth, el.clientHeight, window.devicePixelRatio || 1].join("|");
+  }
+  view.draw = () => {
+    if (!ctx || !map) return;
+    const scene = sceneKey(), key = `${scene}|${App.live.playing ? App.live.clock : "paused"}`;
+    if (key === drawnKey) return;
+    App.frame.run(() => drawNow(scene));
+    drawnKey = key;
+  };
+  function drawNow(scene) {
     sizeCanvas();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawnMarks = []; // nothing to hover over until markers are drawn again
     if (App.state.mode !== "live") return;
     const visibleRanges = {};
     const visibleAlong = (id, along) => {
@@ -430,7 +458,7 @@
         const pn = map.project([node.lon, node.lat]);
         if (pn.x < -40 || pn.y < -40 || pn.x > canvas.clientWidth + 40 || pn.y > canvas.clientHeight + 40) continue;
         const k = App.uiScale();
-        for (const pid of App.pipeIds) {
+        for (const pid of linesAt[nid] || []) {
           const v = App.live.values[pid], p = NORA.assets[pid];
           if (!v || Math.abs(v) < 0.05 || !p || (p.from !== nid && p.to !== nid)) continue;
           if (App.pipeStyle(pid).hidden) continue;
@@ -463,7 +491,10 @@
     // Peaks as bands from tail to head, then pipeline names and every marker on top.
     const marks = App.markers().filter((m) => ends[m.id] && !App.pipeStyle(m.id).hidden);
     const zoom = map.getZoom(), detail = zoom >= 6.5 ? 2 : zoom >= 5 ? 1 : 0, u = App.uiScale();
-    const taken = (marks.length || App.settings().names) ? nodeBoxes(ctx) : [];
+    // The node boxes only move with the camera or a restyle: work them out once per scene.
+    const reserve = marks.length || App.settings().names;
+    if (reserve && boxesKey !== scene) { boxes = nodeBoxes(ctx); boxesKey = scene; }
+    const taken = reserve ? boxes.slice() : []; // labels add their own boxes to `taken`
     const pipeLabels = [];
     if (App.settings().names) {
       ctx.save();
@@ -495,7 +526,6 @@
       ctx.fillStyle = C.text; ctx.fillText(label.text, label.x, label.y);
     }
     ctx.restore();
-    drawnMarks = [];
     for (const m of marks) {
       const p = project(m.id, m.along);
       App.drawMarker(ctx, m, p.x, p.y, p.angle, App.markerSize(m.kind, (map.getZoom() - 6) / 4), detail, taken);
@@ -526,6 +556,7 @@
 
   view.applySettings = () => {
     if (!view.ready) return;
+    changed();
     map.setLayoutProperty("nora-nodes", "text-field", App.settings().names ? ["get", "name"] : "");
     scaleLayers();
   };
