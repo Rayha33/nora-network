@@ -54,7 +54,8 @@ North Sea gas infrastructure, co-editable on GitHub and hosted on GitHub Pages.
   map.js and flow.js are separate on purpose so people can work on either view alone.
 - `data/nodes.csv` (60 assets) and `data/pipelines.csv` (66 pipelines) — the network.
 - `data/streams/` — replayable datasets: `synthetic-week` (generated), `denmark-gas-energinet`
-  (real, daily, Aug–Oct 2026), `norway-exports` (real, hourly, 13–20 Oct 2026).
+  (real, daily, Aug–Oct 2026), `norway-exports` (real, hourly, 13–20 Oct 2026),
+  `norway-exports-daily` (real, per gas day, 1–28 Oct 2026, adds Easington).
   Adding a dataset is documented in data/streams/README.md (4 steps, `nora stream new`).
 - CI on every PR; `Deploy site` workflow on merge; Pages build is GitHub's own.
 
@@ -63,19 +64,16 @@ North Sea gas infrastructure, co-editable on GitHub and hosted on GitHub Pages.
 - Issue #1 CLOSED: every node and pipeline row now cites a source (commits baa7f3e,
   2defd99, merge 80d7588). Sources documented in data/README.md. Verified all non-source
   columns byte-identical. `nora validate`: OK 60 nodes, 66 pipelines, 3 streams.
-- Issue #2 PARTIALLY closed (comment on the issue):
-  - Fixed a real bug in scripts/fetch_entsog.py: the ENTSOG Transparency Platform now
-    returns data under the key `operationaldatas` (lowercase plural), not `operationalData`.
-    The script now accepts both and reports unexpected keys instead of crashing.
-  - Committed data/streams/norway-exports/: real hourly readings 13–20 Oct 2026,
-    Dunkerque (Franpipe) ~47 MSm3/d and Zeebrugge ZPT (Zeepipe I) ~42 MSm3/d,
-    factor 2.18e-6 (kWh/h -> MSm3/d at ~11 kWh/Sm3). Verified playing live with the
-    "Real data" badge and ~91 MSm3/d delivered. CI green, deployed.
-  - Remaining gap (documented on the issue): UK points (St Fergus UK-TSO-0001ITP-00022entry,
-    Easington ...00091entry) and German points (Dornum 00208, Emden 00210, both DE-TSO-0005/
-    0009/0002 variants) return "no data"/404 for every date and direction variant tried —
-    post-Brexit National Gas does not publish on ENTSOG TP. Closing #2 fully would need
-    National Gas' own API or Gassco's exit data.
+- Issue #2 CLOSED (data/entsog-exports): every Norwegian landing that has a public
+  measurement is in. The German operators report under their OWN point keys, not
+  Gassco's (ITP-00208/209/210 are Gassco-only, hasData false): Dornum GASPOOL
+  (ITP-00525 -> europipe_2_south, ~62 MSm3/d), Emden EPT1 OGE+GUD+GTS (ITP-00080/081/160
+  -> the emden terminal, ~83; Norpipe was merged into EPT1 on 1 Oct 2015), plus Baltic
+  Pipe's North Sea Entry (DK ITP-00630 -> baltic_pipe_ns, ~18). Pipe-in-pipe repeats
+  (Thyssengas ITP-00105, Dornum / NETRA ITP-00126/188) are left out, following ENTSOG's
+  dashboard list. The UK reports daily only, so Easington is in `norway-exports-daily`;
+  St Fergus is "Norway+UK" and above Vesterled's capacity, so Vesterled, FLAGS and SAGE
+  have no readings. Every query and reason: data/streams/README.md.
 - Final visual check of the merged site: PASS (map tiles + assets + pipelines, pyvis flow
   diagram renders after ~5-8 s load, live replay with player/sparkline works, zero console
   errors). One blank-screenshot scare was a load-timing artifact, fine on reload.

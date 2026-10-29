@@ -1,0 +1,24 @@
+title = "Norwegian gas landings, daily, Oct 2026"
+description = "Daily physical flows at the points where Norwegian gas lands, 1 to 28 Oct 2026, from the ENTSOG Transparency Platform: the continental points of the hourly norway-exports dataset plus Easington (Langeled), which National Gas reports per gas day only. Each reading is the gas day's flow, shown at the start of the gas day (06:00 CET). St Fergus mixes Norwegian and UK gas (its flow is above what Vesterled can carry), so Vesterled, FLAGS and SAGE have no readings. Emden EPT1 is Europipe I and Norpipe together, read on the Emden terminal."
+source = "https://transparency.entsog.eu/"
+license = "ENTSOG Transparency Platform terms of use; credit ENTSOG as the source"
+
+# Refresh with: python scripts/fetch_entsog.py 2026-10-01 2026-10-28 data/streams/norway-exports-daily/raw.csv --period day
+[import]
+file = "raw.csv"
+layout = "long"
+timestamp = "periodFrom"
+asset = "pointLabel"
+value = "value"
+factor = 9.09e-8     # kWh/d -> MSm3/d at about 11 kWh per standard cubic metre
+timezone = "UTC"
+
+[import.assets]
+"Dunkerque" = "franpipe"
+"Zeebrugge ZPT" = "zeepipe_1"
+"Dornum GASPOOL" = "europipe_2_south"
+"Emden (EPT1) (OGE)" = "emden"
+"Emden (EPT1) (GUD)" = "emden"
+"Emden (EPT1) (GTS)" = "emden"
+"North Sea Entry" = "baltic_pipe_ns"
+"Easington" = "langeled_south"
