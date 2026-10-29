@@ -64,6 +64,29 @@ const App = (() => {
     }
     return node;
   }
+  /* A row or a name that opens something but is not a button reaches the keyboard as
+     well: it takes focus, Enter and Space act as a click, and its key finds it again
+     after the screen is rebuilt (keepFocus). */
+  function pressable(key, act, attrs = {}) {
+    return { ...attrs, tabindex: "0", "data-key": key, onclick: act,
+      onkeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); act(e); } } };
+  }
+  /* The screens are rebuilt as the data plays, a few times a second. Keep keyboard focus
+     on the same control across a rebuild: the one with the same data-key. */
+  function keepFocus(container, rebuild) {
+    const active = document.activeElement;
+    const key = active && active !== container && container.contains(active) ? active.getAttribute("data-key") : null;
+    rebuild();
+    if (key == null) return;
+    const again = [...container.querySelectorAll("[data-key]")].find((n) => n.getAttribute("data-key") === key);
+    if (again) again.focus({ preventScroll: true });
+  }
+  // A live region is read out on every change: replace its content only when it differs.
+  function replaceIfChanged(el, signature, build) {
+    if (el.dataset.signature === signature) return;
+    el.dataset.signature = signature;
+    el.replaceChildren(...build());
+  }
   function svg(viewBox, markup, cls) {
     const node = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     node.setAttribute("viewBox", viewBox);
@@ -1241,15 +1264,13 @@ const App = (() => {
     chip.hidden = false; // the chip is always there; only its words change
     const base = NORA.deliverable || 0, n = whatif.offline.size;
     if (!n) {
-      chip.replaceChildren(h("span", { class: "dim" }, "What-if: click assets to take them offline"));
+      replaceIfChanged(chip, "whatif|none", () => [h("span", { class: "dim" }, "What-if: click assets to take them offline")]);
       chip.title = "Click assets to take them offline; the flows and the deliverable gas update";
       return;
     }
     const value = whatifResult().value;
-    chip.replaceChildren(
-      h("span", null, value < 0.05 ? "What-if: no gas can be delivered"
-        : `What-if: ${fmt(value)} of ${fmt(base)} MSm³/d`),
-      h("span", { class: "dim" }, ` · ${n} offline · Restore all`));
+    const said = value < 0.05 ? "What-if: no gas can be delivered" : `What-if: ${fmt(value)} of ${fmt(base)} MSm³/d`;
+    replaceIfChanged(chip, `whatif|${said}|${n}`, () => [h("span", null, said), h("span", { class: "dim" }, ` · ${n} offline · Restore all`)]);
     chip.title = "Restore every asset: the what-if becomes the intact network again";
   }
 
@@ -1469,7 +1490,7 @@ const App = (() => {
       h("div", { class: "head" }, "Last 2 h"), h("div", { class: "head optional" }, "Change"), h("div", { class: "head optional" }, "State"),
       ...indicators.flatMap((ind) => [
         byMeasure ? h("div", { class: "name measure" }, ind.measure || nameOf(ind.id))
-          : h("div", { class: "name", onclick: () => go({ screen: "asset", asset: ind.id }), title: "Open the asset" }, nameOf(ind.id)),
+          : h("div", pressable(`asset:${ind.id}`, () => go({ screen: "asset", asset: ind.id }), { class: "name", role: "link", title: "Open the asset" }), nameOf(ind.id)),
         h("div", null, ind.bar, h("div", { class: "value" }, ind.value, h("span", { class: "rate-inline" }, rateText(rate(ind.series), ind.unit)))),
         trend(ind.series, { band: ind.band, lvl: ind.lvl }),
         h("div", { class: "rate" }, rateText(rate(ind.series), ind.unit)),
@@ -1486,7 +1507,7 @@ const App = (() => {
   function alarmList(conditions) {
     if (!conditions.length) return h("p", { class: "empty" }, "No active alarms. Everything is in its normal range.");
     return h("ul", { class: "alarm-list" }, conditions.map((c) =>
-      h("li", { onclick: () => (assets[c.id] ? go({ screen: "asset", asset: c.id }) : null) },
+      h("li", assets[c.id] ? pressable(`alarm:${c.kind}|${c.id}`, () => go({ screen: "asset", asset: c.id }), { role: "link", title: `Open ${nameOf(c.id)}` }) : null,
         badge(c.level, ""), h("span", null, c.text), sinceTime(c.since))));
   }
 
@@ -1546,7 +1567,7 @@ const App = (() => {
     return h("div", { class: "box" }, h("h2", null, "Gas quality on its way"),
       rows.length ? h("table", { class: "data quality" },
         h("thead", null, h("tr", null, ["Peak", "Now", "Next stop", "Leaves the network", ""].map((t) => h("th", null, t)))),
-        h("tbody", null, rows.map((s) => h("tr", { onclick: () => go({ screen: "asset", asset: s.q.arrived ? s.q.arrived.node : s.q.pid }) },
+        h("tbody", null, rows.map((s) => h("tr", pressable(`slug:${s.q.slug}`, () => go({ screen: "asset", asset: s.q.arrived ? s.q.arrived.node : s.q.pid }), { title: "Open where it is now" }),
           h("td", null, swatch(s.q.metric), ` ${QUALITY[s.q.metric].name} from ${nameOf(s.q.origin)}`),
           h("td", null, fmt(s.q.conc, QUALITY[s.q.metric].digits), ` ${QUALITY[s.q.metric].unit}`),
           h("td", null, s.q.arrived ? `Arrived at ${nameOf(s.q.arrived.node)}` : `${nameOf(s.next.node)}, ${etaText(s.next.t)}`),
@@ -1574,10 +1595,10 @@ const App = (() => {
       + (plan.bottleneck ? ` Busiest line: ${nameOf(plan.bottleneck)} at ${fmt(plan.maxLoad * 100)}%.` : "") : "");
     const units = NORA.units.map((u) => {
       const conds = live.conditions.filter((c) => unitOf[c.id] === u.id);
-      return h("button", { type: "button", onclick: () => go({ screen: "unit", unit: u.id }) },
+      return h("button", { type: "button", "data-key": `unit:${u.id}`, onclick: () => go({ screen: "unit", unit: u.id }) },
         h("span", null, u.name), badge(Math.max(0, ...conds.map((c) => c.level)), conds.length ? `${conds.length} active` : "Normal"));
     });
-    screens.overview.replaceChildren(h("div", { class: "screen-body" },
+    keepFocus(screens.overview, () => screens.overview.replaceChildren(h("div", { class: "screen-body" },
       h("div", { class: `box banner${bannerLevel ? " alarm" : ""}`, style: bannerLevel ? `border-color:${LEVEL_COLOR[bannerLevel]}` : null },
         bannerLevel ? badge(bannerLevel, "") : null,
         h("div", null, h("div", { class: `big${plan ? "" : " dim"}` }, headline), h("div", { class: "context" }, context))),
@@ -1590,7 +1611,7 @@ const App = (() => {
         h("div", { class: "box" }, h("h2", null, "Pressures at plants, hubs and terminals"),
           bank(pressures.slice(0, 10).map(pressureIndicator), "No pressure readings in this dataset.")),
         h("div", { class: "box" }, h("h2", null, "Busiest pipelines"), bank(loaded.map(loadIndicator), "No flow readings yet.")),
-        h("div", { class: "box" }, h("h2", null, "Units"), h("div", { class: "units" }, units)))));
+        h("div", { class: "box" }, h("h2", null, "Units"), h("div", { class: "units" }, units))))));
   }
 
   function nominationHistogram(id) {
@@ -1639,19 +1660,19 @@ const App = (() => {
           conds.length ? (() => { const cause = upstreamCause(id); return h("p", { class: "cause" }, h("strong", null, "Likely cause: "), cause.text, h("span", { class: "dim" }, ` (confidence ${cause.confidence}; traced through the network model)`)); })() : null),
         h("div", { class: "box" }, h("h2", null, "Facts"), facts(id))),
       h("div", { class: "actions" },
-        d.kind === "node" ? h("button", { type: "button", class: "text", onclick: () => {
+        d.kind === "node" ? h("button", { type: "button", class: "text", "data-key": "action:whatif", onclick: () => {
           state.mode = "whatif";
           markTabs();
           toggleOffline(id);
           if (side.id === id) renderSidebar(); else renderAsset();
         } }, `${whatif.offline.has(id) ? "Restore" : "Take offline"} in the what-if`) : null,
-        inSidebar ? h("button", { type: "button", class: "text", onclick: () => go({ screen: "asset", asset: id }) }, "Open the full page") : null,
-        !inSidebar ? h("button", { type: "button", class: "text", onclick: () => go({ screen: "unit", unit: unitOf[id] || "all", focus: id }) }, "Show in its unit") : null,
-        h("button", { type: "button", class: "text", onclick: () => go({ screen: "diag", asset: id }) }, "Diagnostics")));
+        inSidebar ? h("button", { type: "button", class: "text", "data-key": "action:page", onclick: () => go({ screen: "asset", asset: id }) }, "Open the full page") : null,
+        !inSidebar ? h("button", { type: "button", class: "text", "data-key": "action:unit", onclick: () => go({ screen: "unit", unit: unitOf[id] || "all", focus: id }) }, "Show in its unit") : null,
+        h("button", { type: "button", class: "text", "data-key": "action:diag", onclick: () => go({ screen: "diag", asset: id }) }, "Diagnostics")));
   }
   function renderAsset() {
     const detail = assetDetail(route.asset);
-    if (detail) screens.asset.replaceChildren(detail);
+    if (detail) keepFocus(screens.asset, () => screens.asset.replaceChildren(detail));
   }
 
   /* The asset sidebar: a calm column that slides in from the right when a field,
@@ -1694,7 +1715,7 @@ const App = (() => {
       const body = $("side-body"), top = body.scrollTop, detail = markerDetail(side.marker);
       $("side-title").textContent = detail.title;
       $("side-sub").textContent = detail.sub;
-      body.replaceChildren(detail.body);
+      keepFocus(body, () => body.replaceChildren(detail.body));
       body.scrollTop = top;
       return;
     }
@@ -1704,7 +1725,7 @@ const App = (() => {
     $("side-sub").textContent = d.kind === "node"
       ? `${NORA.nodeTypes[d.type]} · ${d.operator || d.country}`
       : `${NORA.pipelineTypes[d.type]} · ${nameOf(d.from)} to ${nameOf(d.to)}`;
-    body.replaceChildren(assetDetail(side.id, true));
+    keepFocus(body, () => body.replaceChildren(assetDetail(side.id, true)));
     body.scrollTop = top;
   }
   /* A pig or a peak in the sidebar (Ray, 28 Oct: "head ETA and tail ETA as well as
@@ -2038,18 +2059,22 @@ const App = (() => {
   function renderTop() {
     if (state.mode === "whatif") { renderWhatif(); return; } // one chip, no layout change
     const counts = [3, 2, 1].map((l) => [l, live.conditions.filter((c) => c.level === l).length]).filter(([, n]) => n);
-    $("alarm-counts").replaceChildren(...counts.map(([l, n]) => h("span", { title: `${n} ${LEVEL[l].toLowerCase()}` }, badge(l, String(n)))));
+    // Both are live regions, refreshed with every data step: rebuilt only when they change.
+    replaceIfChanged($("alarm-counts"), counts.map(([l, n]) => `${l}:${n}`).join(","),
+      () => counts.map(([l, n]) => h("span", { title: `${n} ${LEVEL[l].toLowerCase()}` }, badge(l, String(n)))));
     const plan = frame().plan, chip = $("plan-chip");
     chip.hidden = false; // always there: the top bar never changes between modes or datasets
     if (!plan || !plan.nominated) {
-      chip.replaceChildren(h("span", { class: "dim" }, "No plan to check"));
+      replaceIfChanged(chip, "none", () => [h("span", { class: "dim" }, "No plan to check")]);
       chip.title = plan ? "No nominations at this hour. Opens the overview" : "This dataset has no exit-point nominations, so there is no plan to check. Opens the overview";
       return;
     }
     const [lvl, text] = plan.now, [aheadLvl, aheadText, , hours] = plan.ahead;
-    chip.replaceChildren(...(lvl ? [badge(lvl, ""), h("span", null, text)]
-      : aheadLvl ? [badge(Math.min(aheadLvl, 2), ""), h("span", null, `In ${fmt(hours)} h: ${aheadText}`)]
-      : [h("span", { class: "dim" }, "✓ Plan holds")]));
+    const ahead = `In ${fmt(hours)} h: ${aheadText}`;
+    replaceIfChanged(chip, lvl ? `now|${lvl}|${text}` : aheadLvl ? `ahead|${aheadLvl}|${ahead}` : "holds",
+      () => (lvl ? [badge(lvl, ""), h("span", null, text)]
+        : aheadLvl ? [badge(Math.min(aheadLvl, 2), ""), h("span", null, ahead)]
+        : [h("span", { class: "dim" }, "✓ Plan holds")]));
     chip.title = "Open the overview";
   }
 
