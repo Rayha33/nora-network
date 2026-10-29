@@ -40,7 +40,6 @@ DEFAULTS: dict = {
         "nomination": [0.03, 0.06, 0.10],
         "booking": [0.95, 1.0, 1.05],
         "pressure_margin": [0.10, 0.05, 0.0],
-        "risk": [0.05, 0.10, 0.15],
         "step": [0.15, 0.25, 0.40],
         "plan_lookahead_hours": 6,
         "gas_day_start_utc": 5,

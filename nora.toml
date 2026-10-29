@@ -39,7 +39,6 @@ load = [1.01, 1.05, 1.10]             # share of capacity in use: running full i
 nomination = [0.03, 0.06, 0.10]       # |actual - nominated| / nominated at an exit point
 booking = [0.95, 1.0, 1.05]           # nominated / booked capacity at an exit point
 pressure_margin = [0.10, 0.05, 0.0]   # distance to a pressure limit, as a share of the window
-risk = [0.05, 0.10, 0.15]             # share of deliverable gas lost if one asset trips
 step = [0.15, 0.25, 0.40]             # flow change within an hour, as a share of capacity
 plan_lookahead_hours = 6              # how far ahead the plan check looks
 gas_day_start_utc = 5                 # the gas day runs 05:00-05:00 UTC (06:00 CET)
