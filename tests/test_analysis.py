@@ -141,3 +141,46 @@ def test_whatif_everything_offline_degrades_gracefully(tiny):
     assert cut["delivered"] == {}
     assert cut["supplied"] == {}
     assert cut["pipeline_flow"] == {}
+
+
+def _booked(nodes, terminal, capacity="", booked=""):
+    """The two-terminal network with `terminal` given an exit capacity and a booking."""
+    out = []
+    for row in nodes:
+        if row.startswith(terminal + ","):
+            cells = row.split(",")
+            cells[7] = capacity
+            row = ",".join(cells) + f",,,{booked}"  # notes and map_min_zoom blank
+        out.append(row)
+    return out
+
+
+def test_booked_exit_capacity_fills_before_the_shorter_route(tmp_path):
+    """Review #49802: kilometres alone sent no gas down Baltic Pipe, since Dornum is
+    closer. Shippers' bookings come first; the deliverable total does not change."""
+    nodes = _booked(NODES[:4], "b_terminal", booked="30")
+    net = load_network(write_network(tmp_path / "data", nodes=nodes, pipelines=PIPELINES[:3]))
+    flow = routed_flow(build_graph(net))
+    assert flow.value == max_flow(build_graph(net)).value == 60
+    assert flow.delivered == {"a_terminal": 30, "b_terminal": 30}
+
+
+def test_a_booking_never_exceeds_a_derated_exit(tmp_path):
+    nodes = _booked(NODES[:4], "b_terminal", capacity="25", booked="30")
+    net = load_network(write_network(tmp_path / "data", nodes=nodes, pipelines=PIPELINES[:3]))
+    flow = routed_flow(build_graph(net))
+    assert flow.delivered == {"a_terminal": 35, "b_terminal": 25}
+
+
+def test_only_an_exit_point_can_be_booked(tmp_path):
+    nodes = [*NODES[:1], NODES[1] + ",,,5", *NODES[2:4]]
+    with __import__("pytest").raises(Exception) as caught:
+        load_network(write_network(tmp_path / "data", nodes=nodes, pipelines=PIPELINES[:3]))
+    assert "booked_msm3d" in str(caught.value)
+
+
+def test_baltic_pipe_carries_polands_booking(north_sea):
+    flow = routed_flow(build_graph(north_sea))
+    assert flow.delivered["pl_vtp"] == 22
+    assert flow.pipelines["baltic_pipe_ns"] == flow.pipelines["baltic_pipe_east"] == 22
+    assert flow.value == max_flow(build_graph(north_sea)).value

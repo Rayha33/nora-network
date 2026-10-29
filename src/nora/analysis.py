@@ -26,6 +26,10 @@ from .graph import build_graph
 
 SOURCE, SINK = "__supply__", "__markets__"
 OUT = "__out__"  # suffix for the out-side of a capacitated node
+BOOKED = "__booked__"  # suffix for the booked share of an exit point
+# Routing cost of one unit through an exit's booked share: more than any route is long,
+# so booked capacity fills before the shortest routes take the rest.
+BOOKED_COST = -100_000
 
 
 @dataclass(frozen=True)
@@ -70,8 +74,18 @@ def flow_graph(graph: nx.DiGraph, supply: dict[str, float] | None = None) -> nx.
                 flows.add_edge(SOURCE, node, capacity=capacity)
         elif node in exits:
             # an exit point with a capacity (a derated terminal) takes no more than that
-            limit = {"capacity": attrs["capacity_msm3d"]} if attrs["capacity_msm3d"] else {}
-            flows.add_edge(node, SINK, **limit)
+            own = attrs["capacity_msm3d"]
+            booked = attrs.get("booked_msm3d") or 0.0
+            if own:
+                booked = min(booked, own)
+            if booked:
+                # Shippers' bookings fill first: Baltic Pipe carries gas to Poland
+                # although Dornum is closer (review #49802). Max flow is unchanged.
+                flows.add_edge(node, node + BOOKED, capacity=booked, cost=BOOKED_COST)
+                flows.add_edge(node + BOOKED, SINK, capacity=booked)
+            if own is None or own > booked:
+                limit = {"capacity": own - booked} if own else {}
+                flows.add_edge(node, SINK, **limit)
         elif attrs["capacity_msm3d"]:
             out = node + OUT
             for _, target, edge in list(flows.out_edges(node, data=True)):
@@ -105,7 +119,7 @@ def shortest_max_flow(flows: nx.DiGraph) -> dict[str, dict[str, float]]:
     scaled = nx.DiGraph()
     scaled.add_nodes_from(flows)
     for u, v, attrs in flows.edges(data=True):
-        edge = {"weight": round(attrs.get("length_km", 0))}
+        edge = {"weight": round(attrs.get("length_km", 0)) + attrs.get("cost", 0)}
         if "capacity" in attrs:
             # at least 1 kSm3/d, so a tiny line is nearly-blocked, not fully blocked
             edge["capacity"] = max(1, round(attrs["capacity"] * 1000))
@@ -128,9 +142,14 @@ def _summarise(
     return Flow(
         value=round(value, 6),
         pipelines={pipe: round(f, 6) for pipe, f in pipelines.items()},
-        delivered={node: round(flow[node].get(SINK, 0.0), 6) for node in exits},
+        delivered={node: round(_delivered(flow, node), 6) for node in exits},
         supplied={node: round(f, 6) for node, f in flow[SOURCE].items()},
     )
+
+
+def _delivered(flow: dict[str, dict[str, float]], node: str) -> float:
+    """Gas into the sink from an exit point, through its booked share and the rest."""
+    return flow[node].get(SINK, 0.0) + flow.get(node + BOOKED, {}).get(SINK, 0.0)
 
 
 def n_minus_1(graph: nx.DiGraph, base: float | None = None) -> list[Outage]:

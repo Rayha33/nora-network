@@ -41,6 +41,7 @@ def build_graph(net: Network, statuses: Iterable[str] = ("operating",)) -> nx.Di
                 lat=node.lat,
                 lon=node.lon,
                 capacity_msm3d=node.capacity_msm3d,
+                booked_msm3d=node.booked_msm3d,
                 status=node.status,
             )
     for pipe in sorted(net.pipelines, key=lambda p: p.id):

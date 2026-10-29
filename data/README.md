@@ -42,6 +42,7 @@ One row per asset.
 | `source` | link backing up the row |
 | `notes` | free text; wrap it in quotes if it contains a comma |
 | `map_min_zoom` | optional map zoom at which a detailed field or tie-in appears; blank means always visible |
+| `booked_msm3d` | optional, exit points only: capacity shippers have booked there. The routing fills it before shorter routes take the rest; the maximum flow is unchanged |
 
 `market` nodes are where the analysis counts gas as delivered: virtual trading points
 (NBP, TTF, THE and so on, placed schematically on the map) and large consumers such as
