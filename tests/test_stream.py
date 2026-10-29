@@ -3,6 +3,7 @@ import json
 import socket
 import threading
 import urllib.request
+from collections import Counter
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -191,19 +192,51 @@ def test_synthetic_co2_slugs_are_short(north_sea):
         assert longest <= 4, f"{asset}: CO2 over {follow:.2f} mol % for {longest} h"
 
 
-def test_synthetic_week_meets_each_pressure_limit(north_sea):
-    """The synthetic week's pressure excursions reach high (Draupner E), high-high
-    (Kårstø) and integrity (Dunkirk), so the Flow view shows each colour (Ray, 29 Oct)."""
+def test_synthetic_week_breaches_limits_now_and_then(north_sea):
+    """Ray, 29 Oct: "random pressure and flow limits breached but keep the not too
+    frequent. then less frequent a few of them turning red, meaning high high or low
+    low". Pressures pass low and high, now and then low-low and high-high; a few lines
+    run over capacity, fewer past its critical level; red is rarer than yellow."""
     from nora.config import load_config
 
-    limits, kinds = load_config()["pressure_limits"], {n.id: n.type for n in north_sea.nodes}
-    assets, values = load_stream("synthetic-week", north_sea).metrics["pressure_bar"]
-    reached = {}
-    for column, asset in enumerate(assets):
-        top = max(row[column] for row in values if row[column] is not None)
-        reached[asset] = sum(top >= limit for limit in limits[kinds[asset]])
-    assert reached["draupner_e"] >= 1 and reached["karsto"] >= 2 and reached["dunkirk"] == 3
-    assert sum(1 for level in reached.values() if level) == 3, "only the scripted ones"
+    config = load_config()
+    limits, load = config["pressure_limits"], config["thresholds"]["load"]
+    kinds = {n.id: n.type for n in north_sea.nodes}
+    capacity = {p.id: p.capacity_msm3d for p in north_sea.pipelines}
+    stream = load_stream("synthetic-week", north_sea)
+    assets, values = stream.metrics["pressure_bar"]
+    seen, hours_with_any = Counter(), 0
+    for row in values:
+        hit = False
+        for column, asset in enumerate(assets):
+            p = row[column]
+            if p is None:
+                continue
+            ll, low, high, hh, _top = limits[kinds[asset]]
+            code = (
+                "HH"
+                if p >= hh
+                else "H"
+                if p >= high
+                else "LL"
+                if p <= ll
+                else "L"
+                if p <= low
+                else None
+            )
+            if code:
+                seen[code] += 1
+                hit = True
+        hours_with_any += hit
+    assert all(seen[code] for code in ("L", "LL", "H", "HH")), seen
+    assert seen["LL"] + seen["HH"] < seen["L"] + seen["H"], "red is rarer than yellow"
+    assert hours_with_any < 0.4 * len(values), "not too frequent"
+    over = Counter()
+    for column, pid in enumerate(stream.assets):
+        for row in stream.values if capacity.get(pid) else ():
+            share = abs(row[column] or 0) / capacity[pid]
+            over["critical" if share >= load[2] else "warning" if share >= load[0] else ""] += 1
+    assert over["warning"] and over["critical"] and over["critical"] < over["warning"], over
 
 
 def test_a_pressure_excursion_at_an_unknown_node_is_reported(tiny, tmp_path):
@@ -672,7 +705,8 @@ def test_synthetic_nominations_are_the_plan_without_events(tiny):
 def test_synthetic_pressures_move_like_line_pack(north_sea):
     """A pressure is its line pack, so it moves slowly: at most 1.5 bar an hour, and
     hardly at all most hours. Faster swings made pack rates of hundreds of MSm3/d where
-    operators see a few (Ray, 29 Oct: the pack rate stays near 0)."""
+    operators see a few (Ray, 29 Oct: the pack rate stays near 0). Only a random limit
+    breach (a trip, a restriction) moves it faster, up to 6 bar an hour, in few hours."""
     import statistics
 
     from nora.stream import load_stream
@@ -686,5 +720,6 @@ def test_synthetic_pressures_move_like_line_pack(north_sea):
         for a, b in zip((r[j] for r in rows), (r[j] for r in rows[1:]), strict=False)
         if a is not None and b is not None
     ]
-    assert max(steps) <= 1.5 + 1e-9
+    assert max(steps) <= 6 + 1e-9
+    assert sum(step > 1.5 + 1e-9 for step in steps) < 0.02 * len(steps), "breaches are rare"
     assert statistics.median(steps) < 0.2

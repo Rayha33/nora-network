@@ -31,8 +31,12 @@ test("pressure limits: the number turns yellow, red, dark red, readable on its t
   // not the whole square"; "we want to use strong colors sparingly".
   for (const theme of ["light", "dark"]) {
     const { App, NORA } = loadApp({ search: `?theme=${theme}` });
-    const [high, highHigh, integrity] = NORA.config.pressure_limits.hub;
+    const [lowLow, low, high, highHigh, integrity] = NORA.config.pressure_limits.hub;
     assert.equal(App.pressureMark("draupner_e", high - 0.1), null, "below high: a plain tag");
+    assert.equal(App.pressureMark("draupner_e", low + 0.1), null, "above low: a plain tag");
+    assert.deepEqual([low, lowLow].map((p) => App.pressureMark("draupner_e", p).code), ["L", "LL"], "low and low-low below");
+    assert.equal(App.pressureMark("draupner_e", low).ink, App.pressureMark("draupner_e", high).ink, "L yellow like H");
+    assert.equal(App.pressureMark("draupner_e", lowLow).ink, App.pressureMark("draupner_e", highHigh).ink, "LL red like HH");
     const marks = [high, highHigh, integrity].map((p) => App.pressureMark("draupner_e", p));
     assert.deepEqual(marks.map((m) => m.code), ["H", "HH", "INT"]);
     assert.ok(marks.every((m) => !("fill" in m)), "the tag itself is not coloured");
@@ -51,11 +55,11 @@ test("pressure limits: the tags fill with the colour, and zoomed in say which li
   const week = NORA.streams.find((s) => s.synthetic), block = week.metrics.pressure_bar;
   const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 258, y: stage * 204 }]));
   const seen = new Set();
-  for (let hour = 0; hour < week.times.length; hour++) {
-    toHour(document, hour);
+  toHour(document, -400); // the scrub moves from the playhead: back to the first hour
+  for (let hour = 0; hour < week.times.length; hour++, toHour(document, 1)) {
     for (const id of block.assets) {
       const mark = App.pressureMark(id);
-      if (!mark || !pos[id]) continue;
+      if (!mark || !pos[id] || NORA.config.flow.hide.includes(id)) continue; // not drawn in the Flow view
       seen.add(mark.code);
       const zoomedIn = App.views.flow.pressureTags(id, pos, 1.1, 64), zoomedOut = App.views.flow.pressureTags(id, pos, 0.6, 64);
       assert.ok(zoomedIn.length && zoomedIn.every((t) => t.mark && t.mark.code === mark.code && t.text.startsWith(`${mark.code} `)), `${id} hour ${hour}: "${mark.code}" on every tag`);
@@ -66,7 +70,7 @@ test("pressure limits: the tags fill with the colour, and zoomed in say which li
       assert.equal(alarm.level, mark.level === 1 ? 1 : 3, "high a warning; high-high and integrity critical");
     }
   }
-  assert.deepEqual([...seen].sort(), ["H", "HH", "INT"], "the synthetic week shows all three");
+  for (const code of ["H", "HH", "L", "LL"]) assert.ok(seen.has(code), `the synthetic week passes ${code} now and then`);
 });
 
 test("pressure limits: a tag at a limit keeps its own fill; only its number is coloured", () => {
@@ -95,4 +99,15 @@ test("pressure limits: a node's alarm badge takes a corner no tag covers", () =>
   const corner = App.views.flow.badgeCorner;
   assert.deepEqual(Array.from(corner(0, 0, 50, [])), [48, -48], "top right by default");
   assert.deepEqual(Array.from(corner(0, 0, 50, [[40, -60, 100, -40]])), [-48, -48], "a tag there: top left");
+});
+
+/* A line's flow over its capacity: its number in the Flow view yellow over the load's
+   warning level, red past the critical one (Ray, 29 Oct: "random pressure and flow limits
+   breached ... a few of them turning red"). */
+test("flow limits: a line's number turns yellow over capacity, red past the critical level", () => {
+  const { App, NORA } = loadApp();
+  const pid = App.pipeIds.find((id) => NORA.assets[id].capacity > 10), cap = NORA.assets[pid].capacity, T = NORA.config.thresholds.load;
+  assert.equal(App.flowMark(pid, cap * 0.9), null, "under capacity: plain");
+  assert.equal(App.flowMark(pid, -cap * (T[0] + 0.01)).ink, App.pressureMark("draupner_e", NORA.config.pressure_limits.hub[2]).ink, "over: yellow, either direction");
+  assert.equal(App.flowMark(pid, cap * (T[2] + 0.01)).ink, App.pressureMark("draupner_e", NORA.config.pressure_limits.hub[3]).ink, "past critical: red");
 });
