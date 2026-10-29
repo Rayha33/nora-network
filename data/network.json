@@ -280,8 +280,8 @@
    "id": "heidrun"
   },
   {
-   "name": "Heimdal",
-   "type": "hub",
+   "name": "Heimskringla tie-in",
+   "type": "tee",
    "country": "NO",
    "lat": 59.57,
    "lon": 2.23,
@@ -829,7 +829,7 @@
   },
   {
    "pipeline": "statpipe_heimdal",
-   "name": "Statpipe (Heimdal leg)",
+   "name": "Heimskringla (Draupner leg)",
    "type": "trunk",
    "from_id": "heimdal",
    "length_km": 155.0,
@@ -839,7 +839,7 @@
   },
   {
    "pipeline": "vesterled",
-   "name": "Vesterled",
+   "name": "Heimskringla (St Fergus leg)",
    "type": "export",
    "from_id": "heimdal",
    "length_km": 360.0,
@@ -967,7 +967,7 @@
   },
   {
    "pipeline": "ogt",
-   "name": "Oseberg Gas Transport",
+   "name": "Heimskringla",
    "type": "feeder",
    "from_id": "oseberg",
    "length_km": 109.0,

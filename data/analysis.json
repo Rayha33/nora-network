@@ -13,10 +13,10 @@
  ],
  "node_types": {
   "field": 30,
-  "hub": 4,
+  "hub": 3,
   "market": 2,
   "processing": 4,
-  "tee": 2,
+  "tee": 3,
   "terminal": 7
  },
  "pipeline_km": 11006,
@@ -387,7 +387,7 @@
   {
    "kind": "node",
    "id": "heimdal",
-   "name": "Heimdal",
+   "name": "Heimskringla tie-in",
    "lost": 30.0,
    "share": 0.0698
   },
@@ -401,14 +401,14 @@
   {
    "kind": "pipeline",
    "id": "ogt",
-   "name": "Oseberg Gas Transport",
+   "name": "Heimskringla",
    "lost": 30.0,
    "share": 0.0698
   },
   {
    "kind": "pipeline",
    "id": "vesterled",
-   "name": "Vesterled",
+   "name": "Heimskringla (St Fergus leg)",
    "lost": 30.0,
    "share": 0.0698
   },
@@ -765,7 +765,7 @@
   {
    "kind": "pipeline",
    "id": "statpipe_heimdal",
-   "name": "Statpipe (Heimdal leg)",
+   "name": "Heimskringla (Draupner leg)",
    "lost": 0.0,
    "share": 0.0
   },
