@@ -4,9 +4,9 @@ gas plant's processing capacity limits the plan as it limits the max-flow model.
 
 from datetime import UTC, datetime, timedelta
 
+from nora.analysis import max_flow
 from nora.config import load_config
 from nora.data import load_network
-from nora.analysis import max_flow
 from nora.graph import build_graph
 from nora.ops import advise, check_plan
 from nora.stream import Event, Stream, apply_events
