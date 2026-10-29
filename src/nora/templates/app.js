@@ -3822,7 +3822,7 @@ const App = (() => {
         }
         live.time = s.times[live.index] + (live.playhead - live.index) * s.step;
         if (now - lastStep > 250) { lastStep = now; step(); }
-      }
+      } else if (live.feed && glideFeed(dt) && now - lastStep > 250) { lastStep = now; step(); }
     } else if (now - lastStep > 30000) {
       // Paused, the wall clock still moves: keep "Now" / "3 h ago" and the now tick true.
       lastStep = now;
@@ -3862,8 +3862,7 @@ const App = (() => {
     $("tl-future").textContent = "UTC";
     live.feed.addEventListener("meta", (message) => {
       const meta = JSON.parse(message.data);
-      live.feedEvents = meta.events || [];
-      live.feedPigs = meta.pigs || [];
+      receiveMeta(meta);
       select.replaceChildren(h("option", null, `${meta.title || "Live feed"} (live)`));
     });
     live.feed.addEventListener("frame", (message) => receiveFrame(JSON.parse(message.data)));
@@ -3881,6 +3880,24 @@ const App = (() => {
      delivery and peaks all assume it. A frame older than the last one means the feed
      started over (a replay looped, or the server restarted and the browser
      reconnected), so a new timeline begins; one with the same time replaces it. */
+  function receiveMeta(meta) {
+    live.feedEvents = meta.events || [];
+    live.feedPigs = meta.pigs || [];
+    // A feed re-timed to the wall clock (`nora live --now`) says how fast its clock runs.
+    live.feedSpeed = meta.retimed && meta.retimed.speed > 0 ? meta.retimed.speed : null;
+  }
+  /* Between a re-timed feed's frames the clock runs on at the feed's speed, so pigs and
+     peaks glide instead of jumping once an hour; never past one step beyond the last
+     frame, where the next one is due. The values stay the last frame's. */
+  function glideFeed(dt) {
+    const n = live.frames.length;
+    if (!live.feedSpeed || !n || live.stale) return false;
+    const last = live.frames[n - 1], gap = n > 1 ? last.t - live.frames[n - 2].t : 3600;
+    const next = Math.min(last.t + gap, Math.max(live.time ?? last.t, last.t) + dt * live.feedSpeed);
+    if (next === live.time) return false;
+    live.time = next;
+    return true;
+  }
   function receiveFrame(f) {
     const last = live.frames[live.frames.length - 1], entry = { t: f.t, flows: f.values, metrics: f.metrics || {}, plan: f.plan || null };
     if (last && f.t < last.t) {
@@ -4559,7 +4576,7 @@ const App = (() => {
     depth: { at: depthAt, ready: () => depthGrid.ready }, // water depth (m) under a position
     positionText,
     selectMarker: openMarker, // a click on a pig or a peak, from any view
-    feed: { frame: receiveFrame, trouble: feedTrouble }, // the live feed's handlers, for tests
+    feed: { frame: receiveFrame, trouble: feedTrouble, meta: receiveMeta, glide: glideFeed }, // the live feed's handlers, for tests
     menu: { open: openMenu, close: closeMenu, for: menuFor },
     // The editor: the Flow view's right-click on empty paper, its connect step, the
     // edited data files and network, and the viewport to restore after an edit.
