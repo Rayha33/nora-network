@@ -28,7 +28,9 @@ function load({ width = 1280, search = "", stored = {} } = {}) {
 test("auto: the window picks the profile and the scale", () => {
   const cases = [
     [390, "compact", 1], [768, "compact", 1], [1366, "desk", 1], [1920, "desk", 1],
-    [2560, "desk", 1.17], [3840, "wall", 1.5], [7680, "wall", 2.2], [10000, "wall", 2.2],
+    // A wall's scale comes from nora.toml's reading distance (5 m) and picture width
+    // (4 m): capitals of about 20 arcmin (review #49802: × 1.5 read to about 1.5 m).
+    [2560, "desk", 1.17], [3840, "wall", 3.1], [7680, "wall", 4], [10000, "wall", 4],
   ];
   for (const [width, profile, scale] of cases) {
     const { App } = load({ width });
@@ -40,7 +42,7 @@ test("auto: the window picks the profile and the scale", () => {
 test("a wall is large and dark unless the operator chose a theme", () => {
   const wall = load({ width: 1920, search: "?display=wall" });
   assert.equal(wall.App.display(), "wall");
-  assert.equal(wall.App.uiScale(), 1.5, "readable from metres away: at least 150 %");
+  assert.ok(wall.App.uiScale() >= 1.5, "readable from metres away: at least 150 %");
   assert.equal(wall.document.documentElement.dataset.theme, "dark");
   assert.equal(wall.App.colors.card.inactive.ink, wall.App.colors.text, "dark-gray nodes use light primary text");
   assert.equal(wall.App.colors.card.inactive.dim, wall.App.colors.text, "secondary text inside dark-gray nodes is just as bright as primary text");
@@ -103,7 +105,7 @@ test("the bar is one row while it fits at its UI scale", () => {
   assert.equal(bar({ width: 1366 }), "one", "a laptop desk keeps one row");
   assert.equal(bar({ width: 1200 }), "tight", "tighter: the wordmark goes, the mark stays");
   assert.equal(bar({ width: 1440, search: "?scale=150" }), "two", "960 px of room at 1.5: the switches wrap");
-  assert.equal(bar({ width: 3840 }), "one", "a 4K wall at 1.5 has room for one row");
+  assert.equal(bar({ width: 3840 }), "tight", "a 4K wall at 3.1: one row, without the wordmark");
 });
 
 /* Ray, 29 Oct: "hourly nominations from the shippers at each exitpoint ... in both

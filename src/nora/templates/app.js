@@ -566,10 +566,20 @@ const App = (() => {
   function chosenScale(profile) {
     let asked = Number(params.get("scale") || (settings.scale === "auto" ? NaN : settings.scale));
     if (asked > 4) asked /= 100; // ?scale=150 means 150 %
-    return asked >= 0.75 && asked <= 3 ? asked : autoScaleFor(profile);
+    return asked >= 0.75 && asked <= 4 ? asked : autoScaleFor(profile);
   }
-  // A wall is read from 5-10 m: body text at least about 20 px (13 px × 1.5).
-  const autoScaleFor = (profile) => (profile === "wall" ? Math.max(1.5, autoScale(window.innerWidth)) : autoScale(window.innerWidth));
+  /* A wall is read from metres away (review #49802: desk × 1.5 read to about 1.5 m).
+     Control-room practice (ISO 9241-303, ISA-101) wants capitals of about 20 arcmin at
+     the reading distance; a browser cannot measure the screen, so nora.toml says how far
+     it is read from and how wide its picture is. 13 px Archivo has capitals of ~9 px.
+     A 4 m wide 3840 px wall read from 5 m comes to about 3. */
+  function wallScale(width) {
+    const distance = C.screen.wall_distance_m || 5, wide = C.screen.wall_width_m || 4;
+    const capital = distance * 1000 * Math.tan((20 / 60) * (Math.PI / 180)); // mm
+    const perPixel = (wide * 1000) / width; // mm per CSS pixel
+    return Math.min(4, Math.max(1.5, capital / perPixel / 9));
+  }
+  const autoScaleFor = (profile) => (profile === "wall" ? wallScale(window.innerWidth) : autoScale(window.innerWidth));
   // Returns true when the profile or scale changed, so the views can re-fit.
   /* The bar is one row while it fits (Ray, 29 Oct: "everything here should be on one
      line"). The UI scale zooms it, so a 1440 px wall screen at 1.5 has 960 px of room:
@@ -2429,6 +2439,8 @@ const App = (() => {
     }
     when.hidden = !ts;
     when.textContent = timeText(ts);
+    // The centre of the timeline is the playhead: "Real time" only while it is now.
+    if (ts) $("tl-now").textContent = Math.abs(ts.ahead) <= NOW_SLACK ? "Real time · UTC" : ts.model ? "Model · UTC" : "History · UTC";
     when.classList.toggle("model", Boolean(ts && ts.model));
     document.body.classList.toggle("model-time", Boolean(ts && ts.model));
   }
@@ -2445,6 +2457,10 @@ const App = (() => {
     // A daily or monthly dataset at 10 min/s would take minutes per step: play it at the
     // slowest speed that shows a step about every two seconds (the menu still changes it).
     if (stream.step / live.speed > 30) live.speed = speeds.find((v) => stream.step / v <= 2) || Math.max(...speeds);
+    /* Data re-timed to now opens at now and, unless someone picked a speed, plays at
+       real time, so "Now" stays true (review #49802: at 10 min/s the page read "Model ·
+       in 24 min" 2.5 s after it opened, under a "Real time" label). */
+    if (stream.offset != null && !settings.speedChosen && speeds.includes(C.screen.now_speed)) live.speed = C.screen.now_speed;
     $("speed").value = String(live.speed);
     const half = timelineHalf(), retimed = stream.offset != null;
     scrub.min = String(-half);
@@ -2599,6 +2615,7 @@ const App = (() => {
   $("speed").addEventListener("change", (e) => {
     live.speed = Number(e.target.value);
     settings.speed = live.speed;  // remembered with the other settings, and in ?s= links
+    settings.speedChosen = true;  // a chosen speed also holds for data re-timed to now
     saveSettings();
   });
   $("stream-select").addEventListener("change", (e) => setStream(NORA.streams.find((s) => s.name === e.target.value)));
@@ -3162,7 +3179,7 @@ const App = (() => {
     rampAhead, // the next 6 hours of nominations at an exit point
     pipeStyle, pipeMapName, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
-    timeState, timelineWindow,
+    timeState, timelineWindow, seek,
     // The display profile (desk, wall or compact) and the one UI scale (1 = 100 %).
     display: () => display.profile,
     uiScale: () => display.scale,

@@ -50,7 +50,7 @@ test("a recorded dataset is not labelled real time; the synthetic week still is"
 test("a daily dataset plays a day in about a second", () => {
   const { App } = open("denmark-gas-energinet");
   assert.ok(86400 / App.live.speed <= 2, `a day takes ${86400 / App.live.speed} s to play`);
-  assert.equal(open("synthetic-week").App.live.speed, 600, "hourly data keeps nora.toml's 10 min/s");
+  assert.equal(open("synthetic-week").App.live.speed, 1, "data re-timed to now plays at real time");
 });
 
 test("the scrub says how far it moves, for keyboard and screen reader users", () => {
@@ -69,4 +69,27 @@ test("the trend column says the span it draws: hours for hourly data, days for d
   };
   assert.equal(head("synthetic-week"), "Last 12 h", "twelve hourly readings back");
   assert.equal(head("denmark-gas-energinet"), "Last 12 d", "twelve gas days back");
+});
+
+/* Review #49802: at 10 min/s the page said "Model · in 24 min" 2.5 s after it opened,
+   while the centre of the timeline still read "Real time". */
+test("data re-timed to now stays at now, and the centre label follows the playhead", () => {
+  const { App, document } = open("synthetic-week");
+  assert.equal(text(document, "tl-now"), "Real time · UTC");
+  App.live.playing = true;
+  App.live.playhead += 60 / App.live.stream.step; // a minute of playing at real time
+  App.seek(App.live.playhead);
+  assert.equal(text(document, "when"), "Now", "a minute later it is still now");
+  App.seek(App.live.playhead + 3); // three hours ahead: the model's
+  assert.equal(text(document, "tl-now"), "Model · UTC");
+  App.seek(App.live.playhead - 6);
+  assert.equal(text(document, "tl-now"), "History · UTC");
+});
+
+test("a speed someone picked holds, also for data re-timed to now", () => {
+  const { App, document, NORA } = open("synthetic-week");
+  document.getElementById("speed")._listeners.change[0]({ target: { value: "600" } });
+  assert.equal(App.settings().speedChosen, true);
+  document.getElementById("stream-select")._listeners.change[0]({ target: { value: NORA.streams.find((s) => s.name === "synthetic-week").name } });
+  assert.equal(App.live.speed, 600, "the menu's choice, not real time");
 });
