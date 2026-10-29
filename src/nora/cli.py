@@ -125,11 +125,33 @@ def cmd_serve(args) -> int:
 
 
 def cmd_live(args) -> int:
-    from .live import SharedPoll, serve
+    from .live import Inbox, SharedPoll, serve
 
+    token = os.environ.get("NORA_INGEST_TOKEN", "")
+    if args.ingest and not token and args.host not in ("127.0.0.1", "localhost", "::1"):
+        raise DataError(
+            [
+                f"--ingest on {args.host} takes pushes from other machines: set "
+                "NORA_INGEST_TOKEN to a long random secret first (docs/live-data.md)"
+            ]
+        )
     # build_site has already loaded the network and every stream; reuse them
     # instead of loading (and re-solving synthetic streams) a second time.
     summary = _build(args)
+    if args.ingest:
+        inbox = Inbox(set(summary["net"].asset_ids))
+        serve(
+            args.out,
+            meta=Inbox.meta(),
+            frames=inbox.frames,
+            plan=None,
+            host=args.host,
+            port=args.port,
+            open_browser=not args.no_browser,
+            inbox=inbox,
+            token=token,
+        )
+        return 0
     if args.source:
         source = SOURCES[args.source]
         serve(
@@ -236,6 +258,11 @@ def main(argv: list[str] | None = None) -> int:
         "--source",
         choices=sorted(SOURCES),
         help="poll a live source instead of replaying a stream",
+    )
+    live.add_argument(
+        "--ingest",
+        action="store_true",
+        help="take readings POSTed as JSON to /ingest from any system (docs/live-data.md)",
     )
     live.add_argument(
         "--poll-seconds",

@@ -12,13 +12,16 @@ then a `frame` event per time step:
 
 Anything that yields (timestamp, flows, metrics, index) frames can be served the same
 way, so a real feed (a SCADA historian, Origo, or a TSO's transparency API; see
-integrations.py) can replace `replay` without touching the browser side. Long gaps
+integrations.py) can replace `replay` without touching the browser side. Or push:
+`nora live --ingest` takes readings POSTed as JSON to /ingest from any system (see
+docs/live-data.md). Long gaps
 between frames are filled with SSE `: keepalive` comments (about one every 15 s), so
 browsers and proxies don't reap an idle connection.
 """
 
 from __future__ import annotations
 
+import hmac
 import json
 import math
 import sys
@@ -33,7 +36,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from .integrations import Connector
-from .stream import Stream
+from .stream import METRICS, Stream
 
 # (when, flows, metrics, index), and from a poller optionally the hours ahead:
 # {metric: {asset: [the next hours' values]}} (Origo's nominations).
@@ -42,6 +45,7 @@ PacedFrame = tuple[float, Frame]  # wall-seconds to wait, then the frame itself
 PolledItem = Frame | dict  # a dict is an error event: {"error": message}
 
 KEEPALIVE_SECONDS = 15.0  # max silence before an SSE comment keeps the line warm
+INGEST_LIMIT = 1_000_000  # the most bytes one push may carry
 POLL_SECONDS = 300.0  # Gassco publishes its real-time figures every 5 minutes
 
 
@@ -198,15 +202,163 @@ class SharedPoll:
             yield wait, fresh
 
 
+def _when(value) -> datetime:
+    """A reading's time: epoch seconds (or milliseconds), or ISO 8601; now if absent."""
+    if value is None:
+        return datetime.now(tz=UTC)
+    if isinstance(value, bool):
+        raise ValueError("a time is epoch seconds or ISO 8601, not true or false")
+    if isinstance(value, int | float):
+        seconds = value / 1000 if value > 1e11 else value
+        return datetime.fromtimestamp(seconds, tz=UTC)
+    if isinstance(value, str):
+        when = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return when if when.tzinfo else when.replace(tzinfo=UTC)
+    raise ValueError(f"a time is epoch seconds or ISO 8601, not {value!r}")
+
+
+def _readings(body) -> tuple[datetime, list[tuple[str, str, object]]]:
+    """(when, [(metric, asset, value)]) from one push, in either shape:
+
+    {"t": ..., "flows": {asset: v}, "metrics": {metric: {asset: v}}}
+    [{"asset": id, "metric": "pressure_bar", "value": 152.1, "t": ...}, ...]
+    """
+    if isinstance(body, dict):
+        when = _when(body.get("t"))
+        flows, metrics = body.get("flows") or {}, body.get("metrics") or {}
+        if not isinstance(flows, dict) or not isinstance(metrics, dict):
+            raise ValueError('"flows" is {asset: value} and "metrics" is {metric: {asset: value}}')
+        out = [("flow_msm3d", asset, value) for asset, value in flows.items()]
+        for metric, values in metrics.items():
+            if not isinstance(values, dict):
+                raise ValueError(f'"metrics.{metric}" is {{asset: value}}')
+            out += [(metric, asset, value) for asset, value in values.items()]
+        return when, out
+    if isinstance(body, list):
+        if not all(isinstance(r, dict) for r in body):
+            raise ValueError('a list of readings is [{"asset": ..., "metric": ..., "value": ...}]')
+        times = [_when(r["t"]) for r in body if r.get("t") is not None]
+        out = [(r.get("metric", "flow_msm3d"), r.get("asset"), r.get("value")) for r in body]
+        return (max(times) if times else datetime.now(tz=UTC)), out
+    raise ValueError("send a JSON object or a list of readings")
+
+
+class Inbox:
+    """Readings pushed to /ingest (`nora live --ingest`), for every browser on /stream.
+
+    Any system can feed NORA this way without a connector: a historian's export job, a
+    script, a message-queue bridge. A push may carry one reading or all of them; the
+    inbox keeps the latest value of each, so every frame it sends is the whole picture.
+    Readings for ids or metrics NORA does not know, and values that are not numbers, are
+    turned away and listed in the reply, never stored.
+    """
+
+    def __init__(self, assets: set[str]):
+        self.assets = assets
+        self._changed = threading.Condition()
+        self._seq, self._index = 0, -1
+        self._when: datetime | None = None
+        self._flows: dict[str, float] = {}
+        self._metrics: dict[str, dict[str, float]] = {}
+
+    def push(self, body) -> dict:
+        when, readings = _readings(body)
+        accepted, ignored = 0, []
+        with self._changed:
+            for metric, asset, value in readings:
+                number = isinstance(value, int | float) and not isinstance(value, bool)
+                why = (
+                    "unknown metric"
+                    if metric != "flow_msm3d" and metric not in METRICS
+                    else "unknown asset"
+                    if asset not in self.assets
+                    else "not a number"
+                    if value is not None and not (number and math.isfinite(value))
+                    else None
+                )
+                if why:
+                    ignored.append({"asset": asset, "metric": metric, "why": why})
+                    continue
+                flow = metric == "flow_msm3d"
+                store = self._flows if flow else self._metrics.setdefault(metric, {})
+                if value is None:
+                    store.pop(asset, None)  # null clears a reading
+                else:
+                    store[asset] = float(value)
+                accepted += 1
+            if accepted:
+                self._when, self._index, self._seq = when, self._index + 1, self._seq + 1
+                self._changed.notify_all()
+        return {"accepted": accepted, "ignored": ignored[:50]}
+
+    def frames(self) -> Iterator[tuple[float, Callable[[], PolledItem | None]]]:
+        """One reader's feed: what is known at once, then each push as it lands."""
+        seen = 0
+
+        def fresh() -> PolledItem | None:
+            nonlocal seen
+            with self._changed:
+                self._changed.wait_for(lambda: self._seq > seen, timeout=KEEPALIVE_SECONDS)
+                if self._seq == seen:
+                    return None
+                seen = self._seq
+                metrics = {metric: dict(values) for metric, values in self._metrics.items()}
+                return (self._when, dict(self._flows), metrics, self._index)
+
+        while True:
+            yield 0.0, fresh
+
+    @staticmethod
+    def meta() -> dict:
+        return {
+            "name": "ingest",
+            "title": "Live data",
+            "description": "Readings pushed to this server (POST /ingest), the latest of each.",
+            "source": "POST /ingest",
+            "synthetic": False,
+        }
+
+
 class _Handler(SimpleHTTPRequestHandler):
     meta: dict = {}
     plan: list | None = None
     ahead: Callable[[int], dict] | None = None  # nominations already sent for later hours
     frames: Callable[[], Iterator[PacedFrame]]
     keepalive: float = KEEPALIVE_SECONDS  # max silence between bytes on /stream
+    inbox: Inbox | None = None  # `nora live --ingest`: readings pushed to /ingest
+    token: str = ""  # the bearer token a push must carry (NORA_INGEST_TOKEN)
 
     def log_message(self, format, *args):  # noqa: A002 - keep the console quiet
         pass
+
+    def do_POST(self):
+        """Readings pushed as JSON (docs/live-data.md). JSON only, with the server's bearer
+        token when it has one, at most INGEST_LIMIT bytes; nothing outside is trusted."""
+        if urlsplit(self.path).path != "/ingest" or self.inbox is None:
+            return self._reply(404, {"error": "not found: push to /ingest of `nora live --ingest`"})
+        if self.token and not hmac.compare_digest(
+            self.headers.get("Authorization", ""), f"Bearer {self.token}"
+        ):
+            need = "send the header Authorization: Bearer <NORA_INGEST_TOKEN>"
+            return self._reply(401, {"error": need})
+        if "application/json" not in self.headers.get("Content-Type", ""):
+            return self._reply(415, {"error": "send Content-Type: application/json"})
+        length = int(self.headers.get("Content-Length") or 0)
+        if not 0 < length <= INGEST_LIMIT:
+            return self._reply(413, {"error": f"a push is 1 to {INGEST_LIMIT} bytes of JSON"})
+        try:
+            result = self.inbox.push(json.loads(self.rfile.read(length)))
+        except (ValueError, KeyError) as error:
+            return self._reply(400, {"error": str(error) or "not JSON"})
+        return self._reply(202 if result["accepted"] else 422, result)
+
+    def _reply(self, status: int, body: dict) -> None:
+        data = json.dumps(body).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
 
     def do_GET(self):
         if urlsplit(self.path).path != "/stream":
@@ -283,6 +435,8 @@ def serve(
     keepalive: float = KEEPALIVE_SECONDS,
     open_browser: bool = True,
     plan: list | None = None,
+    inbox: Inbox | None = None,
+    token: str = "",
 ) -> None:
     """Serve the site and a feed on /stream: replay a `stream`, or poll a live source.
 
@@ -304,6 +458,8 @@ def serve(
             "ahead": staticmethod(partial(nominations_ahead, stream)) if stream else None,
             "frames": staticmethod(frames),
             "keepalive": keepalive,
+            "inbox": inbox,
+            "token": token,
         },
     )
     server = ThreadingHTTPServer((host, port), partial(handler, directory=str(site_dir)))
@@ -315,6 +471,12 @@ def serve(
         print(f"Serving '{meta.get('title', 'live feed')}' as a live feed")
     print(f"  map:  {url}")
     print(f"  feed: http://{host}:{port}/stream  (Ctrl-C to stop)")
+    if inbox is not None:
+        auth = ' -H "Authorization: Bearer $NORA_INGEST_TOKEN"' if token else ""
+        example = '{"metrics": {"pressure_bar": {"kollsnes": 152.1}}}'
+        print(f"  push: curl -X POST http://{host}:{port}/ingest{auth} \\")
+        print(f"          -H 'Content-Type: application/json' -d '{example}'")
+        print("        (docs/live-data.md)")
     if open_browser:
         webbrowser.open(url)
     try:
