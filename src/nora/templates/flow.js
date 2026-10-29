@@ -152,17 +152,23 @@
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(nowX, y - 1); ctx.lineTo(nowX, y + h + 1); ctx.stroke();
   }
-  /* Three lines: the minimum and maximum end-of-day target bounds in gray, and the
-     current delivery position in a stronger line. The current line takes the alarm
-     colour only outside the target bounds. */
-  // `u` is canvas units per screen pixel: 1 zoomed in, 1 / zoom in the overview, where
-  // it keeps its screen size (Ray, 29 Oct: "we are still missing the end of day target
-  // bar inside the exit point nodes").
-  function drawDayBar(ctx, x, y, day, look, u = 1) {
-    const T = App.thresholds.nomination, half = 11 * u, full = T[2] * 1.2;
+  /* End-of-day delivery at an exit point: a shaded on-target band between the minimum
+     and maximum target bounds, and a strong current-delivery marker. On target is calm
+     ink; outside the bounds it takes the alarm colour. `u` is canvas units per screen
+     pixel: 1 zoomed in, 1 / zoom in the overview, where it keeps its screen size (Ray,
+     29 Oct: "we are still missing the end of day target bar inside the exit point
+     nodes"). `reach` is half the bar's width: wide in a zoomed-in square, 11 in the
+     overview's smaller one. */
+  function drawDayBar(ctx, x, y, day, look, u = 1, reach = 44) {
+    const T = App.thresholds.nomination, half = reach * u, full = T[2] * 1.2;
     const at = (share) => x + Math.max(-1, Math.min(1, share / full)) * half;
     ctx.save();
     ctx.lineCap = "butt";
+    const left = at(-T[0]), right = at(T[0]);
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = look.dim;
+    ctx.fillRect(left, y - 5 * u, right - left, 10 * u); // the target area, not just its bounds
+    ctx.globalAlpha = 1;
     ctx.strokeStyle = look.dim;
     ctx.lineWidth = u;
     ctx.beginPath(); ctx.moveTo(x - half, y); ctx.lineTo(x + half, y); ctx.stroke(); // the track
@@ -170,7 +176,7 @@
       ctx.beginPath(); ctx.moveTo(at(share), y - 4 * u); ctx.lineTo(at(share), y + 4 * u); ctx.stroke();
     }
     ctx.strokeStyle = day.level ? App.levelColor[day.level] : look.ink;
-    ctx.lineWidth = 2.4 * u;
+    ctx.lineWidth = 3 * u;
     ctx.beginPath(); ctx.moveTo(at(day.share), y - 6 * u); ctx.lineTo(at(day.share), y + 6 * u); ctx.stroke();
     ctx.restore();
   }
@@ -505,7 +511,7 @@
     if (incoming >= 0.05) rows.push({ value: incoming, ink: look.dim, at: top + span * 0.3 });
     if (outgoing >= 0.05) rows.push({ value: outgoing, ink: look.ink, at: top + span * 0.72 });
     // An exit point sends nothing on: its lower half holds the end-of-day target bar.
-    if (day && outgoing < 0.05 && span * scale >= 30) drawDayBar(ctx, x, top + span * 0.74, day, look, 1 / scale);
+    if (day && outgoing < 0.05 && span * scale >= 30) drawDayBar(ctx, x, top + span * 0.74, day, look, 1 / scale, 11);
     if (!rows.length && total != null) rows.push({ value: total, ink: look.ink, at: top + span / 2 });
     ctx.save();
     ctx.textAlign = "center";

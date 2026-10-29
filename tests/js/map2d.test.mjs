@@ -589,13 +589,70 @@ test("exit nodes: gray target bounds and one prominent current-delivery line", (
   const vertical = strokes.filter((s) => s.path.length === 2 && s.path[0][0] === s.path[1][0]);
   assert.equal(vertical.length, 3, "minimum, maximum and current are the three vertical markers");
   const tolerance = App.thresholds.nomination[0];
-  const half = 11, full = App.thresholds.nomination[2] * 1.2;
+  const half = 44, full = App.thresholds.nomination[2] * 1.2;
   const positions = vertical.map((s) => s.path[0][0]).sort((a, b) => a - b);
   const expected = [100 - tolerance / full * half, 100 + 0.02 / full * half, 100 + tolerance / full * half].sort((a, b) => a - b);
   positions.forEach((x, i) => assert.ok(Math.abs(x - expected[i]) < 1e-9));
   assert.equal(vertical.filter((s) => s.color === "gray").length, 2, "the target bounds are gray");
   const current = vertical.find((s) => s.color === "black");
   assert.ok(current && current.width > Math.max(...vertical.filter((s) => s.color === "gray").map((s) => s.width)), "the current line is more prominent");
+});
+
+test("exit nodes: the on-target area is a shaded band the current line sits in", () => {
+  const { App } = loadApp();
+  const fills = [], strokes = [];
+  let path = [];
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "beginPath") return () => { path = []; };
+      if (key === "moveTo" || key === "lineTo") return (x, y) => path.push([x, y]);
+      if (key === "stroke") return () => strokes.push({ path, color: target.strokeStyle, width: target.lineWidth });
+      if (key === "fillRect") return (x, y, width, height) => fills.push({ x, y, width, height });
+      return () => {};
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  const look = { dim: "gray", ink: "black" };
+  App.views.flow.drawDayBar(ctx, 100, 50, { share: 0, level: 0 }, look);
+  const band = fills.find((f) => f.width > 0 && f.height >= 8);
+  assert.ok(band, "the on-target area is a filled band, not just two tick marks");
+  const current = strokes.find((s) => s.color === "black");
+  assert.ok(current.path[0][0] >= band.x && current.path[0][0] <= band.x + band.width, "on plan sits inside the band");
+  strokes.length = 0;
+  App.views.flow.drawDayBar(ctx, 100, 50, { share: 0.2, level: 2 }, look);
+  assert.ok(strokes.some((s) => s.color === App.levelColor[2]), "off target takes its alarm colour");
+});
+
+test("exit nodes: the wider day bar fits inside the square and covers no flow value", () => {
+  const { App, NORA } = loadApp();
+  loadFirstHour(App, NORA);
+  const half = App.views.flow.circleRadius(), y = half * 0.84;
+  assert.ok(y + 6 <= half && 44 <= half, "the whole bar stays inside the square");
+  const exits = Object.keys(NORA.assets).filter((id) => NORA.assets[id].type === "terminal" && NORA.grid[id]);
+  assert.ok(exits.length > 0);
+  for (const id of exits) {
+    const labels = [], fills = [];
+    const ctx = new Proxy({}, {
+      get(target, key) {
+        if (key in target) return target[key];
+        if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
+        if (key === "fillText") return (text, x, ty) => labels.push({ text: String(text), x, y: ty });
+        if (key === "fillRect") return (x, fy, width, height) => fills.push({ x, y: fy, width, height });
+        return () => {};
+      },
+      set(target, key, value) { target[key] = value; return true; },
+    });
+    App.views.flow.drawSquare(ctx, 0, 0, id, App.colors.card.active, { half, now: App.reading(id), day: App.dayDelivery(id) || { share: 0, level: 0 } });
+    assert.ok(labels.length > 0, `${id}: its flow is written in the square`);
+    const band = fills.find((f) => f.height === 10 && Math.abs(f.y - (y - 5)) < 1e-9);
+    assert.ok(band, `${id}: the band is drawn`);
+    for (const l of labels) {
+      const w = l.text.length * 6, box = [l.x - w / 2 - 2, l.y - 8, l.x + w / 2 + 2, l.y + 8];
+      assert.ok(!(box[0] < band.x + band.width && box[2] > band.x && box[1] < band.y + band.height && box[3] > band.y),
+        `${id}: "${l.text}" does not cover the day bar`);
+    }
+  }
 });
 
 /* One real hour of the first stream with pressures, the way `start()` loads it. */
