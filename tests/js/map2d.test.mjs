@@ -570,29 +570,78 @@ test("exit nodes: within-day delivery against the nominations, as a share", () =
 /* Ray, 29 Oct, with a photo of exit cards: "this is an example of how the bars could
    look like when it comes to end of day target". A track, the target band on it, and a
    mark where the day stands, coloured only outside the band. */
-test("exit nodes: the end-of-day bar is a track, a target band and a mark", () => {
+test("exit nodes: the end-of-day bar is a scale, a target band, the day so far and a mark", () => {
+  // Ray, 29 Oct: "improve how the end of day target bar looks".
   const { App } = loadApp();
-  const rects = [];
+  const rects = [], strokes = [];
+  let path = [];
   const ctx = new Proxy({}, {
     get(target, key) {
       if (key in target) return target[key];
       if (key === "fillRect") return (x, y, w, h) => rects.push({ x, y, w, h, fill: target.fillStyle, alpha: target.globalAlpha });
+      if (key === "beginPath") return () => { path = []; };
+      if (key === "moveTo") return (x, y) => path.push([x, y]);
+      if (key === "stroke") return () => strokes.push({ path: path.slice(), color: target.strokeStyle });
       return () => {};
     },
     set(target, key, value) { target[key] = value; return true; },
   });
   const look = { dim: "gray", ink: "black" }, half = 40;
+  const T = App.thresholds.nomination, full = T[2] * 1.2, at = (share) => 100 + (share / full) * half;
   App.views.flow.drawDayBar(ctx, 100, 50, { share: 0.02, level: 0 }, look, 1, half);
-  const [track, band, mark] = rects;
-  assert.equal(track.w, 2 * half, "the track spans the bar");
-  const tolerance = App.thresholds.nomination[0], full = App.thresholds.nomination[2] * 1.2;
-  assert.ok(Math.abs(band.x - (100 - (tolerance / full) * half)) < 1e-9 && Math.abs(band.w - 2 * (tolerance / full) * half) < 1e-9, "the target band is the tolerance");
-  assert.ok(band.alpha > track.alpha, "the band stands out from the track");
-  assert.equal(mark.fill, "black", "inside the band the mark is plain ink");
-  assert.ok(Math.abs(mark.x + mark.w / 2 - (100 + (0.02 / full) * half)) < 1e-9, "where the day stands");
+  const [band, scale, sofar, mark] = rects;
+  assert.ok(Math.abs(band.x - at(-T[0])) < 1e-9 && Math.abs(band.w - (at(T[0]) - at(-T[0]))) < 1e-9, "the target band is the tolerance");
+  assert.ok(band.alpha < 1 && band.h > scale.h, "a soft band over a hairline scale");
+  assert.equal(scale.w, 2 * half, "the scale spans the bar");
+  const ticks = strokes.filter((s) => s.color === "gray").flatMap((s) => s.path.map(([x]) => x)).sort((a, b) => a - b);
+  for (const share of [-T[2], -T[1], T[1], T[2]]) assert.ok(ticks.some((x) => Math.abs(x - at(share)) < 1e-9), `a tick at the ${share > 0 ? "+" : ""}${share * 100} % limit`);
+  assert.ok(strokes.some((s) => s.color === "black" && s.path[0][0] === 100), "the nomination is marked at the centre");
+  assert.ok(Math.abs(sofar.x - 100) < 1e-9 && Math.abs(sofar.w - (at(0.02) - 100)) < 1e-9, "the day so far runs from the nomination to where it stands");
+  assert.equal(mark.fill, "black", "inside the band it is plain ink");
+  assert.ok(Math.abs(mark.x + mark.w / 2 - at(0.02)) < 1e-9, "the mark is where the day stands");
   rects.length = 0;
-  App.views.flow.drawDayBar(ctx, 100, 50, { share: 0.2, level: 2 }, look, 1, half);
-  assert.equal(rects[2].fill, App.levelColor[2], "outside the band it takes the alarm colour");
+  App.views.flow.drawDayBar(ctx, 100, 50, { share: -0.2, level: 2 }, look, 1, half);
+  assert.equal(rects[3].fill, App.levelColor[2], "outside the band it takes the alarm colour");
+  assert.ok(Math.abs(rects[2].x - (100 - half)) < 1e-9, "short: the bar runs left, held at the scale's end");
+});
+
+test("exit nodes: zoomed out the box shows the day bar and the next 6 hours of nominations", () => {
+  // Ray, 29 Oct: "i should be able to see nomination graph when zoomed out as well".
+  const { App, NORA } = loadApp();
+  loadFirstHour(App, NORA);
+  const stream = App.live.stream, frameAt = (k) => { // the hours ahead, as the player keeps them
+    const metrics = {};
+    for (const [name, block] of Object.entries(stream.metrics || {})) {
+      metrics[name] = {};
+      block.assets.forEach((id, j) => { if (block.values[k][j] != null) metrics[name][id] = block.values[k][j]; });
+    }
+    const flows = {};
+    stream.assets.forEach((id, j) => { if (stream.values[k][j] != null) flows[id] = stream.values[k][j]; });
+    return { t: stream.times[k], flows, metrics, plan: null };
+  };
+  for (let k = 1; k <= 6; k++) App.live.frames.push(frameAt(k));
+  const exit = Object.keys(NORA.assets).find((id) => NORA.assets[id].exit && NORA.grid[id] && App.rampAhead(id)
+    && App.rampAhead(id).hours.filter((h) => h.value != null).length > 3);
+  assert.ok(exit, "an exit with nominations ahead");
+  const draw = (scale) => {
+    const lines = [];
+    let path = [];
+    const ctx = new Proxy({}, {
+      get(target, key) {
+        if (key in target) return target[key];
+        if (key === "beginPath") return () => { path = []; };
+        if (key === "moveTo" || key === "lineTo") return (x, y) => path.push([x, y]);
+        if (key === "stroke") return () => lines.push(path.slice());
+        if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
+        return () => {};
+      },
+      set(target, key, value) { target[key] = value; return true; },
+    });
+    App.views.flow.drawOverviewFlows(ctx, 0, 0, exit, App.colors.card.active, { half: 60, total: 10, day: { share: 0, level: 0 }, scale });
+    return lines.filter((l) => l.length > 9); // the steps: two points an hour (the limit ticks are 8)
+  };
+  assert.equal(draw(0.6).length, 1, "a box big enough on screen draws the steps");
+  assert.equal(draw(0.3).length, 0, "too small: the bar alone");
 });
 
 test("exit nodes: the day bar fits inside the square and covers no flow value", () => {

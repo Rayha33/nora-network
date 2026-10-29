@@ -61,7 +61,9 @@ test("keyboard focus stays on the same control when the data steps and the scree
     step(document);
     assert.notEqual(document.activeElement, unit, "the overview was rebuilt: the old button is gone");
     assert.ok(all(overview).includes(document.activeElement), "focus is on a control in the new overview");
-    assert.equal(document.activeElement.textContent, unit.textContent, "the same unit's button");
+    // its key, not its text: the text carries the unit's live alarm count
+    assert.equal(document.activeElement.getAttribute("data-key"), unit.getAttribute("data-key"), "the same unit's button");
+    assert.ok(unit.getAttribute("data-key"), "the button has a key to find it by");
   } finally {
     Object.assign(StubNode.prototype, { focus: saved.focus, contains: saved.contains, querySelectorAll: saved.qsa });
   }

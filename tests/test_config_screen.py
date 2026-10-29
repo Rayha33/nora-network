@@ -58,3 +58,24 @@ def test_flow_watch_names_nodes(tmp_path):
     with pytest.raises(DataError) as error:
         load_config(path)
     assert "watch: must be a list of node ids" in str(error.value)
+
+
+def test_pressure_limits_are_high_high_high_integrity_rising(tmp_path):
+    """Ray, 29 Oct: "high = yellow, high high = red, integrity = dark red". Every asset
+    type has three upper limits, rising, the integrity limit at the window's top."""
+    defaults = load_config(tmp_path / "missing.toml")
+    for kind, (high, high_high, integrity) in defaults["pressure_limits"].items():
+        assert high <= high_high <= integrity == defaults["pressure"][kind][1], kind
+    assert defaults["colors"]["integrity"] != defaults["colors"]["critical"]
+    path = tmp_path / "nora.toml"
+    path.write_text("[pressure_limits]\nhub = [150, 160, 170]\n", encoding="utf-8")
+    assert load_config(path)["pressure_limits"]["hub"] == [150, 160, 170]
+    for bad, message in (
+        ("hub = [160, 150, 170]", "must be [high, high-high, integrity] in bar, rising"),
+        ("hub = [150, 160]", "must be [high, high-high, integrity] in bar, rising"),
+        ("hubb = [150, 160, 170]", "is not an asset type"),
+    ):
+        path.write_text(f"[pressure_limits]\n{bad}\n", encoding="utf-8")
+        with pytest.raises(DataError) as error:
+            load_config(path)
+        assert message in str(error.value)

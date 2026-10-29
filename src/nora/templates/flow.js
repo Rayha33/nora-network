@@ -152,32 +152,39 @@
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(nowX, y - 1); ctx.lineTo(nowX, y + h + 1); ctx.stroke();
   }
-  /* Three lines: the minimum and maximum end-of-day target bounds in gray, and the
-     current delivery position in a stronger line. The current line takes the alarm
-     colour only outside the target bounds. */
-  // `u` is canvas units per screen pixel: 1 zoomed in, 1 / zoom in the overview, where
-  // it keeps its screen size (Ray, 29 Oct: "we are still missing the end of day target
-  // bar inside the exit point nodes").
-  /* The end-of-day target, as in Ray's example (29 Oct): a track, the target band on it
-     (within the nomination tolerance), and a mark where the day's delivery stands,
-     coloured only outside the band. `half` is half the track's width. */
+  /* The end-of-day target, as in Ray's example (IMG_3589; 29 Oct, "improve how the end
+     of day target bar looks"): a hairline scale with a tick at the nomination (its
+     centre) and short ticks at the medium and critical limits each side, the target
+     band (the tolerance) as a soft zone, and the day as a bar from the nomination to
+     where it stands, ending in a mark: how far off, and which way, at a glance. Ink
+     inside the band, its alarm colour outside. `u` is canvas units per screen pixel (1
+     zoomed in, 1 / zoom in the overview, where it keeps its screen size); `half` is half
+     the scale's width. */
   function drawDayBar(ctx, x, y, day, look, u = 1, half = 11 * u) {
     const T = App.thresholds.nomination, full = T[2] * 1.2;
     const at = (share) => x + Math.max(-1, Math.min(1, share / full)) * half;
     ctx.save();
     ctx.fillStyle = look.dim;
-    ctx.globalAlpha = 0.22;
-    ctx.fillRect(x - half, y - 3 * u, 2 * half, 6 * u); // the track
-    ctx.globalAlpha = 0.45;
-    ctx.fillRect(at(-T[0]), y - 3 * u, at(T[0]) - at(-T[0]), 6 * u); // the target band
+    ctx.globalAlpha = 0.3;
+    ctx.fillRect(at(-T[0]), y - 4 * u, at(T[0]) - at(-T[0]), 8 * u); // the target band
     ctx.globalAlpha = 1;
+    ctx.fillRect(x - half, y - 0.5 * u, 2 * half, u); // the scale
+    ctx.strokeStyle = look.dim;
+    ctx.lineWidth = u;
+    ctx.beginPath();
+    for (const share of [-T[2], -T[1], T[1], T[2]]) { ctx.moveTo(at(share), y - 2.5 * u); ctx.lineTo(at(share), y + 2.5 * u); }
+    ctx.stroke();
+    ctx.strokeStyle = look.ink;
+    ctx.beginPath(); ctx.moveTo(x, y - 5 * u); ctx.lineTo(x, y + 5 * u); ctx.stroke(); // the nomination
+    const end = at(day.share);
     ctx.fillStyle = day.level ? App.levelColor[day.level] : look.ink;
-    ctx.fillRect(at(day.share) - 1.2 * u, y - 6 * u, 2.4 * u, 12 * u);
+    ctx.fillRect(Math.min(x, end), y - 1.5 * u, Math.abs(end - x), 3 * u); // the day so far
+    ctx.fillRect(end - 1.5 * u, y - 6 * u, 3 * u, 12 * u); // where it stands
     ctx.restore();
   }
   // The next 6 hours of nominations at an exit, as hourly steps (Ray: "the trend at the
   // bottom is the nominations next 6 hours").
-  function drawNominationSteps(ctx, id, x0, y0, w, h, look) {
+  function drawNominationSteps(ctx, id, x0, y0, w, h, look, u = 1) {
     const ramp = App.rampAhead(id);
     if (!ramp) return;
     const values = ramp.hours.map((r) => r.value), known = values.filter((v) => v != null);
@@ -185,7 +192,7 @@
     const yy = (v) => y0 + h - ((v - lo) / span) * h, step = w / values.length;
     ctx.save();
     ctx.strokeStyle = look.ink;
-    ctx.lineWidth = 1.3;
+    ctx.lineWidth = 1.3 * u;
     ctx.beginPath();
     let started = false;
     values.forEach((v, k) => {
@@ -320,7 +327,9 @@
     // Zoomed out too, a tag at every line end (Ray, 29 Oct: "we need these small squares
     // with pressure values at each end the node is connected to a line"): the number
     // alone in the smaller type; not on squares too small to read.
-    const detailed = detailedFlow(scale), text = pressureText(id, detailed);
+    // At a limit the tag fills with its colour, and zoomed in says which (H, HH, INT).
+    const detailed = detailedFlow(scale), mark = App.pressureMark(id);
+    const text = (mark && detailed ? `${mark.code} ` : "") + pressureText(id, detailed);
     if (!detailed && 2 * half * scale < 24) return [];
     const font = detailed ? TAG.font : TAG.small;
     const w = (textWidth(text, font) + 2 * TAG.pad) / scale, h = (detailed ? TAG.h : TAG.hSmall) / scale;
@@ -340,7 +349,7 @@
           : side === "S" ? [c - w / 2, p.y + half, c + w / 2, p.y + half + h]
           : side === "E" ? [p.x + half, c - h / 2, p.x + half + w, c + h / 2]
           : [p.x - half - w, c - h / 2, p.x - half, c + h / 2];
-        tags.push({ pid: item.pid, side, box, text, small: !detailed });
+        tags.push({ pid: item.pid, side, box, text, small: !detailed, mark });
       });
     }
     // A side tag near a corner can meet a tag above or below: it moves along its edge.
@@ -379,6 +388,12 @@
     }
     return d;
   }
+  // A node's alarm badge sits on a corner of its square that no pressure tag covers.
+  function badgeCorner(x, y, half, boxes, size = 8) {
+    const corners = [[x + half - 2, y - half + 2], [x - half + 2, y - half + 2], [x + half - 2, y + half - 2], [x - half + 2, y + half - 2]];
+    const clear = ([cx, cy]) => !boxes.some((box) => overlaps([cx - size - 1, cy - size - 1, cx + size + 1, cy + size + 1], box));
+    return corners.find(clear) || corners[0];
+  }
   function drawPressureTags(ctx, tags, look) {
     const ratio = (network && network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
     for (const tag of tags) {
@@ -389,15 +404,15 @@
       ctx.beginPath();
       if (ctx.roundRect) ctx.roundRect(a.x + 0.5, a.y + 0.5, b.x - a.x - 1, b.y - a.y - 1, 2);
       else ctx.rect(a.x + 0.5, a.y + 0.5, b.x - a.x - 1, b.y - a.y - 1);
-      ctx.fillStyle = look.fill;
+      ctx.fillStyle = tag.mark ? tag.mark.fill : look.fill;
       ctx.fill();
       ctx.lineWidth = 1;
-      ctx.strokeStyle = look.edge;
+      ctx.strokeStyle = tag.mark ? App.colors.casing : look.edge; // dark in both themes
       ctx.stroke();
       ctx.font = modelFont(tag.small ? TAG.small : TAG.font);
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillStyle = look.ink;
+      ctx.fillStyle = tag.mark ? tag.mark.ink : look.ink;
       ctx.fillText(tag.text, (a.x + b.x) / 2, (a.y + b.y) / 2 + 0.5);
       ctx.restore();
     }
@@ -521,11 +536,15 @@
     }
     if (!overviewReading(scale, half)) return;
     const top = tag ? tag.box[3] : y - half, bottom = y + half, span = bottom - top;
-    const rows = [];
-    if (incoming >= 0.05) rows.push({ value: incoming, ink: look.dim, at: top + span * 0.3 });
+    // An exit point sends nothing on: its lower half holds the end-of-day bar and, with
+    // room, the next 6 hours of nominations (Ray, 29 Oct: "i should be able to see
+    // nomination graph when zoomed out as well").
+    const exit = day && outgoing < 0.05 && span * scale >= 30, steps = exit && span * scale >= 40 && App.rampAhead(id);
+    const rows = [], inset = half - 5 / scale;
+    if (incoming >= 0.05) rows.push({ value: incoming, ink: look.dim, at: top + span * (steps ? 0.22 : 0.3) });
     if (outgoing >= 0.05) rows.push({ value: outgoing, ink: look.ink, at: top + span * 0.72 });
-    // An exit point sends nothing on: its lower half holds the end-of-day target bar.
-    if (day && outgoing < 0.05 && span * scale >= 30) drawDayBar(ctx, x, top + span * 0.74, day, look, 1 / scale, half - 5 / scale);
+    if (exit) drawDayBar(ctx, x, top + span * (steps ? 0.5 : 0.74), day, look, 1 / scale, inset);
+    if (steps) drawNominationSteps(ctx, id, x - inset, top + span * 0.68, 2 * inset, span * 0.22, look, 1 / scale);
     if (!rows.length && total != null) rows.push({ value: total, ink: look.ink, at: top + span / 2 });
     ctx.save();
     ctx.textAlign = "center";
@@ -615,7 +634,7 @@
           }
           drawOverviewName(ctx, id, x, y, half);
           ctx.restore();
-          if (s.level) App.drawBadge(ctx, s.level, x + half - 2, y - half + 2, 8);
+          if (s.level) App.drawBadge(ctx, s.level, ...badgeCorner(x, y, half, pressureBoxes), 8);
           return;
         }
         /* The name below the square (and, outside Live, what the mode says about the
@@ -661,7 +680,7 @@
           ctx.fillText(sub, x, subY);
         }
         ctx.restore();
-        if (s.level) App.drawBadge(ctx, s.level, x + half - 2, y - half + 2, 8);
+        if (s.level) App.drawBadge(ctx, s.level, ...badgeCorner(x, y, half, pressures), 8);
       },
       nodeDimensions: { width: size * 2, height: size * 2 + CIRC.name + CIRC.sub + 4 },
       });
@@ -1185,6 +1204,7 @@
   view.portDistance = portDistance;
   view.drawPressureTags = drawPressureTags;
   view.drawDayBar = drawDayBar;
+  view.badgeCorner = badgeCorner;
   view.pointAlong = pointAlong;
   view.bandPath = bandPath;
   view.animateStubs = animateStubs;
