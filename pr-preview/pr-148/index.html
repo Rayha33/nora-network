@@ -121,13 +121,13 @@
 <main>
   <section>
     <h1>An open model of the North Sea gas network</h1>
-    <p class="lede">NORA maps <span class="num">49</span> fields, platforms, plants and terminals, joined by <span class="num">49</span> offshore pipelines with a combined length of <span class="num">11,479</span> km. It works out how much gas the network can deliver, what happens when any single part fails, and replays recorded flows as if they were arriving live.</p>
+    <p class="lede">NORA maps <span class="num">48</span> fields, platforms, plants and terminals, joined by <span class="num">48</span> offshore pipelines with a combined length of <span class="num">11,005</span> km. It works out how much gas the network can deliver, what happens when any single part fails, and replays recorded flows as if they were arriving live.</p>
     <p>It shows the network two ways: on a real map, and as a gas flow overview of the whole Gassco system drawn with pyvis. It is built in Python with networkx, and anyone can improve the data or the code. Every change is checked automatically and published here within minutes of being accepted.</p>
   </section>
 
   <section aria-labelledby="deliver">
     <h2 id="deliver">What reaches each exit point</h2>
-    <p>With every field at full capacity, the network can deliver <strong class="num">445 MSm³/d</strong> of the <span class="num">487</span> MSm³/d on offer. The rest is stranded behind full pipelines. Million standard cubic metres per day, from the max-flow model.</p>
+    <p>With every field at full capacity, the network can deliver <strong class="num">430 MSm³/d</strong> of the <span class="num">472</span> MSm³/d on offer. The rest is stranded behind full pipelines. Million standard cubic metres per day, from the max-flow model.</p>
     <ul class="bars">
       
       <li><span>Dornum</span><span class="bar" style="width: 100.0%"></span><span class="value">95</span></li>
@@ -142,9 +142,9 @@
       
       <li><span>Zeebrugge</span><span class="bar" style="width: 44.2%"></span><span class="value">42</span></li>
       
-      <li><span>Bacton</span><span class="bar" style="width: 31.6%"></span><span class="value">30</span></li>
-      
       <li><span>Poland VTP</span><span class="bar" style="width: 23.2%"></span><span class="value">22</span></li>
+      
+      <li><span>Bacton</span><span class="bar" style="width: 15.8%"></span><span class="value">15</span></li>
       
       <li><span>Tjeldbergodden</span><span class="bar" style="width: 6.3%"></span><span class="value">6</span></li>
       
@@ -161,14 +161,14 @@
         <tr>
           <td>Sleipner</td>
           <td class="muted">Gas field or production hub</td>
-          <td class="lost">152 MSm³/d <span class="muted">(34%)</span></td>
+          <td class="lost">152 MSm³/d <span class="muted">(35%)</span></td>
           <td class="share"><div class="share-bar"><span style="width: 100.0%"></span></div></td>
         </tr>
         
         <tr>
           <td>Kollsnes</td>
           <td class="muted">Gas processing plant</td>
-          <td class="lost">115 MSm³/d <span class="muted">(26%)</span></td>
+          <td class="lost">115 MSm³/d <span class="muted">(27%)</span></td>
           <td class="share"><div class="share-bar"><span style="width: 75.7%"></span></div></td>
         </tr>
         
@@ -182,7 +182,7 @@
         <tr>
           <td>Dornum</td>
           <td class="muted">Receiving terminal</td>
-          <td class="lost">90 MSm³/d <span class="muted">(20%)</span></td>
+          <td class="lost">90 MSm³/d <span class="muted">(21%)</span></td>
           <td class="share"><div class="share-bar"><span style="width: 59.2%"></span></div></td>
         </tr>
         
@@ -210,7 +210,7 @@
         <tr>
           <td>Easington</td>
           <td class="muted">Receiving terminal</td>
-          <td class="lost">72 MSm³/d <span class="muted">(16%)</span></td>
+          <td class="lost">72 MSm³/d <span class="muted">(17%)</span></td>
           <td class="share"><div class="share-bar"><span style="width: 47.4%"></span></div></td>
         </tr>
         
@@ -225,7 +225,7 @@
       
       <li class="synthetic">
         <h3>A synthetic week<span class="tag">Synthetic</span></h3>
-        <div class="meta num">19 Oct 2026 to 25 Oct 2026, every 60 minutes, 49 assets, 2 scripted events</div>
+        <div class="meta num">19 Oct 2026 to 25 Oct 2026, every 60 minutes, 48 assets, 2 scripted events</div>
         <p>One week of hourly flows, pressures, hourly exit-point nominations and bookings generated from the network model, with an unplanned outage at Kollsnes, reduced capacity on Langeled, recurring H2S and CO2 excursions at four fields, pressure excursions at Draupner E, Kårstø and Dunkirk and a pigging programme on every trunk, export line and interconnector. Synthetic: use it to see how live operations look, not as a record of real flows.</p>
         <p><a href="network.html?stream=synthetic-week&amp;autoplay=1">Replay it on the chart</a></p>
       </li>
@@ -276,7 +276,7 @@
       <div>
         <h3>Fix or add data</h3>
         
-        <p>The network lives in two spreadsheets you can edit in the browser. All <span class="num">98</span> rows cite a source; a better source or a corrected value is the most useful contribution.</p>
+        <p>The network lives in two spreadsheets you can edit in the browser. All <span class="num">96</span> rows cite a source; a better source or a corrected value is the most useful contribution.</p>
         
         <a class="button quiet" href="https://github.com/Rayha33/nora-network/edit/main/data/nodes.csv">Edit nodes.csv</a>
       </div>
@@ -295,7 +295,7 @@
 </main>
 
 <footer>
-  <p>Built from commit <a href="https://github.com/Rayha33/nora-network/commit/188af1e"><code>188af1e</code></a> on 2026-10-29. Asset positions, capacities and lengths are approximate figures compiled from public sources and are not suitable for operational decisions. Map data from OpenStreetMap contributors, tiles by OpenFreeMap. Code and data are MIT licensed. Download the <a href="data/network.json">graph</a>, <a href="data/analysis.json">analysis</a> or the <a href="data/nodes.csv">nodes</a> and <a href="data/pipelines.csv">pipelines</a> files.</p>
+  <p>Built from commit <a href="https://github.com/Rayha33/nora-network/commit/08d48bb"><code>08d48bb</code></a> on 2026-10-29. Asset positions, capacities and lengths are approximate figures compiled from public sources and are not suitable for operational decisions. Map data from OpenStreetMap contributors, tiles by OpenFreeMap. Code and data are MIT licensed. Download the <a href="data/network.json">graph</a>, <a href="data/analysis.json">analysis</a> or the <a href="data/nodes.csv">nodes</a> and <a href="data/pipelines.csv">pipelines</a> files.</p>
 </footer>
 </body>
 </html>
