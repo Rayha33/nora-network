@@ -476,28 +476,23 @@ test("flow squares: every connected pipeline gets its own flow value inside the 
   assert.ok(labels.every((label) => /M$|^–$/.test(label.text)), "every label is a flow value or an explicit missing value");
 });
 
-test("flow nodes: a mixed quadrant renders separate numeric readings without prefixes", () => {
+test("flow nodes: each line's reading sits by its own line, without prefixes", () => {
   const loaded = loadApp();
   const { App, NORA } = loaded;
   loadFirstHour(App, NORA);
   App.state.mode = "live";
   App.live.values = App.live.frames[0].flows;
   const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 178, y: stage * 124 }]));
-  let id, pair;
-  outer: for (const node of App.nodeIds) {
+  let id, pair; // two lines the Flow view draws on the same side of one square
+  for (const node of App.nodeIds) {
     const sides = {};
-    for (const pid of App.pipeIds) {
-      const p = NORA.assets[pid];
-      if (p.from !== node && p.to !== node || App.pipeStyle(pid).hidden) continue;
-      const other = p.from === node ? p.to : p.from;
-      const side = `${pos[other].y - pos[node].y > 0 ? "S" : "N"}${pos[other].x - pos[node].x >= 0 ? "E" : "W"}`;
-      (sides[side] = sides[side] || []).push(pid);
-      if (Object.values(sides).some((lines) => lines.length > 1)) { id = node; pair = Object.values(sides).find((lines) => lines.length > 1); break outer; }
-    }
+    for (const line of App.views.flow.lineReadings(node, pos)) (sides[line.side] = sides[line.side] || []).push(line.pid);
+    pair = Object.values(sides).find((lines) => lines.length > 1);
+    if (pair) { id = node; break; }
   }
   for (const [index, pid] of pair.slice(0, 2).entries()) {
     const p = NORA.assets[pid], outgoing = index === 0;
-    App.live.values[pid] = ((p.from === id) === outgoing ? 1 : -1) * 5;
+    App.live.values[pid] = ((p.from === id) === outgoing ? 1 : -1) * (5 + 2 * index); // 5.0M out, 7.0M in
   }
   const labels = [];
   let quadrantStrokes = 0;
@@ -510,12 +505,19 @@ test("flow nodes: a mixed quadrant renders separate numeric readings without pre
     set(target, key, value) { target[key] = value; return true; },
   });
   App.views.flow.drawQuadrants(ctx, 0, 0, id, App.colors.card.active, { day: null, total: null, r: 44, positions: pos });
-  const incoming = labels.find((label, index) => /^\d/.test(label.text) && labels.some((other, otherIndex) => otherIndex > index && /^\d/.test(other.text) && other.x === label.x && Math.abs(other.y - label.y) === 14));
-  const outgoing = labels.find((label) => label !== incoming && /^\d/.test(label.text) && label.x === incoming?.x && Math.abs(label.y - incoming.y) === 14);
-  assert.ok(incoming && outgoing, `both directions are numeric readings on separate lines: ${JSON.stringify(labels)}`);
+  // Ray, 29 Oct: "sometimes its difficult to see what flow value belongs to what edge
+  // (line) because it seems to just be clumped up in the center of the node square".
+  const tags = App.views.flow.pressureTags(id, pos, 1, 44), here = pos[id];
+  for (const [index, pid] of pair.slice(0, 2).entries()) {
+    const label = labels.find((l) => l.text === `${5 + 2 * index}.0M`);
+    assert.ok(label, `the reading of ${pid} is drawn: ${JSON.stringify(labels)}`);
+    const centre = (t) => [(t.box[0] + t.box[2]) / 2 - here.x, (t.box[1] + t.box[3]) / 2 - here.y];
+    const nearest = tags.slice().sort((p, q) => Math.hypot(...centre(p).map((v, k) => v - [label.x, label.y][k])) - Math.hypot(...centre(q).map((v, k) => v - [label.x, label.y][k])))[0];
+    assert.equal(nearest.pid, pid, `${label.text} sits by its own line's tag`);
+    assert.ok(Math.abs(label.x) <= 44 && Math.abs(label.y) <= 44, "inside the square");
+  }
   assert.ok(labels.every((label) => !/^(in|out)\s/.test(label.text)), "position alone communicates direction");
   assert.equal(quadrantStrokes, 0, "no quadrant divider lines are drawn inside the node");
-  assert.notEqual(incoming.y, outgoing.y, "the two readings have their own lines");
 });
 
 test("markers: pipeline endpoints stop outside node circles", () => {

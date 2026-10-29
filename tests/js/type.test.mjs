@@ -3,6 +3,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import { loadApp, assertHealthy } from "./harness.mjs";
 
@@ -56,4 +57,28 @@ test("alarm badge numbers are never heavier than semibold", () => {
   for (const lvl of [1, 2, 3]) {
     assert.doesNotMatch(loaded.App.shapeMarkup(lvl), /font-weight="[7-9]00"/, `SVG badge ${4 - lvl}`);
   }
+});
+
+/* Ray, 29 Oct: "the numbers are sometimes difficult to see". Incoming flows, the
+   rate and the line values read at 4.5:1 or better on their card or paper, in both
+   themes; the dark top bar's unselected switches too. */
+test("numbers read at 4.5:1 or better on their card, in both themes", () => {
+  const lum = (hex) => {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+  for (const theme of ["light", "dark"]) {
+    const { App, NORA } = loadApp({ search: `?theme=${theme}` });
+    for (const state of ["active", "normal"]) {
+      const look = App.colors.card[state];
+      assert.ok(contrast(look.soft, look.fill) >= 4.5, `${theme} ${state}: incoming flows ${contrast(look.soft, look.fill).toFixed(2)}:1`);
+      assert.ok(contrast(look.ink, look.fill) >= 4.5, `${theme} ${state}: outgoing flows`);
+    }
+    const palette = theme === "dark" ? NORA.config.colors_dark : NORA.config.colors;
+    assert.ok(contrast(palette.text, palette.paper) >= 4.5, `${theme}: line values on the paper`);
+  }
+  const css = readFileSync(new URL("../../src/nora/templates/app.css", import.meta.url), "utf8");
+  assert.match(css, /:root\[data-theme="dark"\] \.seg button:not\(\[aria-selected="true"\]\) \{ color: var\(--text\); \}/);
 });

@@ -276,7 +276,7 @@
      at it (portDistance). Tags sharing an edge are spread so none overlaps. Zoomed out
      there is room for one, on the middle of the square's top edge, when it fits. Sizes
      in screen px; boxes in canvas units. */
-  const TAG = { font: "600 12px Archivo, system-ui, sans-serif", small: "600 10px Archivo, system-ui, sans-serif", pad: 4, h: 16, hSmall: 13, line: 13, lineSmall: 11 };
+  const TAG = { font: "600 12px Archivo, system-ui, sans-serif", small: "600 11px Archivo, system-ui, sans-serif", pad: 4, h: 16, hSmall: 14, line: 13, lineSmall: 12 };
   const overlaps = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
   /* Zoomed out the tag holds the number alone: the same framed tag reads "146 bar" on
      zoom in, with the pressure's change over the last hour in bar/h where it moves (Ray,
@@ -507,22 +507,50 @@
   /* Every line gets its own flow reading inside the square. Values are stacked in the
      east/west column facing their lines, north before south; no quadrant totals and no
      dropped zero flows. A node with no visible lines keeps its total in the middle. */
+  /* Each line's flow inside the square, just where the line comes in or leaves, beside
+     its pressure tag (Ray, 29 Oct: "sometimes its difficult to see what flow value
+     belongs to what edge (line) because it seems to just be clumped up in the center of
+     the node square"): under a tag on the top edge, over one on the bottom, beside one
+     on a side; a side value near a corner steps inward clear of the row above or below.
+     Out in full ink, in in the softer one. Boxes in canvas units; text at screen size. */
+  function lineValuePlaces(ctx, id, x, y, r, scale, positions = framePos) {
+    const byPid = new Map(lineReadings(id, positions).map((line) => [line.pid, line]));
+    const u = 1 / scale, inset = 11 * u, h = 14 * u, places = [], here = positions[id] || { x, y };
+    for (const tag of pressureTags(id, positions, scale, r)) {
+      const line = byPid.get(tag.pid);
+      if (!line) continue;
+      // the tag's place relative to the square, wherever the square is drawn
+      const w = (ctx.measureText(line.text).width + 4) * u, cx = x + (tag.box[0] + tag.box[2]) / 2 - here.x;
+      const cy = Math.max(y - r + inset, Math.min(y + r - inset, y + (tag.box[1] + tag.box[3]) / 2 - here.y));
+      const place = tag.side === "N" ? { at: [cx, y - r + inset], align: "center" }
+        : tag.side === "S" ? { at: [cx, y + r - inset], align: "center" }
+        : tag.side === "E" ? { at: [x + r - 4 * u, cy], align: "right" }
+        : { at: [x - r + 4 * u, cy], align: "left" };
+      const left = place.align === "center" ? place.at[0] - w / 2 : place.align === "right" ? place.at[0] - w : place.at[0];
+      places.push({ line, side: tag.side, ...place, box: [left, place.at[1] - h / 2, left + w, place.at[1] + h / 2] });
+    }
+    for (const side of places.filter((p) => p.side === "E" || p.side === "W")) {
+      for (const row of places.filter((p) => p.side === "N" || p.side === "S")) {
+        if (!overlaps(side.box, row.box)) continue;
+        const dy = row.side === "N" ? row.box[3] - side.box[1] : row.box[1] - side.box[3];
+        side.at = [side.at[0], side.at[1] + dy];
+        side.box = [side.box[0], side.box[1] + dy, side.box[2], side.box[3] + dy];
+      }
+    }
+    return places;
+  }
   function drawQuadrants(ctx, x, y, id, look, { total, r = SQUARE.live, positions = framePos }) {
-    const readings = lineReadings(id, positions), dx = r * 0.5;
+    const scale = network ? network.getScale() : 1;
     ctx.save();
-    ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.font = modelFont("600 12px Archivo, system-ui, sans-serif");
-    for (const column of ["W", "E"]) {
-      const lines = readings.filter((line) => line.side[1] === column)
-        .sort((a, b) => a.side[0].localeCompare(b.side[0]) || a.pid.localeCompare(b.pid));
-      const cx = x + (column === "E" ? dx : -dx), step = lines.length > 5 ? 13 : 14, start = y - (lines.length - 1) * step / 2;
-      lines.forEach((line, index) => {
-        ctx.fillStyle = line.direction === "out" ? look.ink : look.dim;
-        reading(ctx, fitText(ctx, line.text, r * 0.9), cx, start + index * step, look);
-      });
+    const places = lineValuePlaces(ctx, id, x, y, r, scale, positions);
+    for (const { line, at, align } of places) {
+      ctx.fillStyle = line.direction === "out" ? look.ink : look.soft || look.ink;
+      reading(ctx, line.text, at[0], at[1], look, align);
     }
-    if (!readings.length && total != null) {
+    if (!places.length && total != null) {
+      ctx.textAlign = "center";
       ctx.fillStyle = look.ink;
       reading(ctx, `${App.fmt(total, total < 10 ? 1 : 0)}M`, x, y, look);
     }
@@ -547,7 +575,7 @@
     // nomination graph when zoomed out as well").
     const exit = day && outgoing < 0.05 && span * scale >= 30, steps = exit && span * scale >= 40 && App.rampAhead(id);
     const rows = [], inset = half - 5 / scale;
-    if (incoming >= 0.05) rows.push({ value: incoming, ink: look.dim, at: top + span * (steps ? 0.22 : 0.3) });
+    if (incoming >= 0.05) rows.push({ value: incoming, ink: look.soft || look.ink, at: top + span * (steps ? 0.22 : 0.3) });
     if (outgoing >= 0.05) rows.push({ value: outgoing, ink: look.ink, at: top + span * 0.72 });
     if (exit) drawDayBar(ctx, x, top + span * (steps ? 0.5 : 0.74), day, look, 1 / scale, inset);
     if (steps) drawNominationSteps(ctx, id, x - inset, top + span * 0.68, 2 * inset, span * 0.22, look, 1 / scale);
@@ -555,7 +583,7 @@
     ctx.save();
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.font = modelFont("600 11px Archivo, system-ui, sans-serif");
+    ctx.font = modelFont("600 12px Archivo, system-ui, sans-serif"); // a size up: read at a glance
     for (const row of rows) {
       ctx.fillStyle = row.ink;
       reading(ctx, fitText(ctx, `${App.fmt(row.value, row.value < 10 ? 1 : 0)}M`, half * scale * 1.8), x, row.at, look);
@@ -565,7 +593,7 @@
   /* A live square: one flow value per connected line, with the rate and trend retained
      only where they do not compete with a dense stack of required line readings. */
   function drawSquare(ctx, x, y, id, look, { half, now, day }) {
-    const pad = half * 0.14, top = y - half * 0.8;
+    const pad = half * 0.14, top = y - half * 0.2; // the rate sits mid-square: the edges hold each line's flow
     const readings = lineReadings(id), maxColumn = Math.max(0,
       ...["W", "E"].map((column) => readings.filter((line) => line.side[1] === column).length));
     ctx.save();
@@ -575,8 +603,8 @@
       const through = App.window4h(id).past.slice(-1)[0] || 0;
       const fast = through > 0 && Math.abs(rate) / through >= App.thresholds.step[0];
       ctx.font = modelFont(`${fast ? 600 : 400} 11px Archivo, system-ui, sans-serif`);
-      ctx.fillStyle = fast ? look.ink : look.dim;
-      reading(ctx, `${rate > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(rate), 1)}/h`, x + half - pad, top, look, "right");
+      ctx.fillStyle = fast ? look.ink : look.soft || look.ink;
+      reading(ctx, `${rate > 0 ? "▲" : "▼"} ${App.fmt(Math.abs(rate), 1)}/h`, x, top, look);
     }
     // An exit point as in Ray's example: the end-of-day bar across the top, the flows,
     // and the next 6 hours of nominations along the foot.
@@ -584,7 +612,7 @@
     if (exit && day) drawDayBar(ctx, x, y - half * 0.52, day, look, 1, half - pad);
     drawQuadrants(ctx, x, y, id, look, { total: now ? now.flow : null, r: half });
     if (exit && App.rampAhead(id)) drawNominationSteps(ctx, id, x - half + pad, y + half * 0.48, (half - pad) * 2, half * 0.3, look);
-    else if (maxColumn <= 2) drawTrend(ctx, id, x - half + pad, y + half * 0.42, (half - pad) * 2, half * 0.26, look);
+    else if (maxColumn <= 2) drawTrend(ctx, id, x - half * 0.5, y + half * 0.02, half, half * 0.3, look);
     if (day && !exit) drawDayBar(ctx, x, y + half * 0.84, day, look);
     ctx.restore();
   }
@@ -1098,7 +1126,7 @@
       ctx.fillStyle = C.paper;
       ctx.fillRect(spot.box[0], spot.box[1], spot.box[2] - spot.box[0], height);
       rows.forEach((text, i) => {
-        ctx.fillStyle = i ? C.text : C.text_dim;
+        ctx.fillStyle = C.text; // full ink: the dim grey was hard to read on the paper
         ctx.fillText(text, spot.at.x, spot.at.y + 16 * i);
       });
       boxes.push(spot.box);
