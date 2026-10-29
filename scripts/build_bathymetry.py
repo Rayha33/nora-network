@@ -3,6 +3,7 @@ position readout can say "WD 58 m" for wherever the pointer is.
 
     python scripts/build_bathymetry.py                 # fetch from EMODnet (a few minutes)
     python scripts/build_bathymetry.py --cache tiles/  # keep the fetched tiles for a rerun
+    python scripts/build_bathymetry.py --repack        # re-cut the band from the file, no fetch
 
 The source is the EMODnet Digital Bathymetry (DTM), the European seabed model, read
 through its open WCS service, https://ows.emodnet-bathymetry.eu/wcs, licence CC BY 4.0:
@@ -14,6 +15,11 @@ changes slowly, so they pack well: about 600 KB instead of 860), as little-endia
 int16, zlib-deflated, in base64. The page inflates it in the browser. EMODnet's mean
 depth is the average over its own ~115 m cells, so a reading is the depth of the area
 under the pointer, not a sounding.
+
+Only the sea within BAND_KM of the network (its nodes and laid routes) is kept; farther
+out is stored as 0, no data. The deep Norwegian Sea basin, far from every pipeline, was
+half of the 612 KB and the page's largest single part (review #49802). Rerun with
+--repack after adding assets outside the band (tests/test_geo.py says when).
 """
 
 from __future__ import annotations
@@ -38,6 +44,7 @@ OUT = ROOT / "data" / "geo" / "bathymetry.json"
 WCS = "https://ows.emodnet-bathymetry.eu/wcs"
 STEP = 1.0  # arc-minutes between grid points
 TILE = 2.0  # degrees per fetched tile
+BAND_KM = 100.0  # depth is kept this far around the network's nodes and routes
 AXIS = "http://www.opengis.net/def/axis/OGC/1/"
 
 
@@ -106,6 +113,80 @@ def build(cache: Path | None) -> dict:
                 # elevation below sea level is water depth; land and no data are 0
                 below = value is not None and value < -0.5
                 depth[top + i][left + j] = round(-value) if below else 0
+    return pack(depth, west, north, width, height)
+
+
+def network_points() -> list[tuple[float, float]]:
+    """(lon, lat) of every node and along every pipeline: its laid route, or the chord."""
+    sys.path.insert(0, str(ROOT / "src"))
+    from nora.data import load_network
+    from nora.render import routes
+
+    net, laid = load_network(), routes()
+    where = {n.id: (n.lon, n.lat) for n in net.nodes}
+    points = list(where.values())
+    for pipe in net.pipelines:
+        line = laid.get(pipe.id) or [where[pipe.from_id], where[pipe.to_id]]
+        for (x0, y0, *_), (x1, y1, *_) in zip(line, line[1:], strict=False):
+            n = max(1, math.ceil(max(abs(x1 - x0), abs(y1 - y0)) / (STEP / 60)))
+            points += [(x0 + (x1 - x0) * t / n, y0 + (y1 - y0) * t / n) for t in range(n + 1)]
+    return points
+
+
+def band(depth: list[list[int]], west: float, north: float, km: float = BAND_KM) -> None:
+    """Zero every cell farther than `km` from the network, in place.
+
+    A two-pass chamfer distance in kilometres (a degree of longitude shrinks with
+    latitude), seeded at the cells under the network's points: exact enough for a
+    band, and fast in plain Python."""
+    height, width, step = len(depth), len(depth[0]), STEP / 60
+    far = float("inf")
+    dist = [[far] * width for _ in range(height)]
+    for lon, lat in network_points():
+        r, c = int((north - lat) / step), int((lon - west) / step)
+        if 0 <= r < height and 0 <= c < width:
+            dist[r][c] = 0.0
+    dy = step * 111.2
+    dx = [step * 111.2 * math.cos(math.radians(north - (r + 0.5) * step)) for r in range(height)]
+    for rows, cols, sign in (
+        (range(height), range(width), -1),
+        (range(height - 1, -1, -1), range(width - 1, -1, -1), 1),
+    ):
+        for r in rows:
+            row, prev = dist[r], (dist[r + sign] if 0 <= r + sign < height else None)
+            diag = math.hypot(dx[r], dy)
+            for c in cols:
+                best = row[c]
+                if 0 <= c + sign < width:
+                    best = min(best, row[c + sign] + dx[r])
+                if prev is not None:
+                    best = min(best, prev[c] + dy)
+                    if 0 <= c + sign < width:
+                        best = min(best, prev[c + sign] + diag)
+                    if 0 <= c - sign < width:
+                        best = min(best, prev[c - sign] + diag)
+                row[c] = best
+    for r in range(height):
+        depth[r] = [d if dist[r][c] <= km else 0 for c, d in enumerate(depth[r])]
+
+
+def unpack(stored: dict) -> list[list[int]]:
+    """The grid of whole metres from bathymetry.json (rows from north)."""
+    raw = zlib.decompress(base64.b64decode(stored["data"]))
+    deltas = struct.unpack(f"<{len(raw) // 2}h", raw)
+    width, height = stored["width"], stored["height"]
+    grid = []
+    for r in range(height):
+        row, total = [], 0
+        for d in deltas[r * width : (r + 1) * width]:
+            total += d
+            row.append(total)
+        grid.append(row)
+    return grid
+
+
+def pack(depth: list[list[int]], west: float, north: float, width: int, height: int) -> dict:
+    band(depth, west, north)
     deltas = [d - (row[i - 1] if i else 0) for row in depth for i, d in enumerate(row)]
     raw = struct.pack(f"<{len(deltas)}h", *deltas)
     return {
@@ -118,6 +199,7 @@ def build(cache: Path | None) -> dict:
         "height": height,
         "encoding": "zlib, int16 little-endian differences along each row (from 0 at its "
         "west end), metres, rows from north, 0 = land or no data",
+        "band_km": BAND_KM,  # sea farther than this from the network is stored as 0
         "data": base64.b64encode(zlib.compress(raw, 9)).decode("ascii"),
     }
 
@@ -126,10 +208,20 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--cache", type=Path, help="folder to keep fetched tiles in")
     parser.add_argument("--out", type=Path, default=OUT)
+    parser.add_argument("--repack", action="store_true", help="re-cut the band from --out")
     args = parser.parse_args()
-    if args.cache:
-        args.cache.mkdir(parents=True, exist_ok=True)
-    result = build(args.cache)
+    if args.repack:
+        stored = json.loads(args.out.read_text(encoding="utf-8"))
+        result = {
+            **stored,
+            **pack(
+                unpack(stored), stored["west"], stored["north"], stored["width"], stored["height"]
+            ),
+        }
+    else:
+        if args.cache:
+            args.cache.mkdir(parents=True, exist_ok=True)
+        result = build(args.cache)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, separators=(",", ":")) + "\n", encoding="utf-8")
     print(f"Wrote {args.out}: {len(result['data']) // 1024} KB of depth data")
