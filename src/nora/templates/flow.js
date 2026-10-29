@@ -184,7 +184,10 @@
   }
   // The next 6 hours of nominations at an exit, as hourly steps (Ray: "the trend at the
   // bottom is the nominations next 6 hours").
-  function drawNominationSteps(ctx, id, x0, y0, w, h, look, u = 1) {
+  // Zoomed in far enough, each hour's number over its step (Ray, 29 Oct: "when i zoom in
+  // the nomination graph should be become more detailed where i can see the actual number
+  // for each of the next 6 hours"): when an hour is at least 24 px wide on screen.
+  function drawNominationSteps(ctx, id, x0, y0, w, h, look, u = 1, scale = 1) {
     const ramp = App.rampAhead(id);
     if (!ramp) return;
     const values = ramp.hours.map((r) => r.value), known = values.filter((v) => v != null);
@@ -201,6 +204,14 @@
       ctx.lineTo(x0 + (k + 1) * step, yy(v));
     });
     ctx.stroke();
+    if (step * scale >= 24) {
+      ctx.font = modelFont("400 10px Archivo, system-ui, sans-serif");
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = look.soft || look.ink;
+      values.forEach((v, k) => {
+        if (v != null) reading(ctx, App.fmt(v, v < 10 ? 1 : 0), x0 + (k + 0.5) * step, yy(v) - 8 / scale, look);
+      });
+    }
     ctx.restore();
   }
   /* Four quadrants inside each circle. Every visible line contributes to the side
@@ -612,7 +623,7 @@
     const exit = NORA.assets[id].exit;
     if (exit && day) drawDayBar(ctx, x, y - half * 0.52, day, look, 1, half - pad);
     drawQuadrants(ctx, x, y, id, look, { total: now ? now.flow : null, r: half });
-    if (exit && App.rampAhead(id)) drawNominationSteps(ctx, id, x - half + pad, y + half * 0.48, (half - pad) * 2, half * 0.3, look);
+    if (exit && App.rampAhead(id)) drawNominationSteps(ctx, id, x - half + pad, y + half * 0.48, (half - pad) * 2, half * 0.3, look, 1, network ? network.getScale() : 1);
     else if (maxColumn <= 2) drawTrend(ctx, id, x - half * 0.5, y + half * 0.02, half, half * 0.3, look);
     if (day && !exit) drawDayBar(ctx, x, y + half * 0.84, day, look);
     ctx.restore();
@@ -1042,7 +1053,7 @@
     for (const moved of ["dragStart", "zoom"]) network.on(moved, () => { kept = null; });
     // A node dragged to a new place keeps it (an edit, saved to data/flow_layout.toml).
     network.on("dragEnd", ({ nodes: moved }) => {
-      if (!moved || !moved.length || connecting) return;
+      if (!moved || !moved.length || connecting || App.state.mode !== "edit") return;
       const at = network.getPositions(moved);
       for (const id of moved) if (at[id]) App.edit.move(id, placeAt(at[id]).grid);
     });
@@ -1082,8 +1093,11 @@
     }
     return out;
   }
+  let dragging = null; // whether vis lets a node be dragged: only in Edit
   view.restyle = () => {
     if (!view.ready) return;
+    const drag = App.state.mode === "edit" && !App.embed;
+    if (drag !== dragging) { dragging = drag; network.setOptions({ interaction: { dragNodes: drag } }); }
     const nodeChanges = changes(App.nodeIds, nodeLook), lineChanges = changes(App.pipeIds, lineLook);
     if (nodeChanges.length) nodes.update(nodeChanges);
     if (lineChanges.length) edges.update(lineChanges);
@@ -1226,6 +1240,7 @@
   view.portDistance = portDistance;
   view.drawPressureTags = drawPressureTags;
   view.drawDayBar = drawDayBar;
+  view.drawNominationSteps = drawNominationSteps;
   view.badgeCorner = badgeCorner;
   view.pointAlong = pointAlong;
   view.bandPath = bandPath;
