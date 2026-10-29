@@ -23,8 +23,11 @@ DEFAULTS: dict = {
         "theme": "light",
         "autoplay": True,
         "speed": 600,  # default playback: data seconds per real second
+        "now_speed": 1,  # data re-timed to now plays at real time, so "Now" stays true
         "now_in_middle": True,  # synthetic streams: the wall-clock now sits mid-timeline
         "display": "auto",  # auto (from the window), desk, wall or compact
+        "wall_distance_m": 5.0,  # a video wall is read from this far
+        "wall_width_m": 4.0,  # and its picture is this wide
     },
     "labels": {"names": True, "line_values": "auto"},
     "assets": {"hide": [], "grid_entries": True},
@@ -116,6 +119,7 @@ CHOICES = {
     ("screen", "network_mode"): ("live", "load", "risk", "plain"),
     ("screen", "theme"): ("light", "dark", "auto"),
     ("screen", "speed"): (1, 60, 120, 300, 600, 1800),
+    ("screen", "now_speed"): (1, 60, 120, 300, 600, 1800),
     ("screen", "display"): ("auto", "desk", "wall", "compact"),
     ("labels", "line_values"): ("auto", "on", "off"),
     ("flow", "direction"): ("auto", "horizontal", "vertical"),
@@ -209,6 +213,9 @@ def _check(section: str, key: str, value) -> str | None:
     if section == "flow" and key in ("hide", "watch"):  # node ids; `nora validate` checks them
         ok = isinstance(value, list) and all(isinstance(v, str) for v in value)
         return None if ok else "must be a list of node ids"
+    if section == "screen" and key in ("wall_distance_m", "wall_width_m"):
+        ok = isinstance(value, int | float) and not isinstance(value, bool) and value > 0
+        return None if ok else "must be a number of metres above 0"
     if isinstance(default, bool):
         return None if isinstance(value, bool) else "must be true or false"
     if isinstance(default, int | float):

@@ -79,3 +79,15 @@ def test_pressure_limits_are_high_high_high_integrity_rising(tmp_path):
         with pytest.raises(DataError) as error:
             load_config(path)
         assert message in str(error.value)
+
+
+def test_a_wall_needs_a_distance_and_a_width_above_zero(tmp_path):
+    """The wall's text size is worked out from both (review #49802)."""
+    path = tmp_path / "nora.toml"
+    path.write_text("[screen]\nwall_distance_m = 8\nwall_width_m = 6.5\n", encoding="utf-8")
+    assert load_config(path)["screen"]["wall_distance_m"] == 8
+    for bad in ("0", "-2", "true"):
+        path.write_text(f"[screen]\nwall_distance_m = {bad}\n", encoding="utf-8")
+        with pytest.raises(DataError) as error:
+            load_config(path)
+        assert "metres above 0" in str(error.value)
