@@ -18,7 +18,7 @@ nodes = [
 
 [units.hubs]
 name = "Kårstø, Sleipner and Draupner"
-nodes = ["karsto", "johan_sverdrup", "gudrun", "sleipner", "draupner_s", "draupner_e", "ekofisk"]
+nodes = ["karsto", "johan_sverdrup", "gudrun", "sleipner", "draupner_s", "draupner_e", "ekofisk", "ekofisk_tee"]
 
 [units.uk]
 name = "UK landings"

@@ -143,3 +143,22 @@ def test_retirement_year_before_startup_is_explained(tmp_path):
         "'shutdown' = 1970 is before 'startup' = 1990" in p
         for p in problems_for(tmp_path, nodes=nodes)
     )
+
+
+def test_norpipe_runs_from_draupner_s_to_npt_with_ekofisk_tied_in(north_sea):
+    """Ray, 29 Oct (his Area D screen): "the line should go directly from DRP S to NPT
+    (Nordpipe Terminal) and then have Ekofisk being connected on to that pipeline
+    somewhere along it"."""
+    lines = {p.id: p for p in north_sea.pipelines}
+    tee = north_sea.node_by_id["ekofisk_tee"]
+    assert tee.type == "tee"
+    assert (lines["statpipe_ekofisk"].from_id, lines["statpipe_ekofisk"].to_id) == (
+        "draupner_s",
+        "ekofisk_tee",
+    )
+    assert (lines["norpipe"].from_id, lines["norpipe"].to_id) == ("ekofisk_tee", "emden")
+    assert (lines["ekofisk_tie_in"].from_id, lines["ekofisk_tie_in"].to_id) == (
+        "ekofisk",
+        "ekofisk_tee",
+    )
+    assert north_sea.node_by_id["baltic_tie"].type == "tee", "the Baltic Pipe tie-in is one too"

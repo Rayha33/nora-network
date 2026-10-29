@@ -31,7 +31,7 @@ One row per asset.
 | --- | --- |
 | `id` | unique, lowercase with underscores: `troll`, `st_fergus` |
 | `name` | display name |
-| `type` | `field`, `hub`, `processing`, `terminal`, `lng`, `storage` or `market` |
+| `type` | `field`, `hub`, `tee` (a subsea tie-in along a line: a dot in the Flow view), `processing`, `terminal`, `lng`, `storage` or `market` |
 | `country` | two-letter code: `NO`, `GB`, `NL`, `DE`, `DK`, `BE`, `FR` |
 | `lat`, `lon` | decimal degrees (east and north are positive) |
 | `operator` | optional |
