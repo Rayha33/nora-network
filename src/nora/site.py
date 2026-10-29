@@ -77,7 +77,13 @@ def build_site(out_dir: Path, data_dir: Path = DATA_DIR) -> dict:
     config = load_config()
     (out / "network.html").write_text(
         network_html(
-            net, analysis, streams, links, config, load_units(net, data_dir / "units.toml")
+            net,
+            analysis,
+            streams,
+            links,
+            config,
+            load_units(net, data_dir / "units.toml"),
+            data_dir,
         ),
         encoding="utf-8",
     )

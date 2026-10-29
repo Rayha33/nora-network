@@ -413,6 +413,36 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 }
 .sidebar .actions button:hover { background: var(--raised); }
 
+/* The editor (app.js "editing the network"): a new node or line in the sidebar, and the
+   bar that lists the changes. Plain fields, one size; the primary action is the dark one. */
+.edit-form { display: grid; gap: 12px; padding-top: 4px; }
+.edit-form .field { display: grid; gap: 5px; font-size: 12px; color: var(--text-dim); }
+.edit-form .field small { font-size: 11px; }
+.edit-form .field-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.edit-form input, .edit-form select {
+  height: var(--ctl); padding: 0 10px; border: 1px solid var(--rule-strong); border-radius: 6px;
+  background: var(--raised); color: var(--text); font-size: var(--ctl-font);
+}
+.edit-form .check { display: flex; align-items: center; gap: 8px; color: var(--text); }
+.edit-form .check input { height: auto; }
+.edit-form .form-note { min-height: 16px; margin: 0; font-size: 12px; color: var(--text); }
+.edit-form .actions { margin: 4px 0 0; }
+.sidebar .actions button.primary, .edits-bar button.primary { background: var(--selected-bg); color: var(--selected-text); border-color: var(--selected-bg); }
+.edits-bar {
+  position: fixed; left: 16px; bottom: calc((var(--player-h) + 12px) * var(--ui-scale)); z-index: 26; zoom: var(--ui-scale);
+  display: flex; align-items: center; gap: 10px; max-width: calc(100vw / var(--ui-scale) - 32px); padding: 8px 10px 8px 14px;
+  background: var(--panel); border: 1px solid var(--rule-strong); border-radius: var(--r); box-shadow: var(--shadow-lg);
+  font-size: 12.5px;
+}
+.edits-bar .count { color: var(--text); white-space: nowrap; }
+.edits-bar .dim { color: var(--text-dim); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.edits-bar button {
+  height: 30px; padding: 0 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface);
+  color: var(--text); font-size: 12px; cursor: pointer; white-space: nowrap;
+}
+.edits-bar button:hover { background: var(--raised); }
+.edits-bar button.danger { border-color: var(--critical); }
+
 /* data-bar (app.js barLayout): the room the bar has at its UI scale. */
 :root[data-bar="tight"] .bar, :root[data-bar="two"] .bar { gap: 12px; }
 :root[data-bar="tight"] .brand-name, :root[data-bar="two"] .brand-name { display: none; }

@@ -832,3 +832,21 @@ test("flow: Poland VTP is on the Map only (Ray, 29 Oct: \"remove poland vtp from
   const pos = { nybro: { x: 0, y: 0 }, pl_vtp: { x: 0, y: 300 } };
   assert.ok(!App.views.flow.lineReadings("nybro", pos).some((l) => l.otherId === "pl_vtp"), "Nybro has no reading or tag for it");
 });
+
+test("flow: no zooming in past a square about 220 px wide (Ray, 29 Oct)", () => {
+  const { App } = loadApp();
+  const side = 2 * App.views.flow.circleRadius() * App.views.flow.maxScale;
+  App.state.mode = "live";
+  assert.ok(App.views.flow.maxScale >= 1.5 && App.views.flow.maxScale <= 2, "about the zoom Ray showed");
+  assert.ok(side > 150, "a live square still has room for its readings");
+});
+
+test("flow: the camera stays over the network (Ray, 29 Oct)", () => {
+  const { App } = loadApp();
+  const bounds = App.views.flow.viewBounds;
+  // a drawing 0..1000 wide in a 400-wide window: the window's centre stays 200..800 (+ margin)
+  assert.deepEqual(Array.from(bounds(0, 1000, 400, 10)), [190, 810]);
+  // a drawing 0..300 wide in a 1000-wide window: it stays wholly in view
+  const [lo, hi] = bounds(0, 300, 1000, 10);
+  assert.ok(lo - 500 <= 0 - 10 + 1e-9 && hi + 500 >= 300 + 10 - 1e-9 && lo === -210 && hi === 510);
+});

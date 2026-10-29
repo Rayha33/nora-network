@@ -46,6 +46,44 @@ One row per asset.
 (NBP, TTF, THE and so on, placed schematically on the map) and large consumers such as
 the Tjeldbergodden methanol plant.
 
+### Editing in the page
+
+In the Flow view, right-click empty paper to add a node there, right-click a node to
+connect it to another or remove it, and right-click a line to remove it (a node's
+removal takes its lines with it). The edits show at once in both views and are kept in
+the browser until saved; a bar lists them with Undo, Save and Discard. With `make edit`
+(`nora serve --edit`) running, Save validates them, writes `nodes.csv`,
+`pipelines.csv` and `units.toml` (a new node joins the unit chosen in its form) and
+rebuilds the site. Opened anywhere else, Save downloads the three files to put here and
+commit. A new row says "Added in the NORA editor" in `notes`: add its `source`.
+
+### Local edit API
+
+For a local editing workflow, start `nora serve --edit`. It binds only to
+`127.0.0.1`; the JSON API is not available through `nora live` or a public interface.
+`GET /api/network` returns the nodes and pipelines in CSV-column form. Send that full
+object to `POST /api/check` to validate without writing, or to `POST /api/save` to
+validate, update the CSVs, and rebuild the served site. POST requests require
+`Content-Type: application/json` and an `Origin` matching the local page. The API
+accepts network data only, never file paths. Keep the returned `revision` field intact:
+it prevents a save from overwriting CSV changes made since the network was fetched. A
+stale request returns HTTP 409 and must be reapplied to a newly fetched network. An
+optional `units` object, `{"new_node": "unit_id"}`, places new nodes in `units.toml`;
+removed nodes leave their unit by themselves.
+
+```bash
+nora serve --edit
+curl -o network.json http://127.0.0.1:8000/api/network
+# Edit network.json, then validate it:
+curl -X POST http://127.0.0.1:8000/api/check \
+  -H 'Content-Type: application/json' -H 'Origin: http://127.0.0.1:8000' \
+  --data-binary @network.json
+# Save only after reviewing a valid check:
+curl -X POST http://127.0.0.1:8000/api/save \
+  -H 'Content-Type: application/json' -H 'Origin: http://127.0.0.1:8000' \
+  --data-binary @network.json
+```
+
 ## pipelines.csv
 
 One row per pipeline. Parallel lines between the same two nodes are one row.

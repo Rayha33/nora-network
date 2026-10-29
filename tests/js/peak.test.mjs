@@ -68,3 +68,32 @@ test("pig panel: the next stop, the receiver and when it gets there", () => {
   App.go({ screen: "overview" });
   assert.equal(App.sidebar.marker(), null, "leaving the unit screen closes it");
 });
+
+/* Ray, 29 Oct: "remove the red tag label, have it say like this format: H2S / 3,6 ppm /
+   ETA 14:42. H2S should be yellow and CO2 red, but not strong colors." */
+test("gas peaks: three lines, the gas in its calm colour, no alarm tag", () => {
+  const { App } = loadApp();
+  const calls = [];
+  const ctx = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key];
+      if (key === "measureText") return (text) => ({ width: String(text).length * 6 });
+      return (...args) => calls.push({ op: key, args, fill: target.fillStyle });
+    },
+    set(target, key, value) { target[key] = value; return true; },
+  });
+  const marker = { kind: "quality", gas: "h2s_ppm", lead: true, level: 3, value: "H₂S 3.6", amount: "3.6", eta: "14:42", to: "Dornum" };
+  App.drawMarker(ctx, marker, 100, 100, 0, 7, 2, []);
+  const texts = calls.filter((c) => c.op === "fillText");
+  assert.deepEqual(texts.map((c) => c.args[0]), ["H₂S", "3.6 ppm", "ETA 14:42"]);
+  assert.equal(texts[0].fill, App.colors.h2s, "the gas name in the gas's colour");
+  assert.ok(texts[1].args[2] > texts[0].args[2] && texts[2].args[2] > texts[1].args[2], "one under the other");
+  const { colors } = App;
+  const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const [r, g, b] = rgb(colors.h2s), [cr, cg, cb] = rgb(colors.co2);
+  assert.ok(r > b && g > b, "H2S is a yellow"), assert.ok(cr > cg && cr > cb, "CO2 is a red");
+  assert.notEqual(colors.co2, colors.critical, "not the alarm red");
+  const badge = calls.filter((c) => c.op === "fillRect" || c.op === "lineTo").length;
+  App.drawMarker(ctx, { ...marker, level: 0 }, 100, 100, 0, 7, 2, []);
+  assert.equal(calls.filter((c) => c.op === "fillRect" || c.op === "lineTo").length, badge * 2, "an alarm level adds no tag");
+});

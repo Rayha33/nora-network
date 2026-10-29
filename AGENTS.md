@@ -13,6 +13,7 @@ make setup     # once: .venv with NORA and dev tools
 make check     # what CI runs: lint, validate, Python and JS tests, build. Run before every commit.
 make fix       # auto-format and fix lint
 make serve     # build and open the site at http://127.0.0.1:8000
+make edit      # the same, and the network editor's Save writes data/ (right-click in Flow)
 make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 .venv/bin/nora stats            # deliverable gas and the worst single outages
 .venv/bin/nora stream show NAME # what a stream contains
@@ -43,6 +44,7 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 | `src/nora/templates/index.html.j2` | the home page |
 | `src/nora/site.py` | writes the site folder that GitHub Pages serves |
 | `src/nora/cli.py` | the `nora` command |
+| `src/nora/edit.py` | local-only JSON API and lossless CSV editing for `nora serve --edit` |
 | `scripts/fetch_*.py` | download real data (ENTSOG, Energinet, SODIR) into a stream's raw file |
 | `data/geo/coastline.json`, `scripts/build_coastline.py` | the land around the North Sea (Natural Earth, public domain) for the canvas map |
 | `data/geo/routes.json`, `scripts/build_routes.py` | laid pipeline routes from SODIR's register (NLOD), drawn on both maps |
@@ -71,6 +73,9 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 - **Honest labels.** Synthetic data is labelled synthetic; model results say they are
   from the model. Do not present estimates as measurements.
 - **Add a test** with every behaviour change. Prefer the tiny network in `conftest.py`.
+- **Local editing API:** `nora serve --edit` must bind only to `127.0.0.1`. Keep its
+  JSON-only, same-origin checks and never accept client-supplied file paths. Validate
+  the complete proposed network before writing; preserve untouched CSV rows exactly.
 - Follow the style around you: plain names, short docstrings that say why, ruff clean.
 
 ## Typical tasks
