@@ -14,13 +14,21 @@ from pathlib import Path
 from .analysis import analyse
 from .config import load_config
 from .data import DATA_DIR, DataError, load_network, suggest
-from .integrations import CONNECTORS, SOURCES
+from .integrations import (
+    CONNECTORS,
+    FETCHABLE,
+    SOURCES,
+    ConnectorError,
+    current_gas_day,
+    window_bound,
+    write_stream,
+)
 from .layout import load_flow_layout
 from .live import POLL_SECONDS
 from .ops import plan_timeline
 from .pms import load_pipeline_models
 from .site import build_site
-from .stream import describe, list_streams, load_stream, scaffold, write_flows
+from .stream import STREAM_ID, describe, list_streams, load_stream, scaffold, write_flows
 from .units import load_units
 
 
@@ -60,6 +68,40 @@ def cmd_validate(args) -> int:
 def cmd_integrations(args) -> int:
     for connector in CONNECTORS:
         print(f"{connector.name:<24} {connector.metric:<18} {connector.status()}")
+    return 0
+
+
+def cmd_integrations_fetch(args) -> int:
+    """Fetch [start, end) from Origo or GBS and write it as a stream NORA replays."""
+    net = load_network(args.data)
+    if not STREAM_ID.fullmatch(args.stream):
+        raise DataError([f"stream name '{args.stream}' must match {STREAM_ID.pattern}"])
+    try:
+        start = window_bound(args.start) if args.start else current_gas_day()[0]
+        end = window_bound(args.end, end=True) if args.end else current_gas_day(start)[1]
+    except ValueError as error:
+        raise DataError([f"--start/--end: {error}; give a date (2026-10-29) or ISO time"]) from None
+    if end <= start:
+        raise DataError([f"--end ({end:%Y-%m-%d %H:%M} UTC) must come after --start"])
+    connector = FETCHABLE[args.name]
+    try:
+        payload = connector.download(start, end)
+        readings = [r for r in connector.parse(payload) if start <= r.when < end]
+    except ConnectorError as error:
+        print(error, file=sys.stderr)
+        return 1
+    known = set(net.asset_ids)
+    unknown = sorted({r.asset for r in readings if r.asset not in known})
+    readings = [r for r in readings if r.asset in known]
+    if unknown:
+        print(f"Skipped readings for {', '.join(unknown)}: not in the network", file=sys.stderr)
+    if not readings:
+        print(f"{connector.name}: no readings from {start} to {end}", file=sys.stderr)
+        return 1
+    folder = _streams_dir(args) / args.stream
+    write_stream(args.name, payload, readings, folder, start, end)
+    print(f"Wrote {len(readings)} readings to {folder}")
+    print(describe(load_stream(args.stream, net, _streams_dir(args)), net))
     return 0
 
 
@@ -278,9 +320,22 @@ def main(argv: list[str] | None = None) -> int:
     )
     live.set_defaults(run=cmd_live)
 
-    commands.add_parser(
-        "integrations", help="show the Origo and Gassco Booking connections"
-    ).set_defaults(run=cmd_integrations)
+    integrations = commands.add_parser(
+        "integrations", help="show the Origo and Gassco Booking connections, or fetch from one"
+    )
+    integrations.set_defaults(run=cmd_integrations)
+    integration_commands = integrations.add_subparsers(dest="integrations_command")
+    fetch = integration_commands.add_parser(
+        "fetch",
+        help="write Origo nominations or GBS bookings into a stream (docs/integrations.md)",
+    )
+    fetch.add_argument("name", choices=sorted(FETCHABLE))
+    fetch.add_argument("--to", dest="stream", required=True, help="stream name in data/streams")
+    fetch.add_argument(
+        "--start", help="first gas day (2026-10-29) or an ISO time; default: the current gas day"
+    )
+    fetch.add_argument("--end", help="last gas day, included, or an ISO time, excluded")
+    fetch.set_defaults(run=cmd_integrations_fetch)
 
     stream = commands.add_parser("stream", help="list, inspect and add stream datasets")
     stream_commands = stream.add_subparsers(dest="stream_command", required=True)

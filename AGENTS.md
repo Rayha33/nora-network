@@ -37,7 +37,7 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 | `src/nora/ops.py` | plan check (are the nominations deliverable?), look-ahead, decision support |
 | `src/nora/stream.py` | load, import, synthesise (flows, operations, gas quality, pigs) and scaffold streams |
 | `src/nora/live.py` | serve a stream, a polled source or readings pushed to `/ingest` as Server-Sent Events (`/stream`); [docs/live-data.md](docs/live-data.md) |
-| `src/nora/integrations.py` | live connectors: Gassco real-time, Origo and Gassco Booking (skeletons) |
+| `src/nora/integrations.py` | live connectors: Gassco real-time, National Gas (IUK), Origo and Gassco Booking (built against mocks; [docs/integrations.md](docs/integrations.md)) |
 | `src/nora/layout.py` | Flow view positions: layered stages, ordered and spaced to minimise crossings |
 | `src/nora/icons.py` | one icon per asset type, shared by both views |
 | `src/nora/render.py` | the app page: one payload for both views, map GeoJSON, the pyvis flow network |
@@ -50,6 +50,7 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 | `src/nora/cli.py` | the `nora` command |
 | `src/nora/edit.py` | the editor's JSON API (`nora serve --edit`) and lossless editing of the data files |
 | `scripts/fetch_*.py` | download real data (ENTSOG, Energinet, SODIR, National Gas) into a stream's raw file |
+| `scripts/mock_origo.py`, `scripts/mock_gbs.py`, `scripts/mock_api.py` | mock Origo and GBS APIs (made-up data) for `nora integrations fetch` and the tests |
 | `data/geo/coastline.json`, `scripts/build_coastline.py` | the land around the North Sea (Natural Earth, public domain) for the canvas map |
 | `data/geo/routes.json`, `scripts/build_routes.py` | laid pipeline routes from SODIR's register (NLOD), drawn on both maps |
 | `data/geo/bathymetry.json`, `scripts/build_bathymetry.py` | water depth under the map (EMODnet, CC BY 4.0) for the position readout ("ED 58 m") and asset facts |

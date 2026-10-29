@@ -81,6 +81,7 @@ other UK entry or exit point.
 title = "Norwegian exports, one week"
 description = "Hourly physical flows at Gassco's exit points."
 source = "https://transparency.entsog.eu/"     # where the data came from
+synthetic = true             # optional: label made-up rows (a mock API's) as synthetic
 license = "..."                                 # the source's terms
 
 [import]
