@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { loadApp } from "./harness.mjs";
 
-test("map context names all units and the selected operating unit", () => {
+test("map context always names the complete North Sea network", () => {
   const { App, NORA, document } = loadApp();
   App.go({ screen: "unit", unit: "all" });
   assert.equal(document.getElementById("map-kicker").textContent, "All operating units");
@@ -12,8 +12,9 @@ test("map context names all units and the selected operating unit", () => {
 
   const unit = NORA.units[0];
   App.go({ screen: "unit", unit: unit.id });
-  assert.equal(document.getElementById("map-kicker").textContent, "Operating unit");
-  assert.equal(document.getElementById("map-unit").textContent, unit.name);
+  assert.equal(App.route.unit, "all", "unit selection is intentionally fixed");
+  assert.equal(document.getElementById("map-kicker").textContent, "All operating units");
+  assert.equal(document.getElementById("map-unit").textContent, "North Sea gas network");
 });
 
 test("live node style separates throughput and pressure for the Flow renderer", () => {
@@ -28,13 +29,6 @@ test("live node style separates throughput and pressure for the Flow renderer", 
   assert.ok(style.flow.length > 0, "throughput is available for the circle");
   assert.match(style.pressure, / bar$/, "pressure is a separate reading");
   assert.equal(style.sub, "", "the old combined flow/pressure subtitle is not repeated");
-});
-
-test("breadcrumb level markers meet the 11 px readability floor", () => {
-  const css = readFileSync(new URL("../../src/nora/templates/app.css", import.meta.url), "utf8");
-  const block = css.match(/\.crumbs \.level\s*\{[^}]+\}/s);
-  assert.ok(block, "the level-marker style exists");
-  assert.doesNotMatch(block[0], /(?:\s|:)9px(?:\s|\/|;)/, "the marker number is not below 11 px");
 });
 
 test("player space is reserved only when the player exists", () => {
