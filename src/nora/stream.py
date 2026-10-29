@@ -486,7 +486,12 @@ def _operations_rows(net, times, actual, planned, windows, rng) -> list[Row]:
             continue
         booked = math.ceil(peak * (1.05 if node == busiest else 1.15) * 2) / 2
         rows += [(when, node, "booked_msm3d", booked) for when in times]
-    # Pressures: arrival points follow the gas arriving; departure points the load.
+    # Pressures: arrival points follow the gas arriving; departure points the load. A
+    # pipeline's pressure is its line pack, so it moves slowly: it tracks its target a
+    # fifth of the way each hour, at most 1.5 bar/h, with a gentle drift. Faster moves
+    # made the line pack swing by hundreds of MSm3/d where operators see a few (Ray, 29
+    # Oct: the pack rate stays near 0, and the rate of change of pressure is watched).
+    hours = (times[1] - times[0]).total_seconds() / 3600 if len(times) > 1 else 1.0
     typical = {
         node: statistics.median(p.get(node, 0.0) for p in planned) for node in net.node_by_id
     }
@@ -500,11 +505,15 @@ def _operations_rows(net, times, actual, planned, windows, rng) -> list[Row]:
         pressure, noise = None, 0.0
         for when, through in zip(times, actual, strict=True):
             ratio = min(1.4, through.get(node, 0.0) / typical[node])
-            share = -0.05 + 0.55 * ratio if arrival else 0.35 + 0.35 * ratio
-            noise = 0.8 * noise + rng.gauss(0, 0.006)
+            share = 0.2 + 0.3 * ratio if arrival else 0.55 + 0.15 * ratio  # same means, calmer
+            noise = 0.95 * noise + rng.gauss(0, 0.0012)
             target = low + span * (share + noise)
-            pressure = target if pressure is None else pressure + 0.45 * (target - pressure)
-            rows.append((when, node, "pressure_bar", round(pressure, 1)))
+            if pressure is None:
+                pressure = target
+            else:
+                step = min(1.0, 0.2 * hours) * (target - pressure)
+                pressure += max(-1.5 * hours, min(1.5 * hours, step))
+            rows.append((when, node, "pressure_bar", round(pressure, 2)))
     return rows
 
 

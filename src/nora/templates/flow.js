@@ -246,10 +246,17 @@
      in screen px; boxes in canvas units. */
   const TAG = { font: "600 12px Archivo, system-ui, sans-serif", small: "600 10px Archivo, system-ui, sans-serif", pad: 4, h: 16, hSmall: 13 };
   const overlaps = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
-  // Zoomed out the tag holds the number alone: the same framed tag reads "146 bar" on zoom in.
+  /* Zoomed out the tag holds the number alone: the same framed tag reads "146 bar" on
+     zoom in, with the pressure's change over the last hour in bar/h where it moves (Ray,
+     29 Oct: "the rate of change when it comes to pressures are important, especially in
+     and out of SLR, DRP S and DRP E"). The nodes in nora.toml [flow] watch always show
+     it, zoomed out too. */
+  const watched = new Set(NORA.config.flow.watch || []);
   function pressureText(id, unit = true) {
     const now = App.reading(id), value = now && now.pressure != null ? App.fmt(now.pressure) : "–";
-    return unit ? `${value} bar` : value;
+    const rate = App.pressureRate(id), show = rate != null && (watched.has(id) || Math.abs(rate) >= 0.1);
+    const trend = show ? ` ${rate >= 0.05 ? "▲" : rate <= -0.05 ? "▼" : "±"}${App.fmt(Math.abs(rate), 1)}` : "";
+    return unit ? `${value} bar${trend}` : watched.has(id) ? `${value}${trend}` : value;
   }
   function textWidth(text, font) {
     if (!measurer) return text.length * 6.5; // no canvas yet (tests): about Archivo's width
@@ -288,8 +295,9 @@
     const text = pressureText(id, detailedFlow(scale));
     if (!detailedFlow(scale)) {
       const w = (textWidth(text, TAG.small) + 2 * TAG.pad) / scale, h = TAG.hSmall / scale;
-      // Only when it is no wider than the square, which keeps room for in and out.
-      if (w > 2 * half - 4 / scale || 2 * half * scale < 36) return [];
+      // Only when it is no wider than the square (a watched node's, with its rate, may
+      // be a little wider), which keeps room for in and out.
+      if (w > 2 * half * (watched.has(id) ? 1.6 : 1) - 4 / scale || 2 * half * scale < 36) return [];
       return [{ pid: null, side: "top", box: [p.x - w / 2, p.y - half - h / 2, p.x + w / 2, p.y - half + h / 2], text, small: true }];
     }
     const w = (textWidth(text, TAG.font) + 2 * TAG.pad) / scale, h = TAG.h / scale;
@@ -1016,13 +1024,19 @@
     for (const id of App.pipeIds) {
       const s = App.pipeStyle(id), p = NORA.assets[id], a = positions[p.from], b = positions[p.to];
       if (!s.label || lineHidden(id) || !a || !b) continue;
-      const at = network.canvasToDOM({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }), w = ctx.measureText(s.label).width;
+      const at = network.canvasToDOM({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+      // Under the flow, the line pack's change when the line packs or unpacks (it should
+      // stay near 0 unless something is planned): a model estimate from its pressures.
+      const rows = s.pack ? [s.label, s.pack] : [s.label], w = Math.max(...rows.map((t) => ctx.measureText(t).width));
+      const top = at.y - 8, height = 16 * rows.length;
       ctx.globalAlpha = s.dim ? 0.35 : 1;
       ctx.fillStyle = C.paper;
-      ctx.fillRect(at.x - w / 2 - 3, at.y - 8, w + 6, 16);
-      ctx.fillStyle = C.text_dim;
-      ctx.fillText(s.label, at.x, at.y);
-      boxes.push([at.x - w / 2 - 3, at.y - 8, at.x + w / 2 + 3, at.y + 8]);
+      ctx.fillRect(at.x - w / 2 - 3, top, w + 6, height);
+      rows.forEach((text, i) => {
+        ctx.fillStyle = i ? C.text : C.text_dim;
+        ctx.fillText(text, at.x, at.y + 16 * i);
+      });
+      boxes.push([at.x - w / 2 - 3, top, at.x + w / 2 + 3, top + height]);
       valueEnds[id] = network.DOMtoCanvas({ x: at.x + w / 2 + 3, y: at.y });
     }
     ctx.restore();

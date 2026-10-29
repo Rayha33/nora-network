@@ -30,10 +30,18 @@ def _streams_dir(args) -> Path:
 def cmd_validate(args) -> int:
     net = load_network(args.data)
     config = load_config()
-    unknown = [n for n in config["flow"]["hide"] if n not in net.node_by_id]
+    unknown = [
+        (key, n)
+        for key in ("hide", "watch")
+        for n in config["flow"][key]
+        if n not in net.node_by_id
+    ]
     if unknown:
         raise DataError(
-            [f"nora.toml [flow] hide: no node {n!r}" + suggest(n, net.node_by_id) for n in unknown]
+            [
+                f"nora.toml [flow] {k}: no node {n!r}" + suggest(n, net.node_by_id)
+                for k, n in unknown
+            ]
         )
     units = load_units(net, args.data / "units.toml")
     load_flow_layout(net, args.data / "flow_layout.toml")

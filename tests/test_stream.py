@@ -620,3 +620,24 @@ def test_synthetic_nominations_are_the_plan_without_events(tiny):
     assert derated[(hour, "feed", "flow_msm3d")] < calm[(hour, "feed", "flow_msm3d")], (
         "the gas does not"
     )
+
+
+def test_synthetic_pressures_move_like_line_pack(north_sea):
+    """A pressure is its line pack, so it moves slowly: at most 1.5 bar an hour, and
+    hardly at all most hours. Faster swings made pack rates of hundreds of MSm3/d where
+    operators see a few (Ray, 29 Oct: the pack rate stays near 0)."""
+    import statistics
+
+    from nora.stream import load_stream
+
+    stream = load_stream("synthetic-week", north_sea)
+    block = stream.payload()["metrics"]["pressure_bar"]
+    rows = block["values"]
+    steps = [
+        abs(b - a)
+        for j in range(len(block["assets"]))
+        for a, b in zip((r[j] for r in rows), (r[j] for r in rows[1:]), strict=False)
+        if a is not None and b is not None
+    ]
+    assert max(steps) <= 1.5 + 1e-9
+    assert statistics.median(steps) < 0.2

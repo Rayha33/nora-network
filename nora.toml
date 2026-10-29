@@ -26,6 +26,7 @@ direction = "vertical"      # vertical (top to bottom), horizontal, or auto (fol
 density = "comfortable"     # compact, comfortable or spacious
 animation = true            # flow bands in and out of the nodes (pigs and peaks always show)
 hide = ["pl_vtp"]           # node ids drawn on the Map but not in the Flow view (Ray, 29 Oct)
+watch = ["sleipner", "draupner_s", "draupner_e"]  # their pressure's change per hour always shows (Ray: "especially in and out of SLR, DRP S and DRP E")
 
 # Alarm thresholds. Three priorities: warning (amber), medium (orange), critical (red).
 [thresholds]
