@@ -1,0 +1,12 @@
+{
+  "name": "nora-browser-smoke",
+  "private": true,
+  "description": "Opens the built site in headless Chromium and checks that every screen renders.",
+  "type": "module",
+  "scripts": {
+    "smoke": "node smoke.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "1.64.1"
+  }
+}

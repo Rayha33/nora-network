@@ -56,6 +56,7 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 | `data/geo/bathymetry.json`, `scripts/build_bathymetry.py` | water depth under the map (EMODnet, CC BY 4.0) for the position readout ("ED 58 m") and asset facts |
 | `tests/` | pytest; `tests/conftest.py` has a five-node network to test against |
 | `tests/js/` | Node tests that load the real templates (`make test-js`); see its README |
+| `tests/browser/` | the browser smoke check: the built site in headless Chromium, every screen, both themes (`make smoke`, CI job "browser smoke"); see its README |
 
 ## Rules that keep it working
 

@@ -5,7 +5,7 @@ PYTHON ?= $(shell for p in python3.14 python3.13 python3.12 python3.11 python3; 
 	command -v $$p >/dev/null 2>&1 && $$p -c 'import sys; sys.exit(sys.version_info < (3, 11))' 2>/dev/null \
 	&& { echo $$p; break; }; done)
 
-.PHONY: help setup check test test-js lint fix build serve edit live clean
+.PHONY: help setup check test test-js smoke lint fix build serve edit live clean
 
 help:             ## list the commands
 	@grep -E '^[a-z-]+:.*## ' Makefile | sed 's/:.*## /\t/' | expand -t 12
@@ -28,6 +28,10 @@ test:             ## Python tests
 test-js:          ## JavaScript tests for the browser code (needs Node 20+)
 	@if command -v node >/dev/null 2>&1; then node --test tests/js/*.test.mjs; \
 	else echo "Skipping the JS tests: install Node 20+ to run them (CI always does)."; fi
+
+smoke:            ## open the built site in headless Chromium and check every screen (tests/browser)
+	@test -d tests/browser/node_modules || { echo "Once: npm ci --prefix tests/browser && tests/browser/node_modules/.bin/playwright-core install chromium"; exit 1; }
+	NORA="$(NORA)" node tests/browser/smoke.mjs
 
 lint:             ## ruff lint and format check
 	$(PY) -m ruff check .
