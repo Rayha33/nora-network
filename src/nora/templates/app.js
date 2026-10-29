@@ -2545,6 +2545,7 @@ const App = (() => {
         ? `${NORA.nodeTypes[d.type]}, ${d.country}. Unit: ${(unitById[unitOf[id]] || {}).name || "none"}.`
         : `${NORA.pipelineTypes[d.type]}, ${nameOf(d.from)} to ${nameOf(d.to)}.`),
       h("div", { class: "cols" },
+        isBlendingStation(id) ? blendingBox(id, inSidebar) : null,
         h("div", { class: "box" }, h("h2", { title: "Flowing in above the asset, out below it" }, "In context"), schematic(id)),
         h("div", { class: "box" }, h("h2", { title: "Live readings in their ranges, from the data being played" }, "Values"),
           metric("air_temp_c", id) != null ? h("p", { class: "outside" }, `Outside ${fmt(metric("air_temp_c", id), 1)} °C`) : null,
@@ -3108,6 +3109,227 @@ const App = (() => {
           h("tr", null, h("td", null, formatTime(cursorFrame.t)), ...series.map((s) => h("td", null, fmt(diagRead(s, id, cursorFrame), s.digits)))),
           other ? h("tr", null, h("td", null, nameOf(other)), ...series.map((s) => h("td", null, fmt(diagRead(s, other, cursorFrame), s.digits)))) : null))
         : h("p", { class: "dim small" }, "Point at a chart for the exact values."));
+  }
+  /* The blending stations (nora.toml [blending], found by blending.py): one picture of the
+     main lines through them, left to right (Ray, 27 Oct: "an image showing how the main
+     pipelines go for the gas at those two blending stations, from left to right"). Gas in
+     on the left, the stations in the order the gas runs between them now, gas out on the
+     right. Every line is straight and opens its own page; colour only for an alarm, with
+     its shape and word. Rebuilt every data step from a dozen lines, so it stays cheap. */
+  const BLEND = NORA.blending || { stations: [], incoming: [], internal: [], outgoing: [] };
+  const isBlendingStation = (id) => BLEND.stations.includes(id) && Boolean(assets[id]);
+  let linesByNode = null; // node id -> the pipelines at it, built once
+  function linesAt(node) {
+    if (!linesByNode) {
+      linesByNode = new Map();
+      for (const pid of pipeIds) for (const end of [assets[pid].from, assets[pid].to]) {
+        if (!linesByNode.has(end)) linesByNode.set(end, []);
+        linesByNode.get(end).push(pid);
+      }
+    }
+    return linesByNode.get(node) || [];
+  }
+  /* A gas reading mixed down to a node: its own reading, else the flow-weighted mix of
+     the gas arriving now. `cover` is the share of that gas with a reading behind it. */
+  function mixedReading(node, name, f, memo, seen = new Set()) {
+    if (memo.has(node)) return memo.get(node);
+    const own = metric(name, node, f);
+    if (own != null) { memo.set(node, { value: own, cover: 1 }); return memo.get(node); }
+    if (seen.has(node)) return { value: null, cover: 0 };
+    seen.add(node);
+    let flow = 0, known = 0, sum = 0;
+    for (const pid of linesAt(node)) {
+      const p = assets[pid], v = f.flows[pid];
+      if (v == null || p.type === "onshore") continue;
+      const into = p.to === node ? v : -v;
+      if (into < 0.05) continue;
+      flow += into;
+      const up = mixedReading(p.to === node ? p.from : p.to, name, f, memo, seen);
+      if (up.value != null && up.cover) { known += into * up.cover; sum += into * up.cover * up.value; }
+    }
+    seen.delete(node);
+    const out = { value: known ? sum / known : null, cover: flow ? known / flow : 0 };
+    memo.set(node, out);
+    return out;
+  }
+  // The picture's content: stations in flow order, each line on the side its flow says.
+  function blendingLayout(f = viewFrame()) {
+    const stations = BLEND.stations.filter((s) => assets[s]);
+    const moving = (v) => v != null && Math.abs(v) >= 0.05;
+    // The stations in the order the gas runs between them now (the flow's sign, not the
+    // CSV's from and to); stations the gas does not order keep nora.toml's order.
+    const after = new Map(stations.map((s) => [s, []])), waiting = new Map(stations.map((s) => [s, 0]));
+    const links = [];
+    for (const pid of BLEND.internal) {
+      const p = assets[pid];
+      if (!p || !after.has(p.from) || !after.has(p.to)) continue;
+      const v = f.flows[pid];
+      const [a, b] = moving(v) && v < 0 ? [p.to, p.from] : [p.from, p.to];
+      links.push({ pid, a, b, v: moving(v) ? Math.abs(v) : v == null ? null : 0 });
+      if (moving(v)) { after.get(a).push(b); waiting.set(b, waiting.get(b) + 1); }
+    }
+    const rank = (s) => stations.indexOf(s), order = [], ready = stations.filter((s) => !waiting.get(s));
+    while (ready.length) {
+      const s = ready.shift();
+      order.push(s);
+      for (const t of after.get(s)) {
+        waiting.set(t, waiting.get(t) - 1);
+        if (!waiting.get(t)) { ready.push(t); ready.sort((x, y) => rank(x) - rank(y)); }
+      }
+    }
+    for (const s of stations) if (!order.includes(s)) order.push(s); // a loop: nora.toml's order
+    // Lines to and from the rest of the network: on the left when the gas runs toward the
+    // station now (or, standing still, when pipelines.csv points it there).
+    const left = new Map(order.map((s) => [s, []])), right = new Map(order.map((s) => [s, []]));
+    for (const pid of [...BLEND.incoming, ...BLEND.outgoing]) {
+      const p = assets[pid];
+      if (!p) continue;
+      const station = left.has(p.to) ? p.to : left.has(p.from) ? p.from : null;
+      if (!station) continue;
+      const v = f.flows[pid], csvIn = p.to === station;
+      const inward = moving(v) ? csvIn === (v > 0) : csvIn;
+      (inward ? left : right).get(station).push({ pid, far: csvIn ? p.from : p.to, v: v == null ? null : Math.abs(v) });
+    }
+    // Each station's share of its gas to each export, followed through the stations after
+    // it (mixed evenly at each station).
+    const shares = new Map();
+    for (const s of [...order].reverse()) {
+      const outs = [...right.get(s).filter((l) => moving(l.v)).map((l) => ({ v: l.v, export: l.pid })),
+        ...links.filter((l) => l.a === s && l.v > 0).map((l) => ({ v: l.v, next: l.b }))];
+      const total = outs.reduce((sum, o) => sum + o.v, 0), share = new Map();
+      for (const o of outs) {
+        if (o.export) share.set(o.export, (share.get(o.export) || 0) + o.v / total);
+        else for (const [e, x] of shares.get(o.next) || []) share.set(e, (share.get(e) || 0) + (o.v / total) * x);
+      }
+      shares.set(s, [...share].filter(([, x]) => x >= 0.005).sort((a, b) => b[1] - a[1]));
+    }
+    // The blended H₂S and CO₂, only where readings stand behind most of the gas.
+    const quality = new Map(order.map((s) => [s, []]));
+    for (const name of Object.keys(QUALITY)) {
+      if (!Object.keys((f.metrics || {})[name] || {}).length) continue;
+      const memo = new Map();
+      for (const s of order) {
+        const r = mixedReading(s, name, f, memo);
+        if (r.value != null && r.cover >= 0.5) quality.get(s).push({ name, value: r.value });
+      }
+    }
+    return { order, links, left, right, shares, quality };
+  }
+  function blendingPicture(id, inSidebar = false) {
+    const f = viewFrame(), L = blendingLayout(f);
+    if (!L.order.length) return null;
+    const halo = `stroke:${inSidebar ? COLORS.panel : COLORS.surface};stroke-width:3px;paint-order:stroke;stroke-linejoin:round`;
+    const cut = (text, n) => (text.length > n ? `${text.slice(0, n - 1)}…` : text);
+    const ROW = 18, LINE = 14, BW = 150, DX = 80, GAP = 38;
+    const NAME = 118, FLOW = 290, X0 = 316; // the left columns: where from, the line, its flow
+    const RX = X0 + (L.order.length - 1) * DX + BW + 26, W = RX + 280;
+    const lineLook = (pid, v) => {
+      const lvl = whatifOn() ? 0 : levelOf(pid);
+      // the width pipeStyle gives a flow in Live, whatever the mode
+      const width = v == null ? 1 : 1 + 4 * Math.sqrt(v / live.maxAbs);
+      const color = lvl ? LEVEL_COLOR[lvl] : v == null || v < 0.05 ? COLORS.inactive : COLORS.active;
+      return { lvl, width: Math.max(1.2, width), color };
+    };
+    const link = (pid, label, inner) => `<g data-asset="${esc(pid)}" tabindex="0" role="link" aria-label="${esc(label)}" style="cursor:pointer">${inner}</g>`;
+    const drawLine = (x1, y1, x2, y2, look) =>
+      `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="transparent" stroke-width="12" pointer-events="stroke"/>`
+      + (look.lvl ? `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${COLORS.casing}" stroke-width="${look.width + 2.4}"/>` : "")
+      + `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${look.color}" stroke-width="${look.width}"/>`;
+    // An alarm on a line: its shape and number (none for a warning) and its word.
+    const alarm = (lvl, x, y) => (lvl
+      ? `${lvl > 1 ? `<g transform="translate(${x - 8} ${y - 8})">${shapeMarkup(lvl)}</g>` : ""}<text x="${x + (lvl > 1 ? 4 : -16)}" y="${y - 6}" style="${TEXT};${halo};font-size:10.5px">${esc(LEVEL[lvl])}</text>`
+      : "");
+    const flowText = (v) => (v == null ? "–" : fmt(v, 1));
+    let m = "", y = 10;
+    const boxes = new Map();
+    L.order.forEach((s, i) => {
+      const d = assets[s], x = X0 + i * DX, st = nodeStyle(s), lvl = whatifOn() ? 0 : levelOf(s);
+      const flow = throughput(s, f.flows), bar = metric("pressure_bar", s, f);
+      const rows = [[`<tspan style="font-weight:${s === id ? 700 : 500}">${esc(cut(d.name, 18))}</tspan>`, null]];
+      rows.push([`${flowText(flow)} MSm³/d${bar != null ? ` · ${fmt(bar)} bar` : ""}`, null]);
+      if (lvl) rows.push([`<tspan style="font-weight:600">${esc(LEVEL[lvl])}</tspan>`, null]);
+      if (L.shares.get(s).length) {
+        rows.push([`<tspan class="dimtext" style="font-size:10.5px">Share to exports</tspan>`, null]);
+        for (const [e, x] of L.shares.get(s)) rows.push([esc(cut(nameOf(e), 17)), `${fmt(x * 100)} %`]);
+      }
+      if (L.quality.get(s).length) {
+        rows.push([`<tspan class="dimtext" style="font-size:10.5px">Blend, estimate</tspan>`, null]);
+        for (const q of L.quality.get(s)) rows.push([esc(qualityText(q.name, q.value)), null]);
+      }
+      const h = Math.max(rows.length * LINE + 12, L.left.get(s).length * ROW + 8, L.right.get(s).length * ROW + 8);
+      boxes.set(s, { x, top: y, h });
+      const look = COLORS.card[st.inactive ? "inactive" : "active"], here = s === id;
+      let inner = `<rect x="${x}" y="${y}" width="${BW}" height="${h}" rx="6" fill="${look.fill}" stroke="${lvl ? LEVEL_COLOR[lvl] : here ? COLORS.text : look.edge}" stroke-width="${lvl ? 2.5 : here ? 2 : 1}"/>`;
+      rows.forEach(([text, value], k) => {
+        const ty = y + 16 + k * LINE;
+        inner += `<text x="${x + 8}" y="${ty}" fill="${look.ink}" style="${TEXT}">${text}</text>`;
+        if (value) inner += `<text x="${x + BW - 8}" y="${ty}" text-anchor="end" fill="${look.ink}" style="${TEXT}">${esc(value)}</text>`;
+      });
+      if (lvl > 1) inner += `<g transform="translate(${x + BW - 10} ${y - 6})">${shapeMarkup(lvl)}</g>`;
+      m += link(s, `${d.name}, ${flowText(flow)} MSm³/d`, inner);
+      // Gas in from the left and out to the right, one row each, level with the box.
+      L.left.get(s).forEach((l, k) => {
+        const ly = y + 12 + k * ROW, look = lineLook(l.pid, l.v);
+        m += link(l.pid, `${nameOf(l.pid)} from ${nameOf(l.far)}, ${flowText(l.v)} MSm³/d`,
+          drawLine(FLOW + 6, ly, x, ly, look)
+          + `<text x="8" y="${ly + 4}" class="dimtext" style="${TEXT}">${esc(cut(nameOf(l.far), 17))}</text>`
+          + `<text x="${NAME}" y="${ly + 4}" style="${TEXT}">${esc(cut(nameOf(l.pid), 25))}</text>`
+          + `<text x="${FLOW}" y="${ly + 4}" text-anchor="end" style="${TEXT}">${flowText(l.v)}</text>`
+          + alarm(look.lvl, (FLOW + 6 + x) / 2, ly));
+      });
+      L.right.get(s).forEach((l, k) => {
+        const ly = y + 12 + k * ROW, look = lineLook(l.pid, l.v);
+        m += link(l.pid, `${nameOf(l.pid)} to ${nameOf(l.far)}, ${flowText(l.v)} MSm³/d`,
+          drawLine(x + BW, ly, RX, ly, look)
+          + `<text x="${RX + 6}" y="${ly + 4}" style="${TEXT}">${flowText(l.v)}</text>`
+          + `<text x="${RX + 40}" y="${ly + 4}" style="${TEXT}">${esc(cut(nameOf(l.pid), 25))}</text>`
+          + `<text x="${RX + 196}" y="${ly + 4}" class="dimtext" style="${TEXT}">${esc(cut(nameOf(l.far), 15))}</text>`
+          + alarm(look.lvl, (x + BW + RX) / 2, ly));
+      });
+      y += h + GAP;
+    });
+    // The lines between the stations: from one box to the next where the two overlap,
+    // with an arrowhead for the way the gas runs now.
+    for (const l of L.links) {
+      const a = boxes.get(l.a), b = boxes.get(l.b), look = lineLook(l.pid, l.v);
+      const down = a.top < b.top, [up, low] = down ? [a, b] : [b, a];
+      const lx = Math.max(a.x, b.x) + (Math.min(a.x, b.x) + BW - Math.max(a.x, b.x)) / 2;
+      const y1 = up.top + up.h, y2 = low.top, mid = (y1 + y2) / 2;
+      let inner = drawLine(lx, y1, lx, y2, look);
+      if (l.v > 0) {
+        const tip = down ? y2 - 2 : y1 + 2, dir = down ? 1 : -1;
+        inner += `<path d="M${lx - 4} ${tip - dir * 7}L${lx} ${tip}L${lx + 4} ${tip - dir * 7}" fill="none" stroke="${COLORS.text}" stroke-width="1.3" stroke-linejoin="round"/>`;
+      }
+      inner += `<text x="${lx + 10}" y="${mid + 4}" style="${TEXT};${halo}">${esc(cut(nameOf(l.pid), 24))}<tspan dx="6">${flowText(l.v)}</tspan></text>`;
+      inner += alarm(look.lvl, lx - 30, mid + 10);
+      m += link(l.pid, `${nameOf(l.pid)}, ${flowText(l.v)} MSm³/d`, inner);
+    }
+    const H = y - GAP + 10;
+    const node = svg(`0 0 ${W} ${H}`, m, "schematic blending");
+    node.setAttribute("width", W);
+    node.setAttribute("height", H);
+    node.removeAttribute("aria-hidden");
+    node.setAttribute("role", "group");
+    node.setAttribute("aria-label", "The blending stations: gas in on the left, out on the right");
+    const open = (event) => {
+      const g = event.target && event.target.closest && event.target.closest("[data-asset]");
+      if (g && assets[g.getAttribute("data-asset")]) go({ screen: "asset", asset: g.getAttribute("data-asset") });
+    };
+    on(node, "click", open);
+    on(node, "keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(event); } });
+    return node;
+  }
+  // The box above "In context" on a blending station's page and in its sidebar. Its title
+  // names the places from nodes.csv (Draupner S and E are one place).
+  function blendingBox(id, inSidebar = false) {
+    const picture = blendingPicture(id, inSidebar);
+    if (!picture) return null;
+    const places = [...new Set(BLEND.stations.filter((s) => assets[s]).map((s) => assets[s].name.split(" ")[0]))];
+    const list = places.length > 1 ? `${places.slice(0, -1).join(", ")} and ${places[places.length - 1]}` : places[0];
+    return h("div", { class: "box wide blending-box" },
+      h("h2", null, `How gas runs through the ${list} blending stations`),
+      h("div", { class: "blend-scroll" }, picture),
+      h("p", { class: "dim small" }, "Gas enters on the left, is blended at the stations, and leaves on the right."));
   }
 
   // Level 4: the readings behind the values, newest first, and where they come from.
@@ -4563,6 +4785,7 @@ const App = (() => {
     airTemp: (id) => metric("air_temp_c", id),
     rampAhead, // the next 6 hours of nominations at an exit point
     reachAhead, // and whether its pressure holds for them with the input as now
+    blending: { layout: blendingLayout, picture: blendingPicture, box: blendingBox, routes: BLEND },
     pipeStyle, pipeMapName, pipeDetail, detailZoom: DETAIL_ZOOM, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
     timeState, timelineWindow, seek,

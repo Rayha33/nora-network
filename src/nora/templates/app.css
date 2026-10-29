@@ -263,6 +263,12 @@ body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer 
 /* stroke: none - the global svg rule outlines shapes, which smudges text into a blur */
 .schematic text { font: 11.5px var(--font); fill: var(--text); stroke: none; }
 .schematic .dimtext { fill: var(--text-dim); }
+/* The blending stations' picture keeps its size and scrolls sideways in its box on a
+   narrow screen (a phone), rather than shrinking its text. */
+.blending-box { min-width: 0; }
+.blend-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+.schematic.blending, .sidebar .schematic.blending { width: auto; max-width: none; margin: 0; }
+.schematic.blending g[data-asset]:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 
 table.data { width: 100%; border-collapse: collapse; font-size: 12px; }
 table.data th, table.data td { text-align: right; padding: 8px; border-bottom: 1px solid var(--rule); white-space: nowrap; }

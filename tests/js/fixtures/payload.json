@@ -51668,6 +51668,13 @@
     "draupner_e"
    ]
   },
+  "blending": {
+   "stations": [
+    "sleipner",
+    "draupner_s",
+    "draupner_e"
+   ]
+  },
   "thresholds": {
    "load": [
     1.01,
@@ -146896,6 +146903,33 @@
   "issues": "https://github.com/Rayha33/nora-network/issues",
   "codespaces": "https://codespaces.new/Rayha33/nora-network?quickstart=1",
   "home": "./"
+ },
+ "blending": {
+  "stations": [
+   "sleipner",
+   "draupner_s",
+   "draupner_e"
+  ],
+  "incoming": [
+   "gina_krog_sleipner",
+   "gudrun_sleipner",
+   "langeled_north",
+   "statpipe_dry",
+   "statpipe_heimdal",
+   "zeepipe_2a",
+   "zeepipe_2b"
+  ],
+  "internal": [
+   "draupner_bridge",
+   "sleipner_draupner"
+  ],
+  "outgoing": [
+   "europipe_1",
+   "franpipe",
+   "langeled_south",
+   "statpipe_ekofisk",
+   "zeepipe_1"
+  ]
  },
  "supplyTypes": [
   "field",

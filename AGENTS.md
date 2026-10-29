@@ -35,6 +35,7 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 | `src/nora/graph.py` | build the `networkx.DiGraph` |
 | `src/nora/analysis.py` | max flow, min-cost routing, N-1 outages, plant capacity, `analyse()` for the site |
 | `src/nora/ops.py` | plan check (are the nominations deliverable?), look-ahead, decision support |
+| `src/nora/blending.py` | the blending stations (`nora.toml` [blending]): the lines in, between and out of them, for the picture on their asset pages |
 | `src/nora/stream.py` | load, import, synthesise (flows, operations, gas quality, pigs) and scaffold streams |
 | `src/nora/live.py` | serve a stream, a polled source or readings pushed to `/ingest` as Server-Sent Events (`/stream`); [docs/live-data.md](docs/live-data.md) |
 | `src/nora/integrations.py` | live connectors: Gassco real-time, National Gas (IUK), Origo and Gassco Booking (built against mocks; [docs/integrations.md](docs/integrations.md)) |

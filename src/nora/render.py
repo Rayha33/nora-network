@@ -23,6 +23,7 @@ from pathlib import Path
 import pyvis
 from pyvis.network import Network as PyvisNetwork
 
+from .blending import blending_routes
 from .config import load_config
 from .data import DATA_DIR, NODE_TYPES, PIPELINE_TYPES, SUPPLY_TYPES, Network
 from .graph import great_circle_km
@@ -344,6 +345,12 @@ def page_payload(
             stream.payload() | {"plan": plan_timeline(stream, net, config)} for stream in streams
         ],
         "links": links or {},
+        # The blending stations and the lines in, between and out of them (blending.py);
+        # ids that are not nodes are `nora validate`'s to report, the page leaves them out.
+        "blending": blending_routes(
+            net,
+            [s for s in config.get("blending", {}).get("stations", []) if s in net.node_by_id],
+        ),
         "supplyTypes": list(SUPPLY_TYPES),
         # Each pipeline's regression for the What-if's pressures (data/pipeline_models.csv).
         "pipeModels": load_pipeline_models(net, Path(data_dir) / "pipeline_models.csv"),
