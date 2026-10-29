@@ -47,3 +47,6 @@ test("something", () => {
 
 The JS tests run in CI alongside pytest (see `.github/workflows/ci.yml`,
 "JS tests" step).
+`app.js` is kept in parts in `src/nora/templates/app/` (issue #50). `harness.mjs`
+joins them in the order of `app/order.txt`, as `render.py` does; use `appSource()` or
+`templateSource("app.js")` rather than reading a file called app.js.

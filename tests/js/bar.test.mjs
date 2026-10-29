@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
-import { loadPayload, TEMPLATES } from "./harness.mjs";
+import { loadPayload, TEMPLATES, templateSource } from "./harness.mjs";
 import { makeDom, makeSandbox, StubNode } from "./stub.mjs";
 
 /* app.js on a window `width` wide, whose bar lays its rows out `barHeight` tall. */
@@ -20,7 +20,7 @@ function loadAt(width, barHeight) {
   const sandbox = makeSandbox({ nora: loadPayload(), document });
   sandbox.window.innerWidth = width;
   sandbox.getComputedStyle = () => ({ getPropertyValue: (k) => (k === "--bar-h" ? "104px" : "") });
-  vm.runInContext(readFileSync(`${TEMPLATES}/app.js`, "utf8"), vm.createContext(sandbox), { filename: "app.js" });
+  vm.runInContext(templateSource("app.js"), vm.createContext(sandbox), { filename: "app.js" });
   return { props, root: document.documentElement };
 }
 

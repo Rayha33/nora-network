@@ -42,7 +42,8 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 | `src/nora/layout.py` | Flow view positions: layered stages, ordered and spaced to minimise crossings |
 | `src/nora/icons.py` | one icon per asset type, shared by both views |
 | `src/nora/render.py` | the app page: one payload for both views, map GeoJSON, the pyvis flow network |
-| `src/nora/templates/app.*` | the app shell: page, styles, shared state, styling rules, alarms, routes of pigs and peaks, gas quality, what-if, player |
+| `src/nora/templates/app.html.j2`, `app.css` | the page and its styles |
+| `src/nora/templates/app/*.js` | the app's script in parts, joined in the order of `app/order.txt` into one scope (core.js opens it, edit.js closes it): helpers, alarms, state, line pack, conditions, gas quality, what-if, styling rules, indicators, screens, navigation, player and live feed, start, map notes, editing |
 | `src/nora/templates/map.js` | Map view: MapLibre on OpenFreeMap tiles, assets at true coordinates |
 | `src/nora/templates/map2d.js` | the same Map view on a plain 2D canvas, used when the browser has no WebGL (or `?map=simple`) |
 | `src/nora/templates/flow.js` | Flow view: the pyvis network on dotted paper, top to bottom |

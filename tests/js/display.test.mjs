@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 
-import { TEMPLATES, loadPayload, assertHealthy } from "./harness.mjs";
+import { TEMPLATES, loadPayload, assertHealthy, templateSource } from "./harness.mjs";
 import { makeDom, makeSandbox } from "./stub.mjs";
 
 function load({ width = 1280, search = "", stored = {} } = {}) {
@@ -18,7 +18,7 @@ function load({ width = 1280, search = "", stored = {} } = {}) {
   for (const [key, value] of Object.entries(stored)) sandbox.window.localStorage.setItem(key, value);
   const context = vm.createContext(sandbox, { name: "nora-dom" });
   for (const name of ["app.js", "map2d.js", "map.js", "flow.js"]) {
-    vm.runInContext(readFileSync(path.join(TEMPLATES, name), "utf8"), context, { filename: name });
+    vm.runInContext(templateSource(name), context, { filename: name });
   }
   const App = vm.runInContext("App", context);
   assertHealthy(assert, { App, NORA: nora });
@@ -113,7 +113,7 @@ test("the scale reaches the page as --ui-scale and a data-display attribute", ()
   document.documentElement.style = { setProperty: (k, v) => { props[k] = v; } };
   const sandbox = makeSandbox({ nora, document, search: "?scale=2" });
   const context = vm.createContext(sandbox, { name: "nora-dom" });
-  vm.runInContext(readFileSync(path.join(TEMPLATES, "app.js"), "utf8"), context, { filename: "app.js" });
+  vm.runInContext(templateSource("app.js"), context, { filename: "app.js" });
   assert.equal(props["--ui-scale"], "2");
   assert.equal(document.documentElement.dataset.display, "desk");
 });

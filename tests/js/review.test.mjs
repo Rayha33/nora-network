@@ -13,7 +13,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
-import { loadApp, loadPayload, assertHealthy } from "./harness.mjs";
+import { loadApp, loadPayload, assertHealthy, templateSource } from "./harness.mjs";
 import { makeDom, makeSandbox } from "./stub.mjs";
 
 const TEMPLATES = new URL("../../src/nora/templates/", import.meta.url);
@@ -25,7 +25,7 @@ function loadAppWith(nora, search = "") {
   const sandbox = makeSandbox({ nora, document, search });
   const context = vm.createContext(sandbox, { name: "nora-dom" });
   for (const name of ["app.js", "map.js", "flow.js"]) {
-    vm.runInContext(readFileSync(new URL(name, TEMPLATES), "utf8"), context, { filename: name });
+    vm.runInContext(templateSource(name), context, { filename: name });
   }
   return { App: vm.runInContext("App", context), NORA: nora, document };
 }

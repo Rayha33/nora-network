@@ -16,6 +16,16 @@ import { makeDom, makeSandbox } from "./stub.mjs";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const TEMPLATES = path.join(HERE, "..", "..", "src", "nora", "templates");
 
+/* app.js is kept in parts (templates/app/, issue #50), joined in the order of
+   templates/app/order.txt as render.py joins them: one script, one IIFE. */
+export function appSource() {
+  const dir = path.join(TEMPLATES, "app");
+  const names = readFileSync(path.join(dir, "order.txt"), "utf8").split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
+  return names.map((name) => readFileSync(path.join(dir, name), "utf8")).join("");
+}
+// A template's source by its name as the page uses it: "app.js" is the joined parts.
+export const templateSource = (name) => (name === "app.js" ? appSource() : readFileSync(path.join(TEMPLATES, name), "utf8"));
+
 export function loadPayload() {
   return JSON.parse(readFileSync(path.join(HERE, "fixtures", "payload.json"), "utf8"));
 }
@@ -30,7 +40,7 @@ export function loadApp({ search = "", globals = {} } = {}) {
   const sandbox = Object.assign(makeSandbox({ nora, document, search }), globals);
   const context = vm.createContext(sandbox, { name: "nora-dom" });
   const sources = {
-    app: readFileSync(path.join(TEMPLATES, "app.js"), "utf8"),
+    app: appSource(),
     map2d: readFileSync(path.join(TEMPLATES, "map2d.js"), "utf8"),
     map: readFileSync(path.join(TEMPLATES, "map.js"), "utf8"),
     flow: readFileSync(path.join(TEMPLATES, "flow.js"), "utf8"),

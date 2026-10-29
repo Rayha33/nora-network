@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 
-import { TEMPLATES, loadPayload, assertHealthy } from "./harness.mjs";
+import { TEMPLATES, loadPayload, assertHealthy, templateSource } from "./harness.mjs";
 import { makeDom, makeSandbox } from "./stub.mjs";
 
 const HOUR = 3600, DAY = 86400;
@@ -20,7 +20,7 @@ function load(mutate = () => {}) {
   const document = makeDom();
   const context = vm.createContext(makeSandbox({ nora, document }), { name: "nora-dom" });
   for (const name of ["app.js", "map2d.js", "map.js", "flow.js"]) {
-    vm.runInContext(readFileSync(path.join(TEMPLATES, name), "utf8"), context, { filename: name });
+    vm.runInContext(templateSource(name), context, { filename: name });
   }
   const App = vm.runInContext("App", context);
   assertHealthy(assert, { App, NORA: nora });
