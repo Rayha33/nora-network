@@ -588,6 +588,8 @@ const App = (() => {
     slugs: new Map(), // slug -> {origin, metric, first, last, volume, max}: what each slug is
     conditions: [], // active abnormal conditions, worst first
     levelOf: {}, // asset -> worst active level
+    onset: new Map(), // `${kind}|${id}` -> when that alarm began ({t, before})
+    jumped: true, // the playhead jumped (a seek, a new stream): onsets start over
   };
   const frame = () => live.frames[Math.max(0, live.index)] || { flows: {}, metrics: {}, plan: null };
   const metric = (name, id, f = frame()) => ((f.metrics || {})[name] || {})[id];
@@ -684,11 +686,13 @@ const App = (() => {
   }
 
   // ------------------------------------------------------------------ conditions
-  /* Everything abnormal right now, as {level, id, kind, text}. The views, the alarm
-     counts, the overview and the asset screens all read this one list. */
+  /* Everything abnormal right now, as {level, id, kind, text, since}. The views, the
+     alarm counts, the overview and the asset screens all read this one list. `since`
+     is when the alarm began, in data time: {t, before} with `before` set when it was
+     already active as the playhead arrived (a seek), so it may have begun earlier. */
   function evaluate() {
     const f = frame(), out = [];
-    const add = (lvl, id, kind, text) => { if (lvl > 0) out.push({ level: lvl, id, kind, text }); };
+    const add = (lvl, id, kind, text, since = null) => { if (lvl > 0) out.push({ level: lvl, id, kind, text, since }); };
     for (const id of pipeIds) {
       const v = f.flows[id], d = assets[id];
       if (v === undefined) continue;
@@ -717,21 +721,36 @@ const App = (() => {
     }
     for (const s of slugs()) {
       if (s.exit && s.exitLevel) {
-        add(s.exitLevel, s.exit.node, "quality", `${qualityText(s.q.metric, s.exit.conc)} expected at ${nameOf(s.exit.node)} ${etaText(s.exit.t)}; limit ${C.quality[s.q.metric][2]} ${QUALITY[s.q.metric].unit}`);
+        add(slugAlarm(s), s.exit.node, "quality", `${qualityText(s.q.metric, s.exit.conc)} expected at ${nameOf(s.exit.node)} ${etaText(s.exit.t)}; limit ${C.quality[s.q.metric][2]} ${QUALITY[s.q.metric].unit}`);
       } else if (s.level) {
-        add(1, s.q.origin, "quality", `${qualityText(s.q.metric, s.q.conc)} from ${nameOf(s.q.origin)}${s.exit ? `, diluted to ${fmt(s.exit.conc, QUALITY[s.q.metric].digits)} by ${nameOf(s.exit.node)}` : ""}`);
+        add(slugAlarm(s), s.q.origin, "quality", `${qualityText(s.q.metric, s.q.conc)} from ${nameOf(s.q.origin)}${s.exit ? `, diluted to ${fmt(s.exit.conc, QUALITY[s.q.metric].digits)} by ${nameOf(s.exit.node)}` : ""}`);
       }
     }
     const events = (live.stream && live.stream.events) || live.feedEvents || [];
     for (const event of events) {
-      if (live.time >= event.start && live.time < event.end && !event.planned) add(2, event.asset, "event", event.label);
+      if (live.time >= event.start && live.time < event.end && !event.planned) add(2, event.asset, "event", event.label, { t: event.start, before: false });
     }
-    if (f.plan && f.plan.now[0]) add(f.plan.now[0], f.plan.now[2] || "plan", "plan", `Plan: ${f.plan.now[1]}`);
-    if (live.stale) add(2, "feed", "feed", `Live feed stale, values from ${live.time ? formatTime(live.time) : "before"}: ${live.stale.text}`);
+    if (f.plan && f.plan.now[0]) add(f.plan.now[0], f.plan.now[2] || "plan", "plan", `Plan: ${f.plan.now[1]}`, planSince());
+    if (live.stale) add(2, "feed", "feed", `Live feed stale, values from ${live.time ? formatTime(live.time) : "before"}: ${live.stale.text}`, { t: live.stale.since / 1000, before: false });
     out.sort((a, b) => b.level - a.level || a.text.localeCompare(b.text));
+    // The rest began when first seen; an alarm active as the playhead arrives may be older.
+    const onset = new Map();
+    for (const c of out) {
+      const key = `${c.kind}|${c.id}`;
+      c.since = c.since || live.onset.get(key) || onset.get(key) || { t: live.time, before: live.jumped };
+      if (!onset.has(key)) onset.set(key, c.since);
+    }
+    live.onset = onset;
+    live.jumped = false;
     live.conditions = out;
     live.levelOf = {};
     for (const c of out) live.levelOf[c.id] = Math.max(live.levelOf[c.id] || 0, c.level);
+  }
+  // When the plan began to fall short: the first of the frames in a row that do.
+  function planSince() {
+    let i = Math.max(0, live.index);
+    while (i > 0 && live.frames[i - 1] && live.frames[i - 1].plan && live.frames[i - 1].plan.now[0]) i--;
+    return { t: live.frames[i].t, before: i === 0 };
   }
   const levelOf = (id) => live.levelOf[id] || 0;
   const levelFor = (id, kinds) => Math.max(0, ...live.conditions.filter((c) => c.id === id && kinds.includes(c.kind)).map((c) => c.level));
@@ -942,7 +961,7 @@ const App = (() => {
       const base = { kind: "quality", gas: q.metric, id: q.pid, extent: extentOf(q.pid, lo, hi, q.forward), key: `quality:${q.slug}`, ref: q.slug };
       if (!lead) { out.push({ ...base, along: (lo + hi) / 2, lead: false, noDot: true, level: 0, value: "" }); continue; }
       const { s } = lead;
-      out.push({ ...base, along: lead.at, lead: true, level: Math.max(s.level, s.exitLevel),
+      out.push({ ...base, along: lead.at, lead: true, level: slugAlarm(s),
         value: `${QUALITY[q.metric].name} ${fmt(lead.q.conc, QUALITY[q.metric].digits)}`, amount: fmt(lead.q.conc, QUALITY[q.metric].digits),
         eta: lead.q.arrived ? "" : clock(s.next.t), to: nameOf(lead.q.arrived ? lead.q.arrived.node : s.next.node) });
     }
@@ -959,6 +978,10 @@ const App = (() => {
     co2_molpct: { name: "CO₂", unit: "mol %", digits: 2, color: "co2" },
   };
   const isExit = (id) => ["terminal", "lng", "market"].includes(assets[id].type);
+  /* A slug's alarm priority, the same in the alarm list, the overview and on the lines:
+     what is expected where it leaves the network, else a warning while it is followed
+     (a high reading at the field that is diluted below the limits is no worse). */
+  const slugAlarm = (s) => s.exitLevel || (s.level ? 1 : 0);
   const travelSeconds = (pid) => (Math.max(1, assets[pid].km || 1) * 1000) / C.pipelines.gas_velocity_mps;
   // The line taking most gas out of a node, in the direction it flows.
   function onward(node, flows) {
@@ -1386,11 +1409,18 @@ const App = (() => {
         h("div", { class: "state optional" }, badge(ind.lvl)),
       ]));
   }
+  // When an alarm began; "by" when it was already active as the playhead arrived.
+  function sinceTime(since) {
+    if (!since || since.t == null) return h("time", null, "");
+    return since.before
+      ? h("time", { title: "Already active when the playhead arrived: it may have begun earlier" }, `by ${shortTime(since.t)}`)
+      : h("time", { title: "When this alarm began" }, shortTime(since.t));
+  }
   function alarmList(conditions) {
     if (!conditions.length) return h("p", { class: "empty" }, "No active alarms. Everything is in its normal range.");
     return h("ul", { class: "alarm-list" }, conditions.map((c) =>
       h("li", { onclick: () => (assets[c.id] ? go({ screen: "asset", asset: c.id }) : null) },
-        badge(c.level, ""), h("span", null, c.text), h("time", null, live.time ? shortTime(live.time) : ""))));
+        badge(c.level, ""), h("span", null, c.text), sinceTime(c.since))));
   }
 
   // ------------------------------------------------------------------ decision support
@@ -1454,7 +1484,7 @@ const App = (() => {
           h("td", null, fmt(s.q.conc, QUALITY[s.q.metric].digits), ` ${QUALITY[s.q.metric].unit}`),
           h("td", null, s.q.arrived ? `Arrived at ${nameOf(s.q.arrived.node)}` : `${nameOf(s.next.node)}, ${etaText(s.next.t)}`),
           h("td", null, s.exit ? `${nameOf(s.exit.node)}, ${fmt(s.exit.conc, QUALITY[s.q.metric].digits)} ${QUALITY[s.q.metric].unit}, ${etaText(s.exit.t)}` : "No exit on today's flows"),
-          h("td", null, badge(s.exitLevel || Math.min(1, s.level), ""))))))
+          h("td", null, badge(slugAlarm(s), ""))))))
         : h("p", { class: "empty" }, `No H₂S or CO₂ peaks in the network. Limits: ${limits}.`),
       h("p", { class: "dim small" }, `Estimate. Gas travels at ${fmt(C.pipelines.gas_velocity_mps)} m/s along the line taking most of the flow; where gas joins, it is assumed to carry the median field reading. Limits from nora.toml.`));
   }
@@ -2107,6 +2137,8 @@ const App = (() => {
     live.index = Math.floor(live.playhead);
     live.down = {};
     live.peaks = [];
+    live.onset = new Map();
+    live.jumped = true;
     pigRoutes.clear();
     replayQuality(live.index);
     trackTrips(frame());
@@ -2284,6 +2316,7 @@ const App = (() => {
     const last = live.frames[live.frames.length - 1], entry = { t: f.t, flows: f.values, metrics: f.metrics || {}, plan: f.plan || null };
     if (last && f.t < last.t) {
       live.frames = []; live.peaks = []; live.quality = []; live.slugs = new Map(); live.down = {};
+      live.onset = new Map(); live.jumped = true;
       pigRoutes.clear();
     }
     for (const [id, v] of Object.entries(f.values)) {
