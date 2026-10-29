@@ -103,7 +103,7 @@ def poll_once(source: Connector, index: int, poll_seconds: float = POLL_SECONDS)
     """
     now = datetime.now(tz=UTC)
     try:
-        readings = list(source.fetch(now - timedelta(seconds=poll_seconds), now))
+        readings = list(source.fetch(now - timedelta(seconds=poll_seconds), now + source.ahead))
         if not readings:
             raise ValueError(f"{source.name}: empty response")
         # What holds now (the latest reading per asset up to now) and, from a

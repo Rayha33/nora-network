@@ -70,6 +70,17 @@ Or press the Codespaces badge above for a ready-made workspace in the browser.
 | a time series of flows | `nora stream new NAME --from file.csv`, check the mapping ([guide](data/streams/README.md)) |
 | a live API | yield frames from a generator and serve them like `nora.live.replay` ([AGENTS.md](AGENTS.md)) |
 
+## Connecting Origo and GBS
+
+Origo (hourly nominations) and Gassco Booking, GBS (booked capacity), have no public
+API, so NORA's connectors are built against documented mocks. Start them with
+`python scripts/mock_origo.py` and `python scripts/mock_gbs.py`, set
+`NORA_ORIGO_URL`/`NORA_ORIGO_TOKEN` and `NORA_GBS_URL`/`NORA_GBS_TOKEN`, then
+`nora integrations fetch origo --to shipper-mock` writes a stream the app replays.
+The mocks' JSON is NORA's own, not Origo's or Gassco's real format, and their data is
+labelled synthetic. With real credentials, only the transport and the format change:
+see [docs/integrations.md](docs/integrations.md).
+
 ## How it fits together
 
 ```
@@ -96,8 +107,9 @@ control-room system; those integrations and lineage need to be supplied and veri
 The [issues](https://github.com/Rayha33/nora-network/issues) are the roadmap. Directions:
 
 - **Realtime.** Connect live sources such as the ENTSOG Transparency Platform.
-- **Integrations.** Connectors for Origo and Gassco Booking need documented APIs and
-  credentials; CSV exports are the current import path. The public Gassco feed reports
+- **Integrations.** The Origo and Gassco Booking connectors run against mocks; the real
+  systems need their API documentation and credentials, and CSV exports remain an
+  import path ([docs/integrations.md](docs/integrations.md)). The public Gassco feed reports
   country aggregates, not terminal-specific measurements.
 - **Data quality.** Sources for every row.
 - **Scenarios.** What-if outages and demand cases run in the browser.
