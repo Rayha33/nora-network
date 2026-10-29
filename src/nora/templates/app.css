@@ -256,6 +256,9 @@ body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer 
   padding: 9px 12px; cursor: pointer;
 }
 .units button:hover { border-color: var(--rule-strong); background: var(--surface); }
+/* Dark: the dim status ("Normal") on the raised button needs a lighter grey to reach
+   4.5:1 (3.22:1 with the plain dim text; hub 3698, found by the browser smoke check). */
+:root[data-theme="dark"] .units button .dim { color: #c4c9cd; }
 .schematic { width: 100%; max-width: 520px; height: auto; display: block; }
 /* stroke: none - the global svg rule outlines shapes, which smudges text into a blur */
 .schematic text { font: 11.5px var(--font); fill: var(--text); stroke: none; }
