@@ -1,7 +1,7 @@
-/* Ray, 29 Oct: "i cant zoom in and out on flow view". He was on the home page, where
-   the app sits in a frame (?embed=1) and the Flow view had zooming switched off. Now
-   it zooms there as the Map does: a plain wheel scrolls the page, Ctrl or ⌘ with it
-   (a trackpad pinch sends Ctrl) zooms; and + and − buttons zoom anywhere. */
+/* Ray, 29 Oct: "i cant zoom in and out on flow view"; "zooming in and out should be
+   seamless, should [not] have to hold ctrl ... regardless of browser". The wheel zooms
+   about the pointer with no key held, a pinch zooms (Safari's gesture events too), and
+   + and − buttons zoom as on the Map. */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { loadApp } from "./harness.mjs";
@@ -43,22 +43,39 @@ function mountFlow(search) {
   const find = (node, cls) => (String(node.className || "").includes(cls) ? node : (node.children || []).map((c) => find(c, cls)).find(Boolean) || null);
   return { ...loaded, el, network: App.views.flow.network, buttons: find(el, "flow-zoom") };
 }
-const wheel = (el, keys = {}) => {
-  let stopped = false;
-  for (const fn of el._listeners.wheel || []) fn({ ctrlKey: false, metaKey: false, deltaY: -100, ...keys, stopPropagation: () => { stopped = true; } });
-  return stopped;
+const wheel = (el, deltaY, keys = {}) => {
+  let prevented = false, stopped = false;
+  const event = { ctrlKey: false, metaKey: false, deltaY, deltaMode: 0, clientX: 600, clientY: 400, ...keys,
+    preventDefault: () => { prevented = true; }, stopPropagation: () => { stopped = true; } };
+  for (const fn of el._listeners.wheel || []) fn(event);
+  return { prevented, stopped };
 };
 
-test("flow zoom: in the home page's frame a plain wheel scrolls the page; Ctrl or ⌘ zooms", () => {
-  const { el } = mountFlow("?embed=1");
-  assert.equal(wheel(el), true, "a plain wheel never reaches vis: the page scrolls");
-  assert.equal(wheel(el, { ctrlKey: true }), false, "Ctrl (and a trackpad pinch) zooms");
-  assert.equal(wheel(el, { metaKey: true }), false, "⌘ zooms");
+test("flow zoom: the wheel zooms with no key held, in the app and in a frame, a little per notch", () => {
+  for (const search of ["", "?embed=1"]) {
+    const { el, network } = mountFlow(search), start = network.getScale();
+    const { prevented, stopped } = wheel(el, -100);
+    assert.ok(prevented && stopped, "the page does not scroll, and vis does not jump its 6 %");
+    const step = network.getScale() / start;
+    assert.ok(step > 1.1 && step < 1.25, `one notch in: x${step.toFixed(3)}`);
+    for (let i = 0; i < 30; i++) wheel(el, -3); // a trackpad: many small steps
+    assert.ok(network.getScale() > start * step, "small steps zoom smoothly");
+    wheel(el, 400);
+    assert.ok(network.getScale() < start * step * 1.2, "and back out");
+  }
 });
 
-test("flow zoom: in the app the wheel always zooms", () => {
-  const { el } = mountFlow("");
-  assert.equal(wheel(el), false);
+test("flow zoom: a pinch zooms, Ctrl + wheel elsewhere and gesture events in Safari", () => {
+  const { el, network } = mountFlow(""), start = network.getScale();
+  wheel(el, -10, { ctrlKey: true });
+  assert.ok(network.getScale() > start * 1.08, "Chrome and Firefox pinch: Ctrl + small wheel steps");
+  const at = network.getScale();
+  const gesture = (type, scale) => (el._listeners[type] || []).forEach((fn) => fn({ scale, clientX: 600, clientY: 400, preventDefault() {} }));
+  gesture("gesturestart", 1);
+  gesture("gesturechange", 1.2);
+  gesture("gesturechange", 1.5);
+  gesture("gestureend", 1.5);
+  assert.ok(Math.abs(network.getScale() / at - 1.5) < 1e-9, `Safari's pinch to 1.5x: x${network.getScale() / at}`);
 });
 
 test("flow zoom: + and − buttons, as on the Map, within the zoom limits", () => {

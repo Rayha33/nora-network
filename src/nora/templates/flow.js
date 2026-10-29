@@ -92,6 +92,7 @@
     framePos = network.getPositions();
     measurer = ctx;
     drawnBoxes = {}; // refilled as the nodes are drawn
+    drawnParts = {};
     const scale = network.getScale();
     overviewBoxes = scale < 1 ? Object.entries(framePos).filter(([id]) => !nodeHidden(id)).map(([id, p]) => {
       const point = network.canvasToDOM(p), r = circleRadius(id) * scale;
@@ -661,6 +662,7 @@
           ctx.save();
           ctx.beginPath();
           ctx.arc(x, y, TEE_R, 0, Math.PI * 2);
+          drawnParts[id] = [[x - TEE_R, y - TEE_R, x + TEE_R, y + TEE_R]];
           ctx.fillStyle = s.inactive ? C.inactive : C.active;
           ctx.fill();
           ctx.lineWidth = selected ? 2 : 1;
@@ -702,7 +704,8 @@
         }
         const pressureBoxes = drawPressureTags(ctx, tags, look);
         if (!detailed) {
-          drawnBoxes[id] = [[x - half, y - half, x + half, y + half], ...pressureBoxes].reduce((all, box) => [
+          drawnParts[id] = [[x - half, y - half, x + half, y + half], ...pressureBoxes];
+          drawnBoxes[id] = drawnParts[id].reduce((all, box) => [
             Math.min(all[0], box[0]), Math.min(all[1], box[1]), Math.max(all[2], box[2]), Math.max(all[3], box[3]),
           ]);
           for (const box of pressureBoxes) { // names keep clear of the tags
@@ -743,7 +746,8 @@
         }
         const bottom = (sub ? subY : nameY) + 4;
         const ownBox = [x - Math.max(half, width / 2 + 4), y - half, x + Math.max(half, width / 2 + 4), bottom];
-        drawnBoxes[id] = [ownBox, ...pressures].reduce((all, box) => [
+        drawnParts[id] = [ownBox, ...pressures];
+        drawnBoxes[id] = drawnParts[id].reduce((all, box) => [
           Math.min(all[0], box[0]), Math.min(all[1], box[1]), Math.max(all[2], box[2]), Math.max(all[3], box[3]),
         ]);
         ctx.save();
@@ -903,12 +907,19 @@
   }
   /* A line's value stays readable while a peak, a slug or a pig passes it (Ray, 29 Oct:
      "i cant see the settle out pressure when a peak is passing"): the moving layer is
-     drawn everywhere except on the values' paper patches (screen pixels). */
+     drawn everywhere except on the values' paper patches (screen pixels). Nodes are on
+     top too (Ray, 29 Oct: "it should go behind a node, a node should be on top"): a peak
+     passes under a square, its tags and its name. */
   function clipValues(ctx, w, h) {
-    if (!lineValueBoxes.length) return;
+    const covers = [...lineValueBoxes];
+    for (const parts of Object.values(drawnParts)) for (const [x0, y0, x1, y1] of parts) {
+      const a = network.canvasToDOM({ x: x0, y: y0 }), b = network.canvasToDOM({ x: x1, y: y1 });
+      covers.push([a.x, a.y, b.x, b.y]);
+    }
+    if (!covers.length) return;
     ctx.beginPath();
     ctx.rect(0, 0, w, h);
-    for (const [x0, y0, x1, y1] of lineValueBoxes) ctx.rect(x0, y0, x1 - x0, y1 - y0);
+    for (const [x0, y0, x1, y1] of covers) ctx.rect(x0, y0, x1 - x0, y1 - y0);
     ctx.clip("evenodd");
   }
   /* Simulated flow at the nodes, not on the lines (same as the Map view): short solid
@@ -967,7 +978,7 @@
     for (const m of marksNow) {
       const p = pointAlong(edges.get(m.id), Math.max(0, Math.min(1, m.along)), positions);
       const dom = network.canvasToDOM(p);
-      App.drawMarker(ctx, m, dom.x, dom.y, p.angle, App.markerSize(m.kind, (scale - 1) / (MAX_SCALE - 1)), detail, taken, true); // a soft backing on the grey paper
+      App.drawMarker(ctx, m, dom.x, dom.y, p.angle, App.markerSize(m.kind, (scale - 1) / (MAX_SCALE - 1)), detail, taken);
       if (!m.noDot) drawnMarks.push({ x: dom.x, y: dom.y, m });
     }
   }
@@ -1002,6 +1013,7 @@
      trend under it, so the labels of pigs and peaks keep clear of them. Each node
      records its box (in canvas units) as it is drawn, so this costs no extra pass. */
   let drawnBoxes = {}, lineValueBoxes = [];
+  let drawnParts = {}; // each node's square (or dot), tags and name: the moving layer passes under them
   // Where pigs and peaks were drawn this frame (screen pixels), so a click can open one.
   let drawnMarks = [];
   function markAt(x, y) {
@@ -1041,11 +1053,16 @@
         position: { x: held.x + (el.clientWidth / 2 - at.x) / target, y: held.y + (el.clientHeight / 2 - at.y) / target },
       });
     });
-    /* Zoom with the wheel, a pinch or the + and − buttons, as on the Map (Ray, 29 Oct:
-       "i cant zoom in and out on flow view"). In the home page's frame a plain wheel
-       scrolls the page, and with Ctrl or ⌘ (a trackpad pinch sends Ctrl) it zooms, the
-       way the Map behaves there; vis never sees the plain one. */
-    container.addEventListener("wheel", (e) => { if (App.embed && !e.ctrlKey && !e.metaKey) e.stopPropagation(); }, { capture: true });
+    /* Zoom with the wheel, a pinch or the + and − buttons, as on the Map, no key held
+       (Ray, 29 Oct: "zooming in and out should be seamless"). vis jumps 6 % a wheel
+       event; this follows the wheel or the trackpad, about the pointer. */
+    container.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      e.stopPropagation(); // vis never sees it
+      const rect = container.getBoundingClientRect(), delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      zoomAt({ x: e.clientX - rect.left, y: e.clientY - rect.top }, Math.exp(-delta * (e.ctrlKey ? 0.01 : 0.0015))); // a pinch sends Ctrl and small steps
+    }, { capture: true, passive: false });
+    App.onPinch(container, (factor, at) => zoomAt(at, factor));
     const zoomButtons = document.createElement("div");
     zoomButtons.className = "map2d-zoom flow-zoom";
     for (const [label, factor] of [["+", 1.5], ["−", 1 / 1.5]]) {
@@ -1200,18 +1217,45 @@
      first spot along its line, from the middle out, clear of the squares, their names
      and tags and the values already placed: never text on text. Returns the screen
      boxes, so marker labels and badges keep clear. */
+  // Does the segment a–b pass through the box? (Liang–Barsky clipping)
+  function segmentHitsBox(a, b, [x0, y0, x1, y1]) {
+    let t0 = 0, t1 = 1;
+    const dx = b.x - a.x, dy = b.y - a.y;
+    for (const [p, q] of [[-dx, a.x - x0], [dx, x1 - a.x], [-dy, a.y - y0], [dy, y1 - a.y]]) {
+      if (p === 0) { if (q < 0) return false; continue; }
+      const r = q / p;
+      if (p < 0) { if (r > t1) return false; t0 = Math.max(t0, r); } else { if (r < t0) return false; t1 = Math.min(t1, r); }
+    }
+    return true;
+  }
+  function segmentsCross(a, b, c, d) {
+    const side = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x) > 0;
+    return side(c, d, a) !== side(c, d, b) && side(a, b, c) !== side(a, b, d);
+  }
   /* Where a line's values go: beside it at its middle (or further along), on whichever
-     side is clear, `reach` (half the box, across the line) plus 12 px away. Screen px. */
-  function labelSpot(da, db, w, height, taken = []) {
+     side is clear, `reach` (half the box, across the line) plus 12 px away (or 26).
+     Clear means off the values already placed and the squares, off every other line
+     (`lines`, [a, b] screen segments) and with no leader crossing another (`leaders`)
+     (Ray, 29 Oct: "settle out and packing rate are overwriting eachother"). Only when
+     no such spot exists may the box sit over another line. Screen px. */
+  function labelSpot(da, db, w, height, taken = [], lines = [], leaders = []) {
     const len = Math.hypot(db.x - da.x, db.y - da.y) || 1;
     const nx = -(db.y - da.y) / len, ny = (db.x - da.x) / len; // across the line
     const reach = Math.abs(nx) * (w / 2 + 3) + Math.abs(ny) * (height / 2);
-    for (const t of [0.5, 0.4, 0.6, 0.32, 0.68, 0.25, 0.75]) {
-      const at = { x: da.x + (db.x - da.x) * t, y: da.y + (db.y - da.y) * t };
-      for (const side of [1, -1]) {
-        const cx = at.x + side * nx * (reach + 12), cy = at.y + side * ny * (reach + 12);
-        const box = [cx - w / 2 - 3, cy - height / 2, cx + w / 2 + 3, cy + height / 2];
-        if (!taken.some((o) => overlaps(box, o))) return { at, box, cx, cy, side, nx, ny, reach };
+    for (const strict of [true, false]) {
+      for (const gap of [12, 26]) {
+        for (const t of [0.5, 0.4, 0.6, 0.32, 0.68, 0.25, 0.75]) {
+          const at = { x: da.x + (db.x - da.x) * t, y: da.y + (db.y - da.y) * t };
+          for (const side of [1, -1]) {
+            const cx = at.x + side * nx * (reach + gap), cy = at.y + side * ny * (reach + gap);
+            const box = [cx - w / 2 - 3, cy - height / 2, cx + w / 2 + 3, cy + height / 2];
+            const from = { x: cx - side * nx * reach, y: cy - side * ny * reach };
+            if (taken.some((o) => overlaps(box, o) || segmentHitsBox(from, at, o))) continue;
+            if (leaders.some(([a, b]) => segmentHitsBox(a, b, box) || segmentsCross(a, b, from, at))) continue;
+            if (strict && lines.some(([a, b]) => segmentHitsBox(a, b, box))) continue;
+            return { at, box, cx, cy, side, nx, ny, reach, leader: [from, at] };
+          }
+        }
       }
     }
     return null;
@@ -1224,6 +1268,11 @@
     ctx.font = modelFont("12px Archivo, system-ui, sans-serif");
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+    const segments = {}, leaders = [], quiet = App.mix(C.text_dim, C.paper, 0.45); // a leader, not a line
+    for (const id of App.pipeIds) {
+      const p = NORA.assets[id], a = positions[p.from], b = positions[p.to];
+      if (!lineHidden(id) && a && b) segments[id] = [network.canvasToDOM(a), network.canvasToDOM(b)];
+    }
     for (const id of App.pipeIds) {
       const s = App.pipeStyle(id), p = NORA.assets[id], a = positions[p.from], b = positions[p.to];
       if (!s.label || lineHidden(id) || !a || !b) continue;
@@ -1232,20 +1281,22 @@
       /* Beside the line, not on it (Ray, 29 Oct: "settle out and pack rate covers too much
          of the pipeline ... have it just outisde the pipeline with a thin line pointing to
          the center of the pipe"): off to one side, a hairline back to the line. */
-      const spot = labelSpot(network.canvasToDOM(a), network.canvasToDOM(b), w, height, taken);
+      const others = Object.entries(segments).filter(([other]) => other !== id).map(([, seg]) => seg);
+      const spot = labelSpot(segments[id][0], segments[id][1], w, height, taken, others, leaders);
       if (!spot) continue; // nowhere clear beside this line at this zoom: zoom in to read it
-      const { nx, ny, reach } = spot;
+      const [from, to] = spot.leader;
       ctx.globalAlpha = s.dim ? 0.35 : 1;
-      ctx.strokeStyle = C.text_dim; // the leader: from the box's edge to the line's centre
+      ctx.strokeStyle = quiet; // the leader: from the box's edge to the line's centre, quietly (Ray, 29 Oct)
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(spot.cx - spot.side * nx * reach, spot.cy - spot.side * ny * reach);
-      ctx.lineTo(spot.at.x, spot.at.y);
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(to.x, to.y);
       ctx.stroke();
-      ctx.fillStyle = C.text_dim;
+      ctx.fillStyle = quiet;
       ctx.beginPath();
-      ctx.arc(spot.at.x, spot.at.y, 1.8, 0, Math.PI * 2);
+      ctx.arc(to.x, to.y, 1.5, 0, Math.PI * 2);
       ctx.fill();
+      leaders.push(spot.leader);
       ctx.fillStyle = C.paper;
       ctx.fillRect(spot.box[0], spot.box[1], spot.box[2] - spot.box[0], height);
       rows.forEach((text, i) => {
@@ -1310,6 +1361,12 @@
     return Math.min(el.clientWidth / w, el.clientHeight / h) * 0.8;
   }
   let kept = null; // the viewport an edit's reload restores (App.edit.viewport)
+  // The wheel's zoom: the point under the pointer stays put, within the limits.
+  function zoomAt(at, factor) {
+    const scale = Math.min(MAX_SCALE, Math.max(minScale(), network.getScale() * factor)), held = network.DOMtoCanvas(at);
+    kept = null;
+    network.moveTo({ scale, animation: false, position: { x: held.x + (el.clientWidth / 2 - at.x) / scale, y: held.y + (el.clientHeight / 2 - at.y) / scale } });
+  }
   // A button's zoom: about the middle of the window, within the same limits as the wheel.
   function zoomBy(factor) {
     const scale = Math.min(MAX_SCALE, Math.max(minScale(), network.getScale() * factor));

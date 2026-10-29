@@ -23,7 +23,7 @@ DEFAULTS: dict = {
         "theme": "light",
         "autoplay": True,
         "speed": 600,  # default playback: data seconds per real second
-        "now_speed": 1,  # data re-timed to now plays at real time, so "Now" stays true
+        "now_speed": 600,  # data re-timed to now opens at 10 min/s too (Ray, 29 Oct)
         "now_in_middle": True,  # synthetic streams: the wall-clock now sits mid-timeline
         "display": "auto",  # auto (from the window), desk, wall or compact
         "wall_distance_m": 5.0,  # a video wall is read from this far

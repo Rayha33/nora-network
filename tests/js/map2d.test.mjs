@@ -1064,3 +1064,22 @@ test("flow: a line's values sit beside it, a hairline back to its centre", () =>
   const other = App.views.flow.labelSpot({ x: 0, y: 0 }, { x: 200, y: 0 }, 40, 32, [spot.box]);
   assert.ok(Math.sign(other.cy) !== Math.sign(spot.cy) || other.at.x !== 100, "taken: the other side, or further along");
 });
+
+test("flow: a line's values keep off other lines, and no leader crosses another", () => {
+  // Ray, 29 Oct: "settle out and packing rate are overwriting eachother, find a solution".
+  const { App } = loadApp();
+  const spot = App.views.flow.labelSpot, line = [{ x: 0, y: 0 }, { x: 200, y: 0 }];
+  const first = spot(...line, 40, 32, []);
+  // Another line running right through where the values would go.
+  const crossing = [{ x: first.cx - 60, y: first.cy - 4 }, { x: first.cx + 60, y: first.cy + 4 }];
+  const moved = spot(...line, 40, 32, [], [crossing]);
+  const hits = (box, [a, b]) => [0, 0.25, 0.5, 0.75, 1].some((t) => {
+    const x = a.x + (b.x - a.x) * t, y = a.y + (b.y - a.y) * t;
+    return x > box[0] && x < box[2] && y > box[1] && y < box[3];
+  });
+  assert.ok(!hits(moved.box, crossing), "the values move off the other line");
+  // A leader already placed: the next one may not cross it.
+  const placed = spot(...line, 40, 32, [], [], [[{ x: 100, y: -40 }, { x: 100, y: 40 }]]);
+  assert.ok(placed.at.x !== 100, "not along the other leader");
+  assert.ok(placed.leader[0].y * placed.leader[1].y >= 0 || placed.at.x !== 100, "and not across it");
+});

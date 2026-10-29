@@ -378,11 +378,11 @@ function NoraCanvasMap(view) {
     canvas.addEventListener("pointercancel", release);
     canvas.addEventListener("pointerleave", () => { readout.textContent = ""; });
     canvas.addEventListener("wheel", (e) => {
-      if (App.embed && !e.ctrlKey) return; // embedded: let the page scroll
       e.preventDefault();
       zoomAt(e.offsetX, e.offsetY, Math.exp(-e.deltaY * 0.0015));
     }, { passive: false });
     canvas.addEventListener("dblclick", (e) => zoomAt(e.offsetX, e.offsetY, 2));
+    App.onPinch(canvas, (factor, at) => zoomAt(at.x, at.y, factor));
     canvas.addEventListener("contextmenu", (e) => {
       const id = hit(e.offsetX, e.offsetY);
       if (!id) return;

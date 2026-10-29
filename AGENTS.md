@@ -43,7 +43,7 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 | `src/nora/templates/map.js` | Map view: MapLibre on OpenFreeMap tiles, assets at true coordinates |
 | `src/nora/templates/map2d.js` | the same Map view on a plain 2D canvas, used when the browser has no WebGL (or `?map=simple`) |
 | `src/nora/templates/flow.js` | Flow view: the pyvis network on dotted paper, top to bottom |
-| `src/nora/templates/index.html.j2` | the home page |
+| `src/nora/templates/index.html.j2` | the home page: it opens the app (no essay) |
 | `src/nora/site.py` | writes the site folder that GitHub Pages serves |
 | `src/nora/cli.py` | the `nora` command |
 | `src/nora/edit.py` | the editor's JSON API (`nora serve --edit`) and lossless editing of the data files |
@@ -104,7 +104,7 @@ calmer, never louder.
 - *Add or fix assets:* edit the CSVs, add a `source`, run `make check`.
 - *Add a dataset:* `nora stream new NAME --from file.csv`, fix the mapping, `nora stream show NAME`.
 - *New analysis:* add a function to `analysis.py`, include its result in `analyse()`,
-  show it in `index.html.j2` or as a mode in `app.js` (pipeStyle / nodeStyle), and test it.
+  show it in the app (a mode in `app.js`: pipeStyle / nodeStyle, or a panel), and test it.
 - *Connect a real live source:* write a generator yielding `(datetime, {asset: flow})`
   frames and serve it the way `live.serve` serves `replay`; the browser needs no change.
 

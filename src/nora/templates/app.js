@@ -316,7 +316,7 @@ const App = (() => {
     const parts = [marker.value, marker.eta, detail >= 2 ? marker.to : ""].filter(Boolean);
     return [[parts.join("  "), COLORS.text]];
   }
-  function markerLabel(ctx, marker, x, y, size, detail, taken, backing = false) {
+  function markerLabel(ctx, marker, x, y, size, detail, taken) {
     if (marker.kind !== "pig" && (!marker.value || (!detail && !marker.level && marker.kind !== "quality"))) return;
     const k = display.scale; // labels never under 11 px, larger on a wall
     const font = 11 * k, line = font + 3 * k, rows = markerRows(marker, detail);
@@ -327,21 +327,9 @@ const App = (() => {
     if (!spot) { ctx.restore(); return; }
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    /* The Flow view's grey paper is darker than the map's land and sea, so there a label
-       gets a soft backing a little lighter than the paper (darker in the dark theme): the
-       same text, easier to read (Ray, 29 Oct: "the CO2 ... text is easier to see on the
-       map view than the Flow view ... only make slight changes"). */
-    if (backing) {
-      const pad = 4 * k, hh = (line * rows.length) / 2;
-      ctx.fillStyle = theme === "dark" ? mix(COLORS.paper, "#000000", 0.3) : mix(COLORS.paper, COLORS.active, 0.6);
-      ctx.beginPath();
-      const bx = spot[0] - pad, by = spot[1] - hh - pad / 2, bw = w + 2 * pad, bh = 2 * hh + pad;
-      if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 4 * k); else ctx.rect(bx, by, bw, bh);
-      ctx.fill();
-    }
     ctx.lineJoin = "round";
     ctx.lineWidth = 3 * k;
-    ctx.strokeStyle = backing ? (theme === "dark" ? mix(COLORS.paper, "#000000", 0.3) : mix(COLORS.paper, COLORS.active, 0.6)) : COLORS.paper;
+    ctx.strokeStyle = COLORS.paper; // a paper halo, no window round the text (Ray, 29 Oct)
     rows.forEach(([text, color], i) => {
       const ly = spot[1] + (i - (rows.length - 1) / 2) * line;
       ctx.strokeText(text, spot[0], ly);
@@ -351,7 +339,7 @@ const App = (() => {
     ctx.restore();
   }
   // A gas quality parcel: a calm-coloured dot; the strongest parcel of a slug is labelled.
-  function drawParcel(ctx, marker, x, y, size, detail, taken, backing = false) {
+  function drawParcel(ctx, marker, x, y, size, detail, taken) {
     if (marker.noDot) return; // the band shows this stretch; the dot is on the strongest part
     ctx.save();
     ctx.beginPath();
@@ -362,7 +350,7 @@ const App = (() => {
     ctx.strokeStyle = COLORS.casing;
     ctx.stroke();
     ctx.restore();
-    if (marker.lead) markerLabel(ctx, marker, x, y, size, detail, taken, backing);
+    if (marker.lead) markerLabel(ctx, marker, x, y, size, detail, taken);
   }
 
   /* The stretch of gas a peak covers, from tail (a) to head (b), in screen pixels: an
@@ -594,9 +582,9 @@ const App = (() => {
     const base = kind === "pig" ? 13 : 6.5; // visible in a dense view, not dominant (Ray, 29 Oct: "a bit smaller")
     return base * (1 + Math.max(0, Math.min(1, closeness)));
   }
-  function drawMarker(ctx, marker, x, y, angle, size = 7, detail = 1, taken = null, backing = false) {
+  function drawMarker(ctx, marker, x, y, angle, size = 7, detail = 1, taken = null) {
     size *= display.scale; // markers are drawn in screen pixels in every view
-    if (marker.kind === "quality") { drawParcel(ctx, marker, x, y, size, detail, taken, backing); return; }
+    if (marker.kind === "quality") { drawParcel(ctx, marker, x, y, size, detail, taken); return; }
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
@@ -613,7 +601,7 @@ const App = (() => {
     ctx.strokeStyle = COLORS.casing;
     ctx.stroke();
     ctx.restore();
-    markerLabel(ctx, marker, x, y, size, detail, taken, backing);
+    markerLabel(ctx, marker, x, y, size, detail, taken);
   }
 
   // ------------------------------------------------------------------ settings
@@ -3094,8 +3082,8 @@ const App = (() => {
     // slowest speed that shows a step about every two seconds (the menu still changes it).
     if (stream.step / live.speed > 30) live.speed = speeds.find((v) => stream.step / v <= 2) || Math.max(...speeds);
     /* Data re-timed to now opens at now and, unless someone picked a speed, plays at
-       real time, so "Now" stays true (review #49802: at 10 min/s the page read "Model ·
-       in 24 min" 2.5 s after it opened, under a "Real time" label). */
+       nora.toml's now_speed: 10 min/s (Ray, 29 Oct: "10 min / s should be the default view
+       when opening the page"). */
     if (stream.offset != null && !settings.speedChosen && speeds.includes(C.screen.now_speed)) live.speed = C.screen.now_speed;
     $("speed").value = String(live.speed);
     const half = timelineHalf(), retimed = stream.offset != null;
@@ -3431,6 +3419,21 @@ const App = (() => {
         : { label: "Remove this line", act: () => commitEdit({ op: "removeLine", id }) });
     }
     return items;
+  }
+
+  /* Safari pinches with gesture events, where other browsers send Ctrl + wheel: the
+     same zoom either way (Ray, 29 Oct: "zooming in and out should be seamless ...
+     regardless of browser"). `zoom(factor, at)`, `at` in the element's pixels. */
+  function onPinch(el, zoom) {
+    let last = 1;
+    el.addEventListener("gesturestart", (e) => { e.preventDefault(); last = 1; });
+    el.addEventListener("gesturechange", (e) => {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      if (e.scale > 0) zoom(e.scale / last, { x: e.clientX - rect.left, y: e.clientY - rect.top });
+      last = e.scale || last;
+    });
+    el.addEventListener("gestureend", (e) => e.preventDefault());
   }
 
   // ------------------------------------------------------------------ map notes
@@ -3946,6 +3949,7 @@ const App = (() => {
     // The display profile (desk, wall or compact) and the one UI scale (1 = 100 %).
     display: () => display.profile,
     uiScale: () => display.scale,
+    mix, onPinch,
     notes: {
       list: () => notes.list, add: addNote, remove: removeNote, snap: snapToRoute, layer: noteLayer,
       version: () => notes.version, onChange: (fn) => notes.listeners.add(fn),
