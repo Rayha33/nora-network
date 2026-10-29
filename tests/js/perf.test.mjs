@@ -2,7 +2,7 @@
    formats thousands of numbers a frame, and fmt() called toLocaleString with options,
    which builds a new Intl.NumberFormat every time: the page ran at 3 frames a second.
    fmt now keeps one formatter per digit count. These tests pin the output (identical to
-   toLocaleString) and the cost (close to a cached formatter, not 40× slower). */
+   toLocaleString) and the cost (one formatter per digit count, not one per number). */
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -25,19 +25,19 @@ test("fmt prints exactly what toLocaleString printed", () => {
   assert.equal(App.fmt(NaN), "–");
 });
 
-test("fmt costs about what a cached formatter costs", () => {
-  const { App } = loadApp();
-  const cached = new Intl.NumberFormat("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  const time = (fn) => {
-    for (let i = 0; i < 2000; i++) fn(i * 0.37); // warm up
-    const start = performance.now();
-    for (let i = 0; i < 20000; i++) fn(i * 0.37);
-    return performance.now() - start;
-  };
-  const direct = time((v) => cached.format(v));
-  const ours = time((v) => App.fmt(v, 1));
-  // toLocaleString with options was about 40× the cached formatter; allow 5× for noise.
-  assert.ok(ours < Math.max(5 * direct, 25), `fmt: ${ours.toFixed(1)} ms for 20k numbers, a cached formatter ${direct.toFixed(1)} ms`);
+/* The cost, counted instead of timed: a timed ratio failed whenever the machine was
+   busy (review, 29 Oct: 132 ms against 19 ms with the other test files running in
+   parallel). What made the page slow was a new Intl.NumberFormat per number, so count
+   those: one per digit count, however many numbers are formatted. */
+test("fmt builds one number format per digit count, however many numbers it formats", () => {
+  let built = 0;
+  class CountingNumberFormat extends Intl.NumberFormat {
+    constructor(...args) { super(...args); built += 1; }
+  }
+  const { App } = loadApp({ globals: { Intl: { ...Intl, NumberFormat: CountingNumberFormat } } });
+  const before = built;
+  for (let i = 0; i < 20000; i++) App.fmt(i * 0.37, i % 3);
+  assert.equal(built - before, 3, "20,000 numbers in 0, 1 and 2 digits: three formats");
 });
 
 test("the player clock reads as before", () => {
