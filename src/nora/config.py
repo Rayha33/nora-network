@@ -58,16 +58,17 @@ DEFAULTS: dict = {
         "storage": [50, 150],
         "market": [45, 80],
     },
-    # Upper limits by asset type, [high, high-high, integrity] in bar: a pressure tag turns
-    # yellow at high, red at high-high and dark red at the integrity limit (Ray, 29 Oct).
+    # Limits by asset type, [low-low, low, high, high-high, integrity] in bar: a pressure's
+    # number turns yellow at low or high, red at low-low or high-high and dark red at the
+    # integrity limit (Ray, 29 Oct).
     "pressure_limits": {
-        "field": [160, 168, 175],
-        "hub": [157, 163, 170],
-        "processing": [152, 158, 165],
-        "terminal": [76, 80, 85],
-        "lng": [82, 86, 90],
-        "storage": [135, 142, 150],
-        "market": [70, 75, 80],
+        "field": [110, 118, 160, 168, 175],
+        "hub": [110, 118, 157, 163, 170],
+        "processing": [110, 118, 152, 158, 165],
+        "terminal": [57, 60, 76, 80, 85],
+        "lng": [62, 66, 82, 86, 90],
+        "storage": [55, 65, 135, 142, 150],
+        "market": [48, 52, 70, 75, 80],
     },
     "colors": {
         "paper": "#c6c9cc",
@@ -191,11 +192,11 @@ def _check(section: str, key: str, value) -> str | None:
             return "is not an asset type" + suggest(key, NODE_TYPES)
         ok = (
             isinstance(value, list)
-            and len(value) == 3
+            and len(value) == 5
             and all(isinstance(v, int | float) for v in value)
-            and value[0] <= value[1] <= value[2]
+            and all(a <= b for a, b in zip(value, value[1:], strict=False))
         )
-        return None if ok else "must be [high, high-high, integrity] in bar, rising"
+        return None if ok else "must be [low-low, low, high, high-high, integrity] in bar, rising"
     if section in ("thresholds", "quality") and isinstance(default, list):
         ok = (
             isinstance(value, list)

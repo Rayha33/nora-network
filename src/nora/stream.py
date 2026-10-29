@@ -407,7 +407,14 @@ def synthesize(
             )
     if operations:
         rises = _pressure_rises(net, times, spec.get("pressure_excursions", []))
-        rows += _operations_rows(net, times, actual, planned, pressure_windows, rng, rises)
+        breaches = spec.get("breaches")
+        targets, surges = (
+            _random_breaches(net, times, breaches, rows, spec.get("seed", 1))
+            if breaches
+            else ([], [])
+        )
+        rows += _operations_rows(net, times, actual, planned, pressure_windows, rng, rises, targets)
+        rows = _surge_flows(rows, surges)
     if spec.get("quality", False):
         rows += _quality_rows(net, times, spec.get("excursions", []), spec.get("seed", 1))
     return rows
@@ -495,7 +502,79 @@ def _pressure_rises(net: Network, times: list[datetime], excursions: list) -> li
     return rises
 
 
-def _operations_rows(net, times, actual, planned, windows, rng, rises=()) -> list[Row]:
+def _random_breaches(net: Network, times: list[datetime], spec, flow_rows: list[Row], seed):
+    """Random limit breaches for a demo (Ray, 29 Oct: "random pressure and flow limits
+    breached but keep the not too frequent. then less frequent a few of them turning red,
+    meaning high high or low low"). `breaches = {pressure_per_day, flow_per_day,
+    severe_share}`: each event picks a node (its pressure heads past its low or high
+    limit, nora.toml [pressure_limits]) or a busy pipeline (its flow runs over capacity),
+    a start and a few hours; a `severe_share` of them go on to low-low or high-high (a
+    flow past the load's critical level). Returns pressure targets and flow surges."""
+    from .config import load_config
+
+    config = load_config()
+    limits, load = config["pressure_limits"], config["thresholds"]["load"]
+    rng = random.Random(f"breaches-{seed}")  # its own generator: nothing else moves
+    days = (times[-1] - times[0]).total_seconds() / 86400 + 1 / 24
+    severe = float(spec.get("severe_share", 0.25))
+    when = lambda: times[0] + timedelta(hours=rng.uniform(0, days * 24 - 8))  # noqa: E731
+    nodes = sorted(n.id for n in net.nodes if n.type in limits and n.status == "operating")
+
+    def flags(count):  # exactly a `severe` share of the events go on to red, in random order
+        hard = [k < round(count * severe) for k in range(count)]
+        rng.shuffle(hard)
+        return hard
+
+    targets = []  # (node, bar to head for, start, hours)
+    for hard in flags(round(float(spec.get("pressure_per_day", 0)) * days)):
+        node, up = rng.choice(nodes), rng.random() < 0.5
+        ll, low, high, hh, _top = limits[net.node_by_id[node].type]
+        bar = (hh + 1.5 if hard else high + 3) if up else (ll - 1.5 if hard else low - 3)
+        targets.append(
+            (node, bar, when(), rng.uniform(3, 5) if hard else rng.uniform(5, 9))
+        )  # red is brief
+    flows: dict[str, list[float]] = {}
+    for _when, asset, metric, value in flow_rows:
+        if metric == "flow_msm3d":
+            flows.setdefault(asset, []).append(abs(value))
+    busy = sorted(
+        p.id
+        for p in net.pipelines
+        if p.capacity_msm3d
+        and flows.get(p.id)
+        and statistics.median(flows[p.id]) >= 0.5 * p.capacity_msm3d
+    )
+    surges = []  # (pipeline, share of capacity, start, hours, capacity)
+    for hard in flags(round(float(spec.get("flow_per_day", 0)) * days) if busy else 0):
+        pipe = rng.choice(busy)
+        share = (
+            rng.uniform(load[2] + 0.01, load[2] + 0.04)
+            if hard
+            else rng.uniform(load[0] + 0.01, load[1] - 0.01)
+        )
+        capacity = next(p.capacity_msm3d for p in net.pipelines if p.id == pipe)
+        surges.append((pipe, share, when(), rng.uniform(3, 6), capacity))
+    return targets, surges
+
+
+def _surge_flows(rows: list[Row], surges) -> list[Row]:
+    """A pipeline's flow raised towards `share` of its capacity while a surge lasts (its
+    sign kept). Synthetic: the other lines are not rebalanced."""
+    if not surges:
+        return rows
+    out = []
+    for when, asset, metric, value in rows:
+        if metric == "flow_msm3d":
+            for pipe, share, start, hours, capacity in surges:
+                if pipe == asset:
+                    peak = share * capacity
+                    bump = _plateau(when, start, hours) * max(0.0, peak - abs(value))
+                    value = round(math.copysign(abs(value) + bump, value or 1.0), 3)
+        out.append((when, asset, metric, value))
+    return out
+
+
+def _operations_rows(net, times, actual, planned, windows, rng, rises=(), targets=()) -> list[Row]:
     if windows is None:
         from .config import load_config
 
@@ -539,11 +618,19 @@ def _operations_rows(net, times, actual, planned, windows, rng, rises=()) -> lis
             noise = 0.95 * noise + rng.gauss(0, 0.0012)
             target = low + span * (share + noise)
             target += sum(r * _plateau(when, s, h) for a, r, s, h in rises if a == node)
+            # a random breach heads for its bar from where the node usually sits
+            usual = low + span * (0.5 if arrival else 0.7)
+            breach = sum(
+                (bar - usual) * _plateau(when, s, h) for a, bar, s, h in targets if a == node
+            )
+            target += breach
+            # a breach (a trip, a restriction) moves the pressure faster: up to 6 bar/h
+            pull, most = (0.5, 6.0) if breach else (0.2, 1.5)
             if pressure is None:
                 pressure = target
             else:
-                step = min(1.0, 0.2 * hours) * (target - pressure)
-                pressure += max(-1.5 * hours, min(1.5 * hours, step))
+                step = min(1.0, pull * hours) * (target - pressure)
+                pressure += max(-most * hours, min(most * hours, step))
             rows.append((when, node, "pressure_bar", round(pressure, 2)))
     return rows
 

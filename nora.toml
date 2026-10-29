@@ -72,18 +72,19 @@ lng = [60, 90]
 storage = [50, 150]
 market = [45, 80]
 
-# Upper pressure limits (bar) by asset type: [high, high-high, integrity]. A pressure tag
-# in the Flow view turns yellow at high, red at high-high and dark red at the integrity
-# limit, the design pressure at the top of the window above (Ray, 29 Oct). Illustrative
-# values; replace them with each asset's real alarm and trip settings when known.
+# Pressure limits (bar) by asset type: [low-low, low, high, high-high, integrity]. A
+# pressure's number in the Flow view turns yellow at low or high, red at low-low or
+# high-high and dark red at the integrity limit, the design pressure at the top of the
+# window above (Ray, 29 Oct). Illustrative values; replace them with each asset's real
+# alarm and trip settings when known.
 [pressure_limits]
-field = [160, 168, 175]
-hub = [157, 163, 170]
-processing = [152, 158, 165]
-terminal = [76, 80, 85]
-lng = [82, 86, 90]
-storage = [135, 142, 150]
-market = [70, 75, 80]
+field = [110, 118, 160, 168, 175]
+hub = [110, 118, 157, 163, 170]
+processing = [110, 118, 152, 158, 165]
+terminal = [57, 60, 76, 80, 85]
+lng = [62, 66, 82, 86, 90]
+storage = [55, 65, 135, 142, 150]
+market = [48, 52, 70, 75, 80]
 
 # The control-room palette: calm grey paper. Colour is reserved for abnormal conditions
 # and alarms, so when something goes wrong it stands out at once. Never pure white:

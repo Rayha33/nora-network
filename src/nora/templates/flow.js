@@ -558,7 +558,8 @@
     ctx.font = modelFont("600 12px Archivo, system-ui, sans-serif");
     const places = lineValuePlaces(ctx, id, x, y, r, scale, positions);
     for (const { line, at, align } of places) {
-      ctx.fillStyle = line.direction === "out" ? look.ink : look.soft || look.ink;
+      const mark = App.flowMark(line.pid); // over capacity: the number in its colour
+      ctx.fillStyle = mark ? mark.ink : line.direction === "out" ? look.ink : look.soft || look.ink;
       reading(ctx, line.text, at[0], at[1], look, align);
     }
     if (!places.length && total != null) {

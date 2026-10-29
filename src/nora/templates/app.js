@@ -436,16 +436,31 @@ const App = (() => {
      ... not the whole square"; "we want to use strong colors sparingly". The number
      (and, zoomed in, its H, HH or INT) takes the colour, in a shade that reads on the
      tag; the alarm list says which limit in words. */
-  const LIMITS = [null, { code: "H", name: "high" }, { code: "HH", name: "high-high" }, { code: "INT", name: "integrity" }];
+
   function limitInk(lvl) {
     return theme === "dark"
       ? [null, COLORS.warning, COLORS.critical, mix(COLORS.integrity, COLORS.critical, 0.55)][lvl] // on the dark tag
       : [null, mix(COLORS.warning, "#000000", 0.45), mix(COLORS.critical, "#000000", 0.15), COLORS.integrity][lvl];
   }
+  // Its limits are [low-low, low, high, high-high, integrity]: L and H yellow, LL and HH
+  // red, INT dark red (`level` 1, 2, 3 for the colour).
   function pressureMark(id, p = metric("pressure_bar", id)) {
-    const limits = (C.pressure_limits || {})[(assets[id] || {}).type], lvl = limits ? level(p, limits) : 0;
-    if (!lvl) return null;
-    return { level: lvl, ...LIMITS[lvl], limit: limits[lvl - 1], ink: limitInk(lvl) };
+    const limits = (C.pressure_limits || {})[(assets[id] || {}).type];
+    if (!limits || p == null) return null;
+    const [ll, low, high, hh, top] = limits;
+    const at = p >= top ? ["INT", "integrity", top, 3] : p >= hh ? ["HH", "high-high", hh, 2] : p >= high ? ["H", "high", high, 1]
+      : p <= ll ? ["LL", "low-low", ll, 2] : p <= low ? ["L", "low", low, 1] : null;
+    if (!at) return null;
+    const [code, name, limit, lvl] = at;
+    return { level: lvl, code, name, limit, ink: limitInk(lvl) };
+  }
+  // A line's flow against its capacity (nora.toml thresholds.load): its number yellow
+  // over the warning level, red past the critical one, like a pressure's.
+  function flowMark(pid, v = live.values[pid]) {
+    const d = assets[pid];
+    if (!d || !d.capacity || v == null) return null;
+    const lvl = level(Math.abs(v) / d.capacity, T.load);
+    return lvl ? { level: lvl === 3 ? 2 : 1, ink: limitInk(lvl === 3 ? 2 : 1) } : null;
   }
   /* Each priority has its own shape and number as well as its colour; a warning (3) has
      none (Ray, 29 Oct: "remove all warning triangles") and reads as words only. */
@@ -858,13 +873,13 @@ const App = (() => {
       const p = metric("pressure_bar", id, f), window = C.pressure[assets[id].type];
       if (p == null || !window) continue;
       const [low, high] = window, span = high - low, mark = pressureMark(id, p);
-      if (mark) { // at an upper limit: warning at high, critical at high-high and integrity
+      if (mark) { // at a limit: low and high a warning; low-low, high-high and integrity critical
         add(mark.level === 1 ? 1 : 3, id, "pressure", `${nameOf(id)} ${fmt(p, 1)} bar, at its ${mark.name} limit (${fmt(mark.limit)} bar)`);
         continue;
       }
-      // Below the limits the window still warns as the pressure nears its minimum (and its
-      // maximum, for a type with no limits).
-      const margin = (C.pressure_limits || {})[assets[id].type] ? (p - low) / span : Math.min(p - low, high - p) / span;
+      if ((C.pressure_limits || {})[assets[id].type]) continue; // inside its limits
+      // A type with no limits warns as the pressure nears its window's edges.
+      const margin = Math.min(p - low, high - p) / span;
       add(level(margin, T.pressure_margin, false), id, "pressure",
         `${nameOf(id)} ${fmt(p, 1)} bar, near the ${p - low < high - p ? "minimum" : "maximum"} (${fmt(low)}–${fmt(high)} bar)`);
     }
@@ -2052,7 +2067,7 @@ const App = (() => {
     const rows = d.kind === "node"
       ? [["Operator", d.operator], ["Capacity", d.capacity == null ? null : `${fmt(d.capacity)} MSm³/d`], ["If it trips", lost],
         ["Pressure window", C.pressure[d.type] ? `${C.pressure[d.type][0]}–${C.pressure[d.type][1]} bar` : null],
-        ["Pressure limits", (C.pressure_limits || {})[d.type] ? `high ${C.pressure_limits[d.type][0]}, high-high ${C.pressure_limits[d.type][1]}, integrity ${C.pressure_limits[d.type][2]} bar` : null], ["Status", d.status],
+        ["Pressure limits", (C.pressure_limits || {})[d.type] ? (([ll, l, hi, hh, top]) => `low-low ${ll}, low ${l}, high ${hi}, high-high ${hh}, integrity ${top} bar`)(C.pressure_limits[d.type]) : null], ["Status", d.status],
         ["Position", h("a", { href: `https://www.google.com/maps?q=${d.lat},${d.lon}`, target: "_blank", rel: "noopener", title: "Open this exact location in Google Maps" }, position)],
         ["Water depth", depth != null ? `${fmt(depth)} m (EMODnet seabed model)` : null]]
       : [["Capacity", d.capacity == null ? "Not modelled" : `${fmt(d.capacity)} MSm³/d`], ["Length", `${fmt(d.km)} km`],
@@ -3163,7 +3178,7 @@ const App = (() => {
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
-    pressureMark,
+    pressureMark, flowMark,
     rampAhead, // the next 6 hours of nominations at an exit point
     pipeStyle, pipeMapName, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
