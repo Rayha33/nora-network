@@ -9,7 +9,8 @@ function NoraCanvasMap(view) {
   "use strict";
   const C = App.colors;
   let el = null, canvas = null, ctx = null, width = 0, height = 0, ratio = 1;
-  let highlighted = null, pendingFit = false, land = null, animation = null, drawnMarks = [];
+  let highlighted = null, pendingFit = false, land = null, animation = null, drawnMarks = [], notes = null;
+  App.notes.onChange(() => { if (ctx) redraw(); }); // a note added, typed in, moved or removed
   const cam = { x: 0.5, y: 0.5, k: 512 }; // centre in Web Mercator units (0..1), pixels per unit
   const MIN_ZOOM = 2, MAX_ZOOM = 12;
 
@@ -231,6 +232,7 @@ function NoraCanvasMap(view) {
     }
     ctx.font = `${11.5 * u}px Archivo, system-ui, sans-serif`;
     ctx.textBaseline = "top";
+    if (notes) notes.draw(ctx, ([lon, lat]) => toScreen(lon, lat), (pid) => !App.pipeStyle(pid).hidden && pipeAtZoom(pid));
   }
 
   // ------------------------------------------------------------------ camera
@@ -323,6 +325,7 @@ function NoraCanvasMap(view) {
       zoomButtons.append(b);
     }
     el.append(note, readout, zoomButtons);
+    notes = App.notes.layer(el);
     size();
 
     // Pan with a drag, zoom with the wheel or a pinch, click to open, right-click for the menu.
@@ -384,11 +387,11 @@ function NoraCanvasMap(view) {
       const id = hit(e.offsetX, e.offsetY);
       if (!id) return;
       e.preventDefault();
-      const d = NORA.assets[id];
+      const d = NORA.assets[id], at = [e.offsetX, e.offsetY];
       App.menu.open(e.clientX, e.clientY, App.menu.for(id, d.lat != null ? {
         center: () => view.focus(id, true),
         coords: `${d.lat.toFixed(4)}, ${d.lon.toFixed(4)}`,
-      } : {}));
+      } : pipeById[id] ? { note: () => App.notes.add(id, ...App.notes.snap(pipeById[id].line, ([lon, lat]) => toScreen(lon, lat), ...at)) } : {}));
     });
     view.ready = true;
     view.setUnit(App.route.unit);
