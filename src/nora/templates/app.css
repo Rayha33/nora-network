@@ -153,7 +153,9 @@ body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer 
 .search:focus-within input, .search input:not(:placeholder-shown) { width: 170px; margin-left: 7px; }
 
 /* Status is a readable operating component, not another toolbar icon. */
-.alarm-counts { display: flex; gap: 8px; align-items: center; height: var(--ctl); padding: 0 4px; font-size: var(--ctl-font); }
+.alarm-counts { display: flex; gap: 8px; align-items: center; height: var(--ctl); padding: 0 8px; font-size: var(--ctl-font);
+  border: 1px solid transparent; border-radius: 8px; background: none; color: var(--text); cursor: pointer; font-family: inherit; }
+.alarm-counts:hover, .alarm-counts[aria-expanded="true"] { border-color: var(--rule); background: var(--band); }
 .alarm-counts span { display: flex; align-items: center; gap: 3px; font-weight: 500; }
 .badge { display: inline-flex; align-items: center; gap: 4px; font-weight: 500; white-space: nowrap; }
 .badge svg { width: 16px; height: 16px; flex: none; stroke: none; }
@@ -561,3 +563,11 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 .gc .gc-table { margin-top: 6px; }
 .gc .gc-table + .gc-table { margin-top: 12px; }
 .outside { margin: 0 0 6px; font-size: 12.5px; color: var(--text-dim); }
+
+/* The alarm list: a wide popup, two tables (Integrity, SCADA), newest first */
+.pop.alarms { width: min(820px, calc(100vw - 32px)); }
+.alarm-filters { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.alarm-filters .seg button { min-width: 0; padding: 0 10px; }
+table.data.alarm-table td.note { white-space: normal; min-width: 220px; }
+table.data.alarm-table th, table.data.alarm-table td { text-align: left; }
+.alarm-table button.link { border: 0; padding: 0; background: none; color: var(--text); font: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }

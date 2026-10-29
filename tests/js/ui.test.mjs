@@ -211,3 +211,47 @@ test("settings: the network's own types, and toggles that each change the screen
   box("Pressure change in the last hour")._listeners.change[0]({ target: { checked: false } });
   assert.equal(App.settings().pressureChange, false);
 });
+
+/* Ray, 29 Oct: "when clicking this, an alarm list should show ... alarm categories by
+   level, network, ID"; "integrity alarms needs its own category, with time first, then
+   location, then note, then level, then network. Same for scada alarms". */
+test("alarms: the counts open a list, Integrity and SCADA, time first", () => {
+  const { App, NORA, document } = loadApp();
+  document.getElementById("speed").options = [{ value: "60" }];
+  const week = NORA.streams.find((s) => s.synthetic);
+  document.getElementById("stream-select")._listeners.change[0]({ target: { value: week.name } });
+  const scrub = document.getElementById("scrub");
+  scrub.value = String(-400 * 3600);
+  scrub._listeners.input[0]({ target: { value: scrub.value } });
+  for (let k = 0; k < 168 && !(App.live.conditions.some((c) => c.kind === "pressure") && App.live.conditions.some((c) => c.kind === "quality")); k++) {
+    scrub.value = "3600";
+    scrub._listeners.input[0]({ target: { value: scrub.value } });
+  }
+  const counts = document.getElementById("alarm-counts"), panel = document.getElementById("alarms");
+  panel.hidden = true; // as the page starts (hidden in the template)
+  counts._listeners.click[0]({ currentTarget: counts });
+  assert.ok(!panel.hidden, "the counts open it");
+  const text = panel.textContent;
+  assert.match(text, /Integrity · \d+/);
+  assert.match(text, /SCADA · \d+/);
+  assert.ok(text.indexOf("Integrity") < text.indexOf("SCADA"));
+  const heads = [];
+  const walk = (el) => { if (el && el.tagName === "TH") heads.push(el.textContent); (el && el.children || []).forEach(walk); };
+  walk(panel);
+  assert.deepEqual(heads.slice(0, 6), ["Time", "Location", "Note", "Level", "Network", "ID"], "time first, then location, note, level, network");
+  const integrity = App.live.conditions.filter((c) => c.kind === "pressure" || c.kind === "load").length;
+  assert.ok(text.includes(`Integrity · ${integrity}`), "pressure limits and over-capacity lines are integrity");
+  const find = (el, test) => (test(el) ? el : (el && el.children || []).map((c) => find(c, test)).find(Boolean) || null);
+  const critical = find(panel, (el) => el && el.tagName === "BUTTON" && /^1 Critical/.test(el.textContent || ""));
+  critical._listeners.click[0]();
+  const filtered = document.getElementById("alarms").textContent;
+  const crit = App.live.conditions.filter((c) => c.level === 3);
+  assert.ok(filtered.includes(`Integrity · ${crit.filter((c) => c.kind === "pressure" || c.kind === "load").length}`), "the level narrows it");
+  App.go({ screen: "unit", unit: "all" });
+  const location = find(document.getElementById("alarms"), (el) => el && el.tagName === "BUTTON" && el.attributes && el.attributes.get && /^alarm:/.test(el.attributes.get("data-key") || ""));
+  if (location) {
+    location._listeners.click[0]();
+    assert.ok(document.getElementById("alarms").hidden, "opening an asset closes the list");
+    assert.ok(App.sidebar.id(), "and opens the asset");
+  }
+});

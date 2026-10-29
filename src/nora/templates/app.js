@@ -2680,10 +2680,66 @@ const App = (() => {
   function renderTop() {
     const counts = [3, 2, 1].map((l) => [l, live.conditions.filter((c) => c.level === l).length]).filter(([, n]) => n);
     // Both are live regions, refreshed with every data step: rebuilt only when they change.
-    replaceIfChanged($("alarm-counts"), counts.map(([l, n]) => `${l}:${n}`).join(","),
-      () => counts.map(([l, n]) => h("span", { title: `${n} ${LEVEL[l].toLowerCase()}` }, badge(l, l === 1 ? `${n} warning${n === 1 ? "" : "s"}` : String(n)))));
+    replaceIfChanged($("alarm-counts"), counts.map(([l, n]) => `${l}:${n}`).join(",") || "none",
+      () => (counts.length ? counts.map(([l, n]) => h("span", { title: `${n} ${LEVEL[l].toLowerCase()}` }, badge(l, l === 1 ? `${n} warning${n === 1 ? "" : "s"}` : String(n))))
+        : [h("span", { class: "dim" }, "No alarms")]));
+    buildAlarms();
     // No plan chip (Ray, 29 Oct: "remove this. it serves no purpose"): the plan's state
     // is on the Overview, and its shortfalls are alarms in the counts.
+  }
+
+  /* The alarm list (Ray, 29 Oct: "when clicking this, an alarm list should show. make it
+     well made, minimalistic as a popup window that shows alarm categories by level,
+     network, ID"; "integrity alarms needs its own category, with time first, then location,
+     then note, then level, then network. Same for scada alarms but thats its own
+     category"). Integrity: pressures at their limits and lines over capacity, what
+     protects the pipelines; SCADA: everything else the readings raise. Newest first; a
+     level and a network narrow it; a location opens the asset. */
+  const INTEGRITY = new Set(["pressure", "load"]);
+  const ALARM_TAG = { pressure: "PI", load: "FI", trip: "FT", quality: "QI", peak: "FS", nomination: "NOM", booking: "BKG" };
+  const alarmFilter = { level: 0, unit: "all" };
+  const alarmUnit = (id) => unitOf[id] || (assets[id] && assets[id].kind === "pipeline" ? unitOf[assets[id].from] : null);
+  const alarmId = (c) => `${ALARM_TAG[c.kind] || c.kind.slice(0, 3).toUpperCase()}-${c.id.toUpperCase()}`;
+  function alarmNote(c) {
+    const name = nameOf(c.id), note = c.text.startsWith(name) ? c.text.slice(name.length).replace(/^[\s:,]+/, "") : c.text;
+    return note.charAt(0).toUpperCase() + note.slice(1);
+  }
+  function buildAlarms() {
+    const panel = $("alarms");
+    if (!panel || panel.hidden) return;
+    const all = live.conditions, shown = all.filter((c) => (!alarmFilter.level || c.level === alarmFilter.level)
+      && (alarmFilter.unit === "all" || alarmUnit(c.id) === alarmFilter.unit));
+    const key = `${alarmFilter.level}|${alarmFilter.unit}|${all.map((c) => `${c.kind}:${c.id}:${c.level}:${c.text}:${c.since ? c.since.t : ""}`).join(";")}`;
+    replaceIfChanged(panel, key, () => {
+      const chip = (lvl, label) => h("button", { type: "button", role: "tab", "aria-selected": String(alarmFilter.level === lvl),
+        onclick: () => { alarmFilter.level = lvl; buildAlarms(); } }, label);
+      const count = (lvl) => all.filter((c) => c.level === lvl).length;
+      const table = (title, rows) => [
+        h("h3", null, `${title} · ${rows.length}`),
+        rows.length ? h("table", { class: "data alarm-table" },
+          h("thead", null, h("tr", null, ...["Time", "Location", "Note", "Level", "Network", "ID"].map((t) => h("th", null, t)))),
+          h("tbody", null, ...rows.map((c) => h("tr", null,
+            h("td", null, sinceTime(c.since)),
+            h("td", null, assets[c.id] ? h("button", { type: "button", class: "link", "data-key": `alarm:${c.kind}|${c.id}`,
+              onclick: () => { closePops(); if (route.screen === "unit") openSidebar(c.id); else go({ screen: "asset", asset: c.id }); } }, nameOf(c.id)) : c.id),
+            h("td", { class: "note" }, alarmNote(c)),
+            h("td", null, badge(c.level, LEVEL[c.level])),
+            h("td", null, (unitById[alarmUnit(c.id)] || {}).name || "–"),
+            h("td", { class: "dim" }, alarmId(c))))))
+          : h("p", { class: "dim" }, "None"),
+      ];
+      const newest = (a, b) => ((b.since && b.since.t) || 0) - ((a.since && a.since.t) || 0);
+      return [
+        h("div", { class: "alarm-filters" },
+          h("div", { class: "seg", role: "tablist", "aria-label": "Level" }, chip(0, `All ${all.length}`),
+            ...[3, 2, 1].map((l) => chip(l, `${4 - l} ${LEVEL[l]} ${count(l)}`))),
+          h("select", { "aria-label": "Network", onchange: (e) => { alarmFilter.unit = e.target.value; buildAlarms(); } },
+            h("option", { value: "all", selected: alarmFilter.unit === "all" ? "" : null }, "All networks"),
+            ...Object.values(unitById).map((u) => h("option", { value: u.id, selected: alarmFilter.unit === u.id ? "" : null }, u.name)))),
+        ...table("Integrity", shown.filter((c) => INTEGRITY.has(c.kind)).sort(newest)),
+        ...table("SCADA", shown.filter((c) => !INTEGRITY.has(c.kind)).sort(newest)),
+      ];
+    });
   }
 
   // ------------------------------------------------------------------ key and settings
@@ -2787,14 +2843,18 @@ const App = (() => {
     url.searchParams.set("s", btoa(JSON.stringify(settings)));
     if (navigator.clipboard) navigator.clipboard.writeText(url.toString());
   }
-  for (const [button, panel] of [["key-toggle", "key"], ["settings-toggle", "settings"]]) {
+  const POPS = [["key-toggle", "key"], ["settings-toggle", "settings"], ["alarm-counts", "alarms"]];
+  function closePops() {
+    for (const [button, panel] of POPS) { if ($(panel)) $(panel).hidden = true; if ($(button)) $(button).setAttribute("aria-expanded", "false"); }
+  }
+  for (const [button, panel] of POPS) {
+    if (!$(button)) continue;
     $(button).addEventListener("click", (event) => {
       const open = $(panel).hidden;
-      $("key").hidden = $("settings").hidden = true;
-      $("key-toggle").setAttribute("aria-expanded", "false");
-      $("settings-toggle").setAttribute("aria-expanded", "false");
+      closePops();
       $(panel).hidden = !open;
       event.currentTarget.setAttribute("aria-expanded", String(open));
+      if (open && panel === "alarms") { $(panel).dataset.signature = ""; buildAlarms(); }
     });
   }
 
@@ -3532,7 +3592,7 @@ const App = (() => {
     addEventListener("keydown", (e) => { if (e.key === "Escape" && (side.id || side.marker || side.form)) closeSidebar(); });
     addEventListener("click", closeMenu);
     addEventListener("resize", closeMenu);
-    addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(); });
+    addEventListener("keydown", (e) => { if (e.key === "Escape") { closeMenu(); closePops(); } });
     for (const tab of document.querySelectorAll("[data-view]")) {
       tab.addEventListener("click", () => {
         state.view = tab.dataset.view;

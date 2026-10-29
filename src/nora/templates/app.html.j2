@@ -40,7 +40,7 @@
     </div>
   </div>
   <div class="primary-actions">
-    <div class="alarm-counts" id="alarm-counts" aria-live="polite"></div>
+    <button type="button" class="alarm-counts" id="alarm-counts" aria-live="polite" aria-expanded="false" aria-controls="alarms" title="Alarms: open the list"></button>
     <label class="search" title="Find an asset by name">
       <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
       <span class="sr-only">Find an asset</span>
@@ -75,6 +75,7 @@
 </aside>
 <aside class="pop key" id="key" hidden aria-label="Guide"></aside>
 <aside class="pop" id="settings" hidden aria-label="Settings"></aside>
+<aside class="pop alarms" id="alarms" hidden aria-label="Alarms"></aside>
 
 <section class="player" id="player" hidden aria-label="Data player">
   <div class="transport">
