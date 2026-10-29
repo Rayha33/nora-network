@@ -5175,19 +5175,20 @@ function NoraCanvasMap(view) {
      at it (portDistance). Tags sharing an edge are spread so none overlaps. Zoomed out
      there is room for one, on the middle of the square's top edge, when it fits. Sizes
      in screen px; boxes in canvas units. */
-  const TAG = { font: "600 12px Archivo, system-ui, sans-serif", small: "600 10px Archivo, system-ui, sans-serif", pad: 4, h: 16, hSmall: 13 };
+  const TAG = { font: "600 12px Archivo, system-ui, sans-serif", small: "600 10px Archivo, system-ui, sans-serif", pad: 4, h: 16, hSmall: 13, line: 13, lineSmall: 11 };
   const overlaps = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
   /* Zoomed out the tag holds the number alone: the same framed tag reads "146 bar" on
      zoom in, with the pressure's change over the last hour in bar/h where it moves (Ray,
      29 Oct: "the rate of change when it comes to pressures are important, especially in
-     and out of SLR, DRP S and DRP E"). The nodes in nora.toml [flow] watch always show
-     it, zoomed out too. */
+     and out of SLR, DRP S and DRP E") on a second line below it (Ray, 29 Oct: "pressure
+     on top and the change last 1 hour below", "▼ 0.1"). The nodes in nora.toml [flow]
+     watch always show it, zoomed out too. */
   const watched = new Set(NORA.config.flow.watch || []);
   function pressureText(id, unit = true) {
     const now = App.reading(id), value = now && now.pressure != null ? App.fmt(now.pressure) : "–";
-    const rate = App.pressureRate(id), show = rate != null && (watched.has(id) || Math.abs(rate) >= 0.1);
-    const trend = show ? ` ${rate >= 0.05 ? "▲" : rate <= -0.05 ? "▼" : "±"}${App.fmt(Math.abs(rate), 1)}` : "";
-    return unit ? `${value} bar${trend}` : watched.has(id) ? `${value}${trend}` : value;
+    const rate = App.pressureRate(id), show = rate != null && (watched.has(id) || Math.abs(rate) >= 0.1) && (unit || watched.has(id));
+    const trend = show ? `${rate >= 0.05 ? "▲" : rate <= -0.05 ? "▼" : "±"} ${App.fmt(Math.abs(rate), 1)}` : "";
+    return { text: unit ? `${value} bar` : value, rate: trend };
   }
   function textWidth(text, font) {
     if (!measurer) return text.length * 6.5; // no canvas yet (tests): about Archivo's width
@@ -5227,11 +5228,12 @@ function NoraCanvasMap(view) {
     // with pressure values at each end the node is connected to a line"): the number
     // alone in the smaller type; not on squares too small to read.
     // At a limit the tag fills with its colour, and zoomed in says which (H, HH, INT).
-    const detailed = detailedFlow(scale), mark = App.pressureMark(id);
-    const text = (mark && detailed ? `${mark.code} ` : "") + pressureText(id, detailed);
+    const detailed = detailedFlow(scale), mark = App.pressureMark(id), reading = pressureText(id, detailed);
+    const text = (mark && detailed ? `${mark.code} ` : "") + reading.text, rate = reading.rate;
     if (!detailed && 2 * half * scale < 24) return [];
     const font = detailed ? TAG.font : TAG.small;
-    const w = (textWidth(text, font) + 2 * TAG.pad) / scale, h = (detailed ? TAG.h : TAG.hSmall) / scale;
+    const w = (Math.max(textWidth(text, font), rate ? textWidth(rate, font) : 0) + 2 * TAG.pad) / scale;
+    const h = ((detailed ? TAG.h : TAG.hSmall) + (rate ? (detailed ? TAG.line : TAG.lineSmall) : 0)) / scale;
     const sides = { N: [], S: [], E: [], W: [] };
     for (const line of lineReadings(id, positions)) {
       const gap = edgeGap(half, line.ux, line.uy), cx = p.x + line.ux * gap, cy = p.y + line.uy * gap;
@@ -5248,7 +5250,7 @@ function NoraCanvasMap(view) {
           : side === "S" ? [c - w / 2, p.y + half, c + w / 2, p.y + half + h]
           : side === "E" ? [p.x + half, c - h / 2, p.x + half + w, c + h / 2]
           : [p.x - half - w, c - h / 2, p.x - half, c + h / 2];
-        tags.push({ pid: item.pid, side, box, text, small: !detailed, mark });
+        tags.push({ pid: item.pid, side, box, text, rate, small: !detailed, mark });
       });
     }
     // A side tag near a corner can meet a tag above or below: it moves along its edge.
@@ -5312,7 +5314,11 @@ function NoraCanvasMap(view) {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = tag.mark ? tag.mark.ink : look.ink;
-      ctx.fillText(tag.text, (a.x + b.x) / 2, (a.y + b.y) / 2 + 0.5);
+      const cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2 + 0.5, half = (tag.small ? TAG.lineSmall : TAG.line) / 2;
+      if (tag.rate) { // the pressure on top, its change over the last hour below
+        ctx.fillText(tag.text, cx, cy - half);
+        ctx.fillText(tag.rate, cx, cy + half);
+      } else ctx.fillText(tag.text, cx, cy);
       ctx.restore();
     }
     return tags.map((tag) => tag.box);
