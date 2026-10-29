@@ -422,8 +422,16 @@ const App = (() => {
   // A wall is read from 5-10 m: body text at least about 20 px (13 px × 1.5).
   const autoScaleFor = (profile) => (profile === "wall" ? Math.max(1.5, autoScale(window.innerWidth)) : autoScale(window.innerWidth));
   // Returns true when the profile or scale changed, so the views can re-fit.
+  /* The bar is one row while it fits (Ray, 29 Oct: "everything here should be on one
+     line"). The UI scale zooms it, so a 1440 px wall screen at 1.5 has 960 px of room:
+     the fit is judged on that, which a media query cannot see. */
+  function barLayout(scale) {
+    const room = window.innerWidth / scale;
+    document.documentElement.dataset.bar = room < 1060 ? "two" : room < 1240 ? "tight" : "one";
+  }
   function applyDisplay() {
     const profile = chosenProfile(), scale = Math.round(chosenScale(profile) * 100) / 100;
+    barLayout(scale);
     if (profile === display.profile && scale === display.scale) return false;
     display.profile = profile;
     display.scale = scale;

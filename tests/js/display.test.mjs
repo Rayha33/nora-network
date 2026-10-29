@@ -94,3 +94,14 @@ test("the scale reaches the page as --ui-scale and a data-display attribute", ()
   assert.equal(props["--ui-scale"], "2");
   assert.equal(document.documentElement.dataset.display, "desk");
 });
+
+/* Ray, 29 Oct: "everything here should be on one line". The bar keeps one row while it
+   fits; the UI scale zooms it, so the room is judged at that scale. */
+test("the bar is one row while it fits at its UI scale", () => {
+  const bar = (options) => load(options).document.documentElement.dataset.bar;
+  assert.equal(bar({ width: 1920 }), "one");
+  assert.equal(bar({ width: 1366 }), "one", "a laptop desk keeps one row");
+  assert.equal(bar({ width: 1200 }), "tight", "tighter: the wordmark goes, the mark stays");
+  assert.equal(bar({ width: 1440, search: "?scale=150" }), "two", "960 px of room at 1.5: the switches wrap");
+  assert.equal(bar({ width: 3840 }), "one", "a 4K wall at 1.5 has room for one row");
+});
