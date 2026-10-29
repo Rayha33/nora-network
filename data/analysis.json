@@ -1,7 +1,7 @@
 {
  "offline": [],
- "assets": 44,
- "pipelines": 42,
+ "assets": 53,
+ "pipelines": 51,
  "countries": [
   "BE",
   "DE",
@@ -13,13 +13,13 @@
   "PL"
  ],
  "node_types": {
-  "field": 24,
+  "field": 33,
   "hub": 5,
   "market": 2,
   "processing": 4,
   "terminal": 9
  },
- "pipeline_km": 11428,
+ "pipeline_km": 11750,
  "supply_capacity": 502.0,
  "deliverable": 460.0,
  "delivered": {
@@ -61,11 +61,13 @@
  },
  "pipeline_flow": {
   "polarled": 9.0,
+  "aerfugl_skarv": 0.0,
   "asgard_transport": 70.0,
   "iuk": 0.0,
   "baltic_pipe_ns": 0.0,
   "europipe_2_south": 71.0,
   "sage": 16.0,
+  "draugen_asgard": 0.0,
   "draupner_bridge": 31.0,
   "europipe_1": 46.0,
   "franpipe": 55.0,
@@ -78,6 +80,7 @@
   "gjoa_flags": 15.0,
   "gudrun_sleipner": 5.0,
   "gullfaks_statfjord": 10.0,
+  "gullfaks_sor_gullfaks": 0.0,
   "haltenpipe": 6.0,
   "heidrun_asgard": 0.0,
   "statpipe_heimdal": 0.0,
@@ -90,16 +93,22 @@
   "zeepipe_2b": 70.0,
   "kvitebjorn_kollsnes": 8.0,
   "ngt": 10.0,
+  "mikkel_asgard": 0.0,
+  "morvin_asgard": 0.0,
   "ngts": 0.0,
   "baltic_pipe_east": 0.0,
   "langeled_north": 59.0,
   "ormen_lange_nyhamna": 50.0,
   "ogt": 30.0,
+  "skarv_asgard": 0.0,
   "langeled_south": 72.0,
   "zeepipe_1": 42.0,
+  "smorbukk_nord_asgard": 0.0,
   "sns_bacton": 15.0,
   "statpipe_rich": 7.0,
   "tampen_link": 18.0,
+  "tordis_gullfaks": 0.0,
+  "trestakk_asgard": 0.0,
   "troll_kollsnes": 120.0,
   "visund_kvitebjorn": 0.0
  },
@@ -597,8 +606,29 @@
   },
   {
    "kind": "node",
+   "id": "aerfugl",
+   "name": "\u00c6rfugl",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "draugen",
+   "name": "Draugen",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
    "id": "gudrun",
    "name": "Gudrun",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "gullfaks_sor",
+   "name": "Gullfaks S\u00f8r",
    "lost": 0.0,
    "share": 0.0
   },
@@ -618,6 +648,20 @@
   },
   {
    "kind": "node",
+   "id": "mikkel",
+   "name": "Mikkel",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "morvin",
+   "name": "Morvin",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
    "id": "norne",
    "name": "Norne",
    "lost": 0.0,
@@ -632,8 +676,43 @@
   },
   {
    "kind": "node",
+   "id": "skarv",
+   "name": "Skarv",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "smorbukk_nord",
+   "name": "Sm\u00f8rbukk Nord",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "tordis",
+   "name": "Tordis",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "trestakk",
+   "name": "Trestakk",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
    "id": "visund",
    "name": "Visund",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "aerfugl_skarv",
+   "name": "\u00c6rfugl - Skarv FPSO",
    "lost": 0.0,
    "share": 0.0
   },
@@ -653,8 +732,22 @@
   },
   {
    "kind": "pipeline",
+   "id": "draugen_asgard",
+   "name": "Draugen - \u00c5sgard Transport",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
    "id": "gudrun_sleipner",
    "name": "Gudrun - Sleipner",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "gullfaks_sor_gullfaks",
+   "name": "Gullfaks S\u00f8r - Gullfaks C",
    "lost": 0.0,
    "share": 0.0
   },
@@ -681,8 +774,36 @@
   },
   {
    "kind": "pipeline",
+   "id": "mikkel_asgard",
+   "name": "Mikkel - \u00c5sgard B",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "morvin_asgard",
+   "name": "Morvin - \u00c5sgard B",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
    "id": "ngts",
    "name": "Norne Gas Transport System",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "skarv_asgard",
+   "name": "Skarv - \u00c5sgard Transport",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "smorbukk_nord_asgard",
+   "name": "Sm\u00f8rbukk Nord - \u00c5sgard",
    "lost": 0.0,
    "share": 0.0
   },
@@ -716,6 +837,20 @@
   },
   {
    "kind": "pipeline",
+   "id": "tordis_gullfaks",
+   "name": "Tordis - Gullfaks C",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "trestakk_asgard",
+   "name": "Trestakk - \u00c5sgard A",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
    "id": "visund_kvitebjorn",
    "name": "Visund gas export",
    "lost": 0.0,
@@ -723,7 +858,7 @@
   }
  ],
  "sourced": {
-  "rows": 86,
-  "total": 86
+  "rows": 104,
+  "total": 104
  }
 }

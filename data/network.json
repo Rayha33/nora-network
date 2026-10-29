@@ -15,6 +15,17 @@
    "id": "aasta_hansteen"
   },
   {
+   "name": "\u00c6rfugl",
+   "type": "field",
+   "country": "NO",
+   "lat": 65.735626,
+   "lon": 7.575386,
+   "capacity_msm3d": 0.0,
+   "status": "operating",
+   "exit": false,
+   "id": "aerfugl"
+  },
+  {
    "name": "\u00c5sgard area",
    "type": "field",
    "country": "NO",
@@ -79,6 +90,17 @@
    "status": "operating",
    "exit": true,
    "id": "dornum"
+  },
+  {
+   "name": "Draugen",
+   "type": "field",
+   "country": "NO",
+   "lat": 64.353172,
+   "lon": 7.782606,
+   "capacity_msm3d": 0.0,
+   "status": "operating",
+   "exit": false,
+   "id": "draugen"
   },
   {
    "name": "Draupner E",
@@ -224,6 +246,17 @@
    "id": "gullfaks"
   },
   {
+   "name": "Gullfaks S\u00f8r",
+   "type": "field",
+   "country": "NO",
+   "lat": 61.088951,
+   "lon": 2.155309,
+   "capacity_msm3d": 0.0,
+   "status": "operating",
+   "exit": false,
+   "id": "gullfaks_sor"
+  },
+  {
    "name": "Heidrun",
    "type": "field",
    "country": "NO",
@@ -312,6 +345,28 @@
    "id": "l10a"
   },
   {
+   "name": "Mikkel",
+   "type": "field",
+   "country": "NO",
+   "lat": 64.679851,
+   "lon": 7.672182,
+   "capacity_msm3d": 0.0,
+   "status": "operating",
+   "exit": false,
+   "id": "mikkel"
+  },
+  {
+   "name": "Morvin",
+   "type": "field",
+   "country": "NO",
+   "lat": 65.150063,
+   "lon": 6.487561,
+   "capacity_msm3d": 0.0,
+   "status": "operating",
+   "exit": false,
+   "id": "morvin"
+  },
+  {
    "name": "Norne",
    "type": "field",
    "country": "NO",
@@ -389,6 +444,17 @@
    "id": "pl_vtp"
   },
   {
+   "name": "Skarv",
+   "type": "field",
+   "country": "NO",
+   "lat": 65.697778,
+   "lon": 7.651086,
+   "capacity_msm3d": 0.0,
+   "status": "operating",
+   "exit": false,
+   "id": "skarv"
+  },
+  {
    "name": "Sleipner",
    "type": "field",
    "country": "NO",
@@ -398,6 +464,17 @@
    "status": "operating",
    "exit": false,
    "id": "sleipner"
+  },
+  {
+   "name": "Sm\u00f8rbukk Nord",
+   "type": "field",
+   "country": "NO",
+   "lat": 65.217531,
+   "lon": 6.907778,
+   "capacity_msm3d": 0.0,
+   "status": "operating",
+   "exit": false,
+   "id": "smorbukk_nord"
   },
   {
    "name": "Southern North Sea fields",
@@ -442,6 +519,28 @@
    "status": "operating",
    "exit": true,
    "id": "tjeldbergodden"
+  },
+  {
+   "name": "Tordis",
+   "type": "field",
+   "country": "NO",
+   "lat": 61.275633,
+   "lon": 2.118114,
+   "capacity_msm3d": 0.0,
+   "status": "operating",
+   "exit": false,
+   "id": "tordis"
+  },
+  {
+   "name": "Trestakk",
+   "type": "field",
+   "country": "NO",
+   "lat": 64.851057,
+   "lon": 6.812276,
+   "capacity_msm3d": 0.0,
+   "status": "operating",
+   "exit": false,
+   "id": "trestakk"
   },
   {
    "name": "Troll",
@@ -500,6 +599,15 @@
    "target": "nyhamna"
   },
   {
+   "pipeline": "aerfugl_skarv",
+   "name": "\u00c6rfugl - Skarv FPSO",
+   "type": "feeder",
+   "from_id": "aerfugl",
+   "length_km": 5.449280028350941,
+   "source": "aerfugl",
+   "target": "skarv"
+  },
+  {
    "pipeline": "asgard_transport",
    "name": "\u00c5sgard Transport",
    "type": "trunk",
@@ -548,6 +656,15 @@
    "capacity": 30.0,
    "source": "beryl",
    "target": "st_fergus"
+  },
+  {
+   "pipeline": "draugen_asgard",
+   "name": "Draugen - \u00c5sgard Transport",
+   "type": "feeder",
+   "from_id": "draugen",
+   "length_km": 92.6057383060145,
+   "source": "draugen",
+   "target": "asgard"
   },
   {
    "pipeline": "draupner_bridge",
@@ -678,6 +795,15 @@
    "target": "statfjord"
   },
   {
+   "pipeline": "gullfaks_sor_gullfaks",
+   "name": "Gullfaks S\u00f8r - Gullfaks C",
+   "type": "feeder",
+   "from_id": "gullfaks_sor",
+   "length_km": 10.294026622989175,
+   "source": "gullfaks_sor",
+   "target": "gullfaks"
+  },
+  {
    "pipeline": "haltenpipe",
    "name": "Haltenpipe",
    "type": "trunk",
@@ -798,6 +924,24 @@
    "target": "uithuizen"
   },
   {
+   "pipeline": "mikkel_asgard",
+   "name": "Mikkel - \u00c5sgard B",
+   "type": "feeder",
+   "from_id": "mikkel",
+   "length_km": 60.138799521153096,
+   "source": "mikkel",
+   "target": "asgard"
+  },
+  {
+   "pipeline": "morvin_asgard",
+   "name": "Morvin - \u00c5sgard B",
+   "type": "feeder",
+   "from_id": "morvin",
+   "length_km": 20.0,
+   "source": "morvin",
+   "target": "asgard"
+  },
+  {
    "pipeline": "ngts",
    "name": "Norne Gas Transport System",
    "type": "feeder",
@@ -848,6 +992,15 @@
    "target": "heimdal"
   },
   {
+   "pipeline": "skarv_asgard",
+   "name": "Skarv - \u00c5sgard Transport",
+   "type": "feeder",
+   "from_id": "skarv",
+   "length_km": 80.0,
+   "source": "skarv",
+   "target": "asgard"
+  },
+  {
    "pipeline": "langeled_south",
    "name": "Langeled (south)",
    "type": "export",
@@ -878,6 +1031,15 @@
    "target": "zeebrugge"
   },
   {
+   "pipeline": "smorbukk_nord_asgard",
+   "name": "Sm\u00f8rbukk Nord - \u00c5sgard",
+   "type": "feeder",
+   "from_id": "smorbukk_nord",
+   "length_km": 17.30370697507082,
+   "source": "smorbukk_nord",
+   "target": "asgard"
+  },
+  {
    "pipeline": "sns_bacton",
    "name": "Southern North Sea gathering",
    "type": "feeder",
@@ -906,6 +1068,24 @@
    "capacity": 25.0,
    "source": "statfjord",
    "target": "flags_brent"
+  },
+  {
+   "pipeline": "tordis_gullfaks",
+   "name": "Tordis - Gullfaks C",
+   "type": "feeder",
+   "from_id": "tordis",
+   "length_km": 11.308518543508725,
+   "source": "tordis",
+   "target": "gullfaks"
+  },
+  {
+   "pipeline": "trestakk_asgard",
+   "name": "Trestakk - \u00c5sgard A",
+   "type": "feeder",
+   "from_id": "trestakk",
+   "length_km": 24.367912322452252,
+   "source": "trestakk",
+   "target": "asgard"
   },
   {
    "pipeline": "troll_kollsnes",

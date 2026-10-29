@@ -121,7 +121,7 @@
 <main>
   <section>
     <h1>An open model of the North Sea gas network</h1>
-    <p class="lede">NORA maps <span class="num">44</span> fields, platforms, plants and terminals, joined by <span class="num">42</span> offshore pipelines with a combined length of <span class="num">11,428</span> km. It works out how much gas the network can deliver, what happens when any single part fails, and replays recorded flows as if they were arriving live.</p>
+    <p class="lede">NORA maps <span class="num">53</span> fields, platforms, plants and terminals, joined by <span class="num">51</span> offshore pipelines with a combined length of <span class="num">11,750</span> km. It works out how much gas the network can deliver, what happens when any single part fails, and replays recorded flows as if they were arriving live.</p>
     <p>It shows the network two ways: on a real map, and as a gas flow overview of the whole Gassco system drawn with pyvis. It is built in Python with networkx, and anyone can improve the data or the code. Every change is checked automatically and published here within minutes of being accepted.</p>
   </section>
 
@@ -229,7 +229,7 @@
       
       <li class="synthetic">
         <h3>A synthetic week<span class="tag">Synthetic</span></h3>
-        <div class="meta num">19 Oct 2026 to 25 Oct 2026, every 60 minutes, 42 assets, 2 scripted events</div>
+        <div class="meta num">19 Oct 2026 to 25 Oct 2026, every 60 minutes, 51 assets, 2 scripted events</div>
         <p>One week of hourly flows, pressures, hourly exit-point nominations and bookings generated from the network model, with an unplanned outage at Kollsnes, reduced capacity on Langeled, recurring H2S and CO2 excursions at four fields and a pigging programme on every trunk, export line and interconnector. Synthetic: use it to see how live operations look, not as a record of real flows.</p>
         <p><a href="network.html?stream=synthetic-week&amp;autoplay=1">Replay it on the chart</a></p>
       </li>
@@ -280,7 +280,7 @@
       <div>
         <h3>Fix or add data</h3>
         
-        <p>The network lives in two spreadsheets you can edit in the browser. All <span class="num">86</span> rows cite a source; a better source or a corrected value is the most useful contribution.</p>
+        <p>The network lives in two spreadsheets you can edit in the browser. All <span class="num">104</span> rows cite a source; a better source or a corrected value is the most useful contribution.</p>
         
         <a class="button quiet" href="https://github.com/Rayha33/nora-network/edit/main/data/nodes.csv">Edit nodes.csv</a>
       </div>
@@ -299,7 +299,7 @@
 </main>
 
 <footer>
-  <p>Built from commit <a href="https://github.com/Rayha33/nora-network/commit/b3d49fe"><code>b3d49fe</code></a> on 2026-10-29. Asset positions, capacities and lengths are approximate figures compiled from public sources and are not suitable for operational decisions. Map data from OpenStreetMap contributors, tiles by OpenFreeMap. Code and data are MIT licensed. Download the <a href="data/network.json">graph</a>, <a href="data/analysis.json">analysis</a> or the <a href="data/nodes.csv">nodes</a> and <a href="data/pipelines.csv">pipelines</a> files.</p>
+  <p>Built from commit <a href="https://github.com/Rayha33/nora-network/commit/432d1c3"><code>432d1c3</code></a> on 2026-10-29. Asset positions, capacities and lengths are approximate figures compiled from public sources and are not suitable for operational decisions. Map data from OpenStreetMap contributors, tiles by OpenFreeMap. Code and data are MIT licensed. Download the <a href="data/network.json">graph</a>, <a href="data/analysis.json">analysis</a> or the <a href="data/nodes.csv">nodes</a> and <a href="data/pipelines.csv">pipelines</a> files.</p>
 </footer>
 </body>
 </html>
