@@ -15,7 +15,7 @@ test("bottom player is shorter and visually simpler", () => {
   assert.doesNotMatch(css, /\.inventory \.player-label\s*\{\s*display:\s*none/, "Inventory keeps its label");
   assert.match(css, /\.now\s*\{\s*display:\s*flex/);
   assert.match(css, /\.play\s*\{[^}]*width:\s*32px;[^}]*height:\s*32px/s);
-  assert.match(css, /\.track\s*\{[^}]*height:\s*22px/s);
+  assert.match(css, /\.track\s*\{[^}]*height:\s*34px/s, "the ruler with its days, in the same bar");
 });
 
 test("a nominations row fits a third-width desk card, its rate never cut off", () => {

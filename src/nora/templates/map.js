@@ -341,7 +341,8 @@
       const mark = markAt(e.point.x, e.point.y); // a pig or a peak under the pointer wins
       if (mark) { App.selectMarker(mark.key); return; }
       const hit = map.queryRenderedFeatures(e.point, { layers: ["nora-node-dots", "nora-nodes", "nora-pipes-hit"] });
-      if (hit.length) App.select(hit[0].properties.asset);
+      const box = map.getContainer().getBoundingClientRect(); // where on the page, for What-if's window there
+      if (hit.length) App.select(hit[0].properties.asset, { x: box.left + e.point.x, y: box.top + e.point.y });
     });
     // Right-click a node or a pipeline: the same menu everywhere. A plain DOM
     // listener on the container: it fires for real right-clicks, whichever

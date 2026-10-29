@@ -32,7 +32,7 @@ function loadAppWith(nora, search = "") {
 
 /* ---------------------------------------------------------------- playback head */
 
-test("playback: real time stays centred between four hours back and ahead", () => {
+test("playback: the keys step an hour; the ruler holds the week with now on it", () => {
   const loaded = loadApp();
   assertHealthy(assert, loaded);
   const { App, document, NORA } = loaded;
@@ -45,20 +45,19 @@ test("playback: real time stays centred between four hours back and ahead", () =
   assert.ok(Math.abs(App.live.time - Date.now() / 1000) < 5, "a synthetic stream still opens at wall-clock now");
   assert.equal(scrub.min, String(-4 * 3600));
   assert.equal(scrub.max, String(4 * 3600));
-  assert.equal(scrub.value, "0", "the real-time handle starts at the centre");
+  assert.equal(scrub.value, "0", "the key control rests at zero");
 
   scrub.value = "3600";
   scrub._listeners.input[0]({ target: { value: scrub.value } });
   assert.equal(App.live.index, initial + 1, "dragging right moves one hour forward");
-  assert.equal(scrub.value, "0", "the handle returns to the real-time centre");
+  assert.equal(scrub.value, "0", "and rests again");
 
   scrub.value = "-7200";
   scrub._listeners.input[0]({ target: { value: scrub.value } });
   assert.equal(App.live.index, initial - 1, "dragging left moves back through historical values");
   const window = App.timelineWindow();
   assert.equal(window.now, App.live.time);
-  assert.equal(window.start, App.live.time - 4 * 3600);
-  assert.equal(window.end, App.live.time + 4 * 3600);
+  assert.deepEqual([window.start, window.end], [s.times[0], s.times[s.times.length - 1]], "the ruler stays put: the whole week");
 
   while (App.live.index < s.times.length - 1) {
     scrub.value = String(4 * 3600);

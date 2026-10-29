@@ -449,7 +449,7 @@ function NoraCanvasMap(view) {
       if (wasDrag || e.button !== 0) return;
       const mark = drawnMarks.find((d) => Math.hypot(d.x - e.offsetX, d.y - e.offsetY) < 9 * App.uiScale());
       if (mark) App.selectMarker(mark.m.key); // a pig or a peak under the pointer wins
-      else App.select(hit(e.offsetX, e.offsetY));
+      else App.select(hit(e.offsetX, e.offsetY), { x: e.clientX, y: e.clientY });
     });
     canvas.addEventListener("pointercancel", release);
     canvas.addEventListener("pointerleave", () => { readout.textContent = ""; });

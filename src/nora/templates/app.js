@@ -1761,7 +1761,45 @@ const App = (() => {
     restyle();
     renderWhatif();
     renderSidebar(true);
+    renderWhatifEditor(true);
   }
+  /* What-if on the view itself (Ray, 29 Oct: "for the what if i should be able to add the
+     number i want directly on the page view and then see what happens when i pull the
+     timeline to the timeline in the future that i need to check"). In What-if a click on a
+     node or a line opens its numbers right where you clicked: type one, Enter, and the
+     network takes it; drag the timeline and the window follows the hour shown. */
+  const editor = { el: null, id: null, at: null };
+  function openWhatifEditor(id, at) {
+    closeWhatifEditor();
+    Object.assign(editor, { id, at, el: h("div", { class: "pop whatif-pop", role: "dialog", "aria-label": `What-if: ${nameOf(id)}` }) });
+    document.body.append(editor.el);
+    renderWhatifEditor(true);
+    const first = editor.el.querySelector && editor.el.querySelector("input");
+    if (first) first.focus();
+  }
+  function closeWhatifEditor() {
+    if (editor.el) editor.el.remove();
+    Object.assign(editor, { el: null, id: null, at: null });
+  }
+  function renderWhatifEditor(force = false) {
+    if (!editor.el) return;
+    if (state.mode !== "whatif") { closeWhatifEditor(); return; }
+    const typing = document.activeElement && editor.el.contains && editor.el.contains(document.activeElement) && document.activeElement.tagName === "INPUT";
+    if (typing && !force) return; // never under your fingers
+    patch(editor.el, h("div", null,
+      h("button", { type: "button", class: "close", "aria-label": "Close", title: "Close", onclick: closeWhatifEditor }, "×"),
+      whatifCard(editor.id, true)));
+    // Beside the click, inside the window (the pop is zoomed by the UI scale).
+    const k = display.scale || 1, w = (editor.el.offsetWidth || 280) * k, ht = (editor.el.offsetHeight || 220) * k;
+    const vw = globalThis.innerWidth || 1280, vh = globalThis.innerHeight || 800;
+    editor.el.style.left = `${Math.max(8, Math.min(editor.at.x + 14, vw - w - 8)) / k}px`;
+    editor.el.style.top = `${Math.max(8, Math.min(editor.at.y + 14, vh - ht - 8)) / k}px`;
+  }
+  // A press outside the window closes it (the click that opened it does not), except on the
+  // timeline: moving it is the point, the window follows the hour.
+  const inside = (el, target) => Boolean(el && el.contains && el.contains(target));
+  addEventListener("pointerdown", (e) => { if (editor.el && !inside(editor.el, e.target) && !inside($("player"), e.target)) closeWhatifEditor(); }, true);
+  addEventListener("keydown", (e) => { if (e.key === "Escape") closeWhatifEditor(); });
   function resetWhatif() {
     whatif.offline.clear();
     for (const kind of ["supply", "offtake", "pressure", "pack"]) whatif[kind] = {};
@@ -2270,7 +2308,7 @@ const App = (() => {
   /* An asset in the what-if: your values (temporary: Reset clears them) and what follows
      from them, now → what-if (Ray, 29 Oct: "when clicking on a node i should be able to
      add my own flow and pressure values that are temporary"). */
-  function whatifCard(id) {
+  function whatifCard(id, compact = false) {
     const d = assets[id], w = whatifState(), f = frame(), next = whatif.scenario === "next";
     const row = (label, value) => [h("dt", null, label), h("dd", null, value)];
     const turn = (a, b, unit, digits = 1) => (a == null && b == null ? "–" : `${a == null ? "–" : fmt(a, digits)} → ${b == null ? "–" : fmt(b, digits)} ${unit}`);
@@ -2308,11 +2346,11 @@ const App = (() => {
       if (w.short[id]) facts.push(row("Packing", "more than it takes in: it delivers nothing"));
       facts.push(row("Regression", m ? `p₁² − p₂² = c (${fmt(m.a, 3)} Q² + ${fmt(m.b, 3)} Q), c ${fmt(w.correction[id] ?? m.correction, 2)} from ${w.from[id] || "the file"}` : "none: its pressure passes through"));
     }
-    return h("div", { class: "box whatif-card" }, h("h2", null, next ? "What-if: next gas day" : "What-if"),
+    return h("div", { class: `box whatif-card${compact ? " compact" : ""}` }, h("h2", null, compact ? nameOf(id) : next ? "What-if: next gas day" : "What-if"),
       inputs.length ? h("div", { class: "whatif-inputs" }, ...inputs) : null,
       h("dl", { class: "facts" }, ...facts.flat()),
       h("div", { class: "actions" }, offline),
-      h("p", { class: "dim small" }, "Model estimate, steady state: flows in today's directions and shares; pressures from each line's regression, corrected to today's pressures, with exits and gas plants holding theirs. Your values are temporary: Reset clears them."));
+      compact ? null : h("p", { class: "dim small" }, "Model estimate, steady state: flows in today's directions and shares; pressures from each line's regression, corrected to today's pressures, with exits and gas plants holding theirs. Your values are temporary: Reset clears them."));
   }
   /* A field's export gas as its GC reads it (Ray, 29 Oct: "when i for instance click on a
      field like Oseberg i need to see the GC (gass chromotograph) values in a table like C1
@@ -3057,6 +3095,7 @@ const App = (() => {
   // The chip beside the clock, and a page-wide class so model numbers read as such.
   function showTime() {
     const ts = timeState(), when = $("when");
+    if (live.frames.length) rulerLabels(timelineWindow());
     if (live.feed) {
       when.hidden = !live.stale;
       when.textContent = live.stale ? "Stale" : "";
@@ -3066,6 +3105,11 @@ const App = (() => {
     }
     when.hidden = !ts;
     when.textContent = timeText(ts);
+    const away = Boolean(ts && Math.abs(ts.ahead) > NOW_SLACK);
+    when.classList.toggle("away", away);
+    when.setAttribute("tabindex", away ? "0" : "-1");
+    when.setAttribute("role", away ? "button" : "status");
+    when.title = away ? "Back to now" : "";
     // The centre of the timeline is the playhead: "Real time" only while it is now.
     if (ts) $("tl-now").textContent = Math.abs(ts.ahead) <= NOW_SLACK ? "Real time · UTC" : ts.model ? "Model · UTC" : "History · UTC";
     when.classList.toggle("model", Boolean(ts && ts.model));
@@ -3094,10 +3138,8 @@ const App = (() => {
     scrub.max = String(half);
     scrub.step = String(Math.max(3600, stream.step));
     scrub.value = "0";
-    $("tl-past").textContent = `−${spanLabel(half)}`;
-    // Only re-timed synthetic data has the wall clock at the centre; a recording has the time chosen.
+    // Only re-timed synthetic data has the wall clock on it; a recording has the time chosen.
     $("tl-now").textContent = retimed ? "Real time · UTC" : "Selected time · UTC";
-    $("tl-future").textContent = `+${spanLabel(half)}`;
     const centre = retimed ? "Real time" : "The selected time", oneStep = spanLabel(Math.max(3600, stream.step));
     scrub.setAttribute("aria-label", `Move around ${retimed ? "real time" : "the selected time"}: ${spanLabel(half)} back or ahead`);
     if (scrub.parentElement) scrub.parentElement.title = `${centre} stays in the centre. Drag right for later values or left for earlier ones. Arrow keys move ${oneStep.replace(/^1 /, "one ")}.`;
@@ -3139,6 +3181,7 @@ const App = (() => {
     restyle();
     refreshScreens();
     if ((side.id || side.marker) && route.screen === "unit") renderSidebar();
+    renderWhatifEditor(); // its numbers follow the hour the timeline shows
     drawSpark();
     drawInventory();
   }
@@ -3174,11 +3217,44 @@ const App = (() => {
   const timelineHalf = () => Math.max(4 * 3600, 4 * ((live.stream && live.stream.step) || 3600));
   const spanLabel = (seconds) => (seconds < 2 * 86400 ? `${Math.round(seconds / 3600)} h`
     : seconds < 60 * 86400 ? `${Math.round(seconds / 86400)} d` : `${Math.round(seconds / (30 * 86400))} mo`);
+  /* The timeline (Ray, 29 Oct: "im not happy with how the timeline works and functions at
+     the bottom and the feel and look of it. make up your own version and improve it"). A
+     ruler over the whole dataset, or the 240 steps around the playhead of a longer one,
+     that stays put while the data plays: history solid, the model's hours ahead dashed, a
+     line at now and the playhead to drag or click to any time. Along it, the gas days and
+     what is coming: alarms on the plan, pressures at their limits, outages and when each
+     H₂S or CO₂ peak reaches its exit. The keys still step one data step at a time. */
+  const RULER_STEPS = 240;
   function timelineWindow() {
-    const now = live.time == null ? 0 : live.time, half = timelineHalf();
-    return { start: now - half, now, end: now + half };
+    const frames = live.frames, n = frames.length;
+    if (!n) { const now = live.time == null ? 0 : live.time; return { start: now - 1, now, end: now + 1 }; }
+    let first = 0, last = n - 1;
+    if (n > RULER_STEPS + 1) { // a page of the data around the playhead, moved a quarter at a time
+      const quarter = RULER_STEPS / 4, at = live.feed ? n - 1 : live.playhead;
+      first = Math.max(0, Math.min(n - 1 - RULER_STEPS, Math.floor((at - RULER_STEPS / 2) / quarter) * quarter));
+      last = first + RULER_STEPS;
+    }
+    return { start: frames[first].t, now: live.time, end: Math.max(frames[last].t, frames[first].t + 1) };
   }
-  // The track shows plan status and events within that moving eight-hour window.
+  const gasDayStart = (t) => timeFormat(t, { timeZone: "Europe/Oslo", hour: "2-digit", hourCycle: "h23" }) === "06";
+  // The worst pressure limit each frame passes, kept per dataset (a frame's pressures do not change).
+  const limitLevels = new WeakMap();
+  function frameLimitLevel(f) {
+    if (limitLevels.has(f)) return limitLevels.get(f);
+    let worst = 0;
+    for (const [id, p] of Object.entries((f.metrics || {}).pressure_bar || {})) {
+      const mark = p == null || !assets[id] ? null : pressureMark(id, p);
+      if (mark) worst = Math.max(worst, mark.level);
+    }
+    limitLevels.set(f, worst);
+    return worst;
+  }
+  // The ruler's ends, said for screen readers (the ruler draws its days).
+  function rulerLabels(win) {
+    const day = (t) => timeFormat(t, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    $("tl-past").textContent = day(win.start);
+    $("tl-future").textContent = day(win.end);
+  }
   function drawSpark() {
     if ($("player").hidden) return;
     // The player is zoomed by the UI scale: draw at that resolution, or the track blurs.
@@ -3190,36 +3266,80 @@ const App = (() => {
     ctx.scale(ratio, ratio);
     const frames = live.frames, n = frames.length;
     if (n < 2) return;
-    const window8h = timelineWindow(), span = window8h.end - window8h.start, x = (t) => ((t - window8h.start) / span) * width, mid = height / 2;
-    ctx.fillStyle = COLORS.dots;
-    ctx.fillRect(0, mid - 3, width / 2, 6);
-    ctx.globalAlpha = 0.45;
-    ctx.fillRect(width / 2, mid - 3, width / 2, 6);
-    ctx.globalAlpha = 1;
+    const win = timelineWindow(), span = win.end - win.start, x = (t) => ((t - win.start) / span) * width;
+    const step = (live.stream && live.stream.step) || 3600, stepW = Math.max(1.5, (step / span) * width);
+    const bar = 17, lane = 24; // the track's middle, and the row of what is coming
+    // Days: a tick where each gas day starts (06:00 Norwegian time) and its name over it.
+    ctx.font = "10px Archivo, system-ui, sans-serif";
+    ctx.textBaseline = "top";
+    ctx.textAlign = "center";
+    const days = [];
+    if (step < 86400) {
+      for (let t = Math.ceil(win.start / 3600) * 3600; t <= win.end; t += 3600) if (gasDayStart(t)) days.push(t);
+    }
     ctx.strokeStyle = COLORS.text_dim;
     ctx.lineWidth = 1;
-    ctx.setLineDash([3, 3]);
-    ctx.beginPath();
-    ctx.moveTo(width / 2, mid - 3.5); ctx.lineTo(width, mid - 3.5);
-    ctx.moveTo(width / 2, mid + 3.5); ctx.lineTo(width, mid + 3.5);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    frames.forEach((f) => {
-      const lvl = f.plan ? f.plan.now[0] : 0;
-      if (!lvl || f.t < window8h.start || f.t > window8h.end) return;
-      ctx.fillStyle = LEVEL_COLOR[lvl];
-      ctx.fillRect(x(f.t), mid - 6, Math.max(1.5, ((live.stream ? live.stream.step : 3600) / span) * width), 12);
+    days.forEach((t, i) => {
+      const left = x(t), right = i + 1 < days.length ? x(days[i + 1]) : x(t + 86400);
+      ctx.beginPath(); ctx.moveTo(Math.round(left) + 0.5, 11); ctx.lineTo(Math.round(left) + 0.5, height); ctx.stroke();
+      const label = timeFormat(t, { timeZone: "Europe/Oslo", weekday: "short", day: "numeric" }), mid = (Math.max(0, left) + Math.min(width, right)) / 2;
+      if (Math.min(width, right) - Math.max(0, left) > ctx.measureText(label).width + 8) { ctx.fillStyle = COLORS.text_dim; ctx.fillText(label, mid, 0); }
     });
+    // The track: history solid, the model's hours ahead dashed (what the model expects).
+    const nowAt = timeState() ? wallClock() : null, nowX = nowAt == null ? width : Math.max(0, Math.min(width, x(nowAt)));
+    ctx.fillStyle = COLORS.dots;
+    ctx.fillRect(0, bar - 2, nowX, 4);
+    if (nowX < width) {
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = COLORS.text_dim;
+      ctx.strokeRect(nowX, bar - 2, width - nowX, 4);
+      ctx.setLineDash([]);
+    }
+    // What is coming, under the track: the plan's alarms, pressures at their limits, outages.
+    for (const f of frames) {
+      if (f.t < win.start || f.t > win.end) continue;
+      const lvl = Math.max(f.plan ? f.plan.now[0] : 0, frameLimitLevel(f) >= 2 ? 3 : frameLimitLevel(f) ? 1 : 0);
+      if (!lvl) continue;
+      ctx.globalAlpha = 0.8; // a thin row: strong colours sparingly (Ray, 29 Oct)
+      ctx.fillStyle = LEVEL_COLOR[lvl];
+      ctx.fillRect(x(f.t), lane + 1, stepW, 2.5);
+      ctx.globalAlpha = 1;
+    }
     for (const event of (live.stream && live.stream.events) || []) {
-      if (event.end < window8h.start || event.start > window8h.end) continue;
+      if (event.end < win.start || event.start > win.end) continue;
       const left = Math.max(0, x(event.start)), right = Math.min(width, x(event.end));
       ctx.strokeStyle = COLORS.text;
       ctx.setLineDash(event.planned ? [3, 2] : []);
-      ctx.strokeRect(left, mid - 8, Math.max(2, right - left), 16);
+      ctx.strokeRect(left, lane - 1.5, Math.max(2, right - left), 7);
     }
     ctx.setLineDash([]);
-    ctx.fillStyle = COLORS.text;
-    ctx.fillRect(width / 2 - 1, 0, 2, height);
+    // When each H₂S or CO₂ peak reaches its exit: a dot in its gas's colour, ringed when it
+    // arrives over a limit.
+    for (const s of slugs()) {
+      const at = s.exit ? s.exit.t : null;
+      if (at == null || at < win.start || at > win.end) continue;
+      ctx.beginPath();
+      ctx.arc(x(at), lane + 2, 3, 0, Math.PI * 2);
+      ctx.fillStyle = COLORS[QUALITY[s.q.metric].color];
+      ctx.fill();
+      if (s.exitLevel) { ctx.strokeStyle = LEVEL_COLOR[s.exitLevel]; ctx.lineWidth = 1.5; ctx.stroke(); ctx.lineWidth = 1; }
+    }
+    // Now, and the playhead on top.
+    if (nowAt != null && nowX > 0 && nowX < width) {
+      ctx.fillStyle = COLORS.text_dim;
+      ctx.fillRect(Math.round(nowX), 11, 1, height - 11);
+    }
+    if (live.time != null && live.time >= win.start && live.time <= win.end) {
+      const px = x(live.time);
+      ctx.fillStyle = COLORS.text;
+      ctx.fillRect(px - 1, 11, 2, height - 11);
+      ctx.beginPath();
+      ctx.arc(px, bar, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = COLORS.panel || COLORS.paper;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
   }
   function play() {
     if (!live.stream && !live.feed) return;
@@ -3239,6 +3359,48 @@ const App = (() => {
     scrub.value = "0";
     if (offset) seek(live.playhead + offset / live.stream.step);
   });
+  /* The ruler under the pointer: a click or a drag puts the playhead at that time (once a
+     frame however fast the pointer moves), and the time under the pointer shows above it. */
+  const track = spark.parentElement, rulerTip = h("div", { class: "ruler-tip", "aria-hidden": "true" });
+  rulerTip.hidden = true;
+  if (track) track.append(rulerTip);
+  let dragging = false, wanted = null;
+  const rulerTime = (clientX) => {
+    const r = spark.getBoundingClientRect(), win = timelineWindow();
+    return win.start + Math.max(0, Math.min(1, (clientX - r.left) / (r.width || 1))) * (win.end - win.start);
+  };
+  function showTip(clientX) {
+    if (!live.frames.length || !track) return;
+    const t = rulerTime(clientX), r = spark.getBoundingClientRect(), ahead = timeState() ? t - wallClock() : null;
+    rulerTip.textContent = `${timeFormat(t, { weekday: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}${ahead != null && ahead > NOW_SLACK ? " · model" : ""}`;
+    rulerTip.style.left = `${(((clientX - r.left) / (r.width || 1)) * 100).toFixed(2)}%`;
+    rulerTip.hidden = false;
+  }
+  function seekTime(t, now = false) {
+    const s = live.stream;
+    if (!s || live.feed) return;
+    if (now) { wanted = null; seek((t - s.times[0]) / s.step); return; }
+    if (wanted == null) requestAnimationFrame(() => { const at = wanted; wanted = null; if (at != null) seek((at - s.times[0]) / s.step); });
+    wanted = t;
+  }
+  if (track) {
+    track.addEventListener("pointerdown", (e) => {
+      if (!live.stream || live.feed || e.button > 0) return;
+      dragging = true;
+      if (track.setPointerCapture) track.setPointerCapture(e.pointerId);
+      seekTime(rulerTime(e.clientX), true);
+      showTip(e.clientX);
+    });
+    track.addEventListener("pointermove", (e) => { if (dragging) seekTime(rulerTime(e.clientX)); showTip(e.clientX); });
+    const release = () => { dragging = false; };
+    track.addEventListener("pointerup", release);
+    track.addEventListener("pointercancel", release);
+    track.addEventListener("pointerleave", () => { if (!dragging) rulerTip.hidden = true; });
+  }
+  // "Model · in 6 h" or "3 h ago" beside the clock is also the way back to now.
+  const backToNow = () => { const at = nowPosition(); if (at != null && live.stream) seek(at); };
+  $("when").addEventListener("click", backToNow);
+  $("when").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); backToNow(); } });
   $("speed").addEventListener("change", (e) => {
     live.speed = Number(e.target.value);
     settings.speed = live.speed;  // remembered with the other settings, and in ?s= links
@@ -3962,9 +4124,10 @@ const App = (() => {
     lineFlow, stateShown: () => state.mode === "live" || state.mode === "whatif",
     frame: frameApi, cached,
     dayDelivery, register, restyle, go, start, setMode, theme: () => theme, buildSettings,
-    select: (id) => {
+    // `at`: where the click was (client px), for What-if's window on the view.
+    select: (id, at = null) => {
       if (!id || !assets[id]) { if (route.screen === "unit" && state.mode !== "whatif") closeSidebar(); return; }
-      // In What-if mode a click takes a node offline or brings it back instead.
+      if (state.mode === "whatif" && at) { openWhatifEditor(id, at); return; } // your numbers, right there
       if (state.mode === "whatif") { openSidebar(id); return; } // its what-if card: your values
       // On the unit screen the details slide in from the right instead of taking over the page.
       if (route.screen === "unit") { openSidebar(id); return; }
