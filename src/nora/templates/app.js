@@ -2203,7 +2203,38 @@ const App = (() => {
     const share = steepest ? Math.abs(steepest.change) / Math.max(1, hours[0].value) : 0;
     return { hours, now: hours[0].value, last: values[values.length - 1], steepest, level: level(share, T.step) };
   }
-  function nominationSteps(hours) {
+  /* Lookahead (Ray, 29 Oct: "it should be easy to see if a nomination increase at an exit
+     point in the future and we dont increase the input flow into that pipeline, we wont be
+     able to reach the nomination level because the exit point pressure will be too low.
+     seeing this into the future as a lookahead function should be ongoing calculations being
+     done and shown / illustrated in a suble and minimalstic way"). Worked out at every step
+     for each exit and its next hours: with the gas into its line(s) held at now's rate,
+     each hour the exit is nominated more than that draws on the line pack, and the line's
+     pressure falls by the gas drawn over the line's pack per bar (its volume). An hour the
+     exit's pressure would fall under its low limit (nora.toml [pressure_limits]) is short:
+     marked in place, a model estimate. */
+  const packPerBar = (pid) => (lineVolume[pid] / PACK.pStd) * (PACK.tStd / PACK.tSea) / PACK.z / 1e6; // MSm³ per bar
+  function reachAhead(id) {
+    return cached("reach", id, () => {
+      const ramp = rampAhead(id), f = frame(), d = assets[id], limits = (C.pressure_limits || {})[d.type];
+      const pNow = metric("pressure_bar", id, f);
+      if (!ramp || !limits || pNow == null || pNow < limits[1]) return null; // already under it: that is an alarm now
+      const lines = pipeIds.filter((pid) => { const v = f.flows[pid] || 0; return lineVolume[pid] && ((assets[pid].to === id && v > 0.05) || (assets[pid].from === id && v < -0.05)); });
+      if (!lines.length) return null;
+      const input = lines.reduce((sum, pid) => sum + Math.abs(f.flows[pid]), 0), perBar = lines.reduce((sum, pid) => sum + packPerBar(pid), 0);
+      const low = limits[1];
+      let drawn = 0; // MSm³ out of the line(s) more than into them
+      const hours = ramp.hours.map((hour, k) => {
+        if (k === 0) return { ...hour, pressure: pNow, short: false };
+        if (hour.value == null) return { ...hour, pressure: null, short: false };
+        drawn += Math.max(0, hour.value - input) * ((hour.t - ramp.hours[k - 1].t) / 86400);
+        const pressure = pNow - drawn / perBar;
+        return { ...hour, pressure, short: pressure < low };
+      });
+      return { hours, low, input, first: hours.find((hour) => hour.short) || null };
+    });
+  }
+  function nominationSteps(hours, reach = null) {
     const values = hours.map((r) => r.value), known = values.filter((v) => v != null);
     const lo = Math.min(...known), hi = Math.max(...known), span = hi - lo || 1;
     const y = (v) => (18 - ((v - lo) / span) * 14).toFixed(1);
@@ -2212,24 +2243,29 @@ const App = (() => {
       if (v == null) return;
       path += `${path ? "L" : "M"}${k * 18},${y(v)}H${(k + 1) * 18}`;
     });
-    return svg("0 0 108 22", `<path d="${path}" fill="none" stroke="${COLORS.text}" stroke-width="1.2"/>`, "steps"); // numbers and palette colours only
+    // An hour the exit's pressure would be short (reachAhead): its step in the warning colour.
+    const short = (reach ? reach.hours : []).map((hour, k) => (hour.short && values[k] != null
+      ? `<path d="M${k * 18},${y(values[k])}H${(k + 1) * 18}" fill="none" stroke="${limitInk(1)}" stroke-width="2.2"/>` : "")).join("");
+    return svg("0 0 108 22", `<path d="${path}" fill="none" stroke="${COLORS.text}" stroke-width="1.2"/>${short}`, "steps"); // numbers and palette colours only
   }
   function nominationsBox(exits) {
-    const rows = exits.map((id) => ({ id, ramp: rampAhead(id) })).filter((r) => r.ramp)
+    const rows = exits.map((id) => ({ id, ramp: rampAhead(id), reach: reachAhead(id) })).filter((r) => r.ramp)
       .sort((a, b) => b.ramp.level - a.ramp.level || Math.abs((b.ramp.steepest || {}).change || 0) - Math.abs((a.ramp.steepest || {}).change || 0));
     const hm = (t) => timeFormat(t, { timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit" });
     const source = live.feed ? "From Origo, the shippers' nominations." : `From the dataset${live.stream && live.stream.synthetic ? " (synthetic)" : ""}; live, from Origo.`;
     return h("div", { class: "box" }, h("h2", null, "Nominations at the exit points, next 6 hours"),
-      rows.length ? h("ul", { class: "noms" }, rows.map(({ id, ramp }) => {
+      rows.length ? h("ul", { class: "noms" }, rows.map(({ id, ramp, reach }) => {
         const s = ramp.steepest, steady = !s || Math.abs(s.change) < 0.05;
         // A button, so the keyboard reaches every row (as everything on this screen)
         return h("li", null, h("button", { type: "button", class: "nom-row", onclick: () => go({ screen: "asset", asset: id }), title: "Hourly nominations, now and the next 5 hours (MSm³/d)" },
           h("span", { class: "name" }, nameOf(id)),
           h("span", { class: "values" }, `${fmt(ramp.now, 1)} → ${fmt(ramp.last, 1)}`),
-          nominationSteps(ramp.hours),
+          nominationSteps(ramp.hours, reach),
           h("span", { class: "ramp" }, steady ? h("span", { class: "dim" }, "steady")
             : `${s.change > 0 ? "▲" : "▼"} ${fmt(Math.abs(s.change), 1)}/h at ${hm(s.t)}`),
-          ramp.level ? badge(ramp.level, "Fast ramp") : h("span", null)));
+          reach && reach.first
+            ? h("span", { class: "short", style: `color:${limitInk(1)}`, title: `Model estimate: with the input as now, ${nameOf(id)} would be at ${fmt(reach.first.pressure, 1)} bar at ${hm(reach.first.t)}, under its ${fmt(reach.low)} bar low limit: raise the input to the line before then.` }, `short ${hm(reach.first.t)}`)
+            : ramp.level ? badge(ramp.level, "Fast ramp") : h("span", null)));
       })) : h("p", { class: "empty" }, "No nominations in this dataset."),
       h("p", { class: "dim small" }, `${source} MSm³/d; times CET.`));
   }
@@ -4105,9 +4141,10 @@ const App = (() => {
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
-    pressureMark, flowMark, drawFlowDirection, gasDayChart, gasQuality, pressureOutlook, pressureChart,
+    pressureMark, flowMark, limitInk, drawFlowDirection, gasDayChart, gasQuality, pressureOutlook, pressureChart,
     airTemp: (id) => metric("air_temp_c", id),
     rampAhead, // the next 6 hours of nominations at an exit point
+    reachAhead, // and whether its pressure holds for them with the input as now
     pipeStyle, pipeMapName, pipeDetail, detailZoom: DETAIL_ZOOM, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.
     timeState, timelineWindow, seek,
