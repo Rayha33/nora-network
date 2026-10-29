@@ -172,18 +172,6 @@
    "id": "ekofisk"
   },
   {
-   "name": "Elgin-Franklin",
-   "type": "field",
-   "country": "GB",
-   "lat": 57.01,
-   "lon": 1.84,
-   "capacity_msm3d": 15.0,
-   "booked_msm3d": null,
-   "status": "operating",
-   "exit": false,
-   "id": "elgin_franklin"
-  },
-  {
    "name": "Emden",
    "type": "terminal",
    "country": "DE",
@@ -748,16 +736,6 @@
    "capacity": 44.0,
    "source": "ekofisk",
    "target": "emden"
-  },
-  {
-   "pipeline": "seal",
-   "name": "SEAL",
-   "type": "export",
-   "from_id": "elgin_franklin",
-   "length_km": 474.0,
-   "capacity": 35.0,
-   "source": "elgin_franklin",
-   "target": "bacton"
   },
   {
    "pipeline": "flags",
