@@ -147,3 +147,28 @@ test("nominations: the next 6 hours at an exit point, with its steepest hourly c
   App.live.frames = [10, 10.2, 10.1, 10, 10, 10].map((v, k) => ({ t: 3600 * k, flows: {}, metrics: { nomination_msm3d: { emden: v } }, plan: null }));
   assert.equal(App.rampAhead("emden").level, 0, "a small change is no alarm");
 });
+
+/* Ray, 29 Oct: "the end of day target to exit points changes over time and this need to
+   be illustrated as well". The day bar keeps a faint trail of where the day stood at each
+   earlier hour; the panel charts the gas day: nominated (dashed, to the end-of-day target)
+   against delivered (solid, up to now). */
+test("gas day: a trail of earlier hours on the bar, and the day's chart in the panel", () => {
+  const { App } = load();
+  const id = "dunkirk", day0 = 20_718 * 86_400 + 5 * 3600; // 05:00 UTC, a gas day's start
+  const delivered = [40, 41, 39, 44, 45], nominated = [40, 40, 40, 40, 40];
+  App.live.frames = delivered.map((d, i) => ({
+    t: day0 + i * 3600, plan: null, flows: { franpipe: d }, metrics: { nomination_msm3d: { [id]: nominated[i] } },
+  }));
+  for (let k = 5; k < 30; k++) App.live.frames.push({ t: day0 + k * 3600, plan: null, flows: {}, metrics: { nomination_msm3d: { [id]: 42 } } });
+  App.live.index = 4;
+  App.live.time = day0 + 4 * 3600;
+  const day = App.dayDelivery(id);
+  assert.equal(day.trail.length, 4, "one mark for each earlier hour");
+  assert.ok(Math.abs(day.share - (209 - 200) / 200) < 1e-9, "the day so far: 209 of 200");
+  const chart = App.gasDayChart(id).innerHTML;
+  assert.match(chart, /class="gasday-nominated"/);
+  assert.match(chart, /class="gasday-delivered"/);
+  const target = (5 * 40 + 19 * 42) / 24; // five hours at 40, the rest of the day at 42, in MSm³
+  assert.ok(chart.includes(`Target ${App.fmt(target, 1)}`), "the end-of-day target, from the day's nominations");
+  assert.match(chart, /now [\d.]+ of [\d.]+/);
+});

@@ -176,6 +176,14 @@
     ctx.stroke();
     ctx.strokeStyle = look.ink;
     ctx.beginPath(); ctx.moveTo(x, y - 5 * u); ctx.lineTo(x, y + 5 * u); ctx.stroke(); // the nomination
+    // where the day stood at each earlier hour: faint ticks, older ones fainter
+    const trail = day.trail || [];
+    trail.forEach((share, k) => {
+      ctx.globalAlpha = 0.12 + 0.4 * ((k + 1) / trail.length);
+      ctx.fillStyle = look.ink;
+      ctx.fillRect(at(share) - 0.75 * u, y - 4 * u, 1.5 * u, 8 * u);
+    });
+    ctx.globalAlpha = 1;
     const end = at(day.share);
     ctx.fillStyle = day.level ? App.levelColor[day.level] : look.ink;
     ctx.fillRect(Math.min(x, end), y - 1.5 * u, Math.abs(end - x), 3 * u); // the day so far
