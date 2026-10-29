@@ -124,6 +124,30 @@
    "id": "dunkirk"
   },
   {
+   "name": "Dvalin",
+   "type": "field",
+   "country": "NO",
+   "lat": 65.42943,
+   "lon": 7.14017,
+   "capacity_msm3d": 9.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "dvalin"
+  },
+  {
+   "name": "Dvalin tie-in (Polarled)",
+   "type": "tee",
+   "country": "NO",
+   "lat": 65.33307,
+   "lon": 7.18412,
+   "capacity_msm3d": null,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "dvalin_tee"
+  },
+  {
    "name": "Easington",
    "type": "terminal",
    "country": "GB",
@@ -208,6 +232,30 @@
    "id": "frigg"
   },
   {
+   "name": "FUKA tie-in (Frigg TP1)",
+   "type": "tee",
+   "country": "NO",
+   "lat": 59.89413,
+   "lon": 2.01826,
+   "capacity_msm3d": null,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "fuka_tee"
+  },
+  {
+   "name": "Gina Krog",
+   "type": "field",
+   "country": "NO",
+   "lat": 58.57218,
+   "lon": 1.69679,
+   "capacity_msm3d": 8.6,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "gina_krog"
+  },
+  {
    "name": "Gj\u00f8a",
    "type": "field",
    "country": "NO",
@@ -218,6 +266,18 @@
    "status": "operating",
    "exit": false,
    "id": "gjoa"
+  },
+  {
+   "name": "Grane",
+   "type": "field",
+   "country": "NO",
+   "lat": 59.16524,
+   "lon": 2.48739,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "grane"
   },
   {
    "name": "Gudrun",
@@ -280,6 +340,18 @@
    "id": "heimdal"
   },
   {
+   "name": "Ivar Aasen",
+   "type": "field",
+   "country": "NO",
+   "lat": 58.92227,
+   "lon": 2.19812,
+   "capacity_msm3d": 0.9,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "ivar_aasen"
+  },
+  {
    "name": "Johan Sverdrup",
    "type": "field",
    "country": "NO",
@@ -290,6 +362,30 @@
    "status": "operating",
    "exit": false,
    "id": "johan_sverdrup"
+  },
+  {
+   "name": "Jotun FPSO (Balder area)",
+   "type": "field",
+   "country": "NO",
+   "lat": 59.24639,
+   "lon": 2.40194,
+   "capacity_msm3d": 0.8,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "jotun"
+  },
+  {
+   "name": "Jotun tie-in (Statpipe)",
+   "type": "tee",
+   "country": "NO",
+   "lat": 59.47722,
+   "lon": 2.23306,
+   "capacity_msm3d": null,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "jotun_tee"
   },
   {
    "name": "K\u00e5rst\u00f8",
@@ -326,6 +422,42 @@
    "status": "operating",
    "exit": false,
    "id": "kvitebjorn"
+  },
+  {
+   "name": "Mariner",
+   "type": "field",
+   "country": "GB",
+   "lat": 59.5889,
+   "lon": 1.0588,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "mariner"
+  },
+  {
+   "name": "Mariner tie-in (Vesterled)",
+   "type": "tee",
+   "country": "GB",
+   "lat": 59.6552,
+   "lon": 1.6158,
+   "capacity_msm3d": null,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "mariner_tee"
+  },
+  {
+   "name": "Martin Linge",
+   "type": "field",
+   "country": "NO",
+   "lat": 60.50619,
+   "lon": 2.01483,
+   "capacity_msm3d": 4.7,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "martin_linge"
   },
   {
    "name": "Mikkel",
@@ -544,6 +676,18 @@
    "id": "troll"
   },
   {
+   "name": "Valhall",
+   "type": "field",
+   "country": "NO",
+   "lat": 56.27552,
+   "lon": 3.39558,
+   "capacity_msm3d": 1.3,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "valhall"
+  },
+  {
    "name": "Visund",
    "type": "field",
    "country": "NO",
@@ -570,14 +714,14 @@
  ],
  "edges": [
   {
-   "pipeline": "polarled",
-   "name": "Polarled",
+   "pipeline": "polarled_north",
+   "name": "Polarled (Aasta Hansteen - Dvalin tie-in)",
    "type": "trunk",
    "from_id": "aasta_hansteen",
-   "length_km": 482.0,
+   "length_km": 197.0,
    "capacity": 70.0,
    "source": "aasta_hansteen",
-   "target": "nyhamna"
+   "target": "dvalin_tee"
   },
   {
    "pipeline": "aerfugl_skarv",
@@ -696,6 +840,25 @@
    "target": "ekofisk_tee"
   },
   {
+   "pipeline": "dvalin_gas",
+   "name": "Dvalin gas export (via Heidrun)",
+   "type": "feeder",
+   "from_id": "dvalin",
+   "length_km": 10.906433424017985,
+   "source": "dvalin",
+   "target": "dvalin_tee"
+  },
+  {
+   "pipeline": "polarled",
+   "name": "Polarled",
+   "type": "trunk",
+   "from_id": "dvalin_tee",
+   "length_km": 285.0,
+   "capacity": 70.0,
+   "source": "dvalin_tee",
+   "target": "nyhamna"
+  },
+  {
    "pipeline": "uhgp",
    "name": "Utsira High Gas Pipeline",
    "type": "feeder",
@@ -733,6 +896,24 @@
    "capacity": 33.0,
    "source": "flags_brent",
    "target": "st_fergus"
+  },
+  {
+   "pipeline": "fuka",
+   "name": "Frigg UK System (FUKA)",
+   "type": "export",
+   "from_id": "fuka_tee",
+   "length_km": 363.0,
+   "source": "fuka_tee",
+   "target": "st_fergus"
+  },
+  {
+   "pipeline": "gina_krog_sleipner",
+   "name": "Gina Krog gas export",
+   "type": "feeder",
+   "from_id": "gina_krog",
+   "length_km": 25.67313782765528,
+   "source": "gina_krog",
+   "target": "sleipner"
   },
   {
    "pipeline": "gjoa_flags",
@@ -794,24 +975,42 @@
    "target": "asgard"
   },
   {
-   "pipeline": "statpipe_heimdal",
-   "name": "Heimskringla (Draupner leg)",
-   "type": "trunk",
+   "pipeline": "grane_gas_import",
+   "name": "Grane gas pipeline",
+   "type": "feeder",
    "from_id": "heimdal",
-   "length_km": 155.0,
-   "capacity": 30.0,
+   "length_km": 48.0,
    "source": "heimdal",
-   "target": "draupner_s"
+   "target": "grane"
   },
   {
-   "pipeline": "vesterled",
-   "name": "Heimskringla (St Fergus leg)",
+   "pipeline": "heimskringla_jotun",
+   "name": "Heimskringla (Draupner leg to the Jotun tie-in)",
+   "type": "trunk",
+   "from_id": "heimdal",
+   "length_km": 11.0,
+   "capacity": 30.0,
+   "source": "heimdal",
+   "target": "jotun_tee"
+  },
+  {
+   "pipeline": "heimskringla_mariner",
+   "name": "Heimskringla (St Fergus leg to the Mariner tie-in)",
    "type": "export",
    "from_id": "heimdal",
-   "length_km": 360.0,
+   "length_km": 38.0,
    "capacity": 39.0,
    "source": "heimdal",
-   "target": "st_fergus"
+   "target": "mariner_tee"
+  },
+  {
+   "pipeline": "ivar_aasen_edvard_grieg",
+   "name": "Ivar Aasen - Edvard Grieg",
+   "type": "feeder",
+   "from_id": "ivar_aasen",
+   "length_km": 9.621577644656952,
+   "source": "ivar_aasen",
+   "target": "edvard_grieg"
   },
   {
    "pipeline": "sverdrup_karsto",
@@ -822,6 +1021,25 @@
    "capacity": 6.0,
    "source": "johan_sverdrup",
    "target": "karsto"
+  },
+  {
+   "pipeline": "jotun_gas",
+   "name": "Jotun gas export",
+   "type": "feeder",
+   "from_id": "jotun",
+   "length_km": 27.393105796524654,
+   "source": "jotun",
+   "target": "jotun_tee"
+  },
+  {
+   "pipeline": "statpipe_heimdal",
+   "name": "Heimskringla (Draupner leg)",
+   "type": "trunk",
+   "from_id": "jotun_tee",
+   "length_km": 144.0,
+   "capacity": 30.0,
+   "source": "jotun_tee",
+   "target": "draupner_s"
   },
   {
    "pipeline": "europipe_2_north",
@@ -872,6 +1090,34 @@
    "capacity": 33.0,
    "source": "kvitebjorn",
    "target": "kollsnes"
+  },
+  {
+   "pipeline": "mariner_gas_import",
+   "name": "Mariner gas import",
+   "type": "feeder",
+   "from_id": "mariner_tee",
+   "length_km": 33.0,
+   "source": "mariner_tee",
+   "target": "mariner"
+  },
+  {
+   "pipeline": "vesterled",
+   "name": "Heimskringla (St Fergus leg)",
+   "type": "export",
+   "from_id": "mariner_tee",
+   "length_km": 322.0,
+   "capacity": 39.0,
+   "source": "mariner_tee",
+   "target": "st_fergus"
+  },
+  {
+   "pipeline": "martin_linge_gas",
+   "name": "Martin Linge gas pipeline",
+   "type": "feeder",
+   "from_id": "martin_linge",
+   "length_km": 70.0,
+   "source": "martin_linge",
+   "target": "fuka_tee"
   },
   {
    "pipeline": "mikkel_asgard",
@@ -1036,6 +1282,15 @@
    "capacity": 120.0,
    "source": "troll",
    "target": "kollsnes"
+  },
+  {
+   "pipeline": "valhall_norpipe",
+   "name": "Valhall gas export",
+   "type": "feeder",
+   "from_id": "valhall",
+   "length_km": 31.12311812654738,
+   "source": "valhall",
+   "target": "ekofisk_tee"
   },
   {
    "pipeline": "visund_kvitebjorn",
