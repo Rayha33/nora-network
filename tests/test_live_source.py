@@ -168,7 +168,7 @@ def test_cli_offers_the_source_flag():
 
 
 def test_sources_registry_only_contains_ready_connectors(monkeypatch):
-    assert set(SOURCES) == {"gassco", "origo"}
+    assert set(SOURCES) == {"gassco", "origo", "gbs"}
     # Origo is wired; without its endpoint and token it says what to set
     from nora.integrations import NotConfigured
 

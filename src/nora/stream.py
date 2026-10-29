@@ -224,10 +224,14 @@ def load_stream(name: str, net: Network, streams_dir: Path = STREAMS_DIR) -> Str
     problems: list[str] = []
     events = _events(meta, net, where, problems)
     pigs = _pigs(meta, net, where, problems)
+    # `synthetic = true` labels made-up rows read from a file (a mock API's, say);
+    # a [synthetic] table generates them from the model.
+    if not isinstance(meta.get("synthetic", False), bool | dict):
+        problems.append(f"{where}: synthetic must be true, false or a [synthetic] table")
     if "import" in meta:
         specs = meta["import"] if isinstance(meta["import"], list) else [meta["import"]]
         rows = [row for spec in specs for row in import_rows(folder, spec, where, problems)]
-    elif "synthetic" in meta:
+    elif isinstance(meta.get("synthetic"), dict):
         rows = synthesize(net, meta["synthetic"], events)
     else:
         rows = read_flows(folder / "flows.csv", problems)
@@ -951,7 +955,7 @@ def _pivot(name: str, meta: dict, events: tuple[Event, ...], rows: list[Row]) ->
         description=meta.get("description", ""),
         source=meta.get("source", ""),
         license=meta.get("license", ""),
-        synthetic="synthetic" in meta,
+        synthetic="synthetic" in meta and meta["synthetic"] is not False,
         events=events,
         times=tuple(times),
         assets=assets,
