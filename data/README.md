@@ -56,9 +56,8 @@ not list is placed by `layout.py`. Drag a node in the Flow view and Save to move
 ### Editing in the page
 
 In the Flow view, right-click empty paper to add a node there, drag a node to move it,
-right-click a node to
-connect it to another or remove it, and right-click a line to remove it (a node's
-removal takes its lines with it). The edits show at once in both views and are kept in
+right-click a node to connect it to another or remove it, and right-click a line to
+remove it (a node's removal takes its lines with it). The edits show at once in both views and are kept in
 the browser until saved; a bar lists them with Undo, Save and Discard. With `make edit`
 (`nora serve --edit`) running, Save validates them, writes `nodes.csv`,
 `pipelines.csv`, `units.toml` (a new node joins the unit chosen in its form) and
