@@ -430,27 +430,22 @@ const App = (() => {
     if (value == null || Number.isNaN(value)) return 0;
     return rising ? thresholds.filter((t) => value >= t).length : thresholds.filter((t) => value <= t).length;
   }
-  // Dark or light ink, whichever reads better on a fill (WCAG contrast).
-  function inkOn(fill) {
-    const lum = (hex) => {
-      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
-        .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
-      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    };
-    const dark = "#22272b", light = "#f1f2f3", l = lum(fill);
-    return (l + 0.05) / (lum(dark) + 0.05) >= (lum(light) + 0.05) / (l + 0.05) ? dark : light;
-  }
   /* A pressure at an upper limit (nora.toml [pressure_limits]): Ray, 29 Oct, "pressure
      number inside rectangles should change color when meeting a limit, high = yellow,
-     high high = red, integrity = dark red". The tag fills with that colour and its
-     number takes the ink that reads on it; never colour alone: zoomed in the tag also
-     says H, HH or INT, and the alarm list says which limit in words. */
+     high high = red, integrity = dark red"; "only the number itself should turn yellow
+     ... not the whole square"; "we want to use strong colors sparingly". The number
+     (and, zoomed in, its H, HH or INT) takes the colour, in a shade that reads on the
+     tag; the alarm list says which limit in words. */
   const LIMITS = [null, { code: "H", name: "high" }, { code: "HH", name: "high-high" }, { code: "INT", name: "integrity" }];
+  function limitInk(lvl) {
+    return theme === "dark"
+      ? [null, COLORS.warning, COLORS.critical, mix(COLORS.integrity, COLORS.critical, 0.55)][lvl] // on the dark tag
+      : [null, mix(COLORS.warning, "#000000", 0.45), mix(COLORS.critical, "#000000", 0.15), COLORS.integrity][lvl];
+  }
   function pressureMark(id, p = metric("pressure_bar", id)) {
     const limits = (C.pressure_limits || {})[(assets[id] || {}).type], lvl = limits ? level(p, limits) : 0;
     if (!lvl) return null;
-    const fill = [null, COLORS.warning, COLORS.critical, COLORS.integrity][lvl];
-    return { level: lvl, ...LIMITS[lvl], limit: limits[lvl - 1], fill, ink: inkOn(fill) };
+    return { level: lvl, ...LIMITS[lvl], limit: limits[lvl - 1], ink: limitInk(lvl) };
   }
   /* Each priority has its own shape and number as well as its colour; a warning (3) has
      none (Ray, 29 Oct: "remove all warning triangles") and reads as words only. */
@@ -1487,13 +1482,11 @@ const App = (() => {
     const W = 200, x = (v) => Math.max(0, Math.min(W, ((v - min) / (max - min || 1)) * W));
     let m = `<rect x="0" y="11" width="${W}" height="7" rx="1" fill="${COLORS.dots}"/>`;
     if (band) m += `<rect x="${x(band[0])}" y="11" width="${Math.max(1, x(band[1]) - x(band[0]))}" height="7" fill="${COLORS.band}"/>`;
-    for (const tick of ticks) {
+    // Only the critical limits (Ray, 29 Oct: "too much clutter here, simplify it a bit"):
+    // the band is the normal range, the marker the value.
+    for (const tick of ticks.filter((t) => t.level === 3)) {
       const tx = x(tick.at), tall = 3 + 2 * tick.level;
       m += `<line x1="${tx}" x2="${tx}" y1="${14.5 - tall}" y2="${14.5 + tall}" stroke="${COLORS.text}" stroke-width="${tick.level === 3 ? 1.6 : 1}"/>`;
-    }
-    if (target != null) {
-      const tx = x(target);
-      m += `<path d="M${tx} 9.5l3.5 5-3.5 5-3.5-5z" fill="none" stroke="${COLORS.text}" stroke-width="1.2"/>`;
     }
     if (value != null) {
       const px = x(value), fill = lvl ? LEVEL_COLOR[lvl] : COLORS.text;
@@ -1524,7 +1517,7 @@ const App = (() => {
   }
   function rateText(r, unit) {
     if (r == null) return h("span", { class: "dim" }, "–");
-    if (Math.abs(r) < 0.05) return h("span", { class: "dim" }, "◆ steady");
+    if (Math.abs(r) < 0.05) return h("span", { class: "dim" }, ""); // steady: nothing to say
     return h("span", null, `${r > 0 ? "▲" : "▼"} ${signed(r, 1)} ${unit}/h`);
   }
 
@@ -1579,9 +1572,11 @@ const App = (() => {
      read "Delivery", "Pressure" instead of the asset's name twice. */
   function bank(indicators, empty, { byMeasure = false } = {}) {
     if (!indicators.length) return h("p", { class: "empty" }, empty);
+    // One asset's values (a panel) need no column heads: the rows say what they are.
+    const heads = byMeasure ? [] : [h("div", { class: "head" }, "Asset"), h("div", { class: "head" }, "Value in its range"),
+      h("div", { class: "head" }, `Last ${spanLabel(TREND_STEPS * stepHours() * 3600)}`), h("div", { class: "head optional" }, "Change"), h("div", { class: "head optional" }, "State")];
     return h("div", { class: `bank${byMeasure ? " by-measure" : ""}` },
-      h("div", { class: "head" }, byMeasure ? "" : "Asset"), h("div", { class: "head" }, "Value in its range"),
-      h("div", { class: "head" }, `Last ${spanLabel(TREND_STEPS * stepHours() * 3600)}`), h("div", { class: "head optional" }, "Change"), h("div", { class: "head optional" }, "State"),
+      ...heads,
       ...indicators.flatMap((ind) => [
         byMeasure ? h("div", { class: "name measure" }, ind.measure || nameOf(ind.id))
           : h("div", pressable(`asset:${ind.id}`, () => go({ screen: "asset", asset: ind.id }), { class: "name", role: "link", title: "Open the asset" }), nameOf(ind.id)),
@@ -1782,11 +1777,11 @@ const App = (() => {
       const tall = (v) => Math.max(1, (v / peak) * 56);
       if (reading.booked != null) {
         const height = tall(reading.booked);
-        body += `<rect class="booking-bar" x="${center - bar - 1}" y="${baseline - height + 0.5}" width="${bar}" height="${height - 0.5}" rx="2" fill="none" stroke="${COLORS.text_dim}" stroke-width="1"/>`;
+        body += `<rect class="booking-bar" x="${center - bar - 1}" y="${baseline - height + 0.5}" width="${bar}" height="${height - 0.5}" rx="2" fill="${COLORS.active}" stroke="${COLORS.text_dim}" stroke-width="1"/>`;
       }
       if (reading.value != null) {
         const height = tall(reading.value), y = baseline - height, lvl = bookingLevel(reading.value, reading.booked);
-        const fill = lvl ? muted(lvl) : COLORS.active;
+        const fill = lvl ? muted(lvl) : COLORS.peak; // a calm grey-blue, apart from the light booking
         body += `<rect class="nomination-bar${lvl ? " over" : ""}" x="${center + 1}" y="${y}" width="${bar}" height="${height}" rx="2" fill="${fill}" opacity="${index === 0 || lvl ? 1 : 0.72}"/>`;
         const top = Math.min(y, reading.booked != null ? baseline - tall(reading.booked) : y);
         body += `<text x="${center}" y="${Math.max(11, top - 4)}" text-anchor="middle" fill="${COLORS.text_dim}" style="${text}">${esc(fmt(reading.value, reading.value < 10 ? 1 : 0))}</text>`;
@@ -1794,8 +1789,8 @@ const App = (() => {
       body += `<text x="${center}" y="106" text-anchor="middle" fill="${COLORS.text_dim}" style="${text}">${hour}</text>`;
     });
     // A key: booked outlined, nominated filled.
-    body += `<rect x="0" y="117" width="10" height="9" rx="1.5" fill="none" stroke="${COLORS.text_dim}"/><text x="14" y="125" fill="${COLORS.text_dim}" style="${text}">Booked</text>`;
-    body += `<rect x="64" y="117" width="10" height="9" rx="1.5" fill="${COLORS.active}"/><text x="78" y="125" fill="${COLORS.text_dim}" style="${text}">Nominated</text>`;
+    body += `<rect x="0.5" y="117" width="10" height="9" rx="1.5" fill="${COLORS.active}" stroke="${COLORS.text_dim}"/><text x="14" y="125" fill="${COLORS.text_dim}" style="${text}">Booked</text>`;
+    body += `<rect x="64" y="117" width="10" height="9" rx="1.5" fill="${COLORS.peak}"/><text x="78" y="125" fill="${COLORS.text_dim}" style="${text}">Nominated</text>`;
     body += `<rect x="146" y="117" width="10" height="9" rx="1.5" fill="${muted(1)}"/><text x="160" y="125" fill="${COLORS.text_dim}" style="${text}">over booking</text>`;
     return svg(`0 0 ${W} ${H}`, body, "nomination-histogram");
   }
@@ -3145,7 +3140,7 @@ const App = (() => {
     routes: { nextOut, pigPlace, peakPlace, seeded },
     colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, fmt, esc, nameOf, unitOf, units: unitById,
     linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
-    pressureMark, inkOn,
+    pressureMark,
     rampAhead, // the next 6 hours of nominations at an exit point
     pipeStyle, pipeMapName, visibleRange, bandStops, nodeStyle, markers, window4h, nominationWindow, nominationHistogram, flowRate, thresholds: T,
     // Where the playhead stands against the wall clock ({ahead, model}), or null.

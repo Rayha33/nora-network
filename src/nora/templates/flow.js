@@ -406,10 +406,11 @@
       ctx.beginPath();
       if (ctx.roundRect) ctx.roundRect(a.x + 0.5, a.y + 0.5, b.x - a.x - 1, b.y - a.y - 1, 2);
       else ctx.rect(a.x + 0.5, a.y + 0.5, b.x - a.x - 1, b.y - a.y - 1);
-      ctx.fillStyle = tag.mark ? tag.mark.fill : look.fill;
+      // Dark theme: the tags on the darker paper, so every number (and a red one) reads.
+      ctx.fillStyle = App.theme() === "dark" ? C.paper : look.fill;
       ctx.fill();
       ctx.lineWidth = 1;
-      ctx.strokeStyle = tag.mark ? App.colors.casing : look.edge; // dark in both themes
+      ctx.strokeStyle = look.edge;
       ctx.stroke();
       ctx.font = modelFont(tag.small ? TAG.small : TAG.font);
       ctx.textAlign = "center";
@@ -632,14 +633,11 @@
         squarePath(ctx, x, y, half);
         ctx.fillStyle = look.fill;
         ctx.fill();
-        if (s.level) { // alarm: dark casing, colour inside it, never colour alone
-          ctx.lineWidth = 5; ctx.strokeStyle = C.casing; ctx.stroke();
-          ctx.lineWidth = 3; ctx.strokeStyle = App.levelColor[s.level]; ctx.stroke();
-        } else {
-          ctx.lineWidth = selected ? 2.4 : hover ? 1.6 : 1;
-          ctx.strokeStyle = selected || hover ? look.ink : look.edge;
-          ctx.stroke();
-        }
+        // No alarm colour around the square (Ray, 29 Oct: "not the whole square", "we want
+        // to use strong colors sparingly"): the number at its limit and the badge say it.
+        ctx.lineWidth = selected ? 2.4 : hover ? 1.6 : 1;
+        ctx.strokeStyle = selected || hover ? look.ink : look.edge;
+        ctx.stroke();
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         const now = live ? App.reading(id) : null;
