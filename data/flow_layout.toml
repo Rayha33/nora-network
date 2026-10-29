@@ -1,62 +1,64 @@
 # Where each node sits in the Flow view: [across, down] in grid steps (one step across
 # is one square's width with room; one step down is one row of squares with names).
-# Laid out like the operators' Area D overview (Ray, 29 Oct): the UK and St Fergus on
-# the left, the Tampen, Nyhamna and Kollsnes corridors in the middle, Kårstø and the
-# Norwegian Sea on the right; fields at the top, the hubs below them, the landings
-# along the bottom from west to east. Drag a node in the Flow view to move it, and
+# Laid out after the operators' Area D screen (Ray, 29 Oct: "position the nodes better,
+# you already got an image from me"): the fields across the top from Gjøa and Statfjord
+# to Heidrun and Norne, St Fergus and the UK on the left, Nyhamna and Kollsnes in the
+# middle, Kårstø on the right, Sleipner, Draupner S and E across the middle, the landings
+# along the bottom from west to east. No line runs through another node. Drag a node in the Flow view to move it, and
 # Save. A node not listed here is placed by layout.py. `nora validate` checks the ids.
 
 [positions]
-# fields and the corridors they feed
-gjoa = [1, 0]
-frigg = [2.2, 0]
-odin = [3.3, 0]
-oseberg = [4.4, 0]
-aasta_hansteen = [6.1, 0]
-ormen_lange = [7.4, 0]
-troll = [8.6, 0]
-visund = [9.7, 0]
-gullfaks = [10.8, 0]
-heidrun = [12, 0]
-norne = [13.1, 0]
-edvard_grieg = [0, 1]
-heimdal = [4.4, 1]
-nyhamna = [7, 1]
-kvitebjorn = [9, 1]
-statfjord = [10.6, 1]
-tjeldbergodden = [11.6, 1]
-asgard = [12.7, 1]
-beryl = [0, 2]
-flags_brent = [1.5, 2]
-gudrun = [5, 2]
-kollsnes = [8.5, 2]
-johan_sverdrup = [11.2, 2]
-karsto = [12.6, 2.2]
-# hubs and the southern fields
-st_fergus = [0, 3]
-sleipner = [5.5, 3]
-draupner_s = [8, 3]
-draupner_e = [9.5, 3]
-baltic_tie = [12.6, 3.4]
-sns_fields = [3.4, 4]
-ekofisk = [10.6, 4]
-ekofisk_tee = [9.56, 4.56]  # on the line from Draupner S to Emden (Ray, 29 Oct, Area D)
-nybro = [13.8, 4.6]
+# fields across the top, west to east
+gjoa = [0, 0]
+statfjord = [2.0, 0.55]
+gullfaks = [3.0, 0]
+oseberg = [4.2, 0]
+ormen_lange = [5.6, 0]
+aasta_hansteen = [6.8, 0]
+troll = [8.4, 0]
+kvitebjorn = [9.6, 0]
+visund = [10.8, 0]
+heidrun = [12.2, 0]
+norne = [13.4, 0]
+# St Fergus and the UK, the processing plants, Kårstø and the Norwegian Sea
+flags_brent = [0.3, 1.0]
+beryl = [1.3, 1.6]
+edvard_grieg = [2.3, 1.55]
+st_fergus = [0, 2.15]
+heimdal = [3.4, 2.1]  # the Heimskringla T (Ray, 29 Oct)
+nyhamna = [6.2, 1.45]
+kollsnes = [9.0, 1.8]
+tjeldbergodden = [11.2, 1.0]
+asgard = [13.6, 1.0]
+karsto = [12.6, 1.75]
+johan_sverdrup = [11.3, 2.5]
+# the hubs, Ekofisk and the southern fields
+gudrun = [1.2, 3.4]
+sleipner = [2.6, 3.1]
+draupner_s = [6.6, 3.1]
+draupner_e = [8.8, 3.1]
+ekofisk = [5.4, 3.75]
+ekofisk_tee = [7.4, 4.3]  # on the line from Draupner S to Emden (Area D)
+sns_fields = [4.4, 4.0]
+baltic_tie = [12.6, 3.7]
+nybro = [13.8, 3.7]
 # the landings, west to east
-easington = [1, 5.6]
-bacton = [3.4, 5.6]
-zeebrugge = [4.6, 5.6]
-dunkirk = [5.8, 5.6]
-emden = [10.6, 5.6]
-dornum = [11.8, 5.6]
+easington = [0.2, 5.6]
+dunkirk = [1.6, 5.6]
+zeebrugge = [3.2, 5.6]
+bacton = [4.4, 5.6]
+emden = [10.2, 5.6]
+dornum = [12.6, 5.6]
 pl_vtp = [13.8, 5.6]
-# map-only detail (nora.toml [flow] hide): never drawn in the Flow view, kept apart here
-smorbukk_nord = [0.0, 6.8]
-mikkel = [1.2, 6.8]
-morvin = [2.4, 6.8]
-trestakk = [3.6, 6.8]
-skarv = [4.8, 6.8]
-aerfugl = [6.0, 6.8]
-draugen = [7.2, 6.8]
-tordis = [8.4, 6.8]
-gullfaks_sor = [9.6, 6.8]
+# not drawn in the Flow view (nora.toml [flow] hide, or decommissioned with no line), kept apart here
+frigg = [0.0, 6.8]
+odin = [1.2, 6.8]
+smorbukk_nord = [2.4, 6.8]
+mikkel = [3.6, 6.8]
+morvin = [4.8, 6.8]
+trestakk = [6.0, 6.8]
+skarv = [7.2, 6.8]
+aerfugl = [8.4, 6.8]
+draugen = [9.6, 6.8]
+tordis = [10.8, 6.8]
+gullfaks_sor = [12.0, 6.8]
