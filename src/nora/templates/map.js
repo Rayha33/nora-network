@@ -10,6 +10,7 @@
   let basemap = null; // the style in use: the online one, or FALLBACK_STYLE once that failed
   let drawnMarks = []; // where pigs, peaks and slugs were drawn this frame, for mouse-over
   let notes = null; // the notes' windows over the map (App.notes)
+  let fittedOnce = false; // the first style load fits the network; later ones keep the camera
   const markAt = (x, y) => {
     let best = null, bestD = 9 * App.uiScale(); // px
     for (const d of drawnMarks) { const dist = Math.hypot(d.x - x, d.y - y); if (dist < bestD) { best = d.m; bestD = dist; } }
@@ -160,7 +161,9 @@
     alarmKey = "";
     view.ready = true;
     view.applySettings();
-    view.setUnit(App.route.unit);
+    // Fit once. A theme switch reloads the style but keeps the camera where it was (Ray,
+    // 29 Oct: "the page should stay in the exact same location and not zoom out").
+    if (!fittedOnce) { fittedOnce = true; view.setUnit(App.route.unit); }
     view.restyle();
     view.highlight(App.route.focus);
   }

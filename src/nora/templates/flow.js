@@ -1378,6 +1378,7 @@
     return Math.min(el.clientWidth / w, el.clientHeight / h) * 0.8;
   }
   let kept = null; // the viewport an edit's reload restores (App.edit.viewport)
+  let fittedSize = ""; // the window size the drawing was last fitted to
   // The wheel's zoom: the point under the pointer stays put, within the limits.
   function zoomAt(at, factor) {
     const scale = Math.min(MAX_SCALE, Math.max(minScale(), network.getScale() * factor)), held = network.DOMtoCanvas(at);
@@ -1393,6 +1394,7 @@
   view.zoomBy = zoomBy; // for tests
   view.setUnit = (unit) => {
     if (!view.ready) return;
+    fittedSize = `${el.clientWidth}x${el.clientHeight}`;
     if (kept) { network.moveTo({ position: kept.position, scale: kept.scale, animation: false }); return; }
     const members = (unit === "all" ? App.nodeIds : App.units[unit].nodes).filter((id) => !nodeHidden(id));
     network.fit({ nodes: members, animation: false });
@@ -1416,7 +1418,7 @@
   };
   view.fit = () => view.setUnit(App.route.unit);
   view.resize = () => {
-    if (!view.ready) return;
+    if (!view.ready || `${el.clientWidth}x${el.clientHeight}` === fittedSize) return; // the same window: keep the camera
     layout(); // spacing follows the window's shape
     view.setUnit(App.route.unit);
   };

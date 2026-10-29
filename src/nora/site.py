@@ -1,8 +1,8 @@
-"""Build the static site GitHub Pages serves: network.html (the app), index.html (which
-opens it) and data/.
+"""Build the static site factorlab.app/nora-network/ serves: network.html (the app),
+index.html (which opens it) and data/.
 
-The output is plain files with no server-side code, so the same folder works on
-GitHub Pages, any static host, or opened straight from disk.
+The output is plain files with no server-side code, so the same folder works on any
+static host, or opened straight from disk.
 """
 
 from __future__ import annotations
@@ -45,7 +45,6 @@ def repo_links() -> dict:
             r"github\.com[:/](.+?/.+?)(?:\.git)?$", _git("remote", "get-url", "origin")
         )
         repo = match.group(1) if match else DEFAULT_REPO
-    owner, name = repo.split("/", 1)
     base = f"https://github.com/{repo}"
     return {
         "repo": base,
@@ -53,7 +52,6 @@ def repo_links() -> dict:
         "edit": f"{base}/edit/main",
         "issues": f"{base}/issues",
         "codespaces": f"https://codespaces.new/{repo}?quickstart=1",
-        "pages": f"https://{owner.lower()}.github.io/{name}/",
         "home": "./",
     }
 

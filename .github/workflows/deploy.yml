@@ -1,5 +1,6 @@
-# Publishes the site to GitHub Pages (the gh-pages branch) on every push to main.
-# PR previews live in gh-pages/pr-preview/ and are left alone here.
+# Builds the site into the gh-pages branch on every push to main. factorlab.app/nora-network/
+# copies that branch every 10 minutes and is the only place NORA is published (Ray, 29 Oct:
+# "remove all nora related websites except the application on factorlab.app/nora-network").
 name: Deploy site
 
 on:
@@ -44,4 +45,3 @@ jobs:
         with:
           folder: site
           branch: gh-pages
-          clean-exclude: pr-preview/
