@@ -66,3 +66,9 @@ test("asset page: its buttons sit apart; a dataset is called synthetic once", ()
     assert.equal((label.match(/synthetic/gi) || []).length, 1, `"${label}" says synthetic once`);
   }
 });
+
+test("overview: a long name in a values table wraps, never cut short", () => {
+  const css = readFileSync(new URL("../../src/nora/templates/app.css", import.meta.url), "utf8");
+  const rule = css.match(/\.bank \.name \{([^}]*)\}/)[1];
+  assert.doesNotMatch(rule, /ellipsis|nowrap/, `.bank .name {${rule}}`);
+});

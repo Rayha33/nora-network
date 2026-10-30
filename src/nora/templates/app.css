@@ -227,7 +227,8 @@ body.idle, body.idle * { cursor: none !important; } /* a wall hides the pointer 
 /* Indicator banks */
 .bank { display: grid; grid-template-columns: minmax(110px, 1.1fr) minmax(150px, 2fr) 92px 70px minmax(64px, auto); align-items: center; gap: 7px 12px; }
 .bank .head { padding-bottom: 6px; border-bottom: 1px solid var(--rule); font-size: 11px; font-weight: 400; color: var(--text-dim); }
-.bank .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+/* Names wrap, never cut: "Europipe II (Kårstø …" (review, 30 Oct). */
+.bank .name { overflow-wrap: anywhere; cursor: pointer; }
 .bank .name:hover { text-decoration: underline; text-underline-offset: 3px; }
 .bank .rate { font-size: 12px; text-align: right; white-space: nowrap; }
 .bank .state { font-size: 12px; white-space: nowrap; }
