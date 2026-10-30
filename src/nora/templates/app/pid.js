@@ -17,7 +17,11 @@
     const flow = throughput(id, f.flows), bar = metric("pressure_bar", id, f), mark = bar == null ? null : pressureMark(id, bar);
     const q = gasQuality(id, f), h2s = metric("h2s_ppm", id, f), co2 = metric("co2_molpct", id, f);
     const running = flow != null && flow >= 0.05;
-    const inbound = pipeIds.filter((pid) => assets[pid].to === id && !pidHidden(pid)).slice(0, 6);
+    // The lines in first (Sleipner's Zeepipe IIA and Langeled north), then the tie-backs.
+    // Up to eight are drawn; with more, seven and a count of the rest, never a silent cut.
+    const tieOf = (pid) => Boolean(assets[assets[pid].from] && assets[assets[pid].from].min_zoom > 0);
+    const into = pipeIds.filter((pid) => assets[pid].to === id && !pidHidden(pid)).sort((a, b) => tieOf(a) - tieOf(b));
+    const inbound = into.slice(0, into.length > 8 ? 7 : 8), more = into.slice(inbound.length);
     const outbound = pipeIds.filter((pid) => assets[pid].from === id && !pidHidden(pid)).slice(0, 4);
     const y0 = PID_MAIN, text = (x, y, s, opts = "") => `<text x="${x}" y="${y}" ${opts} style="font:12px Archivo, sans-serif" fill="${ink}">${esc(s)}</text>`;
     const small = (x, y, s, opts = "") => `<text x="${x}" y="${y}" ${opts} style="font:10.5px Archivo, sans-serif" fill="${dim}">${esc(s)}</text>`;
@@ -41,22 +45,28 @@
     const vessel = (x, y, w, hgt, tag, name) => `<rect x="${x - w / 2}" y="${y - hgt / 2}" width="${w}" height="${hgt}" rx="${Math.min(w, hgt) / 2}" fill="${COLORS.card.active.fill}" stroke="${ink}" stroke-width="1.2"/>`
       + small(x, y + hgt / 2 + 14, tag, 'text-anchor="middle"') + small(x, y + hgt / 2 + 27, name, 'text-anchor="middle"');
     let m = "";
-    // 1. Tie-backs and wells, into the manifold.
-    const mx = 205, rows = [...inbound.map((pid) => ({ pid })), { wells: true }];
+    // 1. Tie-backs and wells, each straight into the manifold, which is as tall as they
+    // need: fanned into one point, the lowest crossed out its tag (Sleipner, seven in).
+    const mx = 205, rows = [...inbound.map((pid) => ({ pid })), ...(more.length ? [{ more }] : []), { wells: true }];
     const step = Math.min(34, 210 / Math.max(1, rows.length)), top = y0 - ((rows.length - 1) * step) / 2;
+    const half = Math.max(40, ((rows.length - 1) * step) / 2 + 12);
     rows.forEach((row, i) => {
       const y = top + i * step;
-      m += pipe(150, y, mx - 10, y, row.wells ? running : (f.flows[row.pid] || 0) >= 0.05 || running, 1.4) + `<line x1="${mx - 10}" y1="${y}" x2="${mx}" y2="${y0}" stroke="${dim}" stroke-width="1"/>`;
-      if (row.wells) m += `<g><path d="M128 ${y - 9}v18M122 ${y - 9}h12M122 ${y + 9}h12" stroke="${ink}" stroke-width="1.2" fill="none"/>${text(116, y + 4, "Wells", 'text-anchor="end"')}</g>`;
+      if (row.more) {
+        m += `<g>${small(138, y + 4, `+${row.more.length} more`, 'text-anchor="end"')}<title>${esc(row.more.map((pid) => nameOf(assets[pid].from)).join(", "))}</title></g>`;
+        return;
+      }
+      m += pipe(150, y, mx, y, row.wells ? running : (f.flows[row.pid] || 0) >= 0.05 || running, 1.4);
+      if (row.wells) m +=`<g><path d="M128 ${y - 9}v18M122 ${y - 9}h12M122 ${y + 9}h12" stroke="${ink}" stroke-width="1.2" fill="none"/>${text(116, y + 4, "Wells", 'text-anchor="end"')}</g>`;
       else {
-        const other = assets[row.pid].from, tie = assets[other] && assets[other].min_zoom > 0;
+        const other = assets[row.pid].from, tie = tieOf(row.pid);
         m += `<g class="pid-link" data-asset="${esc(other)}" tabindex="0" role="button" aria-label="${esc(`${nameOf(other)}, ${tie ? "tie-back" : "line in"}. Opens its page`)}">`
           + `<rect x="8" y="${y - 11}" width="134" height="22" fill="transparent" stroke="none"/>`
           + text(138, y + 4, nameOf(other).length > 17 ? `${nameOf(other).slice(0, 16)}…` : nameOf(other), 'text-anchor="end" text-decoration="underline"')
           + `<title>${esc(`${nameOf(row.pid)}${tie ? " (tie-back)" : ""}`)}</title></g>`;
       }
     });
-    m += `<rect x="${mx}" y="${y0 - 40}" width="16" height="80" fill="${COLORS.card.active.fill}" stroke="${ink}" stroke-width="1.2"/>` + small(mx + 8, y0 + 54, "M-100", 'text-anchor="middle"') + small(mx + 8, y0 + 67, "Manifold", 'text-anchor="middle"');
+    m += `<rect x="${mx}" y="${y0 - half}" width="16" height="${2 * half}" fill="${COLORS.card.active.fill}" stroke="${ink}" stroke-width="1.2"/>` + small(mx + 8, y0 + half + 14, "M-100", 'text-anchor="middle"') + small(mx + 8, y0 + half + 27, "Manifold", 'text-anchor="middle"');
     // 2. Inlet separator, 3. dehydration, 4. compression, along the main gas line.
     m += pipe(mx + 16, y0, 300, y0) + arrow(300, y0);
     m += vessel(350, y0, 100, 46, "V-100", "Inlet separator");
@@ -68,7 +78,7 @@
     m += `<line x1="388" y1="${y0 + 18}" x2="388" y2="${PID_H - 34}" stroke="${dim}" stroke-width="1.4" stroke-dasharray="5 3"/>` + small(396, PID_H - 26, "Condensate and oil to storage and export (not modelled)");
     // 5. Metering with the gas chromatograph, 6. the ESD valve, 7. the export lines.
     m += pipe(640, y0, 870, y0) + arrow(730, y0);
-    m += `<rect x="750" y="${y0 - 9}" width="40" height="18" fill="${paper}" stroke="${ink}" stroke-width="1.2"/>` + small(770, y0 + 104, "Fiscal metering", 'text-anchor="middle"'); // below the GC: the taps do not cross it
+    m += `<rect x="750" y="${y0 - 9}" width="40" height="18" fill="${paper}" stroke="${ink}" stroke-width="1.2"/>` + small(770, y0 + 114, "Fiscal metering", 'text-anchor="middle"'); // below the GC: the taps do not cross it
     const open = running;
     m += `<g><path d="M840 ${y0 - 9}L860 ${y0 + 9}V${y0 - 9}L840 ${y0 + 9}Z" fill="${open ? paper : ink}" stroke="${ink}" stroke-width="1.2"/>`
       + `<line x1="850" y1="${y0}" x2="850" y2="${y0 - 18}" stroke="${ink}" stroke-width="1.2"/><rect x="843" y="${y0 - 26}" width="14" height="8" fill="${paper}" stroke="${ink}" stroke-width="1"/>`
@@ -77,7 +87,8 @@
     m += instrument(652, y0 - 62, "PT", "301", bar == null ? "" : `${fmt(bar, 1)} bar${mark ? ` ${mark.code}` : ""}`, "Export pressure, after the compressor", mark ? mark.level : 0);
     m += instrument(770, y0 - 62, "FT", "401", flow == null ? "" : `${fmt(flow, 1)} MSm³/d`, "Export flow, fiscal metering");
     const quality = [[h2s != null ? `H₂S ${fmt(h2s, 1)} ppm` : "", co2 != null ? `CO₂ ${fmt(co2, 2)} %` : ""].filter(Boolean).join(" · "), q ? `GCV ${fmt(q.gcv, 1)} MJ/Sm³` : ""];
-    m += instrument(770, y0 + 70, "AT", "402", quality, "Gas chromatograph: H₂S, CO₂ and the gas's calorific value");
+    // The gas chromatograph low enough that its reading clears the lowest export line's flow.
+    m += instrument(770, y0 + 80, "AT", "402", quality, "Gas chromatograph: H₂S, CO₂ and the gas's calorific value");
     m += instrument(430, y0 - 62, "PT", "101", "", "Separator pressure");
     m += instrument(350, y0 - 62, "LT", "101", "", "Separator liquid level");
     // Export lines out, each a way on to its page.
