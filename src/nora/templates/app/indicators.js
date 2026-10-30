@@ -91,6 +91,23 @@
       value: `${fmt(p, 1)} bar, window ${fmt(low)}–${fmt(high)}`,
     };
   }
+  /* A line's pack (review, 30 Oct: a pipeline's page showed its load and nothing else):
+     the gas it holds, the model's estimate from its end pressures as on the Flow and in
+     the inventory trend, against the least and most it held in the data so far, with its
+     settle-out pressure and how fast it packs. Grey: a model answer, never an alarm. */
+  function packIndicator(id) {
+    const f = frame(), lp = linepack(id, f), sop = settleOut(id, f), r = packRate(id);
+    const held = live.frames.slice(0, live.index + 1).map((x) => linepack(id, x)).filter((v) => v != null);
+    const lo = Math.min(lp, ...held), hi = Math.max(lp, ...held), pad = Math.max((hi - lo) * 0.1, lp * 0.01);
+    return {
+      id, measure: "Line pack", unit: "MSm³", lvl: 0, band: [lo, hi],
+      noRate: true, // its packing is said in MSm³/d, as on the Flow's "pack +1.7", not again per hour
+      bar: rangeBar({ min: lo - pad, max: hi + pad, value: lp, band: [lo, hi] }),
+      series: series((x) => linepack(id, x)),
+      limits: [],
+      value: `${fmt(lp, 1)} MSm³ at ${fmt(sop, 1)} bar settle-out${r != null && Math.abs(r) >= 0.5 ? `, packing ${signed(r, 1)} MSm³/d` : ""}, an estimate`,
+    };
+  }
   function qualityIndicator(id, name) {
     const v = metric(name, id), limits = C.quality[name], lvl = level(v, limits);
     return {
@@ -125,9 +142,9 @@
       ...indicators.flatMap((ind) => [
         byMeasure ? h("div", { class: "name measure" }, ind.measure || nameOf(ind.id))
           : h("div", pressable(`asset:${ind.id}`, () => go({ screen: "asset", asset: ind.id }), { class: "name", role: "link", title: "Open the asset" }), nameOf(ind.id)),
-        h("div", null, ind.bar, h("div", { class: "value" }, ind.value, h("span", { class: "rate-inline" }, rateText(rate(ind.series), ind.unit), toLimitText(ind)))),
+        h("div", null, ind.bar, h("div", { class: "value" }, ind.value, h("span", { class: "rate-inline" }, (ind.noRate ? null : rateText(rate(ind.series), ind.unit)), toLimitText(ind)))),
         trend(ind.series, { band: ind.band, lvl: ind.lvl }),
-        h("div", { class: "rate" }, rateText(rate(ind.series), ind.unit), toLimitText(ind)),
+        h("div", { class: "rate" }, (ind.noRate ? null : rateText(rate(ind.series), ind.unit)), toLimitText(ind)),
         h("div", { class: "state optional" }, badge(ind.lvl)),
       ]));
   }
