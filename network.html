@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta name="nora-build" content="b2ade200cb7c">
+<meta name="nora-build" content="c566899981f2">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>NORA operations</title>
@@ -4632,6 +4632,19 @@ const App = (() => {
     const name = nameOf(c.id), note = c.text.startsWith(name) ? c.text.slice(name.length).replace(/^[\s:,]+/, "") : c.text;
     return note.charAt(0).toUpperCase() + note.slice(1);
   }
+  /* Right-click an alarm (Ray, 30 Oct: "i should be able to right click alamrs in the
+     alarm list to get options"): acknowledge, shelve or unshelve, copy its ID, then what
+     the Map and the Flow offer on its asset. Going to the asset closes the list. */
+  function alarmMenu(c, shelved = false) {
+    const redo = () => { evaluate(); refreshScreens(); buildAlarms(); };
+    const items = shelved ? [{ label: "Unshelve", act: () => { alarmHandling.unshelve(c); redo(); } }]
+      : [...(c.acked ? [] : [{ label: "Acknowledge", act: () => { alarmHandling.ack([c]); redo(); } }]),
+        { label: "Shelve…", act: () => { shelving = alarmKey(c); buildAlarms(); } }];
+    items.push({ label: `Copy ${alarmId(c)}`, act: () => { if (navigator.clipboard) navigator.clipboard.writeText(alarmId(c)); } });
+    const asset = menuFor(c.id).map((it) => (it === "-" ? it : { label: it.label, act: () => { closePops(); it.act(); } }));
+    return asset.length ? [...items, "-", ...asset] : items;
+  }
+  const alarmContext = (c, shelved = false) => (e) => { e.preventDefault(); openMenu(e.clientX, e.clientY, alarmMenu(c, shelved)); };
   function buildAlarms() {
     const panel = $("alarms");
     if (!panel || panel.hidden) return;
@@ -4665,7 +4678,7 @@ const App = (() => {
         h("h3", null, `${title} · ${rows.length}`),
         rows.length ? h("table", { class: "data alarm-table" },
           h("thead", null, h("tr", null, ...["Time", "Location", "Note", "Level", "Network", "ID", ""].map((t) => h("th", null, t)))),
-          h("tbody", null, ...rows.flatMap((c) => [h("tr", { class: c.acked ? "acked" : null },
+          h("tbody", null, ...rows.flatMap((c) => [h("tr", { class: c.acked ? "acked" : null, oncontextmenu: alarmContext(c) },
             h("td", null, sinceTime(c.since)),
             h("td", null, location(c)),
             h("td", { class: "note" }, alarmNote(c)),
@@ -4680,7 +4693,7 @@ const App = (() => {
         h("h3", null, `Shelved · ${shelved.length}`),
         h("table", { class: "data alarm-table" },
           h("thead", null, h("tr", null, ...["Location", "Note", "Level", "Reason", "Back at (your clock)", ""].map((t) => h("th", null, t)))),
-          h("tbody", null, ...shelved.map((c) => h("tr", { class: "acked" },
+          h("tbody", null, ...shelved.map((c) => h("tr", { class: "acked", oncontextmenu: alarmContext(c, true) },
             h("td", null, location(c)),
             h("td", { class: "note" }, alarmNote(c)),
             h("td", null, badge(c.level, LEVEL[c.level])),
@@ -4823,6 +4836,19 @@ const App = (() => {
   function closePops() {
     for (const [button, panel] of POPS) { if ($(panel)) $(panel).hidden = true; if ($(button)) $(button).setAttribute("aria-expanded", "false"); }
   }
+  /* A click anywhere else closes an open popup (Ray, 30 Oct: "if i click outside the
+     alarm list view it should be minimized or go away", "or if i click on a field or exit
+     point"). The Map, the Flow and the screens still get the click; the popup's own
+     button, the popup and a menu opened from it keep it open. */
+  document.addEventListener("pointerdown", (event) => {
+    const target = event.target;
+    if (menu.el && menu.el.contains(target)) return;
+    for (const [button, panel] of POPS) {
+      if (!$(panel) || $(panel).hidden || $(panel).contains(target) || ($(button) && $(button).contains(target))) continue;
+      $(panel).hidden = true;
+      if ($(button)) $(button).setAttribute("aria-expanded", "false");
+    }
+  }, true);
   $("skip-alarms").addEventListener("click", (event) => {
     event.preventDefault();
     if ($("alarms").hidden) $("alarm-counts").click();
