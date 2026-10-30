@@ -490,6 +490,8 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 .bank.by-measure .name { cursor: default; color: var(--text-dim); font-size: 12px; }
 .bank.by-measure .name:hover { text-decoration: none; }
 .sidebar .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 10px; }
+/* On an asset's own page too: "Show in its unit" and "Diagnostics" sat touching (review, 30 Oct). */
+#screen-asset .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 10px; }
 .sidebar .actions button {
   border: 1px solid var(--rule); background: var(--surface); color: var(--text);
   border-radius: var(--r); padding: 6px 12px; font-size: 12px; cursor: pointer;

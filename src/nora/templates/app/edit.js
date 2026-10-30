@@ -595,7 +595,7 @@
     if (feed) connectFeed(feed);
     else if (NORA.streams.length) {
       const select = $("stream-select");
-      select.replaceChildren(...NORA.streams.map((s) => h("option", { value: s.name }, `${s.title}${s.synthetic ? " (synthetic)" : ""}`)));
+      select.replaceChildren(...NORA.streams.map((s) => h("option", { value: s.name }, streamName(s))));
       select.disabled = NORA.streams.length < 2;
       const wanted = NORA.streams.find((s) => s.name === params.get("stream")) || NORA.streams[0];
       select.value = wanted.name;
