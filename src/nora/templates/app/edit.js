@@ -488,6 +488,32 @@
     for (const tab of document.querySelectorAll("[data-mode]")) tab.setAttribute("aria-selected", String(tab.dataset.mode === state.mode));
   }
 
+  /* The Map loads while another view is open (Ray, 30 Oct: "the map loads slowly"): a
+     fresh visit opens on the Flow, so the first switch to the Map waited for MapLibre,
+     the basemap style, its fonts and tiles. Once the page is idle the Map is mounted out
+     of sight, at the stage's size so its first tiles load too; the Map tab then shows it
+     at once. A visit that opens on the Map, or an embed, has nothing to warm. */
+  function warmMap() {
+    const el = containers.map, view = views.map;
+    if (embed || !el || !view || view.mounted) return;
+    const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500));
+    idle(() => {
+      if (view.mounted || !el.hidden) return;
+      el.style.visibility = "hidden"; // laid out, never seen or clicked
+      el.hidden = false;
+      view.mounted = true;
+      view.mount(el);
+      let done = false;
+      const settle = () => {
+        if (done) return;
+        done = true;
+        el.style.visibility = "";
+        el.hidden = !(route.screen === "unit" && shownViews().includes(view));
+      };
+      if (view.map && view.map.once) view.map.once("idle", settle); else settle();
+      setTimeout(settle, 8000); // never left half-shown
+    }, { timeout: 4000 });
+  }
   function start() {
     $("update").addEventListener("click", () => location.reload());
     if (BUILD) setInterval(checkBuild, 5 * 60 * 1000);
@@ -547,6 +573,7 @@
       setStream(wanted);
     }
     go(fromHash() || startRoute(), false);
+    warmMap();
     // Reduced motion: nothing starts moving by itself; ▶ plays.
     if (params.get("autoplay") === "1" || (C.screen.autoplay && params.get("autoplay") !== "0" && !feed && !reduceMotion)) play();
     kiosk();
