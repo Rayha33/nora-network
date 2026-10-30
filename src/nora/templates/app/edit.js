@@ -377,8 +377,11 @@
     return { revision: current.revision, nodes: nodeRows, pipelines: lineRows, units, layout };
   }
   /* Save: served by `nora serve --edit` (make edit), the edits go straight into data/
-     and the site rebuilds; anywhere else (a file, the hosted site) the three files download,
-     ready to put in data/ and commit. */
+     and the site rebuilds. Anywhere else (the hosted site, a file) there is nothing to
+     write to, so Save keeps them in this browser and says so: no file download (Ray,
+     30 Oct: "i should not be prompted to dowload a file when i click save"). Export files
+     downloads them, for data/ and a commit, only when asked. */
+  let hostedSave = false; // no editing server answered the last Save
   async function saveEdits() {
     editNote("Saving…");
     let current = null;
@@ -386,7 +389,13 @@
       const response = await fetch("api/network", { cache: "no-store" });
       if (response.ok) current = await response.json();
     } catch (error) { current = null; }
-    if (!current) { downloadEdits(); return; }
+    if (!current) {
+      hostedSave = true;
+      storeEdits(edits);
+      editNote(`Saved in this browser: ${edits.length} ${edits.length === 1 ? "change" : "changes"}, kept until you Discard them.`);
+      return;
+    }
+    hostedSave = false;
     // Hosted (NORA_EDIT_TOKEN on the server), a save carries the edit key: asked for once
     // and kept in this browser (Ray: "i will later host this solution").
     const send = (key) => fetch("api/save", {
@@ -414,7 +423,7 @@
       link.click();
       link.remove();
     }
-    editNote("Downloaded nodes.csv, pipelines.csv, units.toml and flow_layout.toml for data/. `make edit` saves straight to data/ and also clears removed assets from the streams.");
+    editNote("Exported nodes.csv, pipelines.csv, units.toml and flow_layout.toml for data/. `make edit` saves straight to data/.");
   }
   let editsBar = null, editMessage = "", confirmDiscard = false;
   function editNote(text) { editMessage = text; renderEditsBar(); }
@@ -445,6 +454,7 @@
       h("span", { class: "count", role: "status", "aria-live": "polite" }, edits.length ? `${edits.length} ${edits.length === 1 ? "change" : "changes"}` : "No changes"),
       h("span", { class: "dim" }, editMessage),
       button("Save", saveEdits, "primary", !edits.length),
+      hostedSave && edits.length ? button("Export files", downloadEdits, "text", false, "Download the changed data files, for data/ and a commit") : null,
       !edits.length ? null
         : confirmDiscard ? button("Discard all?", discardEdits, "danger") : button("Discard", () => { confirmDiscard = true; renderEditsBar(); }),
     ].filter(Boolean));
