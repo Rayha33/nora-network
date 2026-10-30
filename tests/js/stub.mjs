@@ -83,7 +83,7 @@ export class StubNode {
   insertBefore(node) { this.children.unshift(node); return node; }
   replaceChildren(...nodes) { this.children = [...nodes.flat()]; this._replaced += 1; }
   remove() {}
-  contains() { return false; }
+  contains(node) { return node === this || this.children.some((c) => c instanceof StubNode && c.contains(node)); }
   getBoundingClientRect() { return { x: 0, y: 0, width: this.width, height: this.height, top: 0, left: 0, right: this.width, bottom: this.height }; }
   querySelector() { return null; }
   querySelectorAll() { return []; }
