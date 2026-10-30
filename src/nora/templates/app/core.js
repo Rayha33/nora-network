@@ -255,6 +255,8 @@ const App = (() => {
   const edits = storedEdits().filter(applyEdit);
   const assets = NORA.assets;
   const nameOf = (id) => (assets[id] || {}).name || id;
+  // A dataset's name, marked synthetic once: "A synthetic week", never "A synthetic week (synthetic)".
+  const streamName = (s) => `${s.title || "live feed"}${s.synthetic && !/synthetic/i.test(s.title || "") ? " (synthetic)" : ""}`;
 
   /* Water depth under the map (NORA.depth: EMODnet's seabed model, built by
      scripts/build_bathymetry.py): a zlib-packed grid of whole metres, inflated once in
