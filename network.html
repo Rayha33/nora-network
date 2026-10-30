@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta name="nora-build" content="a59d75e5784a">
+<meta name="nora-build" content="23a5e72fb580">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>NORA operations</title>
@@ -292,6 +292,8 @@ table.data tbody tr:hover { background: var(--band); }
    table fits its box at any width; only the value stays on one line. */
 table.data.quality th, table.data.quality td { white-space: normal; }
 table.data.quality td:nth-child(2) { white-space: nowrap; }
+table.data.quality .eta { display: block; white-space: nowrap; color: var(--text-dim); }
+table.data.quality td:first-child { min-width: 9.5em; }
 table.data.pigs th, table.data.pigs td { text-align: left; white-space: normal; }
 table.data.pigs td:first-child { white-space: nowrap; }
 .facts { display: grid; grid-template-columns: minmax(90px, auto) 1fr; gap: 8px 18px; margin: 0; }
@@ -868,7 +870,8 @@ const App = (() => {
   }
   function signed(value, digits = 1) {
     if (value == null || Number.isNaN(value)) return "–";
-    return `${value > 0 ? "+" : value < 0 ? "−" : "±"}${fmt(Math.abs(value), digits)}`;
+    const shown = Number(value.toFixed(digits)); // -0.04 shows as ±0.0, not −0.0
+    return `${shown > 0 ? "+" : shown < 0 ? "−" : "±"}${fmt(Math.abs(value), digits)}`;
   }
   const esc = (text) => String(text).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
   function h(tag, attrs, ...children) {
@@ -3307,8 +3310,9 @@ const App = (() => {
         h("tbody", null, rows.map((s) => h("tr", pressable(`slug:${s.q.slug}`, () => go({ screen: "asset", asset: s.q.arrived ? s.q.arrived.node : s.q.pid }), { title: "Open where it is now" }),
           h("td", null, swatch(s.q.metric), ` ${QUALITY[s.q.metric].name} from ${nameOf(s.q.origin)}`),
           h("td", null, fmt(s.q.conc, QUALITY[s.q.metric].digits), ` ${QUALITY[s.q.metric].unit}`),
-          h("td", null, s.q.arrived ? `Arrived at ${nameOf(s.q.arrived.node)}` : `${nameOf(s.next.node)}, ${etaText(s.next.t)}`),
-          h("td", null, s.exit ? `${nameOf(s.exit.node)}, ${fmt(s.exit.conc, QUALITY[s.q.metric].digits)} ${QUALITY[s.q.metric].unit}, ${etaText(s.exit.t)}` : "No exit on today's flows"),
+          // The place, and when under it: the time wrapped as one piece, not "(in 19.1" and "h)" (review, 30 Oct)
+          h("td", null, s.q.arrived ? `Arrived at ${nameOf(s.q.arrived.node)}` : [nameOf(s.next.node), h("span", { class: "eta" }, etaText(s.next.t))]),
+          h("td", null, s.exit ? [`${nameOf(s.exit.node)}, ${fmt(s.exit.conc, QUALITY[s.q.metric].digits)}\u00a0${QUALITY[s.q.metric].unit.replace(/ /g, "\u00a0")}`, h("span", { class: "eta" }, etaText(s.exit.t))] : "No exit on today's flows"),
           h("td", null, badge(slugAlarm(s), ""))))))
         : h("p", { class: "empty" }, `No H₂S or CO₂ peaks in the network. Limits: ${limits}.`),
       h("p", { class: "dim small" }, `Estimate. Gas travels at ${fmt(C.pipelines.gas_velocity_mps)} m/s along the line taking most of the flow; where gas joins, it is assumed to carry the median field reading. Limits from nora.toml.`));
@@ -3447,7 +3451,8 @@ const App = (() => {
     const rows = exits.map((id) => ({ id, ramp: rampAhead(id), reach: reachAhead(id) })).filter((r) => r.ramp)
       .sort((a, b) => b.ramp.level - a.ramp.level || Math.abs((b.ramp.steepest || {}).change || 0) - Math.abs((a.ramp.steepest || {}).change || 0));
     const hm = (t) => timeFormat(t, { timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit" });
-    const source = live.feed ? "From Origo, the shippers' nominations." : `From the dataset${live.stream && live.stream.synthetic ? " (synthetic)" : ""}; live, from Origo.`;
+    // Honest labels: a dataset's nominations are not Origo's, and synthetic ones say so.
+    const source = live.feed ? "From Origo, the shippers' nominations." : live.stream && live.stream.synthetic ? "Synthetic, from the dataset." : "From the dataset.";
     return h("div", { class: "box" }, h("h2", null, "Nominations at the exit points, next 6 hours"),
       rows.length ? h("ul", { class: "noms" }, rows.map(({ id, ramp, reach }) => {
         const s = ramp.steepest, steady = !s || Math.abs(s.change) < 0.05;
@@ -3462,7 +3467,7 @@ const App = (() => {
             ? h("span", { class: "short", style: `color:${limitInk(1)}`, title: `Model estimate: with the input as now, ${nameOf(id)} would be at ${fmt(reach.first.pressure, 1)} bar at ${hm(reach.first.t)}, under its ${fmt(reach.low)} bar low limit: raise the input to the line before then.` }, `short ${hm(reach.first.t)}`)
             : ramp.level ? badge(ramp.level, "Fast ramp") : h("span", null)));
       })) : h("p", { class: "empty" }, "No nominations in this dataset."),
-      h("p", { class: "dim small" }, `${source} MSm³/d; times CET.`));
+      h("p", { class: "dim small" }, `${source} MSm³/d; Norwegian time.`)); // Europe/Oslo: CET, CEST in summer
   }
 
   /* The next 6 hours at an exit: for each hour the booked capacity (outlined) and the
@@ -3609,8 +3614,16 @@ const App = (() => {
   function gcBox(id) {
     const q = gasQuality(id);
     if (!q) return null;
-    const past = (v, [lo, hi] = []) => v != null && ((lo != null && v < lo) || (hi != null && v > hi));
-    const cell = (v, digits, limits) => h("td", past(v, limits) ? { style: `color:${limitInk(1)};font-weight:600` } : null, v == null ? "–" : fmt(v, digits));
+    /* Past its limit: the colour with a shape and a word, never colour alone (AGENTS.md).
+       The Wobbe index is a sales-gas limit, met where the gas is delivered after the
+       plants take out the heavier parts: a field's rich gas is above it in normal running
+       (11 of 24 fields lit up), so it is shown against the range, not coloured. */
+    const past = (v, [lo, hi] = []) => (v == null ? 0 : lo != null && v < lo ? -1 : hi != null && v > hi ? 1 : 0);
+    const cell = (v, digits, limits) => {
+      const side = past(v, limits), text = v == null ? "–" : fmt(v, digits);
+      return side ? h("td", { style: `color:${limitInk(1)};font-weight:600`, title: side > 0 ? "Over the limit" : "Under the limit" }, `${side > 0 ? "▲" : "▼"} ${text}`)
+        : h("td", null, text);
+    };
     const h2sLimit = C.quality.h2s_ppm[2];
     return h("div", { class: "box gc" }, h("h2", { title: "The field's export gas, as its gas chromatograph reads it" }, "Gas composition (GC)"),
       h("table", { class: "data gc-table" },
@@ -3620,7 +3633,7 @@ const App = (() => {
         h("thead", null, h("tr", null, h("th", null, "Property"), h("th", null, "Value"), h("th", null, "Limit"))),
         h("tbody", null,
           h("tr", null, h("td", null, "Calorific value (GCV), MJ/Sm³"), cell(q.gcv, 2), h("td", { class: "dim" }, "")),
-          h("tr", null, h("td", null, "Wobbe index, MJ/Sm³"), cell(q.wobbe, 2, GC_LIMITS.wobbe), h("td", { class: "dim" }, `${GC_LIMITS.wobbe[0]}–${GC_LIMITS.wobbe[1]}`)),
+          h("tr", null, h("td", null, "Wobbe index, MJ/Sm³"), cell(q.wobbe, 2), h("td", { class: "dim", title: "Sales gas, where it is delivered" }, `${GC_LIMITS.wobbe[0]}–${GC_LIMITS.wobbe[1]} sold`)),
           h("tr", null, h("td", null, "Relative density"), cell(q.density, 3), h("td", { class: "dim" }, "")),
           h("tr", null, h("td", null, "H₂S, ppm"), cell(q.h2s, 1, [null, h2sLimit]), h("td", { class: "dim" }, `≤ ${h2sLimit}`)),
           h("tr", null, h("td", null, "O₂, ppm"), cell(q.o2, 1, GC_LIMITS.o2), h("td", { class: "dim" }, `≤ ${GC_LIMITS.o2[1]}`)),
@@ -6145,7 +6158,7 @@ const App = (() => {
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
     pigs: { pigSpeed, pigMessages, pigAlarm, pigRun, pigEta, pigStatus, pigConditions },
-    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, alarmHandling, buildAlarms, fmt, esc, nameOf, unitOf, units: unitById,
+    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, alarmHandling, buildAlarms, fmt, signed, esc, nameOf, unitOf, units: unitById,
     linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
     pressureMark, flowMark, limitInk, drawFlowDirection, gasDayChart, gasQuality, pressureOutlook, pressureChart,
     airTemp: (id) => metric("air_temp_c", id),
@@ -6811,7 +6824,9 @@ function NoraCanvasMap(view) {
   const ENGLISH_NAME = ["coalesce", ["get", "name:en"], ["get", "name_en"], ["get", "name:latin"], ["get", "name"]];
   // Recolour the basemap to calm greys: land is paper, water a step darker, roads,
   // parks and points of interest hidden, place names in dim text.
+  let placeLayers = []; // the basemap's place-name layers that stay on (calmBasemap)
   function calmBasemap() {
+    placeLayers = [];
     for (const layer of map.getStyle().layers) {
       const id = layer.id;
       if (id.startsWith("nora-")) continue;
@@ -6833,6 +6848,7 @@ function NoraCanvasMap(view) {
             map.setPaintProperty(id, "text-color", C.text_dim);
             map.setPaintProperty(id, "text-halo-color", C.paper);
             map.setPaintProperty(id, "icon-opacity", 0);
+            placeLayers.push(id);
           } else map.setLayoutProperty(id, "visibility", "none");
         } else map.setLayoutProperty(id, "visibility", "none");
       } catch (error) { /* a layer without that property: leave it */ }
@@ -7358,6 +7374,18 @@ function NoraCanvasMap(view) {
       const w = ctx.measureText(d.name).width, half = Math.min(w, wrap) / 2 + 2;
       out.push([p.x - half, p.y + 7 * k, p.x + half, p.y + 9 * k + Math.ceil(w / wrap) * 14 * k]);
     }
+    /* The basemap's place names too, which MapLibre draws under this layer: a pig's
+       label sat on "Copenhagen" (review, 30 Oct: never text over text). Their boxes are
+       estimated from the name, at the basemap's size. */
+    let places = [];
+    try { places = map.queryRenderedFeatures({ layers: placeLayers.filter((id) => map.getLayer(id)) }) || []; } catch { places = []; }
+    ctx.font = "13px Archivo, system-ui, sans-serif";
+    for (const f of places) {
+      const props = f.properties || {}, text = String(props["name:en"] || props.name_en || props.name || "");
+      if (!text || !f.geometry || f.geometry.type !== "Point") continue;
+      const p = map.project(f.geometry.coordinates), half = (ctx.measureText(text).width * 1.1) / 2 + 3;
+      out.push([p.x - half, p.y - 10, p.x + half, p.y + 10]);
+    }
     ctx.restore();
     return out;
   }
@@ -7870,9 +7898,42 @@ function NoraCanvasMap(view) {
   const isTee = (id) => (NORA.assets[id] || {}).type === "tee";
   function tagsAt(id, positions = framePos) {
     if (isTee(id) || !pressureVisibility(App.state.mode, network ? network.getScale() : 1)) return [];
-    const byId = App.cached("tags", positions, () => new Map());
-    if (!byId.has(id)) byId.set(id, pressureTags(id, positions));
-    return byId.get(id);
+    return App.cached("tags", positions, () => settleTags(positions)).get(id) || [];
+  }
+  /* No tag on another, also a neighbour's (never text over text): Sleipner's side tags
+     met where a corner pushed one onto the next, and Kvitebjørn's met Visund's across
+     their short line. Every node's tags at once: of two that meet, a side tag slides
+     along its edge, up or down away from the other; of two on top or bottom edges, the
+     right one slides right. One that still meets another is left out until the zoom
+     gives it room. */
+  function settleTags(positions) {
+    const byId = new Map(), all = [], gap = 2 / (network ? network.getScale() : 1);
+    for (const nid of App.nodeIds) {
+      if (isTee(nid) || nodeHidden(nid) || !positions[nid]) continue;
+      const own = pressureTags(nid, positions);
+      byId.set(nid, own);
+      all.push(...own);
+    }
+    const side = (t) => t.side === "E" || t.side === "W";
+    const cx = (t) => (t.box[0] + t.box[2]) / 2, cy = (t) => (t.box[1] + t.box[3]) / 2;
+    const moves = (a, b) => (side(a) !== side(b) ? side(a)
+      : side(a) ? cy(a) > cy(b) || (cy(a) === cy(b) && cx(a) > cx(b))
+      : cx(a) > cx(b) || (cx(a) === cx(b) && cy(a) > cy(b)));
+    for (let pass = 0; pass < 6; pass++) {
+      let moved = false;
+      for (const a of all) for (const b of all) {
+        if (a === b || !overlaps(a.box, b.box) || !moves(a, b)) continue;
+        const [dx, dy] = !side(a) ? [b.box[2] - a.box[0] + gap, 0]
+          : cy(a) >= cy(b) ? [0, b.box[3] - a.box[1] + gap] : [0, b.box[1] - a.box[3] - gap];
+        a.box = [a.box[0] + dx, a.box[1] + dy, a.box[2] + dx, a.box[3] + dy];
+        moved = true;
+      }
+      if (!moved) break;
+    }
+    const kept = [];
+    for (const t of all) if (!kept.some((k) => overlaps(k.box, t.box))) kept.push(t);
+    for (const [nid, own] of byId) byId.set(nid, own.filter((t) => kept.includes(t)));
+    return byId;
   }
   /* How far from a node's centre a line, leaving along (ux, uy), meets what is drawn
      there: the square's edge, or the outer side of a tag the line runs under. vis asks
@@ -8647,11 +8708,13 @@ function NoraCanvasMap(view) {
   let outlook = null, outlookFor = "";
   function tagUnder(c) {
     if (!App.stateShown()) return null;
-    for (const id of App.nodeIds) {
-      if (nodeHidden(id)) continue;
-      if (tagsAt(id).some(({ box }) => c.x >= box[0] && c.x <= box[2] && c.y >= box[1] && c.y <= box[3])) return id;
-    }
-    return null;
+    return App.frame.run(() => { // every node's tags are settled together: once for the lookup
+      for (const id of App.nodeIds) {
+        if (nodeHidden(id)) continue;
+        if (tagsAt(id).some(({ box }) => c.x >= box[0] && c.x <= box[2] && c.y >= box[1] && c.y <= box[3])) return id;
+      }
+      return null;
+    });
   }
   function showOutlook(id, at) {
     if (!id) { if (outlook) outlook.hidden = true; outlookFor = ""; return; }
@@ -8927,6 +8990,7 @@ function NoraCanvasMap(view) {
   view.drawQuadrants = drawQuadrants;
   view.drawOverviewFlows = drawOverviewFlows;
   view.pressureTags = pressureTags;
+  view.tagsAt = tagsAt; // for tests: the tags as drawn, settled against every other
   view.portDistance = portDistance;
   view.drawPressureTags = drawPressureTags;
   view.drawDayBar = drawDayBar;
