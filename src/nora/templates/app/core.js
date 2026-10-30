@@ -336,18 +336,31 @@ const App = (() => {
      out comes back only after it has had room for LABEL_SETTLE_MS. `memo` is what this
      marker's label did in the frames before. */
   const LABEL_SETTLE_MS = 600;
-  function labelSpot(x, y, d, w, h, taken, memo = null, now = 0) {
+  function labelSpot(x, y, d, w, h, taken, memo = null, now = 0, angle = null) {
     const far = d * 2.5;
-    const spots = [[x + d, y - d], [x + d, y + d], [x - d - w, y - d], [x - d - w, y + d],
-      [x + far, y - far], [x + far, y + far], [x - far - w, y - far], [x - far - w, y + far]];
+    // A tall label (a pig's tag, ETA and speed) sits wholly above or below its marker,
+    // not centred across the line the marker is on.
+    const up = Math.max(d, h / 2 + 2), farUp = Math.max(far, up + d * 1.5);
+    const spots = [[x + d, y - up], [x + d, y + up], [x - d - w, y - up], [x - d - w, y + up],
+      [x + far, y - farUp], [x + far, y + farUp], [x - far - w, y - farUp], [x - far - w, y + farUp]];
+    const boxes = spots.map(([lx, ly]) => [lx - 2, ly - h / 2, lx + w + 2, ly + h / 2]);
     const order = spots.map((_, i) => i);
     if (memo && memo.spot != null) { // its own corner first, then the nearest: a slide, not a jump
       const [mx, my] = spots[memo.spot];
       order.sort((a, b) => Math.hypot(spots[a][0] - mx, spots[a][1] - my) - Math.hypot(spots[b][0] - mx, spots[b][1] - my));
     }
-    for (const i of taken ? order : [0]) {
-      const [lx, ly] = spots[i];
-      const box = [lx - 2, ly - h / 2, lx + w + 2, ly + h / 2];
+    // Off its own line where it can be: the line runs through the marker at `angle`, and a
+    // label it crosses reads as struck through. A corner it crosses is the last resort.
+    if (angle != null) {
+      const c = Math.cos(angle), s = Math.sin(angle);
+      const across = (b) => {
+        const sides = [[b[0], b[1]], [b[2], b[1]], [b[0], b[3]], [b[2], b[3]]].map(([px, py]) => (px - x) * s - (py - y) * c);
+        return Math.min(...sides) < 0 && Math.max(...sides) > 0;
+      };
+      order.sort((a, b) => across(boxes[a]) - across(boxes[b]));
+    }
+    for (const i of taken ? order : [order[0]]) {
+      const [lx, ly] = spots[i], box = boxes[i];
       if (taken && taken.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) continue;
       if (memo && !memo.shown) { // back only once it has had room for a while
         memo.clearSince ??= now;
@@ -392,14 +405,14 @@ const App = (() => {
     const parts = [marker.value, marker.eta, detail >= 2 ? marker.to : ""].filter(Boolean);
     return [[parts.join("  "), COLORS.text]];
   }
-  function markerLabel(ctx, marker, x, y, size, detail, taken) {
+  function markerLabel(ctx, marker, x, y, size, detail, taken, angle = null) {
     if (marker.kind !== "pig" && (!marker.value || (!detail && !marker.level && marker.kind !== "quality"))) return;
     const k = display.scale; // labels never under 11 px, larger on a wall
     const font = 11 * k, line = font + 3 * k, rows = markerRows(marker, detail);
     ctx.save();
     ctx.font = `${font}px Archivo, sans-serif`;
     const w = Math.max(...rows.map(([text]) => ctx.measureText(text).width));
-    const spot = labelSpot(x, y, size * 0.9, w, line * rows.length, taken, taken ? labelMemo(ctx, marker) : null, Date.now());
+    const spot = labelSpot(x, y, size * 0.9, w, line * rows.length, taken, taken ? labelMemo(ctx, marker) : null, Date.now(), angle);
     if (!spot) { ctx.restore(); return; }
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
@@ -415,7 +428,7 @@ const App = (() => {
     ctx.restore();
   }
   // A gas quality parcel: a calm-coloured dot; the strongest parcel of a slug is labelled.
-  function drawParcel(ctx, marker, x, y, size, detail, taken) {
+  function drawParcel(ctx, marker, x, y, size, detail, taken, angle = null) {
     if (marker.noDot) return; // the band shows this stretch; the dot is on the strongest part
     ctx.save();
     ctx.beginPath();
@@ -426,7 +439,7 @@ const App = (() => {
     ctx.strokeStyle = COLORS.casing;
     ctx.stroke();
     ctx.restore();
-    if (marker.lead) markerLabel(ctx, marker, x, y, size, detail, taken);
+    if (marker.lead) markerLabel(ctx, marker, x, y, size, detail, taken, angle);
   }
 
   /* The stretch of gas a peak covers, from tail (a) to head (b), in screen pixels: an

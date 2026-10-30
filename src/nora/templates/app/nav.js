@@ -28,7 +28,13 @@
     const shown = shownViews();
     splitShown = splitScreen();
     document.body.classList.toggle("split", s === "unit" && splitShown);
-    for (const [key, el] of Object.entries(containers)) el.hidden = !(s === "unit" && shown.includes(views[key]));
+    for (const [key, el] of Object.entries(containers)) {
+      el.hidden = !(s === "unit" && shown.includes(views[key]));
+      // Chosen while it warms up out of sight (warmMap), it shows now and its tiles fill in,
+      // never a blank page until they are all loaded. Safari has no requestIdleCallback, so
+      // there the warm-up starts 1.5 s after load, just when a first click comes.
+      if (!el.hidden) el.style.visibility = "";
+    }
     // The Map/Flow and mode tabs stay in the bar on every screen: one constant top bar.
     $("crumb-overview").setAttribute("aria-current", s === "overview" ? "page" : "false");
     const deep = s === "asset" || s === "diag";
