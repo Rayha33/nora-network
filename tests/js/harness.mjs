@@ -26,16 +26,22 @@ export function appSource() {
 // A template's source by its name as the page uses it: "app.js" is the joined parts.
 export const templateSource = (name) => (name === "app.js" ? appSource() : readFileSync(path.join(TEMPLATES, name), "utf8"));
 
-export function loadPayload() {
-  return JSON.parse(readFileSync(path.join(HERE, "fixtures", "payload.json"), "utf8"));
+/* The payload as the page gets it. Tests open on the overview with the Map, whatever
+   nora.toml sets as the landing page (Ray, 30 Oct: the whole network in the Flow view):
+   the Flow view needs vis-network, which only the Flow tests provide. `shipped: true`
+   keeps the landing page nora.toml sets. */
+export function loadPayload({ shipped = false } = {}) {
+  const nora = JSON.parse(readFileSync(path.join(HERE, "fixtures", "payload.json"), "utf8"));
+  if (!shipped) Object.assign(nora.config.screen, { start: "overview", network_view: "map" });
+  return nora;
 }
 
 /* Evaluate the three templates in one context. `search` becomes location.search, so
    URL-driven behaviour (?embed=1, ?theme=…) can be exercised per test. `globals` adds
    browser objects the stub lacks (a fake maplibregl, Path2D) for the tests that mount
    a map view. */
-export function loadApp({ search = "", globals = {} } = {}) {
-  const nora = loadPayload();
+export function loadApp({ search = "", globals = {}, shipped = false } = {}) {
+  const nora = loadPayload({ shipped });
   const document = makeDom();
   const sandbox = Object.assign(makeSandbox({ nora, document, search }), globals);
   const context = vm.createContext(sandbox, { name: "nora-dom" });
