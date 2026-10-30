@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta name="nora-build" content="79616a967636">
+<meta name="nora-build" content="24370270b99c">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>NORA operations</title>
@@ -530,6 +530,11 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 .edits-bar button:hover { background: var(--raised); }
 .edits-bar button:disabled { color: var(--text-dim); background: transparent; cursor: default; }
 .edits-bar button.danger, .sidebar .actions button.danger { border-color: var(--critical); }
+/* The type icons: drag one onto the drawing for a new node of that type, or click it. */
+.edits-bar .palette { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--rule); border-radius: 7px; }
+.edits-bar .palette-icon { width: 30px; height: 28px; padding: 0; display: inline-grid; place-items: center; border: 0; background: transparent; cursor: grab; }
+.edits-bar .palette-icon:active { cursor: grabbing; }
+.edits-bar .palette-icon img { width: 18px; height: 18px; pointer-events: none; }
 .whatif-bar { left: 16px; right: auto; transform: none; gap: 12px; } /* clear of the panel on the right */
 .whatif-bar .seg { height: 30px; }
 /* What-if's window on the view, beside the node or line clicked. */
@@ -5789,11 +5794,11 @@ const App = (() => {
   }
   /* A new node where the Flow view was right-clicked or Add node placed it (`grid`: its
      stage and rank). The nearest node lends its unit, country and position as a start. */
-  function openNodeForm({ grid, near }) {
+  function openNodeForm({ grid, near, type }) {
     const anchor = near && assets[near];
     const { inputs, rows } = nodeFields(anchor
-      ? { lat: anchor.lat, lon: anchor.lon, country: anchor.country, unit: unitOf[near] }
-      : { lat: null, lon: null });
+      ? { lat: anchor.lat, lon: anchor.lon, country: anchor.country, unit: unitOf[near], type }
+      : { lat: null, lon: null, type });
     const note = h("p", { class: "form-note", role: "alert" });
     const form = h("form", {
       class: "edit-form",
@@ -6082,10 +6087,36 @@ const App = (() => {
      how many changes there are. Click a node or a line to change or remove it;
      right-click for the same and Connect. Keys: Delete removes what the form shows,
      Cmd/Ctrl+Z undoes, Shift+Cmd/Ctrl+Z (or Ctrl+Y) redoes. */
-  function addNodeTool() {
+  function addNodeTool(type) {
     if (state.view !== "flow") showView("flow");
-    if (views.flow && views.flow.placeNode) views.flow.placeNode();
-    editNote("Click on the drawing where the new node goes (Esc to stop)");
+    if (views.flow && views.flow.placeNode) views.flow.placeNode(type || true);
+    editNote(`Click on the drawing where the new ${type ? (NORA.nodeTypes[type] || type).split(/[ ,]/)[0].toLowerCase() : "node"} goes (Esc to stop)`);
+  }
+  function connectTool() {
+    if (state.view !== "flow") showView("flow");
+    if (views.flow && views.flow.pickToConnect) views.flow.pickToConnect();
+    editNote("Click the node the new line starts from (Esc to stop)");
+  }
+  /* The type icons (Ray, 30 Oct: "the edit page is way to simple, we are missing features
+     like click and drag of icons"): drag one onto the Flow drawing for a new node of that
+     type there, or click it, then the drawing. */
+  const PALETTE = ["field", "hub", "tee", "processing", "terminal", "storage", "lng", "market"];
+  function palette() {
+    const icons = (NORA.iconSets || {})[theme] || {};
+    return h("span", { class: "palette", role: "group", "aria-label": "New node: drag a type onto the drawing, or click it" },
+      ...PALETTE.filter((type) => NORA.nodeTypes[type]).map((type) => h("button", {
+        type: "button", class: "palette-icon", draggable: "true", "data-type": type,
+        title: `${NORA.nodeTypes[type]}: drag it onto the drawing, or click it and then the drawing`,
+        "aria-label": `New ${NORA.nodeTypes[type]}`,
+        ondragstart: (e) => {
+          if (state.view !== "flow") showView("flow");
+          e.dataTransfer.setData("application/x-nora-node", type);
+          e.dataTransfer.setData("text/plain", NORA.nodeTypes[type]);
+          e.dataTransfer.effectAllowed = "copy";
+          editNote("Drop it on the drawing where the new node goes");
+        },
+        onclick: () => addNodeTool(type),
+      }, icons[type] ? h("img", { src: icons[type], alt: "", width: "18", height: "18", draggable: "false" }) : type.slice(0, 2))));
   }
   function renderEditsBar() {
     if (state.mode !== "edit" || embed) { if (editsBar) { editsBar.remove(); editsBar = null; } return; }
@@ -6096,7 +6127,9 @@ const App = (() => {
     const button = (label, act, cls, disabled = false, title = "") => h("button", { type: "button", class: cls, onclick: act, disabled: disabled ? "" : null, title: title || null }, label);
     const redo = redoList().length;
     editsBar.replaceChildren(...[ // a null would show as the text "null"
-      button("Add node", addNodeTool),
+      button("Add node", () => addNodeTool()),
+      palette(),
+      button("Connect", connectTool, null, false, "Click a node, then the node the new line goes to"),
       button("Undo", undoEdit, null, !edits.length, "Cmd/Ctrl+Z"),
       button("Redo", redoEdit, null, !redo, "Shift+Cmd/Ctrl+Z"),
       h("span", { class: "count", role: "status", "aria-live": "polite" }, edits.length ? `${edits.length} ${edits.length === 1 ? "change" : "changes"}` : "No changes"),
@@ -8470,16 +8503,28 @@ function NoraCanvasMap(view) {
     }
     return { grid: [Math.round(stage * 100) / 100, Math.round(rank * 100) / 100], near };
   }
-  let placing = false; // Add node (the editor's toolbar) waits for a click on the drawing
-  function placeNode() {
-    placing = true;
+  /* Add node (the editor's toolbar, or one of its type icons) waits for a click on the
+     drawing; `placing` is the type to give the new node, true for none. */
+  let placing = false;
+  function placeNode(type = true) {
+    placing = type;
     connecting = null;
+    picking = false;
     el.style.cursor = "crosshair";
   }
   function stopPlacing() {
     placing = false;
     el.style.cursor = "";
   }
+  // The toolbar's Connect: the next click picks the node a new line starts from.
+  let picking = false;
+  function pickToConnect() {
+    picking = true;
+    placing = false;
+    connecting = null;
+    el.style.cursor = "crosshair";
+  }
+  const typeOf = (wanted) => (typeof wanted === "string" ? { type: wanted } : {});
   let connecting = null; // { from, at }: "Connect to another node…" is waiting for a click
   function startConnect(from) {
     connecting = { from, at: null };
@@ -8770,7 +8815,15 @@ function NoraCanvasMap(view) {
     network.on("click", (event) => {
       const at = event.pointer && event.pointer.DOM;
       if (connecting) { finishConnect(event.nodes[0] || (at && hitTest(at, network.getPositions(), (p) => network.canvasToDOM(p), network.getScale()))); return; }
-      if (placing) { stopPlacing(); if (at && App.state.mode === "edit") App.edit.addAt(placeAt(network.DOMtoCanvas(at))); return; }
+      if (placing) { const wanted = placing; stopPlacing(); if (at && App.state.mode === "edit") App.edit.addAt({ ...placeAt(network.DOMtoCanvas(at)), ...typeOf(wanted) }); return; }
+      if (picking) {
+        picking = false;
+        el.style.cursor = "";
+        const from = event.nodes[0] || (at && hitTest(at, network.getPositions(), (p) => network.canvasToDOM(p), network.getScale()));
+        if (from && NORA.assets[from] && NORA.assets[from].kind === "node") { startConnect(from); App.edit.note(`From ${NORA.assets[from].name}: click the node the line goes to (Esc to stop)`); }
+        else App.edit.note("");
+        return;
+      }
       const mark = at && markAt(at.x, at.y); // a pig or a peak under the pointer wins
       if (mark) { App.selectMarker(mark.key); return; }
       const id = event.nodes[0] || event.edges[0] || (at && hitTest(at, network.getPositions(), (p) => network.canvasToDOM(p), network.getScale()));
@@ -8818,9 +8871,21 @@ function NoraCanvasMap(view) {
       showOutlook(tagUnder(network.DOMtoCanvas(at)), at);
     });
     container.addEventListener("pointerleave", () => showOutlook(null));
+    /* A type icon dragged from the editor's toolbar and dropped on the drawing: a new node
+       of that type, there (Ray, 30 Oct: "we are missing features like click and drag of
+       icons"). Only in Edit; anything else dropped here is left alone. */
+    const nodeDrag = (e) => App.state.mode === "edit" && e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("application/x-nora-node");
+    container.addEventListener("dragover", (e) => { if (nodeDrag(e)) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
+    container.addEventListener("drop", (e) => {
+      if (!nodeDrag(e)) return;
+      e.preventDefault();
+      const rect = container.getBoundingClientRect(), at = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      App.edit.addAt({ ...placeAt(network.DOMtoCanvas(at)), type: e.dataTransfer.getData("application/x-nora-node") });
+    });
     addEventListener("keydown", (e) => {
       if (e.key === "Escape" && connecting) finishConnect(null);
       if (e.key === "Escape" && placing) { stopPlacing(); App.edit.note(""); }
+      if (e.key === "Escape" && picking) { picking = false; el.style.cursor = ""; App.edit.note(""); }
     });
   };
 
@@ -9127,6 +9192,7 @@ function NoraCanvasMap(view) {
   view.overviewSquareHalf = overviewSquareHalf;
   view.clearPlaces = clearPlaces;
   view.placeNode = placeNode; // the editor's Add node: the next click on the drawing places it
+  view.pickToConnect = () => { if (network) pickToConnect(); }; // the editor's Connect: two clicks make a line
   view.connect = (id) => { if (network) startConnect(id); }; // the node form's Connect…
   view.overviewReading = overviewReading;
   view.overviewNameLines = overviewNameLines;
