@@ -61,7 +61,7 @@ def synthesize(
     active. Every step is routed with routed_flow, so the flows always balance.
 
     With `operations = true` the stream also gets:
-      nomination_msm3d  hourly nominations at each terminal: the flow the shippers
+      nomination_msm3d  nominations at each terminal, each step: the flow the shippers
                         planned without events; dispatch keeps the flows on
                         it until an event intervenes
       booked_msm3d      booked capacity at each terminal, one exit booked tight
@@ -353,7 +353,7 @@ def _operations_rows(net, times, actual, planned, windows, rng, rises=(), target
         windows = load_config()["pressure"]
     rows: list[Row] = []
     exits = sorted(n.id for n in net.nodes if n.type == "terminal")
-    # Hourly nominations: the planned flow at each exit point.
+    # Nominations: the planned flow at each exit point, each step.
     nominated: dict[str, list[float]] = {}
     for node in exits:
         nominated[node] = [round(p.get(node, 0.0), 1) for p in planned]

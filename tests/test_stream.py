@@ -179,12 +179,14 @@ every_hours = 6
 def test_synthetic_peaks_are_short(north_sea):
     """Ray, 29 Oct: "some of the CO2 peaks are unrealisticly long, cut the longest in
     half", then "simulated peaks are too long". No field's H2S or CO2 stays over the
-    follow level for more than an hour: about 29 km of gas, not whole lines. Each
+    follow level for more than half an hour: about 14 km of gas, not whole lines. Each
     field still sends some."""
     from nora.config import load_config
 
     quality = load_config()["quality"]
     stream = load_stream("synthetic-week", north_sea)
+    step_hours = (stream.times[1] - stream.times[0]).total_seconds() / 3600
+    assert step_hours == 0.5, "half-hour peaks need half-hour data"
     for metric in ("h2s_ppm", "co2_molpct"):
         follow = quality[metric][0] * quality["follow_from"]
         assets, values = stream.metrics[metric]
@@ -195,7 +197,8 @@ def test_synthetic_peaks_are_short(north_sea):
                 run = run + 1 if row[column] is not None and row[column] >= follow else 0
                 slugs += run == 1
                 longest = max(longest, run)
-            assert longest <= 1, f"{asset}: {metric} over {follow:.2f} for {longest} h"
+            hours = longest * step_hours
+            assert hours <= 0.5, f"{asset}: {metric} over {follow:.2f} for {hours} h"
         assert slugs >= 4, f"{metric}: only {slugs} slugs in the week"
 
 

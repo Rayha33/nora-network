@@ -119,7 +119,7 @@
     if (!indicators.length) return h("p", { class: "empty" }, empty);
     // One asset's values (a panel) need no column heads: the rows say what they are.
     const heads = byMeasure ? [] : [h("div", { class: "head" }, "Asset"), h("div", { class: "head" }, "Value in its range"),
-      h("div", { class: "head" }, `Last ${spanLabel(TREND_STEPS * stepHours() * 3600)}`), h("div", { class: "head optional" }, "Change"), h("div", { class: "head optional" }, "State")];
+      h("div", { class: "head" }, `Last ${spanLabel(hourly(TREND_STEPS) * stepHours() * 3600)}`), h("div", { class: "head optional" }, "Change"), h("div", { class: "head optional" }, "State")];
     return h("div", { class: `bank${byMeasure ? " by-measure" : ""}` },
       ...heads,
       ...indicators.flatMap((ind) => [

@@ -655,7 +655,8 @@ test("exit nodes: zoomed out the box shows the day bar and the next 6 hours of n
     stream.assets.forEach((id, j) => { if (stream.values[k][j] != null) flows[id] = stream.values[k][j]; });
     return { t: stream.times[k], flows, metrics, plan: null };
   };
-  for (let k = 1; k <= 6; k++) App.live.frames.push(frameAt(k));
+  const ahead = (6 * 3600) / stream.step; // six hours of the stream's data steps
+  for (let k = 1; k <= ahead; k++) App.live.frames.push(frameAt(k));
   const exit = Object.keys(NORA.assets).find((id) => NORA.assets[id].exit && NORA.grid[id] && App.rampAhead(id)
     && App.rampAhead(id).hours.filter((h) => h.value != null).length > 3);
   assert.ok(exit, "an exit with nominations ahead");
@@ -988,7 +989,7 @@ test("exit nodes: zoomed in, each of the next 6 hours' nominations has its numbe
   const { App, NORA } = loadApp();
   loadFirstHour(App, NORA);
   const stream = App.live.stream;
-  for (let k = 1; k <= 6; k++) {
+  for (let k = 1; k <= (6 * 3600) / stream.step; k++) { // six hours of data steps
     const metrics = {};
     for (const [name, block] of Object.entries(stream.metrics || {})) {
       metrics[name] = {};
