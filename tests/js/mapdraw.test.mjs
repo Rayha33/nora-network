@@ -242,3 +242,32 @@ test("map: the labels of pigs and peaks keep off the basemap's place names", asy
   const at = map.project(city.geometry.coordinates);
   assert.ok(taken.some(([x0, y0, x1, y1]) => at.x > x0 && at.x < x1 && at.y > y0 && at.y < y1), "Copenhagen's name is taken");
 });
+
+test("map: place names that load after the first draw are kept clear once the map is idle", async () => {
+  const { App, NORA, document, view, map } = await mountMap();
+  document.getElementById("stream-select")._listeners.change[0]({ target: { value: NORA.streams[0].name } });
+  const city = { properties: { name: "Copenhagen" }, geometry: { type: "Point", coordinates: [12.57, 55.68] } };
+  let tilesIn = false; // the Map shown before its tiles: no place names rendered yet
+  map.getStyle = () => ({ layers: [{ id: "place_city", type: "symbol" }] });
+  map.queryRenderedFeatures = () => (tilesIn ? [city] : []);
+  map.fire("style.load");
+  for (let i = 0; i < 5 && !view.ready; i++) await new Promise((resolve) => setImmediate(resolve));
+  map.fire("sourcedata", { sourceId: "nora-pipes", isSourceLoaded: true });
+  let taken = null, pig = null;
+  for (let i = 0; i < App.live.frames.length && !pig; i++) { App.seek(i); pig = App.markers().find((m) => m.kind === "pig") || null; }
+  App.markers = () => [{ ...pig, id: "langeled_south", along: 0.5 }];
+  const draw = App.drawMarker;
+  App.drawMarker = (...args) => { taken = args[args.length - 1]; return draw(...args); };
+  App.live.playing = false;
+  map.center = { lng: 3.1, lat: 58 };
+  map.fire("render");
+  const at = map.project(city.geometry.coordinates);
+  const holds = () => taken.some(([x0, y0, x1, y1]) => at.x > x0 && at.x < x1 && at.y > y0 && at.y < y1);
+  assert.ok(taken && !holds(), "first drawn before the place names were on the map");
+  tilesIn = true;
+  map.fire("idle"); // every tile loaded and drawn
+  taken = null;
+  view.draw(); // the app's next frame, camera unchanged
+  assert.ok(taken, "drawn again once the map is idle");
+  assert.ok(holds(), "now Copenhagen's name is taken too");
+});

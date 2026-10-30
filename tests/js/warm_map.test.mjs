@@ -33,6 +33,24 @@ test("map warm-up: opening on the Flow, the Map mounts out of sight once the pag
   assert.equal(App.state.view, "flow");
 });
 
+test("map warm-up: the Map chosen while it warms shows at once, its tiles filling in", () => {
+  const idle = [];
+  const { App, document, window } = loadApp({ shipped: true, globals: fakeVis() });
+  window.requestIdleCallback = (fn) => idle.push(fn);
+  document.getElementById("speed").options = [{ value: "600" }];
+  App.start();
+  const view = App.views.map, mount = view.mount;
+  view.mount = function (el) { mount.call(this, el); this.map = { once() {} }; }; // first tiles still loading
+  const map = document.getElementById("view-map");
+  map.style = { visibility: "" }; // the stub's style records nothing; this one does
+  idle[0]();
+  assert.equal(map.style.visibility, "hidden", "warming out of sight");
+  App.state.view = "map";
+  App.go({ screen: "unit", unit: "all" });
+  assert.equal(map.hidden, false, "chosen, the Map is shown");
+  assert.equal(map.style.visibility, "", "now, not once every tile has loaded");
+});
+
 test("map warm-up: opening on the Map there is nothing to warm", () => {
   const idle = [];
   const { App, document, window } = loadApp({ globals: fakeVis() });

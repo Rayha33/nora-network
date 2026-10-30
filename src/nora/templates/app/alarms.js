@@ -135,7 +135,7 @@
   }
   function drawMarker(ctx, marker, x, y, angle, size = 7, detail = 1, taken = null) {
     size *= display.scale; // markers are drawn in screen pixels in every view
-    if (marker.kind === "quality") { drawParcel(ctx, marker, x, y, size, detail, taken); return; }
+    if (marker.kind === "quality") { drawParcel(ctx, marker, x, y, size, detail, taken, angle); return; }
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
@@ -152,6 +152,6 @@
     ctx.strokeStyle = COLORS.casing;
     ctx.stroke();
     ctx.restore();
-    markerLabel(ctx, marker, x, y, size, detail, taken);
+    markerLabel(ctx, marker, x, y, size, detail, taken, angle);
   }
 

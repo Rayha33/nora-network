@@ -332,6 +332,9 @@
     map.on("resize", sizeCanvas);
     map.on("sourcedata", (e) => { if (e && e.sourceId === "nora-pipes" && e.isSourceLoaded) linesLoaded = true; });
     map.on("render", () => { renderedCamera = cameraKey(); if (view.ready) view.draw(); });
+    // Its tiles all in, the basemap's place names are too: label room worked out before
+    // then had none of them, and a pig's label sat on "Copenhagen" until the next pan.
+    map.on("idle", () => { boxesKey = ""; drawnKey = ""; });
     const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12 });
     // A pig, peak or slug under the pointer wins: its value and when it reaches the next stop.
     let overMark = false;

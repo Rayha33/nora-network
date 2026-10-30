@@ -36,3 +36,29 @@ test("marker labels: once left out, a label comes back only after 600 ms of room
   assert.ok(spot([], m, 1701), "after 600 ms it is back");
   assert.equal(m.shown, true);
 });
+
+/* Seen on the live Flow, 30 Oct: a pig's three-line label (tag, ETA, speed) sat across its
+   own pipeline, so "6.0 m/s" read as struck through. */
+const crosses = ([lx, ly], h, angle, w = 40) => {
+  const c = Math.cos(angle), s = Math.sin(angle);
+  const sides = [[lx - 2, ly - h / 2], [lx + w + 2, ly - h / 2], [lx - 2, ly + h / 2], [lx + w + 2, ly + h / 2]]
+    .map(([px, py]) => px * s - py * c);
+  return Math.min(...sides) < 0 && Math.max(...sides) > 0;
+};
+
+test("marker labels: a tall label sits wholly beside its line, never across it", () => {
+  for (const angle of [0, Math.PI, Math.PI / 4, -Math.PI / 4, Math.PI / 2, 2.6]) {
+    const got = App.labelSpot(0, 0, 10, 40, 42, [], memo(), 0, angle);
+    assert.ok(got, `a spot for a line at ${angle.toFixed(2)} rad`);
+    assert.ok(!crosses(got, 42, angle), `clear of a line at ${angle.toFixed(2)} rad: ${Array.from(got)}`);
+  }
+});
+
+test("marker labels: across its own line only when every other spot is taken", () => {
+  const right = [[-200, -200, -1, 200]]; // all of the left side taken
+  const got = App.labelSpot(0, 0, 10, 40, 42, right, memo(), 0, -Math.PI / 4);
+  assert.ok(got, "it still shows on the right");
+  assert.ok(!crosses(got, 42, -Math.PI / 4), "below the line that climbs to the upper right");
+  const only = [[-200, -200, 200, -1], [-200, 0, -1, 200]]; // only the lower right is free
+  assert.ok(App.labelSpot(0, 0, 10, 40, 42, only, memo(), 0, Math.PI / 4), "the lower right, though the line runs through it");
+});
