@@ -47,14 +47,15 @@ test("playback: the keys step an hour; the ruler holds the week with now on it",
   assert.equal(scrub.max, String(4 * 3600));
   assert.equal(scrub.value, "0", "the key control rests at zero");
 
+  const before = App.live.time;
   scrub.value = "3600";
   scrub._listeners.input[0]({ target: { value: scrub.value } });
-  assert.equal(App.live.index, initial + 1, "dragging right moves one hour forward");
+  assert.equal(App.live.time, before + 3600, "dragging right moves one hour forward");
   assert.equal(scrub.value, "0", "and rests again");
 
   scrub.value = "-7200";
   scrub._listeners.input[0]({ target: { value: scrub.value } });
-  assert.equal(App.live.index, initial - 1, "dragging left moves back through historical values");
+  assert.equal(App.live.time, before - 3600, "dragging left moves back through historical values");
   const window = App.timelineWindow();
   assert.equal(window.now, App.live.time);
   assert.deepEqual([window.start, window.end], [s.times[0], s.times[s.times.length - 1]], "the ruler stays put: the whole week");

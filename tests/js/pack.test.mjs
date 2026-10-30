@@ -111,7 +111,9 @@ test("pressure outlook: the last 6 hours measured, the next 6 modelled as steady
   scrub.value = String(30 * 3600);
   scrub._listeners.input[0]({ target: { value: scrub.value } });
   const o = App.pressureOutlook("draupner_s");
-  assert.equal(o.past.length, 7, "six hours back and now, hourly");
+  const step = App.live.stream.step;
+  assert.equal(o.past.length, (6 * 3600) / step + 1, "six hours back and now, each data step");
+  assert.equal(o.past.at(-1).t - o.past[0].t, 6 * 3600, "six hours of measurements");
   assert.equal(o.future.length, 6, "six hours ahead");
   assert.equal(o.past.at(-1).p, App.reading("draupner_s").pressure, "it starts from now");
   const card = App.pressureChart("draupner_s");

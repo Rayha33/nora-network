@@ -72,7 +72,7 @@ test("the trend column says the span it draws: hours for hourly data, days for d
     walk(document.getElementById("screen-overview"));
     return heads[0];
   };
-  assert.equal(head("synthetic-week"), "Last 12 h", "twelve hourly readings back");
+  assert.equal(head("synthetic-week"), "Last 12 h", "twelve hours back, of half-hourly readings");
   assert.equal(head("denmark-gas-energinet"), "Last 12 d", "twelve gas days back");
 });
 

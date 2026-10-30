@@ -141,8 +141,9 @@ test("pig alarms: an ETA that drifts from the last update is in the alarm list",
   assert.ok(listed, "evaluate() puts it in the alarm list");
   assert.equal(listed.id, hit.c.id, "on the pig's pipeline");
   assert.ok(App.levelOf(listed.id) >= listed.level, "and in the counts");
-  // Within the next half hour the dispatcher sends the update and the alarm clears.
-  App.seek((hit.t + 1800 - stream.times[0]) / stream.step);
+  // 15 minutes later the dispatcher sends the update and the alarm clears (before the
+  // next half-hourly reading can move the ETA again).
+  App.seek((hit.t + 900 - stream.times[0]) / stream.step);
   assert.ok(!App.live.conditions.find((c) => c.kind === "pig" && c.id === hit.c.id && c.text === hit.c.text), "cleared by the update");
 });
 

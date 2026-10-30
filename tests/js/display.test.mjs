@@ -70,7 +70,7 @@ test("exit nominations: six hourly bars with hour-only labels", () => {
   const column = block.assets.indexOf(id);
   assert.ok(column >= 0, "the fixture has an exit nomination series");
   App.live.stream = stream;
-  App.live.frames = stream.times.slice(0, 6).map((t, i) => ({ t, flows: {}, metrics: { nomination_msm3d: { [id]: block.values[i][column] } }, plan: null }));
+  App.live.frames = stream.times.slice(0, 12).map((t, i) => ({ t, flows: {}, metrics: { nomination_msm3d: { [id]: block.values[i][column] } }, plan: null }));
   App.live.index = 0;
   App.live.time = stream.times[0];
   const series = App.nominationWindow(id);
@@ -83,6 +83,18 @@ test("exit nominations: six hourly bars with hour-only labels", () => {
     assert.ok(chart.includes(`>${hour}</text>`), `hour ${hour} is labelled`);
   }
   assert.ok(!chart.includes(":00"), "hour labels do not repeat minutes");
+});
+
+test("exit nominations: half-hourly data still gives six bars on the hour, from the hour shown", () => {
+  const { App } = load();
+  const id = "dunkirk", t0 = 1_790_000_000 - (1_790_000_000 % 3600);
+  App.live.stream = null;
+  App.live.frames = Array.from({ length: 14 }, (_, i) => ({ t: t0 + i * 1800, flows: {}, metrics: { nomination_msm3d: { [id]: 40 + i } }, plan: null }));
+  App.live.index = 1; // 30 minutes past the hour
+  App.live.time = t0 + 1800;
+  const series = App.nominationWindow(id);
+  assert.deepEqual(Array.from(series, (r) => r.t - t0), [0, 1, 2, 3, 4, 5].map((k) => k * 3600), "an hour apart, from the hour");
+  assert.deepEqual(Array.from(series, (r) => r.value), [40, 42, 44, 46, 48, 50], "each hour's own nomination");
 });
 
 /* Ray, 29 Oct: "in this view we also need booking hourly level so see if the hourly

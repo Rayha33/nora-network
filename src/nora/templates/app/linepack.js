@@ -74,9 +74,9 @@
     return assets[id] && assets[id].supply ? Math.max(out, into) : into;
   }
   // The trends in the indicator banks: the last TREND_STEPS data steps (12 h of hourly
-  // data, 12 gas days of daily data), and their column says so.
+  // or half-hourly data, 12 gas days of daily data), and their column says so.
   const TREND_STEPS = 12;
-  function series(fn, n = TREND_STEPS + 1) {
+  function series(fn, n = hourly(TREND_STEPS) + 1) {
     const out = [];
     for (let i = Math.max(0, live.index - n + 1); i <= live.index; i++) out.push(live.frames[i] ? fn(live.frames[i]) : null);
     return out;
@@ -86,6 +86,9 @@
     const n = live.frames.length;
     return n > 1 ? (live.frames[n - 1].t - live.frames[n - 2].t) / 3600 || 1 : 1;
   }
+  // n data steps, or n hours of data finer than hourly: half-hourly data keeps the hourly
+  // views (twelve hours of trend, the ruler's ten days) instead of halving them.
+  const hourly = (n) => (stepHours() < 1 ? Math.round(n / stepHours()) : n);
   // Change per hour over the last three readings.
   function rate(values) {
     const known = values.filter((v) => v != null);
@@ -152,19 +155,24 @@
   }
 
   // Six hourly nominations beginning at the displayed hour. Live frames carry their
-  // forecast in `ahead`; recorded streams use their following hourly frames.
+  // forecast in `ahead`; recorded streams use their frames on the following hours (each
+  // frame of hourly data, every other one of half-hourly data).
   function nominationWindow(id) {
     return cached("nom6", id, () => {
       const current = frame(), out = [];
+      const gap = live.frames.length > 1 ? live.frames[1].t - live.frames[0].t : 3600;
+      const per = !live.feed && gap > 0 && gap < 3600 ? Math.round(3600 / gap) : 1;
+      const base = live.index - (per > 1 ? Math.round((current.t % 3600) / gap) : 0);
+      const t0 = (live.frames[base] || current).t;
       // Each hour's nomination and booking (a live feed's `ahead` block, or the
       // recorded data's following hours).
-      const hourOf = (name, k, future) => (k === 0 ? metric(name, id, current)
+      const hourOf = (name, k, future) => (k === 0 && base === live.index ? metric(name, id, current)
         : live.feed ? (((current.ahead || {})[name] || {})[id] || [])[k - 1]
         : metric(name, id, future || {}));
       for (let k = 0; k < 6; k++) {
-        const future = live.frames[live.index + k];
+        const future = live.frames[base + k * per];
         const value = hourOf("nomination_msm3d", k, future), booked = hourOf("booked_msm3d", k, future);
-        out.push({ t: future && future.t != null ? future.t : current.t + k * 3600, value: value ?? null, booked: booked ?? null });
+        out.push({ t: future && future.t != null ? future.t : t0 + k * 3600, value: value ?? null, booked: booked ?? null });
       }
       return out;
     });

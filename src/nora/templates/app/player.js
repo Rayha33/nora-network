@@ -201,7 +201,8 @@
     : seconds < 60 * 86400 ? `${Math.round(seconds / 86400)} d` : `${Math.round(seconds / (30 * 86400))} mo`);
   /* The timeline (Ray, 29 Oct: "im not happy with how the timeline works and functions at
      the bottom and the feel and look of it. make up your own version and improve it"). A
-     ruler over the whole dataset, or the 240 steps around the playhead of a longer one,
+     ruler over the whole dataset, or the 240 steps (240 hours of half-hourly data) around
+     the playhead of a longer one,
      that stays put while the data plays: history solid, the model's hours ahead dashed, a
      line at now and the playhead to drag or click to any time. Along it, the gas days and
      what is coming: alarms on the plan, pressures at their limits, outages and when each
@@ -211,10 +212,11 @@
     const frames = live.frames, n = frames.length;
     if (!n) { const now = live.time == null ? 0 : live.time; return { start: now - 1, now, end: now + 1 }; }
     let first = 0, last = n - 1;
-    if (n > RULER_STEPS + 1) { // a page of the data around the playhead, moved a quarter at a time
-      const quarter = RULER_STEPS / 4, at = live.feed ? n - 1 : live.playhead;
-      first = Math.max(0, Math.min(n - 1 - RULER_STEPS, Math.floor((at - RULER_STEPS / 2) / quarter) * quarter));
-      last = first + RULER_STEPS;
+    const steps = hourly(RULER_STEPS);
+    if (n > steps + 1) { // a page of the data around the playhead, moved a quarter at a time
+      const quarter = Math.round(steps / 4), at = live.feed ? n - 1 : live.playhead;
+      first = Math.max(0, Math.min(n - 1 - steps, Math.floor((at - steps / 2) / quarter) * quarter));
+      last = first + steps;
     }
     return { start: frames[first].t, now: live.time, end: Math.max(frames[last].t, frames[first].t + 1) };
   }
