@@ -517,6 +517,11 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
 .edits-bar button:hover { background: var(--raised); }
 .edits-bar button:disabled { color: var(--text-dim); background: transparent; cursor: default; }
 .edits-bar button.danger, .sidebar .actions button.danger { border-color: var(--critical); }
+/* The type icons: drag one onto the drawing for a new node of that type, or click it. */
+.edits-bar .palette { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--rule); border-radius: 7px; }
+.edits-bar .palette-icon { width: 30px; height: 28px; padding: 0; display: inline-grid; place-items: center; border: 0; background: transparent; cursor: grab; }
+.edits-bar .palette-icon:active { cursor: grabbing; }
+.edits-bar .palette-icon img { width: 18px; height: 18px; pointer-events: none; }
 .whatif-bar { left: 16px; right: auto; transform: none; gap: 12px; } /* clear of the panel on the right */
 .whatif-bar .seg { height: 30px; }
 /* What-if's window on the view, beside the node or line clicked. */

@@ -141,11 +141,11 @@
   }
   /* A new node where the Flow view was right-clicked or Add node placed it (`grid`: its
      stage and rank). The nearest node lends its unit, country and position as a start. */
-  function openNodeForm({ grid, near }) {
+  function openNodeForm({ grid, near, type }) {
     const anchor = near && assets[near];
     const { inputs, rows } = nodeFields(anchor
-      ? { lat: anchor.lat, lon: anchor.lon, country: anchor.country, unit: unitOf[near] }
-      : { lat: null, lon: null });
+      ? { lat: anchor.lat, lon: anchor.lon, country: anchor.country, unit: unitOf[near], type }
+      : { lat: null, lon: null, type });
     const note = h("p", { class: "form-note", role: "alert" });
     const form = h("form", {
       class: "edit-form",
@@ -434,10 +434,36 @@
      how many changes there are. Click a node or a line to change or remove it;
      right-click for the same and Connect. Keys: Delete removes what the form shows,
      Cmd/Ctrl+Z undoes, Shift+Cmd/Ctrl+Z (or Ctrl+Y) redoes. */
-  function addNodeTool() {
+  function addNodeTool(type) {
     if (state.view !== "flow") showView("flow");
-    if (views.flow && views.flow.placeNode) views.flow.placeNode();
-    editNote("Click on the drawing where the new node goes (Esc to stop)");
+    if (views.flow && views.flow.placeNode) views.flow.placeNode(type || true);
+    editNote(`Click on the drawing where the new ${type ? (NORA.nodeTypes[type] || type).split(/[ ,]/)[0].toLowerCase() : "node"} goes (Esc to stop)`);
+  }
+  function connectTool() {
+    if (state.view !== "flow") showView("flow");
+    if (views.flow && views.flow.pickToConnect) views.flow.pickToConnect();
+    editNote("Click the node the new line starts from (Esc to stop)");
+  }
+  /* The type icons (Ray, 30 Oct: "the edit page is way to simple, we are missing features
+     like click and drag of icons"): drag one onto the Flow drawing for a new node of that
+     type there, or click it, then the drawing. */
+  const PALETTE = ["field", "hub", "tee", "processing", "terminal", "storage", "lng", "market"];
+  function palette() {
+    const icons = (NORA.iconSets || {})[theme] || {};
+    return h("span", { class: "palette", role: "group", "aria-label": "New node: drag a type onto the drawing, or click it" },
+      ...PALETTE.filter((type) => NORA.nodeTypes[type]).map((type) => h("button", {
+        type: "button", class: "palette-icon", draggable: "true", "data-type": type,
+        title: `${NORA.nodeTypes[type]}: drag it onto the drawing, or click it and then the drawing`,
+        "aria-label": `New ${NORA.nodeTypes[type]}`,
+        ondragstart: (e) => {
+          if (state.view !== "flow") showView("flow");
+          e.dataTransfer.setData("application/x-nora-node", type);
+          e.dataTransfer.setData("text/plain", NORA.nodeTypes[type]);
+          e.dataTransfer.effectAllowed = "copy";
+          editNote("Drop it on the drawing where the new node goes");
+        },
+        onclick: () => addNodeTool(type),
+      }, icons[type] ? h("img", { src: icons[type], alt: "", width: "18", height: "18", draggable: "false" }) : type.slice(0, 2))));
   }
   function renderEditsBar() {
     if (state.mode !== "edit" || embed) { if (editsBar) { editsBar.remove(); editsBar = null; } return; }
@@ -448,7 +474,9 @@
     const button = (label, act, cls, disabled = false, title = "") => h("button", { type: "button", class: cls, onclick: act, disabled: disabled ? "" : null, title: title || null }, label);
     const redo = redoList().length;
     editsBar.replaceChildren(...[ // a null would show as the text "null"
-      button("Add node", addNodeTool),
+      button("Add node", () => addNodeTool()),
+      palette(),
+      button("Connect", connectTool, null, false, "Click a node, then the node the new line goes to"),
       button("Undo", undoEdit, null, !edits.length, "Cmd/Ctrl+Z"),
       button("Redo", redoEdit, null, !redo, "Shift+Cmd/Ctrl+Z"),
       h("span", { class: "count", role: "status", "aria-live": "polite" }, edits.length ? `${edits.length} ${edits.length === 1 ? "change" : "changes"}` : "No changes"),
