@@ -219,6 +219,19 @@ test("flow overview: a blocked node name moves instead of disappearing", () => {
   assert.ok(!blockers.some((other) => box[0] < other[2] && box[2] > other[0] && box[1] < other[3] && box[3] > other[1]), "the moved name is collision-free");
 });
 
+/* Ray, 30 Oct: the Draupner names were "too far away from under the node ... make a bit
+   more space and make it more oraganised". A name sits centred under its own square, 4 px
+   clear; the node's own tag under the square pushes it straight down, never aside or up. */
+test("flow overview: a name sits centred under its square, below its own tags", () => {
+  const { App } = loadApp();
+  const place = App.views.flow.overviewNamePlacement;
+  const plain = place({ x: 100, y: 100 }, 32, 1, 80, 16, [], { width: 400, height: 400 });
+  assert.deepEqual([plain.left, plain.top], [60, 136], "centred, 4 px under the square");
+  const tag = [110, 132, 150, 160]; // the node's own tag under the square's bottom-right corner
+  const under = place({ x: 100, y: 100 }, 32, 1, 80, 16, [tag], { width: 400, height: 400 }, [tag]);
+  assert.deepEqual([under.left, under.top], [60, 164], "still centred, 4 px under its own tag");
+});
+
 test("flow overview: a name near the bottom stays inside the canvas", () => {
   const { App } = loadApp();
   const placement = App.views.flow.overviewNamePlacement({ x: 100, y: 100 }, 32, 1, 80, 30, [], { width: 200, height: 150 });

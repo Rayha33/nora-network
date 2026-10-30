@@ -549,8 +549,21 @@
     const split = spaces.sort((a, b) => Math.abs(a - text.length / 2) - Math.abs(b - text.length / 2))[0];
     return [text.slice(0, split), text.slice(split + 1)];
   }
-  function overviewNamePlacement(point, radius, scale, width, height, boxes, bounds = null) {
-    const below = point.y + radius * scale + 2;
+  /* A name sits centred under its square, 4 px clear of it (Ray, 30 Oct: the Draupner
+     names were "too far away from under the node ... make a bit more space and make it
+     more oraganised"). The node's own tags (`own`) under the square push it straight
+     down below them, never to a side or over the square; only another node's square,
+     tags or name in the way move it on. */
+  const NAME_GAP = 4;
+  function overviewNamePlacement(point, radius, scale, width, height, boxes, bounds = null, own = []) {
+    const left = point.x - width / 2;
+    let below = point.y + radius * scale + NAME_GAP;
+    for (let moved = true; moved;) {
+      moved = false;
+      for (const b of own) {
+        if (left < b[2] && left + width > b[0] && below < b[3] && below + height > b[1]) { below = b[3] + NAME_GAP; moved = true; }
+      }
+    }
     const candidates = [
       { left: point.x - width / 2, top: below },
       { left: point.x + radius * scale + 6, top: point.y - height / 2 },
@@ -576,7 +589,7 @@
     }
     return null;
   }
-  function drawOverviewName(ctx, id, x, y, radius) {
+  function drawOverviewName(ctx, id, x, y, radius, own = []) {
     if (!network) return;
     const ratio = (network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
     const point = network.canvasToDOM({ x, y }), lines = overviewNameLines(App.nameOf(id));
@@ -588,7 +601,7 @@
     const textWidth = Math.max(...lines.map((line) => ctx.measureText(line).width));
     const width = textWidth + 6, height = lines.length * 13 + 4;
     const canvas = network.canvas.frame.canvas, bounds = { width: canvas.clientWidth, height: canvas.clientHeight };
-    const placement = overviewNamePlacement(point, radius, network.getScale(), width, height, overviewBoxes, bounds);
+    const placement = overviewNamePlacement(point, radius, network.getScale(), width, height, overviewBoxes, bounds, own);
     if (!placement) { ctx.restore(); return; } // only a genuinely full canvas may omit a name
     const box = [placement.left, placement.top, placement.left + width, placement.top + height];
     overviewBoxes.push(box);
@@ -792,11 +805,12 @@
           drawnBoxes[id] = drawnParts[id].reduce((all, box) => [
             Math.min(all[0], box[0]), Math.min(all[1], box[1]), Math.max(all[2], box[2]), Math.max(all[3], box[3]),
           ]);
-          for (const box of pressureBoxes) { // names keep clear of the tags
+          const own = pressureBoxes.map((box) => { // names keep clear of the tags
             const a = network.canvasToDOM({ x: box[0], y: box[1] }), b = network.canvasToDOM({ x: box[2], y: box[3] });
-            overviewBoxes.push([a.x, a.y, b.x, b.y]);
-          }
-          drawOverviewName(ctx, id, x, y, half);
+            return [a.x, a.y, b.x, b.y];
+          });
+          overviewBoxes.push(...own);
+          drawOverviewName(ctx, id, x, y, half, own);
           ctx.restore();
           if (s.level) App.drawBadge(ctx, s.level, ...badgeCorner(x, y, half, pressureBoxes), 8);
           return;
