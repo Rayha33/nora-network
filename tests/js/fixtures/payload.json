@@ -51701,6 +51701,7 @@
     0.25,
     0.4
    ],
+   "pack_high": 0.2,
    "plan_lookahead_hours": 6,
    "gas_day_start_utc": 5
   },
