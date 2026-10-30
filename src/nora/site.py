@@ -62,6 +62,26 @@ def build_id() -> str:
     return sha[:12] if re.fullmatch(r"[0-9a-f]{7,40}", sha or "") else ""
 
 
+NO_PRICE_FEED = {
+    "note": "No price feed on this copy of the site. The hosted site's server writes this "
+    "file every 15 minutes (scripts/fetch_prices.py) and serves it in place of this one."
+}
+
+
+def _no_price_feed(out: Path, config: dict) -> None:
+    """The money counter's price file, saying there is no feed, so a copy of the site with
+    none (a local build, CI) shows no counter and asks for no missing file: the browser
+    smoke check failed on that 404 from #217 on. A file fetched into the site by hand is
+    kept. On factorlab.app the droplet serves its own file at this path."""
+    where = str(config.get("money", {}).get("prices", ""))
+    if not where or "://" in where or where.startswith("/") or ".." in Path(where).parts:
+        return
+    path = out / where
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(NO_PRICE_FEED) + "\n", encoding="utf-8")
+
+
 def build_site(out_dir: Path, data_dir: Path = DATA_DIR) -> dict:
     """Validate the data, run the analysis, and write the site. Returns a summary."""
     data_dir = Path(data_dir)
@@ -95,6 +115,7 @@ def build_site(out_dir: Path, data_dir: Path = DATA_DIR) -> dict:
     for stream in streams:
         payload = json.dumps(stream.payload(), separators=(",", ":"))
         (out / "data" / "streams" / f"{stream.name}.json").write_text(payload, encoding="utf-8")
+    _no_price_feed(out, config)
     (out / ".nojekyll").touch()
     # `streams` are the loaded Stream objects (and `net` the loaded network),
     # so callers like `nora live` can reuse them instead of loading everything

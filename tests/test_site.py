@@ -110,3 +110,19 @@ def test_a_build_says_which_commit_it_is(tmp_path, monkeypatch):
     build_site(out, DATA_DIR)
     assert json.loads((out / "version.json").read_text()) == {"build": "0123456789ab"}
     assert '<meta name="nora-build" content="0123456789ab">' in (out / "network.html").read_text()
+
+
+def test_a_build_says_it_has_no_price_feed(tmp_path):
+    """The money counter reads data/prices.json, which the droplet writes every 15 minutes
+    (scripts/fetch_prices.py). Any other copy of the site has the build's own file saying
+    there is no feed, so the counter stays hidden and nothing 404s (the browser smoke check
+    failed on that from #217 on). A file fetched in by hand is kept."""
+    out = tmp_path / "site"
+    build_site(out, DATA_DIR)
+    prices = out / "data" / "prices.json"
+    said = json.loads(prices.read_text())
+    assert "ttf_eur_per_mwh" not in said, "no price, never a made-up one"
+    assert "No price feed" in said["note"]
+    prices.write_text('{"ttf_eur_per_mwh": 30.5}')
+    build_site(out, DATA_DIR)
+    assert json.loads(prices.read_text()) == {"ttf_eur_per_mwh": 30.5}
