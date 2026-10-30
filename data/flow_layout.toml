@@ -46,13 +46,13 @@ karsto = [12.6, 1.75]
 johan_sverdrup = [11.3, 3.1]
 # the hubs, Ekofisk and the southern fields
 sleipner = [2.6, 4.5]
-gudrun = [1.2, 4.8]
-gina_krog = [2.3, 5.5]
+gudrun = [0.4, 5.1]  # far left, under Gina Krog, as on Gassco's schematic (Ray, 30 Oct)
+gina_krog = [0.2, 4.0]  # far left, level with Sleipner's lines in
 draupner_s = [6.6, 4.5]
 draupner_e = [8.8, 4.5]
 ekofisk = [5.4, 5.15]
 valhall = [6.4, 5.9]
-ekofisk_tee = [7.4, 5.7]  # on the line from Draupner S to Emden (Area D)
+ekofisk_tee = [9.4, 6.0]  # the Norpipe tie-in (NPT): down to the right of Draupner S, above Emden
 baltic_tie = [12.6, 5.1]
 # the exit points along the bottom, west to east; St Fergus and Nyhamna stay where their
 # lines are (Ray, 30 Oct: "all exit points except nyhamna and st.fergus should be lined at
