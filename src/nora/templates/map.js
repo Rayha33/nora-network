@@ -104,6 +104,8 @@
 
   async function addLayers() {
     view.ready = false;
+    linesLoaded = false;
+    hideMoving();
     calmBasemap();
     const pipeGeo = {
       ...NORA.geo.pipes,
@@ -112,7 +114,11 @@
         properties: { ...feature.properties, map_name: App.pipeMapName(feature.properties.asset) },
       })),
     };
-    map.addSource("nora-pipes", { type: "geojson", data: pipeGeo });
+    /* tolerance 0: the lines exactly as laid, at every zoom. MapLibre simplifies a line a
+       little per zoom level by default, and the pigs and peaks, which follow the laid
+       route, then sat a pixel or two beside it at bends (Ray, 30 Oct: "peak lines are
+       sometimes glitching and jumping outside pipelines"). */
+    map.addSource("nora-pipes", { type: "geojson", data: pipeGeo, tolerance: 0 });
     map.addSource("nora-nodes", { type: "geojson", data: NORA.geo.nodes });
     map.addSource("nora-mids", { type: "geojson", data: mids });
     const state = (key, fallback) => ["coalesce", ["feature-state", key], fallback];
@@ -291,6 +297,9 @@
       styled = true;
       note.remove();
       basemap = FALLBACK_STYLE;
+      view.ready = false;
+      linesLoaded = false;
+      hideMoving(); // no pig or peak on a map without its lines
       try { map.setStyle(FALLBACK_STYLE); } catch { /* already gone */ }
     };
     // If the online style never arrives (CDN blocked, DNS, captive portal), fall back.
@@ -318,6 +327,7 @@
     map.on("move", () => showCoord(map.getCenter()));
     map.on("mouseout", () => { readout.textContent = ""; });
     map.on("resize", sizeCanvas);
+    map.on("sourcedata", (e) => { if (e && e.sourceId === "nora-pipes" && e.isSourceLoaded) linesLoaded = true; });
     map.on("render", () => { renderedCamera = cameraKey(); if (view.ready) view.draw(); });
     const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12 });
     // A pig, peak or slug under the pointer wins: its value and when it reaches the next stop.
@@ -415,9 +425,23 @@
      frames, so it is repainted at most 20 times a second, not 60 (Ray, 29 Oct: "fix
      performance, it is lagging"). A pan, a zoom or new data draws at once. */
   let drawnScene = "", drawnClock = -Infinity;
+  /* Pigs and peaks only over their lines: while the style reloads (a theme switch, the
+     fall back to raster tiles) and until the pipelines are on the map again, the layer
+     is empty. It kept its last frame, or drew on, over a map with no lines, and the
+     peaks floated in the sea (Ray, 30 Oct). */
+  let linesLoaded = false; // the pipelines' source has loaded since the style last did
+  const linesShown = () => view.ready && linesLoaded;
+  function hideMoving() {
+    if (!ctx || !canvas) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawnMarks = [];
+    drawnKey = "";
+  }
   view.draw = () => {
     if (!ctx || !map) return;
     if (cameraKey() !== renderedCamera) return; // the map has not drawn this camera yet: its render draws the layer
+    if (!linesShown()) { if (drawnKey) hideMoving(); return; } // its render draws the layer once they are
     const scene = sceneKey(), key = `${scene}|${App.live.playing ? App.live.clock : "paused"}`;
     if (key === drawnKey) return;
     if (scene === drawnScene && App.live.playing && App.live.clock - drawnClock < App.movingStep) return;
@@ -650,6 +674,8 @@
   view.theme = () => {
     if (!map) return;
     view.ready = false;
+    linesLoaded = false;
+    hideMoving();
     alarmKey = "";
     map.setStyle(basemap || NORA.config.map.style, { diff: false });
   };
