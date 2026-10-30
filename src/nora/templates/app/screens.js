@@ -371,7 +371,10 @@
       if (exitPoints.includes(id) && (metric("nomination_msm3d", id) != null || throughput(id, f.flows) != null)) indicators.push(exitIndicator(id));
       if (metric("pressure_bar", id) != null && C.pressure[d.type]) indicators.push(pressureIndicator(id));
       for (const name of Object.keys(QUALITY)) if (metric(name, id) != null) indicators.push(qualityIndicator(id, name));
-    } else if (d.capacity && f.flows[id] != null) indicators.push(loadIndicator(id));
+    } else {
+      if (d.capacity && f.flows[id] != null) indicators.push(loadIndicator(id));
+      if (linepack(id, f) != null) indicators.push(packIndicator(id)); // the gas it holds
+    }
     const conds = live.conditions.filter((c) => c.id === id);
     // In the sidebar the name is already the panel header: no repeated h1.
     return h("div", { class: inSidebar ? "side-detail" : "screen-body" },
