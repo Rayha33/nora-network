@@ -69,6 +69,7 @@
       label: whatif.offline.has(id) ? "Restore in the what-if" : "Take offline in the what-if",
       act: () => { if (state.mode !== "whatif") { state.mode = "whatif"; markTabs(); restyle(); } toggleOffline(id); renderSidebar(); renderWhatif(); },
     });
+    if (d.type === "field") items.push({ label: "Open the P&ID", act: () => go({ screen: "asset", asset: id }) });
     items.push({ label: "Open the full page", act: () => go({ screen: "asset", asset: id }) });
     if (d.kind === "node") items.push({ label: "Diagnostics", act: () => go({ screen: "diag", asset: id }) });
     if (!embed && state.mode === "edit") { // changing the network only in Edit

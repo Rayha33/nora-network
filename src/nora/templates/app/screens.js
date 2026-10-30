@@ -381,6 +381,7 @@
         ? `${NORA.nodeTypes[d.type]}, ${d.country}. Unit: ${(unitById[unitOf[id]] || {}).name || "none"}.`
         : `${NORA.pipelineTypes[d.type]}, ${nameOf(d.from)} to ${nameOf(d.to)}.`),
       h("div", { class: "cols" },
+        inSidebar ? null : pidBox(id), // a field's Level 3 leads with its process (Ray, 30 Oct)
         isBlendingStation(id) ? blendingBox(id, inSidebar) : null,
         h("div", { class: "box" }, h("h2", { title: "Flowing in above the asset, out below it" }, "In context"), schematic(id)),
         h("div", { class: "box" }, h("h2", { title: "Live readings in their ranges, from the data being played" }, "Values"),
@@ -403,6 +404,8 @@
         } }, `${whatif.offline.has(id) ? "Restore" : "Take offline"} in the what-if`) : null,
         inSidebar ? h("button", { type: "button", class: "text", "data-key": "action:page", onclick: () => go({ screen: "asset", asset: id }) }, "Open the full page") : null,
         !inSidebar ? h("button", { type: "button", class: "text", "data-key": "action:unit", onclick: () => go({ screen: "unit", unit: unitOf[id] || "all", focus: id }) }, "Show in its unit") : null,
+        inSidebar && d.type === "field" ? h("button", { type: "button", class: "text", "data-key": "action:pid", title: "The field's process as a P&ID, on its page",
+          onclick: () => go({ screen: "asset", asset: id }) }, "P&ID") : null,
         h("button", { type: "button", class: "text", "data-key": "action:diag", onclick: () => go({ screen: "diag", asset: id }) }, "Diagnostics")));
   }
   function renderAsset() {
