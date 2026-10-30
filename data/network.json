@@ -28,6 +28,54 @@
    "id": "aerfugl"
   },
   {
+   "name": "\u00c6rfugl Nord",
+   "type": "field",
+   "country": "NO",
+   "lat": 65.917817,
+   "lon": 7.720972,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "aerfugl_nord"
+  },
+  {
+   "name": "Alve",
+   "type": "field",
+   "country": "NO",
+   "lat": 65.968444,
+   "lon": 7.810103,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "alve"
+  },
+  {
+   "name": "Alve Nord",
+   "type": "field",
+   "country": "NO",
+   "lat": 66.001389,
+   "lon": 7.801389,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "alve_nord"
+  },
+  {
+   "name": "Alvheim",
+   "type": "field",
+   "country": "NO",
+   "lat": 59.567517,
+   "lon": 1.99845,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "alvheim"
+  },
+  {
    "name": "\u00c5sgard area",
    "type": "field",
    "country": "NO",
@@ -52,6 +100,18 @@
    "id": "baltic_tie"
   },
   {
+   "name": "Bauge",
+   "type": "field",
+   "country": "NO",
+   "lat": 64.355047,
+   "lon": 7.461631,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "bauge"
+  },
+  {
    "name": "Beryl",
    "type": "field",
    "country": "GB",
@@ -62,6 +122,66 @@
    "status": "operating",
    "exit": false,
    "id": "beryl"
+  },
+  {
+   "name": "Blane",
+   "type": "field",
+   "country": "NO",
+   "lat": 56.908294,
+   "lon": 2.453997,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "blane"
+  },
+  {
+   "name": "B\u00f8yla",
+   "type": "field",
+   "country": "NO",
+   "lat": 59.343158,
+   "lon": 1.830883,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "boyla"
+  },
+  {
+   "name": "Brage",
+   "type": "field",
+   "country": "NO",
+   "lat": 60.542558,
+   "lon": 3.046797,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "brage"
+  },
+  {
+   "name": "Breidablikk",
+   "type": "field",
+   "country": "NO",
+   "lat": 59.264147,
+   "lon": 2.623956,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "breidablikk"
+  },
+  {
+   "name": "Byrding",
+   "type": "field",
+   "country": "NO",
+   "lat": 61.164422,
+   "lon": 3.532462,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "byrding"
   },
   {
    "name": "Dornum",
@@ -124,6 +244,18 @@
    "id": "dunkirk"
   },
   {
+   "name": "Duva",
+   "type": "field",
+   "country": "NO",
+   "lat": 61.400228,
+   "lon": 4.067417,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "duva"
+  },
+  {
    "name": "Dvalin",
    "type": "field",
    "country": "NO",
@@ -172,6 +304,18 @@
    "id": "edvard_grieg"
   },
   {
+   "name": "Eirin",
+   "type": "field",
+   "country": "NO",
+   "lat": 58.646339,
+   "lon": 1.642864,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "eirin"
+  },
+  {
    "name": "Ekofisk",
    "type": "field",
    "country": "NO",
@@ -196,6 +340,30 @@
    "id": "ekofisk_tee"
   },
   {
+   "name": "Eldfisk",
+   "type": "field",
+   "country": "NO",
+   "lat": 56.376881,
+   "lon": 3.265803,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "eldfisk"
+  },
+  {
+   "name": "Embla",
+   "type": "field",
+   "country": "NO",
+   "lat": 56.333231,
+   "lon": 3.248264,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "embla"
+  },
+  {
    "name": "Emden",
    "type": "terminal",
    "country": "DE",
@@ -208,6 +376,18 @@
    "id": "emden"
   },
   {
+   "name": "Fenja",
+   "type": "field",
+   "country": "NO",
+   "lat": 64.03065,
+   "lon": 6.7509,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "fenja"
+  },
+  {
    "name": "FLAGS North (Brent area)",
    "type": "hub",
    "country": "GB",
@@ -218,6 +398,30 @@
    "status": "operating",
    "exit": false,
    "id": "flags_brent"
+  },
+  {
+   "name": "Fram",
+   "type": "field",
+   "country": "NO",
+   "lat": 61.024236,
+   "lon": 3.573558,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "fram"
+  },
+  {
+   "name": "Fram H-Nord",
+   "type": "field",
+   "country": "NO",
+   "lat": 61.128197,
+   "lon": 3.54615,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "fram_h_nord"
   },
   {
    "name": "Frigg",
@@ -242,6 +446,18 @@
    "status": "operating",
    "exit": false,
    "id": "fuka_tee"
+  },
+  {
+   "name": "Gimle",
+   "type": "field",
+   "country": "NO",
+   "lat": 61.251152,
+   "lon": 2.338134,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "gimle"
   },
   {
    "name": "Gina Krog",
@@ -316,6 +532,42 @@
    "id": "gullfaks_sor"
   },
   {
+   "name": "Gungne",
+   "type": "field",
+   "country": "NO",
+   "lat": 58.342466,
+   "lon": 1.901937,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "gungne"
+  },
+  {
+   "name": "Halten \u00d8st",
+   "type": "field",
+   "country": "NO",
+   "lat": 64.580233,
+   "lon": 7.713067,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "halten_ost"
+  },
+  {
+   "name": "Hanz",
+   "type": "field",
+   "country": "NO",
+   "lat": 59.055597,
+   "lon": 2.244422,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "hanz"
+  },
+  {
    "name": "Heidrun",
    "type": "field",
    "country": "NO",
@@ -338,6 +590,54 @@
    "status": "operating",
    "exit": false,
    "id": "heimdal"
+  },
+  {
+   "name": "Hod",
+   "type": "field",
+   "country": "NO",
+   "lat": 56.180811,
+   "lon": 3.465342,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "hod"
+  },
+  {
+   "name": "Hyme",
+   "type": "field",
+   "country": "NO",
+   "lat": 64.358161,
+   "lon": 7.551256,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "hyme"
+  },
+  {
+   "name": "Idun Nord",
+   "type": "field",
+   "country": "NO",
+   "lat": 65.823611,
+   "lon": 7.718056,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "idun_nord"
+  },
+  {
+   "name": "Islay",
+   "type": "field",
+   "country": "NO",
+   "lat": 60.553202,
+   "lon": 1.932357,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "islay"
   },
   {
    "name": "Ivar Aasen",
@@ -412,6 +712,18 @@
    "id": "kollsnes"
   },
   {
+   "name": "Kristin",
+   "type": "field",
+   "country": "NO",
+   "lat": 64.993956,
+   "lon": 6.551342,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "kristin"
+  },
+  {
    "name": "Kvitebj\u00f8rn",
    "type": "field",
    "country": "NO",
@@ -422,6 +734,18 @@
    "status": "operating",
    "exit": false,
    "id": "kvitebjorn"
+  },
+  {
+   "name": "Maria",
+   "type": "field",
+   "country": "NO",
+   "lat": 64.974628,
+   "lon": 6.976672,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "maria"
   },
   {
    "name": "Mariner",
@@ -460,6 +784,18 @@
    "id": "martin_linge"
   },
   {
+   "name": "Marulk",
+   "type": "field",
+   "country": "NO",
+   "lat": 65.933475,
+   "lon": 7.543639,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "marulk"
+  },
+  {
    "name": "Mikkel",
    "type": "field",
    "country": "NO",
@@ -484,6 +820,18 @@
    "id": "morvin"
   },
   {
+   "name": "Njord",
+   "type": "field",
+   "country": "NO",
+   "lat": 64.270989,
+   "lon": 7.201522,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "njord"
+  },
+  {
    "name": "Norne",
    "type": "field",
    "country": "NO",
@@ -494,6 +842,18 @@
    "status": "operating",
    "exit": false,
    "id": "norne"
+  },
+  {
+   "name": "Nova",
+   "type": "field",
+   "country": "NO",
+   "lat": 61.2763,
+   "lon": 3.665622,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "nova"
   },
   {
    "name": "Nybro",
@@ -520,6 +880,18 @@
    "id": "nyhamna"
   },
   {
+   "name": "Oda",
+   "type": "field",
+   "country": "NO",
+   "lat": 57.073094,
+   "lon": 3.065297,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "oda"
+  },
+  {
    "name": "Odin",
    "type": "field",
    "country": "NO",
@@ -544,6 +916,18 @@
    "id": "ormen_lange"
   },
   {
+   "name": "\u00d8rn",
+   "type": "field",
+   "country": "NO",
+   "lat": 65.862222,
+   "lon": 7.399167,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "orn"
+  },
+  {
    "name": "Oseberg",
    "type": "field",
    "country": "NO",
@@ -554,6 +938,30 @@
    "status": "operating",
    "exit": false,
    "id": "oseberg"
+  },
+  {
+   "name": "Oseberg \u00d8st",
+   "type": "field",
+   "country": "NO",
+   "lat": 60.700497,
+   "lon": 2.935219,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "oseberg_ost"
+  },
+  {
+   "name": "Oseberg S\u00f8r",
+   "type": "field",
+   "country": "NO",
+   "lat": 60.390172,
+   "lon": 2.796961,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "oseberg_sor"
   },
   {
    "name": "Poland VTP",
@@ -568,6 +976,30 @@
    "id": "pl_vtp"
   },
   {
+   "name": "Ringhorne \u00d8st",
+   "type": "field",
+   "country": "NO",
+   "lat": 59.292359,
+   "lon": 2.492559,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "ringhorne_ost"
+  },
+  {
+   "name": "Sigyn",
+   "type": "field",
+   "country": "NO",
+   "lat": 58.284992,
+   "lon": 2.043761,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "sigyn"
+  },
+  {
    "name": "Skarv",
    "type": "field",
    "country": "NO",
@@ -578,6 +1010,30 @@
    "status": "operating",
    "exit": false,
    "id": "skarv"
+  },
+  {
+   "name": "Skogul",
+   "type": "field",
+   "country": "NO",
+   "lat": 59.657281,
+   "lon": 2.278658,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "skogul"
+  },
+  {
+   "name": "Skuld",
+   "type": "field",
+   "country": "NO",
+   "lat": 66.143697,
+   "lon": 8.233014,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "skuld"
   },
   {
    "name": "Sleipner",
@@ -604,6 +1060,30 @@
    "id": "smorbukk_nord"
   },
   {
+   "name": "Snorre",
+   "type": "field",
+   "country": "NO",
+   "lat": 61.525439,
+   "lon": 2.211506,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "snorre"
+  },
+  {
+   "name": "Solveig",
+   "type": "field",
+   "country": "NO",
+   "lat": 58.676694,
+   "lon": 2.197306,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "solveig"
+  },
+  {
    "name": "St Fergus",
    "type": "terminal",
    "country": "GB",
@@ -628,6 +1108,90 @@
    "id": "statfjord"
   },
   {
+   "name": "Statfjord Nord",
+   "type": "field",
+   "country": "NO",
+   "lat": 61.296808,
+   "lon": 1.908986,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "statfjord_nord"
+  },
+  {
+   "name": "Statfjord \u00d8st",
+   "type": "field",
+   "country": "NO",
+   "lat": 61.343944,
+   "lon": 1.972778,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "statfjord_ost"
+  },
+  {
+   "name": "Svalin",
+   "type": "field",
+   "country": "NO",
+   "lat": 59.143203,
+   "lon": 2.408381,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "svalin"
+  },
+  {
+   "name": "Sygna",
+   "type": "field",
+   "country": "NO",
+   "lat": 61.466942,
+   "lon": 1.99185,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "sygna"
+  },
+  {
+   "name": "Symra",
+   "type": "field",
+   "country": "NO",
+   "lat": 58.968447,
+   "lon": 2.283269,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "symra"
+  },
+  {
+   "name": "Tambar",
+   "type": "field",
+   "country": "NO",
+   "lat": 56.982756,
+   "lon": 2.958781,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "tambar"
+  },
+  {
+   "name": "Tambar \u00d8st",
+   "type": "field",
+   "country": "NO",
+   "lat": 56.973266,
+   "lon": 3.003738,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "tambar_ost"
+  },
+  {
    "name": "Tjeldbergodden",
    "type": "market",
    "country": "NO",
@@ -638,6 +1202,30 @@
    "status": "operating",
    "exit": true,
    "id": "tjeldbergodden"
+  },
+  {
+   "name": "Tommeliten A",
+   "type": "field",
+   "country": "NO",
+   "lat": 56.420592,
+   "lon": 2.902419,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "tommeliten_a"
+  },
+  {
+   "name": "Tor",
+   "type": "field",
+   "country": "NO",
+   "lat": 56.639153,
+   "lon": 3.299425,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "tor"
   },
   {
    "name": "Tordis",
@@ -676,6 +1264,90 @@
    "id": "troll"
   },
   {
+   "name": "Tune",
+   "type": "field",
+   "country": "NO",
+   "lat": 60.467522,
+   "lon": 2.653308,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "tune"
+  },
+  {
+   "name": "Tyrihans",
+   "type": "field",
+   "country": "NO",
+   "lat": 64.888958,
+   "lon": 7.071344,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "tyrihans"
+  },
+  {
+   "name": "Tyrving",
+   "type": "field",
+   "country": "NO",
+   "lat": 59.627997,
+   "lon": 2.438167,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "tyrving"
+  },
+  {
+   "name": "Ula",
+   "type": "field",
+   "country": "NO",
+   "lat": 57.111081,
+   "lon": 2.845983,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "ula"
+  },
+  {
+   "name": "Urd",
+   "type": "field",
+   "country": "NO",
+   "lat": 66.049122,
+   "lon": 8.171356,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "urd"
+  },
+  {
+   "name": "Utgard",
+   "type": "field",
+   "country": "NO",
+   "lat": 58.366744,
+   "lon": 1.550464,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "utgard"
+  },
+  {
+   "name": "Valemon",
+   "type": "field",
+   "country": "NO",
+   "lat": 61.040661,
+   "lon": 2.339008,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "valemon"
+  },
+  {
    "name": "Valhall",
    "type": "field",
    "country": "NO",
@@ -688,6 +1360,54 @@
    "id": "valhall"
   },
   {
+   "name": "Vega",
+   "type": "field",
+   "country": "NO",
+   "lat": 61.371172,
+   "lon": 3.376892,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "vega"
+  },
+  {
+   "name": "Verdande",
+   "type": "field",
+   "country": "NO",
+   "lat": 66.091861,
+   "lon": 8.054417,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "verdande"
+  },
+  {
+   "name": "Vigdis",
+   "type": "field",
+   "country": "NO",
+   "lat": 61.184678,
+   "lon": 2.172264,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "vigdis"
+  },
+  {
+   "name": "Vilje",
+   "type": "field",
+   "country": "NO",
+   "lat": 59.656122,
+   "lon": 2.278028,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "vilje"
+  },
+  {
    "name": "Visund",
    "type": "field",
    "country": "NO",
@@ -698,6 +1418,30 @@
    "status": "operating",
    "exit": false,
    "id": "visund"
+  },
+  {
+   "name": "Visund S\u00f8r",
+   "type": "field",
+   "country": "NO",
+   "lat": 61.300564,
+   "lon": 2.363708,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "visund_sor"
+  },
+  {
+   "name": "Volund",
+   "type": "field",
+   "country": "NO",
+   "lat": 59.496061,
+   "lon": 1.965122,
+   "capacity_msm3d": 0.0,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "volund"
   },
   {
    "name": "Zeebrugge",
@@ -733,6 +1477,42 @@
    "target": "skarv"
   },
   {
+   "pipeline": "aerfugl_nord_skarv",
+   "name": "\u00c6rfugl Nord - Skarv",
+   "type": "feeder",
+   "from_id": "aerfugl_nord",
+   "length_km": 24.673587856217345,
+   "source": "aerfugl_nord",
+   "target": "skarv"
+  },
+  {
+   "pipeline": "alve_norne",
+   "name": "Alve - Norne",
+   "type": "feeder",
+   "from_id": "alve",
+   "length_km": 13.488287774634664,
+   "source": "alve",
+   "target": "norne"
+  },
+  {
+   "pipeline": "alve_nord_skarv",
+   "name": "Alve Nord - Skarv",
+   "type": "feeder",
+   "from_id": "alve_nord",
+   "length_km": 34.44549056097948,
+   "source": "alve_nord",
+   "target": "skarv"
+  },
+  {
+   "pipeline": "alvheim_beryl",
+   "name": "Alvheim - Beryl",
+   "type": "feeder",
+   "from_id": "alvheim",
+   "length_km": 26.462983599436168,
+   "source": "alvheim",
+   "target": "beryl"
+  },
+  {
    "pipeline": "asgard_transport",
    "name": "\u00c5sgard Transport",
    "type": "trunk",
@@ -763,6 +1543,15 @@
    "target": "dornum"
   },
   {
+   "pipeline": "bauge_njord",
+   "name": "Bauge - Njord",
+   "type": "feeder",
+   "from_id": "bauge",
+   "length_km": 15.637508814651767,
+   "source": "bauge",
+   "target": "njord"
+  },
+  {
    "pipeline": "sage",
    "name": "SAGE",
    "type": "export",
@@ -771,6 +1560,51 @@
    "capacity": 30.0,
    "source": "beryl",
    "target": "st_fergus"
+  },
+  {
+   "pipeline": "blane_ula",
+   "name": "Blane - Ula",
+   "type": "feeder",
+   "from_id": "blane",
+   "length_km": 32.73679090432837,
+   "source": "blane",
+   "target": "ula"
+  },
+  {
+   "pipeline": "boyla_alvheim",
+   "name": "B\u00f8yla - Alvheim",
+   "type": "feeder",
+   "from_id": "boyla",
+   "length_km": 26.684224192726305,
+   "source": "boyla",
+   "target": "alvheim"
+  },
+  {
+   "pipeline": "brage_oseberg",
+   "name": "Brage - Oseberg",
+   "type": "feeder",
+   "from_id": "brage",
+   "length_km": 13.225987098158802,
+   "source": "brage",
+   "target": "oseberg"
+  },
+  {
+   "pipeline": "breidablikk_grane",
+   "name": "Breidablikk - Grane",
+   "type": "feeder",
+   "from_id": "breidablikk",
+   "length_km": 13.467101439759919,
+   "source": "breidablikk",
+   "target": "grane"
+  },
+  {
+   "pipeline": "byrding_fram_h_nord",
+   "name": "Byrding - Fram H-Nord",
+   "type": "feeder",
+   "from_id": "byrding",
+   "length_km": 4.094454786069104,
+   "source": "byrding",
+   "target": "fram_h_nord"
   },
   {
    "pipeline": "draugen_asgard",
@@ -840,6 +1674,15 @@
    "target": "ekofisk_tee"
   },
   {
+   "pipeline": "duva_gjoa",
+   "name": "Duva - Gj\u00f8a",
+   "type": "feeder",
+   "from_id": "duva",
+   "length_km": 11.856171674724802,
+   "source": "duva",
+   "target": "gjoa"
+  },
+  {
    "pipeline": "dvalin_gas",
    "name": "Dvalin gas export (via Heidrun)",
    "type": "feeder",
@@ -869,6 +1712,15 @@
    "target": "beryl"
   },
   {
+   "pipeline": "eirin_gina_krog",
+   "name": "Eirin - Gina Krog",
+   "type": "feeder",
+   "from_id": "eirin",
+   "length_km": 8.817779807769389,
+   "source": "eirin",
+   "target": "gina_krog"
+  },
+  {
    "pipeline": "ekofisk_tie_in",
    "name": "Ekofisk tie-in",
    "type": "feeder",
@@ -888,6 +1740,33 @@
    "target": "emden"
   },
   {
+   "pipeline": "eldfisk_ekofisk",
+   "name": "Eldfisk - Ekofisk",
+   "type": "feeder",
+   "from_id": "eldfisk",
+   "length_km": 19.55281005045687,
+   "source": "eldfisk",
+   "target": "ekofisk"
+  },
+  {
+   "pipeline": "embla_eldfisk",
+   "name": "Embla - Eldfisk",
+   "type": "feeder",
+   "from_id": "embla",
+   "length_km": 4.972477666877007,
+   "source": "embla",
+   "target": "eldfisk"
+  },
+  {
+   "pipeline": "fenja_njord",
+   "name": "Fenja - Njord",
+   "type": "feeder",
+   "from_id": "fenja",
+   "length_km": 34.51765005145675,
+   "source": "fenja",
+   "target": "njord"
+  },
+  {
    "pipeline": "flags",
    "name": "FLAGS",
    "type": "export",
@@ -898,6 +1777,24 @@
    "target": "st_fergus"
   },
   {
+   "pipeline": "fram_troll",
+   "name": "Fram - Troll",
+   "type": "feeder",
+   "from_id": "fram",
+   "length_km": 42.8614357662509,
+   "source": "fram",
+   "target": "troll"
+  },
+  {
+   "pipeline": "fram_h_nord_fram",
+   "name": "Fram H-Nord - Fram",
+   "type": "feeder",
+   "from_id": "fram_h_nord",
+   "length_km": 11.653527643422532,
+   "source": "fram_h_nord",
+   "target": "fram"
+  },
+  {
    "pipeline": "fuka",
    "name": "Frigg UK System (FUKA)",
    "type": "export",
@@ -905,6 +1802,15 @@
    "length_km": 363.0,
    "source": "fuka_tee",
    "target": "st_fergus"
+  },
+  {
+   "pipeline": "gimle_gullfaks",
+   "name": "Gimle - Gullfaks",
+   "type": "feeder",
+   "from_id": "gimle",
+   "length_km": 11.2027972235004,
+   "source": "gimle",
+   "target": "gullfaks"
   },
   {
    "pipeline": "gina_krog_sleipner",
@@ -955,6 +1861,33 @@
    "target": "gullfaks"
   },
   {
+   "pipeline": "gungne_sleipner",
+   "name": "Gungne - Sleipner",
+   "type": "feeder",
+   "from_id": "gungne",
+   "length_km": 3.0975626878808065,
+   "source": "gungne",
+   "target": "sleipner"
+  },
+  {
+   "pipeline": "halten_ost_asgard",
+   "name": "Halten \u00d8st - \u00c5sgard area",
+   "type": "feeder",
+   "from_id": "halten_ost",
+   "length_km": 69.7994688001167,
+   "source": "halten_ost",
+   "target": "asgard"
+  },
+  {
+   "pipeline": "hanz_ivar_aasen",
+   "name": "Hanz - Ivar Aasen",
+   "type": "feeder",
+   "from_id": "hanz",
+   "length_km": 15.060713726917617,
+   "source": "hanz",
+   "target": "ivar_aasen"
+  },
+  {
    "pipeline": "haltenpipe",
    "name": "Haltenpipe",
    "type": "trunk",
@@ -1002,6 +1935,42 @@
    "capacity": 39.0,
    "source": "heimdal",
    "target": "mariner_tee"
+  },
+  {
+   "pipeline": "hod_valhall",
+   "name": "Hod - Valhall",
+   "type": "feeder",
+   "from_id": "hod",
+   "length_km": 11.379791264139554,
+   "source": "hod",
+   "target": "valhall"
+  },
+  {
+   "pipeline": "hyme_njord",
+   "name": "Hyme - Njord",
+   "type": "feeder",
+   "from_id": "hyme",
+   "length_km": 19.443823942554296,
+   "source": "hyme",
+   "target": "njord"
+  },
+  {
+   "pipeline": "idun_nord_skarv",
+   "name": "Idun Nord - Skarv",
+   "type": "feeder",
+   "from_id": "idun_nord",
+   "length_km": 14.322097972942295,
+   "source": "idun_nord",
+   "target": "skarv"
+  },
+  {
+   "pipeline": "islay_fuka_tee",
+   "name": "Islay - FUKA tie-in (Frigg TP1)",
+   "type": "feeder",
+   "from_id": "islay",
+   "length_km": 73.43881009597791,
+   "source": "islay",
+   "target": "fuka_tee"
   },
   {
    "pipeline": "ivar_aasen_edvard_grieg",
@@ -1082,6 +2051,15 @@
    "target": "draupner_e"
   },
   {
+   "pipeline": "kristin_asgard",
+   "name": "Kristin - \u00c5sgard area",
+   "type": "feeder",
+   "from_id": "kristin",
+   "length_km": 14.034941853033784,
+   "source": "kristin",
+   "target": "asgard"
+  },
+  {
    "pipeline": "kvitebjorn_kollsnes",
    "name": "Kvitebj\u00f8rn gas pipeline",
    "type": "feeder",
@@ -1090,6 +2068,15 @@
    "capacity": 33.0,
    "source": "kvitebjorn",
    "target": "kollsnes"
+  },
+  {
+   "pipeline": "maria_kristin",
+   "name": "Maria - Kristin",
+   "type": "feeder",
+   "from_id": "maria",
+   "length_km": 20.11439366901571,
+   "source": "maria",
+   "target": "kristin"
   },
   {
    "pipeline": "mariner_gas_import",
@@ -1120,6 +2107,15 @@
    "target": "fuka_tee"
   },
   {
+   "pipeline": "marulk_norne",
+   "name": "Marulk - Norne",
+   "type": "feeder",
+   "from_id": "marulk",
+   "length_km": 26.11678432043879,
+   "source": "marulk",
+   "target": "norne"
+  },
+  {
    "pipeline": "mikkel_asgard",
    "name": "Mikkel - \u00c5sgard B",
    "type": "feeder",
@@ -1138,6 +2134,15 @@
    "target": "asgard"
   },
   {
+   "pipeline": "njord_asgard",
+   "name": "Njord - \u00c5sgard area",
+   "type": "feeder",
+   "from_id": "njord",
+   "length_km": 90.97674514991996,
+   "source": "njord",
+   "target": "asgard"
+  },
+  {
    "pipeline": "ngts",
    "name": "Norne Gas Transport System",
    "type": "feeder",
@@ -1146,6 +2151,15 @@
    "capacity": 6.0,
    "source": "norne",
    "target": "asgard"
+  },
+  {
+   "pipeline": "nova_gjoa",
+   "name": "Nova - Gj\u00f8a",
+   "type": "feeder",
+   "from_id": "nova",
+   "length_km": 13.865737630498133,
+   "source": "nova",
+   "target": "gjoa"
   },
   {
    "pipeline": "baltic_pipe_east",
@@ -1168,6 +2182,15 @@
    "target": "sleipner"
   },
   {
+   "pipeline": "oda_ula",
+   "name": "Oda - Ula",
+   "type": "feeder",
+   "from_id": "oda",
+   "length_km": 13.906036699497232,
+   "source": "oda",
+   "target": "ula"
+  },
+  {
    "pipeline": "ormen_lange_nyhamna",
    "name": "Ormen Lange - Nyhamna",
    "type": "feeder",
@@ -1176,6 +2199,15 @@
    "capacity": 70.0,
    "source": "ormen_lange",
    "target": "nyhamna"
+  },
+  {
+   "pipeline": "orn_skarv",
+   "name": "\u00d8rn - Skarv",
+   "type": "feeder",
+   "from_id": "orn",
+   "length_km": 21.59656990139223,
+   "source": "orn",
+   "target": "skarv"
   },
   {
    "pipeline": "ogt",
@@ -1188,6 +2220,42 @@
    "target": "heimdal"
   },
   {
+   "pipeline": "oseberg_ost_oseberg",
+   "name": "Oseberg \u00d8st - Oseberg",
+   "type": "feeder",
+   "from_id": "oseberg_ost",
+   "length_km": 24.100768936776824,
+   "source": "oseberg_ost",
+   "target": "oseberg"
+  },
+  {
+   "pipeline": "oseberg_sor_oseberg",
+   "name": "Oseberg S\u00f8r - Oseberg",
+   "type": "feeder",
+   "from_id": "oseberg_sor",
+   "length_km": 11.247351275389054,
+   "source": "oseberg_sor",
+   "target": "oseberg"
+  },
+  {
+   "pipeline": "ringhorne_ost_jotun",
+   "name": "Ringhorne \u00d8st - Jotun FPSO (Balder area)",
+   "type": "feeder",
+   "from_id": "ringhorne_ost",
+   "length_km": 7.255366587360512,
+   "source": "ringhorne_ost",
+   "target": "jotun"
+  },
+  {
+   "pipeline": "sigyn_sleipner",
+   "name": "Sigyn - Sleipner",
+   "type": "feeder",
+   "from_id": "sigyn",
+   "length_km": 12.26123791946968,
+   "source": "sigyn",
+   "target": "sleipner"
+  },
+  {
    "pipeline": "skarv_asgard",
    "name": "Skarv - \u00c5sgard Transport",
    "type": "feeder",
@@ -1195,6 +2263,24 @@
    "length_km": 80.0,
    "source": "skarv",
    "target": "asgard"
+  },
+  {
+   "pipeline": "skogul_vilje",
+   "name": "Skogul - Vilje",
+   "type": "feeder",
+   "from_id": "skogul",
+   "length_km": 0.1336455968632645,
+   "source": "skogul",
+   "target": "vilje"
+  },
+  {
+   "pipeline": "skuld_norne",
+   "name": "Skuld - Norne",
+   "type": "feeder",
+   "from_id": "skuld",
+   "length_km": 15.387332015408324,
+   "source": "skuld",
+   "target": "norne"
   },
   {
    "pipeline": "langeled_south",
@@ -1236,6 +2322,24 @@
    "target": "asgard"
   },
   {
+   "pipeline": "snorre_gullfaks",
+   "name": "Snorre - Gullfaks",
+   "type": "feeder",
+   "from_id": "snorre",
+   "length_km": 38.42816902907398,
+   "source": "snorre",
+   "target": "gullfaks"
+  },
+  {
+   "pipeline": "solveig_edvard_grieg",
+   "name": "Solveig - Edvard Grieg",
+   "type": "feeder",
+   "from_id": "solveig",
+   "length_km": 18.41132679255631,
+   "source": "solveig",
+   "target": "edvard_grieg"
+  },
+  {
    "pipeline": "statpipe_rich",
    "name": "Statpipe (rich gas)",
    "type": "trunk",
@@ -1254,6 +2358,87 @@
    "capacity": 25.0,
    "source": "statfjord",
    "target": "flags_brent"
+  },
+  {
+   "pipeline": "statfjord_nord_statfjord",
+   "name": "Statfjord Nord - Statfjord",
+   "type": "feeder",
+   "from_id": "statfjord_nord",
+   "length_km": 6.0850531966601915,
+   "source": "statfjord_nord",
+   "target": "statfjord"
+  },
+  {
+   "pipeline": "statfjord_ost_statfjord",
+   "name": "Statfjord \u00d8st - Statfjord",
+   "type": "feeder",
+   "from_id": "statfjord_ost",
+   "length_km": 12.333378235087928,
+   "source": "statfjord_ost",
+   "target": "statfjord"
+  },
+  {
+   "pipeline": "svalin_grane",
+   "name": "Svalin - Grane",
+   "type": "feeder",
+   "from_id": "svalin",
+   "length_km": 5.12788967713886,
+   "source": "svalin",
+   "target": "grane"
+  },
+  {
+   "pipeline": "sygna_statfjord",
+   "name": "Sygna - Statfjord",
+   "type": "feeder",
+   "from_id": "sygna",
+   "length_km": 25.279861424397602,
+   "source": "sygna",
+   "target": "statfjord"
+  },
+  {
+   "pipeline": "symra_ivar_aasen",
+   "name": "Symra - Ivar Aasen",
+   "type": "feeder",
+   "from_id": "symra",
+   "length_km": 7.0865996020100965,
+   "source": "symra",
+   "target": "ivar_aasen"
+  },
+  {
+   "pipeline": "tambar_ula",
+   "name": "Tambar - Ula",
+   "type": "feeder",
+   "from_id": "tambar",
+   "length_km": 15.816256851291403,
+   "source": "tambar",
+   "target": "ula"
+  },
+  {
+   "pipeline": "tambar_ost_ula",
+   "name": "Tambar \u00d8st - Ula",
+   "type": "feeder",
+   "from_id": "tambar_ost",
+   "length_km": 18.052789589032994,
+   "source": "tambar_ost",
+   "target": "ula"
+  },
+  {
+   "pipeline": "tommeliten_a_ekofisk",
+   "name": "Tommeliten A - Ekofisk",
+   "type": "feeder",
+   "from_id": "tommeliten_a",
+   "length_km": 23.7418497599072,
+   "source": "tommeliten_a",
+   "target": "ekofisk"
+  },
+  {
+   "pipeline": "tor_ekofisk",
+   "name": "Tor - Ekofisk",
+   "type": "feeder",
+   "from_id": "tor",
+   "length_km": 11.324547353160595,
+   "source": "tor",
+   "target": "ekofisk"
   },
   {
    "pipeline": "tordis_gullfaks",
@@ -1284,6 +2469,69 @@
    "target": "kollsnes"
   },
   {
+   "pipeline": "tune_oseberg",
+   "name": "Tune - Oseberg",
+   "type": "feeder",
+   "from_id": "tune",
+   "length_km": 9.998549871623494,
+   "source": "tune",
+   "target": "oseberg"
+  },
+  {
+   "pipeline": "tyrihans_kristin",
+   "name": "Tyrihans - Kristin",
+   "type": "feeder",
+   "from_id": "tyrihans",
+   "length_km": 27.13051938850663,
+   "source": "tyrihans",
+   "target": "kristin"
+  },
+  {
+   "pipeline": "tyrving_alvheim",
+   "name": "Tyrving - Alvheim",
+   "type": "feeder",
+   "from_id": "tyrving",
+   "length_km": 25.64137799684709,
+   "source": "tyrving",
+   "target": "alvheim"
+  },
+  {
+   "pipeline": "ula_ekofisk",
+   "name": "Ula - Ekofisk",
+   "type": "feeder",
+   "from_id": "ula",
+   "length_km": 66.20291672223026,
+   "source": "ula",
+   "target": "ekofisk"
+  },
+  {
+   "pipeline": "urd_norne",
+   "name": "Urd - Norne",
+   "type": "feeder",
+   "from_id": "urd",
+   "length_km": 5.245119646126962,
+   "source": "urd",
+   "target": "norne"
+  },
+  {
+   "pipeline": "utgard_sleipner",
+   "name": "Utgard - Sleipner",
+   "type": "feeder",
+   "from_id": "utgard",
+   "length_km": 20.970106001289246,
+   "source": "utgard",
+   "target": "sleipner"
+  },
+  {
+   "pipeline": "valemon_kvitebjorn",
+   "name": "Valemon - Kvitebj\u00f8rn",
+   "type": "feeder",
+   "from_id": "valemon",
+   "length_km": 9.227031748772706,
+   "source": "valemon",
+   "target": "kvitebjorn"
+  },
+  {
    "pipeline": "valhall_norpipe",
    "name": "Valhall gas export",
    "type": "feeder",
@@ -1291,6 +2539,42 @@
    "length_km": 31.12311812654738,
    "source": "valhall",
    "target": "ekofisk_tee"
+  },
+  {
+   "pipeline": "vega_gjoa",
+   "name": "Vega - Gj\u00f8a",
+   "type": "feeder",
+   "from_id": "vega",
+   "length_km": 28.26127649853919,
+   "source": "vega",
+   "target": "gjoa"
+  },
+  {
+   "pipeline": "verdande_norne",
+   "name": "Verdande - Norne",
+   "type": "feeder",
+   "from_id": "verdande",
+   "length_km": 8.073551176385088,
+   "source": "verdande",
+   "target": "norne"
+  },
+  {
+   "pipeline": "vigdis_snorre",
+   "name": "Vigdis - Snorre",
+   "type": "feeder",
+   "from_id": "vigdis",
+   "length_km": 37.948587408876755,
+   "source": "vigdis",
+   "target": "snorre"
+  },
+  {
+   "pipeline": "vilje_alvheim",
+   "name": "Vilje - Alvheim",
+   "type": "feeder",
+   "from_id": "vilje",
+   "length_km": 18.557276137205083,
+   "source": "vilje",
+   "target": "alvheim"
   },
   {
    "pipeline": "visund_kvitebjorn",
@@ -1301,6 +2585,24 @@
    "capacity": 12.0,
    "source": "visund",
    "target": "kvitebjorn"
+  },
+  {
+   "pipeline": "visund_sor_gullfaks",
+   "name": "Visund S\u00f8r - Gullfaks",
+   "type": "feeder",
+   "from_id": "visund_sor",
+   "length_km": 16.31227375396032,
+   "source": "visund_sor",
+   "target": "gullfaks"
+  },
+  {
+   "pipeline": "volund_alvheim",
+   "name": "Volund - Alvheim",
+   "type": "feeder",
+   "from_id": "volund",
+   "length_km": 8.16472630995735,
+   "source": "volund",
+   "target": "alvheim"
   }
  ]
 }

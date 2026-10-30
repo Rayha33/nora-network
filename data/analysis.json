@@ -1,7 +1,7 @@
 {
  "offline": [],
- "assets": 59,
- "pipelines": 59,
+ "assets": 121,
+ "pipelines": 121,
  "countries": [
   "BE",
   "DE",
@@ -12,14 +12,14 @@
   "PL"
  ],
  "node_types": {
-  "field": 37,
+  "field": 99,
   "hub": 3,
   "market": 2,
   "processing": 4,
   "tee": 7,
   "terminal": 6
  },
- "pipeline_km": 11339,
+ "pipeline_km": 12631,
  "supply_capacity": 482.3,
  "deliverable": 419.7,
  "delivered": {
@@ -61,33 +61,58 @@
  "pipeline_flow": {
   "polarled_north": 0.0,
   "aerfugl_skarv": 0.0,
+  "aerfugl_nord_skarv": 0.0,
+  "alve_norne": 0.0,
+  "alve_nord_skarv": 0.0,
+  "alvheim_beryl": 0.0,
   "asgard_transport": 68.3,
   "baltic_pipe_ns": 22.0,
   "europipe_2_south": 49.0,
+  "bauge_njord": 0.0,
   "sage": 16.0,
+  "blane_ula": 0.0,
+  "boyla_alvheim": 0.0,
+  "brage_oseberg": 0.0,
+  "breidablikk_grane": 0.0,
+  "byrding_fram_h_nord": 0.0,
   "draugen_asgard": 0.0,
   "draupner_bridge": 31.0,
   "europipe_1": 46.0,
   "franpipe": 55.0,
   "sleipner_draupner": 37.6,
   "statpipe_ekofisk": 17.7,
+  "duva_gjoa": 0.0,
   "dvalin_gas": 0.0,
   "polarled": 0.0,
   "uhgp": 6.0,
+  "eirin_gina_krog": 0.0,
   "ekofisk_tie_in": 25.0,
   "norpipe": 44.0,
+  "eldfisk_ekofisk": 0.0,
+  "embla_eldfisk": 0.0,
+  "fenja_njord": 0.0,
   "flags": 33.0,
+  "fram_troll": 0.0,
+  "fram_h_nord_fram": 0.0,
   "fuka": 4.7,
+  "gimle_gullfaks": 0.0,
   "gina_krog_sleipner": 8.6,
   "gjoa_flags": 15.0,
   "gudrun_sleipner": 5.0,
   "gullfaks_statfjord": 10.0,
   "gullfaks_sor_gullfaks": 0.0,
+  "gungne_sleipner": 0.0,
+  "halten_ost_asgard": 0.0,
+  "hanz_ivar_aasen": 0.0,
   "haltenpipe": 6.0,
   "heidrun_asgard": 0.0,
   "grane_gas_import": 0.0,
   "heimskringla_jotun": 0.0,
   "heimskringla_mariner": 30.0,
+  "hod_valhall": 0.0,
+  "hyme_njord": 0.0,
+  "idun_nord_skarv": 0.0,
+  "islay_fuka_tee": 0.0,
   "ivar_aasen_edvard_grieg": 0.0,
   "sverdrup_karsto": 6.0,
   "jotun_gas": 0.8,
@@ -96,28 +121,65 @@
   "statpipe_dry": 10.3,
   "zeepipe_2a": 58.0,
   "zeepipe_2b": 70.0,
+  "kristin_asgard": 0.0,
   "kvitebjorn_kollsnes": 8.0,
+  "maria_kristin": 0.0,
   "mariner_gas_import": 0.0,
   "vesterled": 30.0,
   "martin_linge_gas": 4.7,
+  "marulk_norne": 0.0,
   "mikkel_asgard": 0.0,
   "morvin_asgard": 0.0,
+  "njord_asgard": 0.0,
   "ngts": 0.0,
+  "nova_gjoa": 0.0,
   "baltic_pipe_east": 22.0,
   "langeled_north": 50.0,
+  "oda_ula": 0.0,
   "ormen_lange_nyhamna": 50.0,
+  "orn_skarv": 0.0,
   "ogt": 30.0,
+  "oseberg_ost_oseberg": 0.0,
+  "oseberg_sor_oseberg": 0.0,
+  "ringhorne_ost_jotun": 0.0,
+  "sigyn_sleipner": 0.0,
   "skarv_asgard": 0.0,
+  "skogul_vilje": 0.0,
+  "skuld_norne": 0.0,
   "langeled_south": 72.0,
   "zeepipe_1": 42.0,
   "smorbukk_nord_asgard": 0.0,
+  "snorre_gullfaks": 0.0,
+  "solveig_edvard_grieg": 0.0,
   "statpipe_rich": 7.0,
   "tampen_link": 18.0,
+  "statfjord_nord_statfjord": 0.0,
+  "statfjord_ost_statfjord": 0.0,
+  "svalin_grane": 0.0,
+  "sygna_statfjord": 0.0,
+  "symra_ivar_aasen": 0.0,
+  "tambar_ula": 0.0,
+  "tambar_ost_ula": 0.0,
+  "tommeliten_a_ekofisk": 0.0,
+  "tor_ekofisk": 0.0,
   "tordis_gullfaks": 0.0,
   "trestakk_asgard": 0.0,
   "troll_kollsnes": 120.0,
+  "tune_oseberg": 0.0,
+  "tyrihans_kristin": 0.0,
+  "tyrving_alvheim": 0.0,
+  "ula_ekofisk": 0.0,
+  "urd_norne": 0.0,
+  "utgard_sleipner": 0.0,
+  "valemon_kvitebjorn": 0.0,
   "valhall_norpipe": 1.3,
-  "visund_kvitebjorn": 0.0
+  "vega_gjoa": 0.0,
+  "verdande_norne": 0.0,
+  "vigdis_snorre": 0.0,
+  "vilje_alvheim": 0.0,
+  "visund_kvitebjorn": 0.0,
+  "visund_sor_gullfaks": 0.0,
+  "volund_alvheim": 0.0
  },
  "utilization": {
   "troll_kollsnes": 1.0,
@@ -590,8 +652,85 @@
   },
   {
    "kind": "node",
+   "id": "aerfugl_nord",
+   "name": "\u00c6rfugl Nord",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "alve",
+   "name": "Alve",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "alve_nord",
+   "name": "Alve Nord",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "alvheim",
+   "name": "Alvheim",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "bauge",
+   "name": "Bauge",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "blane",
+   "name": "Blane",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "boyla",
+   "name": "B\u00f8yla",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "brage",
+   "name": "Brage",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "breidablikk",
+   "name": "Breidablikk",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "byrding",
+   "name": "Byrding",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
    "id": "draugen",
    "name": "Draugen",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "duva",
+   "name": "Duva",
    "lost": 0.0,
    "share": 0.0
   },
@@ -606,6 +745,55 @@
    "kind": "node",
    "id": "dvalin_tee",
    "name": "Dvalin tie-in (Polarled)",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "eirin",
+   "name": "Eirin",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "eldfisk",
+   "name": "Eldfisk",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "embla",
+   "name": "Embla",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "fenja",
+   "name": "Fenja",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "fram",
+   "name": "Fram",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "fram_h_nord",
+   "name": "Fram H-Nord",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "gimle",
+   "name": "Gimle",
    "lost": 0.0,
    "share": 0.0
   },
@@ -639,6 +827,55 @@
   },
   {
    "kind": "node",
+   "id": "gungne",
+   "name": "Gungne",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "halten_ost",
+   "name": "Halten \u00d8st",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "hanz",
+   "name": "Hanz",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "hod",
+   "name": "Hod",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "hyme",
+   "name": "Hyme",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "idun_nord",
+   "name": "Idun Nord",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "islay",
+   "name": "Islay",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
    "id": "ivar_aasen",
    "name": "Ivar Aasen",
    "lost": 0.0,
@@ -667,6 +904,13 @@
   },
   {
    "kind": "node",
+   "id": "kristin",
+   "name": "Kristin",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
    "id": "kvitebjorn",
    "name": "Kvitebj\u00f8rn",
    "lost": 0.0,
@@ -674,8 +918,22 @@
   },
   {
    "kind": "node",
+   "id": "maria",
+   "name": "Maria",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
    "id": "mariner",
    "name": "Mariner",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "marulk",
+   "name": "Marulk",
    "lost": 0.0,
    "share": 0.0
   },
@@ -695,8 +953,22 @@
   },
   {
    "kind": "node",
+   "id": "njord",
+   "name": "Njord",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
    "id": "norne",
    "name": "Norne",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "nova",
+   "name": "Nova",
    "lost": 0.0,
    "share": 0.0
   },
@@ -709,6 +981,48 @@
   },
   {
    "kind": "node",
+   "id": "oda",
+   "name": "Oda",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "orn",
+   "name": "\u00d8rn",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "oseberg_ost",
+   "name": "Oseberg \u00d8st",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "oseberg_sor",
+   "name": "Oseberg S\u00f8r",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "ringhorne_ost",
+   "name": "Ringhorne \u00d8st",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "sigyn",
+   "name": "Sigyn",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
    "id": "skarv",
    "name": "Skarv",
    "lost": 0.0,
@@ -716,8 +1030,99 @@
   },
   {
    "kind": "node",
+   "id": "skogul",
+   "name": "Skogul",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "skuld",
+   "name": "Skuld",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
    "id": "smorbukk_nord",
    "name": "Sm\u00f8rbukk Nord",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "snorre",
+   "name": "Snorre",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "solveig",
+   "name": "Solveig",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "statfjord_nord",
+   "name": "Statfjord Nord",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "statfjord_ost",
+   "name": "Statfjord \u00d8st",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "svalin",
+   "name": "Svalin",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "sygna",
+   "name": "Sygna",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "symra",
+   "name": "Symra",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "tambar",
+   "name": "Tambar",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "tambar_ost",
+   "name": "Tambar \u00d8st",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "tommeliten_a",
+   "name": "Tommeliten A",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "tor",
+   "name": "Tor",
    "lost": 0.0,
    "share": 0.0
   },
@@ -737,8 +1142,85 @@
   },
   {
    "kind": "node",
+   "id": "tune",
+   "name": "Tune",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "tyrihans",
+   "name": "Tyrihans",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "tyrving",
+   "name": "Tyrving",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "ula",
+   "name": "Ula",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "urd",
+   "name": "Urd",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "utgard",
+   "name": "Utgard",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "valemon",
+   "name": "Valemon",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
    "id": "valhall",
    "name": "Valhall",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "vega",
+   "name": "Vega",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "verdande",
+   "name": "Verdande",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "vigdis",
+   "name": "Vigdis",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "vilje",
+   "name": "Vilje",
    "lost": 0.0,
    "share": 0.0
   },
@@ -750,9 +1232,51 @@
    "share": 0.0
   },
   {
+   "kind": "node",
+   "id": "visund_sor",
+   "name": "Visund S\u00f8r",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "node",
+   "id": "volund",
+   "name": "Volund",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "aerfugl_nord_skarv",
+   "name": "\u00c6rfugl Nord - Skarv",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
    "kind": "pipeline",
    "id": "aerfugl_skarv",
    "name": "\u00c6rfugl - Skarv FPSO",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "alve_nord_skarv",
+   "name": "Alve Nord - Skarv",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "alve_norne",
+   "name": "Alve - Norne",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "alvheim_beryl",
+   "name": "Alvheim - Beryl",
    "lost": 0.0,
    "share": 0.0
   },
@@ -772,6 +1296,48 @@
   },
   {
    "kind": "pipeline",
+   "id": "bauge_njord",
+   "name": "Bauge - Njord",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "blane_ula",
+   "name": "Blane - Ula",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "boyla_alvheim",
+   "name": "B\u00f8yla - Alvheim",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "brage_oseberg",
+   "name": "Brage - Oseberg",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "breidablikk_grane",
+   "name": "Breidablikk - Grane",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "byrding_fram_h_nord",
+   "name": "Byrding - Fram H-Nord",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
    "id": "draugen_asgard",
    "name": "Draugen - \u00c5sgard Transport",
    "lost": 0.0,
@@ -779,8 +1345,64 @@
   },
   {
    "kind": "pipeline",
+   "id": "duva_gjoa",
+   "name": "Duva - Gj\u00f8a",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
    "id": "dvalin_gas",
    "name": "Dvalin gas export (via Heidrun)",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "eirin_gina_krog",
+   "name": "Eirin - Gina Krog",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "eldfisk_ekofisk",
+   "name": "Eldfisk - Ekofisk",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "embla_eldfisk",
+   "name": "Embla - Eldfisk",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "fenja_njord",
+   "name": "Fenja - Njord",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "fram_h_nord_fram",
+   "name": "Fram H-Nord - Fram",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "fram_troll",
+   "name": "Fram - Troll",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "gimle_gullfaks",
+   "name": "Gimle - Gullfaks",
    "lost": 0.0,
    "share": 0.0
   },
@@ -814,6 +1436,27 @@
   },
   {
    "kind": "pipeline",
+   "id": "gungne_sleipner",
+   "name": "Gungne - Sleipner",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "halten_ost_asgard",
+   "name": "Halten \u00d8st - \u00c5sgard area",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "hanz_ivar_aasen",
+   "name": "Hanz - Ivar Aasen",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
    "id": "heidrun_asgard",
    "name": "Heidrun - \u00c5sgard Transport",
    "lost": 0.0,
@@ -823,6 +1466,34 @@
    "kind": "pipeline",
    "id": "heimskringla_jotun",
    "name": "Heimskringla (Draupner leg to the Jotun tie-in)",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "hod_valhall",
+   "name": "Hod - Valhall",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "hyme_njord",
+   "name": "Hyme - Njord",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "idun_nord_skarv",
+   "name": "Idun Nord - Skarv",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "islay_fuka_tee",
+   "name": "Islay - FUKA tie-in (Frigg TP1)",
    "lost": 0.0,
    "share": 0.0
   },
@@ -842,6 +1513,13 @@
   },
   {
    "kind": "pipeline",
+   "id": "kristin_asgard",
+   "name": "Kristin - \u00c5sgard area",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
    "id": "kvitebjorn_kollsnes",
    "name": "Kvitebj\u00f8rn gas pipeline",
    "lost": 0.0,
@@ -849,8 +1527,22 @@
   },
   {
    "kind": "pipeline",
+   "id": "maria_kristin",
+   "name": "Maria - Kristin",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
    "id": "mariner_gas_import",
    "name": "Mariner gas import",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "marulk_norne",
+   "name": "Marulk - Norne",
    "lost": 0.0,
    "share": 0.0
   },
@@ -877,6 +1569,48 @@
   },
   {
    "kind": "pipeline",
+   "id": "njord_asgard",
+   "name": "Njord - \u00c5sgard area",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "nova_gjoa",
+   "name": "Nova - Gj\u00f8a",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "oda_ula",
+   "name": "Oda - Ula",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "orn_skarv",
+   "name": "\u00d8rn - Skarv",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "oseberg_ost_oseberg",
+   "name": "Oseberg \u00d8st - Oseberg",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "oseberg_sor_oseberg",
+   "name": "Oseberg S\u00f8r - Oseberg",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
    "id": "polarled",
    "name": "Polarled",
    "lost": 0.0,
@@ -891,6 +1625,20 @@
   },
   {
    "kind": "pipeline",
+   "id": "ringhorne_ost_jotun",
+   "name": "Ringhorne \u00d8st - Jotun FPSO (Balder area)",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "sigyn_sleipner",
+   "name": "Sigyn - Sleipner",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
    "id": "skarv_asgard",
    "name": "Skarv - \u00c5sgard Transport",
    "lost": 0.0,
@@ -898,8 +1646,50 @@
   },
   {
    "kind": "pipeline",
+   "id": "skogul_vilje",
+   "name": "Skogul - Vilje",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "skuld_norne",
+   "name": "Skuld - Norne",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
    "id": "smorbukk_nord_asgard",
    "name": "Sm\u00f8rbukk Nord - \u00c5sgard",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "snorre_gullfaks",
+   "name": "Snorre - Gullfaks",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "solveig_edvard_grieg",
+   "name": "Solveig - Edvard Grieg",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "statfjord_nord_statfjord",
+   "name": "Statfjord Nord - Statfjord",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "statfjord_ost_statfjord",
+   "name": "Statfjord \u00d8st - Statfjord",
    "lost": 0.0,
    "share": 0.0
   },
@@ -926,8 +1716,57 @@
   },
   {
    "kind": "pipeline",
+   "id": "svalin_grane",
+   "name": "Svalin - Grane",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
    "id": "sverdrup_karsto",
    "name": "Johan Sverdrup gas export",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "sygna_statfjord",
+   "name": "Sygna - Statfjord",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "symra_ivar_aasen",
+   "name": "Symra - Ivar Aasen",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "tambar_ost_ula",
+   "name": "Tambar \u00d8st - Ula",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "tambar_ula",
+   "name": "Tambar - Ula",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "tommeliten_a_ekofisk",
+   "name": "Tommeliten A - Ekofisk",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "tor_ekofisk",
+   "name": "Tor - Ekofisk",
    "lost": 0.0,
    "share": 0.0
   },
@@ -947,8 +1786,85 @@
   },
   {
    "kind": "pipeline",
+   "id": "tune_oseberg",
+   "name": "Tune - Oseberg",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "tyrihans_kristin",
+   "name": "Tyrihans - Kristin",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "tyrving_alvheim",
+   "name": "Tyrving - Alvheim",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "ula_ekofisk",
+   "name": "Ula - Ekofisk",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "urd_norne",
+   "name": "Urd - Norne",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "utgard_sleipner",
+   "name": "Utgard - Sleipner",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "valemon_kvitebjorn",
+   "name": "Valemon - Kvitebj\u00f8rn",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
    "id": "valhall_norpipe",
    "name": "Valhall gas export",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "vega_gjoa",
+   "name": "Vega - Gj\u00f8a",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "verdande_norne",
+   "name": "Verdande - Norne",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "vigdis_snorre",
+   "name": "Vigdis - Snorre",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "vilje_alvheim",
+   "name": "Vilje - Alvheim",
    "lost": 0.0,
    "share": 0.0
   },
@@ -958,10 +1874,24 @@
    "name": "Visund gas export",
    "lost": 0.0,
    "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "visund_sor_gullfaks",
+   "name": "Visund S\u00f8r - Gullfaks",
+   "lost": 0.0,
+   "share": 0.0
+  },
+  {
+   "kind": "pipeline",
+   "id": "volund_alvheim",
+   "name": "Volund - Alvheim",
+   "lost": 0.0,
+   "share": 0.0
   }
  ],
  "sourced": {
-  "rows": 118,
-  "total": 118
+  "rows": 242,
+  "total": 242
  }
 }
