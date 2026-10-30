@@ -175,6 +175,30 @@ test("edits: a hosted server's Save asks for its edit key once, then keeps it", 
   assert.equal(App.edit.list().length, 0);
 });
 
+/* Ray, 30 Oct: "i should not be prompted to dowload a file when i click save". On the
+   hosted site no editing server answers, so Save keeps the edits in this browser and says
+   so; nothing downloads unless Export files is pressed. */
+test("edits: Save on the hosted site keeps the edits in this browser, with no download", async () => {
+  const files = { Blob: class { constructor(parts) { this.parts = parts; } }, URL: { createObjectURL: () => "blob:x" } };
+  const { App, document, localStorage } = editedApp([{ op: "removeLine", id: "ogt" }], files);
+  App.setMode("edit");
+  const downloads = () => { const out = []; const walk = (n) => { if (n && typeof n === "object") { if (n.tagName === "A" && n.getAttribute("download")) out.push(n); (n.children || []).forEach(walk); } }; walk(document.body); return out; };
+  const clicked = [];
+  const realCreate = document.createElement.bind(document);
+  document.createElement = (tag) => { const el = realCreate(tag); if (tag === "a") el.click = () => clicked.push(el.getAttribute("download")); return el; };
+  await App.edit.save(); // fetch rejects: no editing server, as on factorlab.app
+  assert.deepEqual(clicked, [], "no file downloads on Save");
+  assert.equal(downloads().length, 0);
+  assert.equal(App.edit.list().length, 1, "the edit is still there");
+  assert.deepEqual(JSON.parse(localStorage.store.get("nora-edits")), [{ op: "removeLine", id: "ogt" }], "kept in this browser");
+  const bar = document.body.children.find((c) => /(^| )edits-bar( |$)/.test(c.className || ""));
+  assert.match(bar.textContent, /Saved in this browser: 1 change/);
+  const exportButton = buttonsOf(bar).find((b) => b.textContent === "Export files");
+  assert.ok(exportButton, "Export files is offered, for whoever wants the files");
+  exportButton._listeners.click[0]();
+  assert.ok(clicked.length > 0 && clicked.every((n) => ["nodes.csv", "pipelines.csv", "units.toml", "flow_layout.toml"].includes(n)), `only Export downloads them (${clicked})`);
+});
+
 /* Ray, 29 Oct, of the bar "13 changes to the network kept in this browser until saved":
    "what is the purpose of this? maybe remove it?". Changing the network is its own mode,
    Edit (his "editing version of the flow map"); outside it nothing can be dragged or

@@ -26,7 +26,7 @@ export function storage(steps) {
   };
 }
 
-export function editedApp(steps = STEPS) {
+export function editedApp(steps = STEPS, globals = {}) {
   const localStorage = storage(steps);
-  return { ...loadApp({ globals: { localStorage } }), localStorage };
+  return { ...loadApp({ globals: { localStorage, ...globals } }), localStorage };
 }
