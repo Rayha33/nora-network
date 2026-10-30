@@ -786,7 +786,10 @@
       if (s.level) m += `<g transform="translate(${START - 10} ${ry - 12}) scale(0.9)">${shapeMarkup(s.level)}</g>`;
       const name = nameOf(pid);
       m += `<text x="18" y="${ry}" style="${TEXT}">${esc(name.length > 28 ? `${name.slice(0, 27)}…` : name)}</text>`;
-      if (v != null) m += `<text x="${END}" y="${ry}" text-anchor="end" class="dimtext" style="${TEXT}">${esc(fmt(Math.abs(v), 1))}</text>`;
+      // A satellite's tie-back (map detail): its gas is in its host's figure, so no flow of its own.
+      const tieBack = [assets[pid].from, assets[pid].to].some((n) => assets[n] && assets[n].min_zoom > 0);
+      if (tieBack) m += `<text x="${END}" y="${ry}" text-anchor="end" class="dimtext" style="${TEXT}">tie-back</text>`;
+      else if (v != null) m += `<text x="${END}" y="${ry}" text-anchor="end" class="dimtext" style="${TEXT}">${esc(fmt(Math.abs(v), 1))}</text>`;
     }
     // The node as a circle holding its flow, its pressure beside it (the Flow view draws squares).
     const st = nodeStyle(id), look = COLORS.card[st.inactive ? "inactive" : state.mode === "live" ? "active" : "normal"];
