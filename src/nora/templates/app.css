@@ -514,7 +514,8 @@ canvas.map2d { position: absolute; inset: 0; display: block; cursor: grab; touch
   color: var(--text); font-size: 12px; cursor: pointer; white-space: nowrap;
 }
 .edits-bar button:hover { background: var(--raised); }
-.edits-bar button.danger { border-color: var(--critical); }
+.edits-bar button:disabled { color: var(--text-dim); background: transparent; cursor: default; }
+.edits-bar button.danger, .sidebar .actions button.danger { border-color: var(--critical); }
 .whatif-bar { left: 16px; right: auto; transform: none; gap: 12px; } /* clear of the panel on the right */
 .whatif-bar .seg { height: 30px; }
 /* What-if's window on the view, beside the node or line clicked. */

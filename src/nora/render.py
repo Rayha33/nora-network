@@ -25,7 +25,7 @@ from pyvis.network import Network as PyvisNetwork
 
 from .blending import blending_routes
 from .config import load_config
-from .data import DATA_DIR, NODE_TYPES, PIPELINE_TYPES, SUPPLY_TYPES, Network
+from .data import DATA_DIR, NODE_TYPES, PIPELINE_TYPES, STATUSES, SUPPLY_TYPES, Network
 from .graph import great_circle_km
 from .icons import TYPES, icon_uri
 from .layout import flow_grid, load_flow_layout
@@ -363,6 +363,7 @@ def page_payload(
             [s for s in config.get("blending", {}).get("stations", []) if s in net.node_by_id],
         ),
         "supplyTypes": list(SUPPLY_TYPES),
+        "statuses": list(STATUSES),
         # Each pipeline's regression for the What-if's pressures (data/pipeline_models.csv).
         "pipeModels": load_pipeline_models(net, Path(data_dir) / "pipeline_models.csv"),
         # The data files as they are, for the editor's download: an edited network goes

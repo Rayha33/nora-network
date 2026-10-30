@@ -147040,6 +147040,11 @@
   "lng",
   "storage"
  ],
+ "statuses": [
+  "operating",
+  "planned",
+  "decommissioned"
+ ],
  "pipeModels": {
   "asgard_transport": {
    "a": 6.913,
