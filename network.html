@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta name="nora-build" content="4fce3dfe6e58">
+<meta name="nora-build" content="736c50797fc4">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>NORA operations</title>
@@ -3238,6 +3238,23 @@ const App = (() => {
       value: `${fmt(p, 1)} bar, window ${fmt(low)}–${fmt(high)}`,
     };
   }
+  /* A line's pack (review, 30 Oct: a pipeline's page showed its load and nothing else):
+     the gas it holds, the model's estimate from its end pressures as on the Flow and in
+     the inventory trend, against the least and most it held in the data so far, with its
+     settle-out pressure and how fast it packs. Grey: a model answer, never an alarm. */
+  function packIndicator(id) {
+    const f = frame(), lp = linepack(id, f), sop = settleOut(id, f), r = packRate(id);
+    const held = live.frames.slice(0, live.index + 1).map((x) => linepack(id, x)).filter((v) => v != null);
+    const lo = Math.min(lp, ...held), hi = Math.max(lp, ...held), pad = Math.max((hi - lo) * 0.1, lp * 0.01);
+    return {
+      id, measure: "Line pack", unit: "MSm³", lvl: 0, band: [lo, hi],
+      noRate: true, // its packing is said in MSm³/d, as on the Flow's "pack +1.7", not again per hour
+      bar: rangeBar({ min: lo - pad, max: hi + pad, value: lp, band: [lo, hi] }),
+      series: series((x) => linepack(id, x)),
+      limits: [],
+      value: `${fmt(lp, 1)} MSm³ at ${fmt(sop, 1)} bar settle-out${r != null && Math.abs(r) >= 0.5 ? `, packing ${signed(r, 1)} MSm³/d` : ""}, an estimate`,
+    };
+  }
   function qualityIndicator(id, name) {
     const v = metric(name, id), limits = C.quality[name], lvl = level(v, limits);
     return {
@@ -3272,9 +3289,9 @@ const App = (() => {
       ...indicators.flatMap((ind) => [
         byMeasure ? h("div", { class: "name measure" }, ind.measure || nameOf(ind.id))
           : h("div", pressable(`asset:${ind.id}`, () => go({ screen: "asset", asset: ind.id }), { class: "name", role: "link", title: "Open the asset" }), nameOf(ind.id)),
-        h("div", null, ind.bar, h("div", { class: "value" }, ind.value, h("span", { class: "rate-inline" }, rateText(rate(ind.series), ind.unit), toLimitText(ind)))),
+        h("div", null, ind.bar, h("div", { class: "value" }, ind.value, h("span", { class: "rate-inline" }, (ind.noRate ? null : rateText(rate(ind.series), ind.unit)), toLimitText(ind)))),
         trend(ind.series, { band: ind.band, lvl: ind.lvl }),
-        h("div", { class: "rate" }, rateText(rate(ind.series), ind.unit), toLimitText(ind)),
+        h("div", { class: "rate" }, (ind.noRate ? null : rateText(rate(ind.series), ind.unit)), toLimitText(ind)),
         h("div", { class: "state optional" }, badge(ind.lvl)),
       ]));
   }
@@ -3725,7 +3742,10 @@ const App = (() => {
       if (exitPoints.includes(id) && (metric("nomination_msm3d", id) != null || throughput(id, f.flows) != null)) indicators.push(exitIndicator(id));
       if (metric("pressure_bar", id) != null && C.pressure[d.type]) indicators.push(pressureIndicator(id));
       for (const name of Object.keys(QUALITY)) if (metric(name, id) != null) indicators.push(qualityIndicator(id, name));
-    } else if (d.capacity && f.flows[id] != null) indicators.push(loadIndicator(id));
+    } else {
+      if (d.capacity && f.flows[id] != null) indicators.push(loadIndicator(id));
+      if (linepack(id, f) != null) indicators.push(packIndicator(id)); // the gas it holds
+    }
     const conds = live.conditions.filter((c) => c.id === id);
     // In the sidebar the name is already the panel header: no repeated h1.
     return h("div", { class: inSidebar ? "side-detail" : "screen-body" },
