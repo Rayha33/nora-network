@@ -49,7 +49,8 @@ const App = (() => {
   }
   function signed(value, digits = 1) {
     if (value == null || Number.isNaN(value)) return "–";
-    return `${value > 0 ? "+" : value < 0 ? "−" : "±"}${fmt(Math.abs(value), digits)}`;
+    const shown = Number(value.toFixed(digits)); // -0.04 shows as ±0.0, not −0.0
+    return `${shown > 0 ? "+" : shown < 0 ? "−" : "±"}${fmt(Math.abs(value), digits)}`;
   }
   const esc = (text) => String(text).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
   function h(tag, attrs, ...children) {

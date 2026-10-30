@@ -447,9 +447,42 @@
   const isTee = (id) => (NORA.assets[id] || {}).type === "tee";
   function tagsAt(id, positions = framePos) {
     if (isTee(id) || !pressureVisibility(App.state.mode, network ? network.getScale() : 1)) return [];
-    const byId = App.cached("tags", positions, () => new Map());
-    if (!byId.has(id)) byId.set(id, pressureTags(id, positions));
-    return byId.get(id);
+    return App.cached("tags", positions, () => settleTags(positions)).get(id) || [];
+  }
+  /* No tag on another, also a neighbour's (never text over text): Sleipner's side tags
+     met where a corner pushed one onto the next, and Kvitebjørn's met Visund's across
+     their short line. Every node's tags at once: of two that meet, a side tag slides
+     along its edge, up or down away from the other; of two on top or bottom edges, the
+     right one slides right. One that still meets another is left out until the zoom
+     gives it room. */
+  function settleTags(positions) {
+    const byId = new Map(), all = [], gap = 2 / (network ? network.getScale() : 1);
+    for (const nid of App.nodeIds) {
+      if (isTee(nid) || nodeHidden(nid) || !positions[nid]) continue;
+      const own = pressureTags(nid, positions);
+      byId.set(nid, own);
+      all.push(...own);
+    }
+    const side = (t) => t.side === "E" || t.side === "W";
+    const cx = (t) => (t.box[0] + t.box[2]) / 2, cy = (t) => (t.box[1] + t.box[3]) / 2;
+    const moves = (a, b) => (side(a) !== side(b) ? side(a)
+      : side(a) ? cy(a) > cy(b) || (cy(a) === cy(b) && cx(a) > cx(b))
+      : cx(a) > cx(b) || (cx(a) === cx(b) && cy(a) > cy(b)));
+    for (let pass = 0; pass < 6; pass++) {
+      let moved = false;
+      for (const a of all) for (const b of all) {
+        if (a === b || !overlaps(a.box, b.box) || !moves(a, b)) continue;
+        const [dx, dy] = !side(a) ? [b.box[2] - a.box[0] + gap, 0]
+          : cy(a) >= cy(b) ? [0, b.box[3] - a.box[1] + gap] : [0, b.box[1] - a.box[3] - gap];
+        a.box = [a.box[0] + dx, a.box[1] + dy, a.box[2] + dx, a.box[3] + dy];
+        moved = true;
+      }
+      if (!moved) break;
+    }
+    const kept = [];
+    for (const t of all) if (!kept.some((k) => overlaps(k.box, t.box))) kept.push(t);
+    for (const [nid, own] of byId) byId.set(nid, own.filter((t) => kept.includes(t)));
+    return byId;
   }
   /* How far from a node's centre a line, leaving along (ux, uy), meets what is drawn
      there: the square's edge, or the outer side of a tag the line runs under. vis asks
@@ -1224,11 +1257,13 @@
   let outlook = null, outlookFor = "";
   function tagUnder(c) {
     if (!App.stateShown()) return null;
-    for (const id of App.nodeIds) {
-      if (nodeHidden(id)) continue;
-      if (tagsAt(id).some(({ box }) => c.x >= box[0] && c.x <= box[2] && c.y >= box[1] && c.y <= box[3])) return id;
-    }
-    return null;
+    return App.frame.run(() => { // every node's tags are settled together: once for the lookup
+      for (const id of App.nodeIds) {
+        if (nodeHidden(id)) continue;
+        if (tagsAt(id).some(({ box }) => c.x >= box[0] && c.x <= box[2] && c.y >= box[1] && c.y <= box[3])) return id;
+      }
+      return null;
+    });
   }
   function showOutlook(id, at) {
     if (!id) { if (outlook) outlook.hidden = true; outlookFor = ""; return; }
@@ -1504,6 +1539,7 @@
   view.drawQuadrants = drawQuadrants;
   view.drawOverviewFlows = drawOverviewFlows;
   view.pressureTags = pressureTags;
+  view.tagsAt = tagsAt; // for tests: the tags as drawn, settled against every other
   view.portDistance = portDistance;
   view.drawPressureTags = drawPressureTags;
   view.drawDayBar = drawDayBar;
