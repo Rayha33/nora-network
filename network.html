@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta name="nora-build" content="95cd2786bacc">
+<meta name="nora-build" content="b50f30c49420">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>NORA operations</title>
@@ -4118,7 +4118,10 @@ const App = (() => {
       if (s.level) m += `<g transform="translate(${START - 10} ${ry - 12}) scale(0.9)">${shapeMarkup(s.level)}</g>`;
       const name = nameOf(pid);
       m += `<text x="18" y="${ry}" style="${TEXT}">${esc(name.length > 28 ? `${name.slice(0, 27)}…` : name)}</text>`;
-      if (v != null) m += `<text x="${END}" y="${ry}" text-anchor="end" class="dimtext" style="${TEXT}">${esc(fmt(Math.abs(v), 1))}</text>`;
+      // A satellite's tie-back (map detail): its gas is in its host's figure, so no flow of its own.
+      const tieBack = [assets[pid].from, assets[pid].to].some((n) => assets[n] && assets[n].min_zoom > 0);
+      if (tieBack) m += `<text x="${END}" y="${ry}" text-anchor="end" class="dimtext" style="${TEXT}">tie-back</text>`;
+      else if (v != null) m += `<text x="${END}" y="${ry}" text-anchor="end" class="dimtext" style="${TEXT}">${esc(fmt(Math.abs(v), 1))}</text>`;
     }
     // The node as a circle holding its flow, its pressure beside it (the Flow view draws squares).
     const st = nodeStyle(id), look = COLORS.card[st.inactive ? "inactive" : state.mode === "live" ? "active" : "normal"];
@@ -7691,8 +7694,8 @@ function NoraCanvasMap(view) {
   function overviewSquareHalf(scale, grid = cell) {
     if (scale >= 1) return SQUARE.live;
     const s = Math.max(0.01, scale);
-    const room = Math.min((grid.down * s - 30) / 2, (grid.across * s - 16) / 2); // screen px
-    return Math.max(8, Math.min(room, Math.max(22, SQUARE.live * s))) / s;
+    const k = uiK(), room = Math.min((grid.down * s - 30 * k) / 2, (grid.across * s - 16 * k) / 2); // screen px
+    return Math.max(8, Math.min(room, Math.max(22 * k, SQUARE.live * s))) / s;
   }
   const nodeHalf = () => (App.stateShown() ? overviewSquareHalf(network ? network.getScale() : 1) : SQUARE.plain);
   // How far a line runs inside a square before it leaves it, along the unit vector (ux, uy).
@@ -7798,6 +7801,12 @@ function NoraCanvasMap(view) {
       const point = network.canvasToDOM(p), r = circleRadius(id) * scale;
       return [point.x - r, point.y - r, point.x + r, point.y + r];
     }) : [];
+    // Every node's tags, before any name is placed: a name keeps clear of a tag drawn after
+    // it too (review, 30 Oct: on a wall a later node's tag covered "Åsgard area").
+    if (scale < 1) for (const nid of App.nodeIds) for (const t of tagsAt(nid, framePos)) {
+      const a = network.canvasToDOM({ x: t.box[0], y: t.box[1] }), b = network.canvasToDOM({ x: t.box[2], y: t.box[3] });
+      overviewBoxes.push([a.x, a.y, b.x, b.y]);
+    }
     let step = 24;
     while (step * scale < 12) step *= 2;
     const a = network.DOMtoCanvas({ x: 0, y: 0 }), b = network.DOMtoCanvas({ x: el.clientWidth, y: el.clientHeight });
@@ -8010,7 +8019,20 @@ function NoraCanvasMap(view) {
      at it (portDistance). Tags sharing an edge are spread so none overlaps. Zoomed out
      there is room for one, on the middle of the square's top edge, when it fits. Sizes
      in screen px; boxes in canvas units. */
-  const TAG = { font: "600 12px Archivo, system-ui, sans-serif", small: "600 11px Archivo, system-ui, sans-serif", pad: 4, h: 16, hSmall: 14, line: 13, lineSmall: 12 };
+  /* Text drawn at its real size on screen (pressure tags, zoomed-out names, readings and
+     line values) grows with the UI scale, as the bar and the moving labels do: a video
+     wall reads it from across the room (AGENTS.md: configurable for any screen). At most
+     twice: the drawing keeps its proportions, the squares growing with it. */
+  const uiK = () => Math.min(2, App.uiScale ? App.uiScale() : 1);
+  const TAG = {
+    get font() { return `600 ${12 * uiK()}px Archivo, system-ui, sans-serif`; },
+    get small() { return `600 ${11 * uiK()}px Archivo, system-ui, sans-serif`; },
+    get pad() { return 4 * uiK(); },
+    get h() { return 16 * uiK(); },
+    get hSmall() { return 14 * uiK(); },
+    get line() { return 13 * uiK(); },
+    get lineSmall() { return 12 * uiK(); },
+  };
   const overlaps = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
   /* Zoomed out the tag holds the number alone: the same framed tag reads "146 bar" on
      zoom in, with the pressure's change over the last hour in bar/h where it moves (Ray,
@@ -8030,7 +8052,7 @@ function NoraCanvasMap(view) {
     return { text: unit ? `${value} bar` : value, rate: trend };
   }
   function textWidth(text, font) {
-    if (!measurer) return text.length * 6.5; // no canvas yet (tests): about Archivo's width
+    if (!measurer) return text.length * 6.5 * uiK(); // no canvas yet (tests): about Archivo's width
     measurer.save();
     measurer.font = font;
     const width = measurer.measureText(text).width;
@@ -8258,11 +8280,12 @@ function NoraCanvasMap(view) {
     const point = network.canvasToDOM({ x, y }), lines = overviewNameLines(App.nameOf(id));
     ctx.save();
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    ctx.font = "600 11.5px Archivo, system-ui, sans-serif";
+    const k = uiK(), lineH = 13 * k;
+    ctx.font = `600 ${11.5 * k}px Archivo, system-ui, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
     const textWidth = Math.max(...lines.map((line) => ctx.measureText(line).width));
-    const width = textWidth + 6, height = lines.length * 13 + 4;
+    const width = textWidth + 6 * k, height = lines.length * lineH + 4 * k;
     const canvas = network.canvas.frame.canvas, bounds = { width: canvas.clientWidth, height: canvas.clientHeight };
     const placement = overviewNamePlacement(point, radius, network.getScale(), width, height, overviewBoxes, bounds, own);
     if (!placement) { ctx.restore(); return; } // only a genuinely full canvas may omit a name
@@ -8272,10 +8295,10 @@ function NoraCanvasMap(view) {
     ctx.lineWidth = 3;
     ctx.strokeStyle = C.paper;
     ctx.fillStyle = C.text;
-    const center = placement.left + width / 2, top = placement.top + 2;
+    const center = placement.left + width / 2, top = placement.top + 2 * k;
     lines.forEach((line, index) => {
-      ctx.strokeText(line, center, top + index * 13);
-      ctx.fillText(line, center, top + index * 13);
+      ctx.strokeText(line, center, top + index * lineH);
+      ctx.fillText(line, center, top + index * lineH);
     });
     ctx.restore();
   }
@@ -8378,10 +8401,14 @@ function NoraCanvasMap(view) {
     ctx.save();
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.font = modelFont("600 12px Archivo, system-ui, sans-serif"); // a size up: read at a glance
+    ctx.font = modelFont(`600 ${12 * uiK()}px Archivo, system-ui, sans-serif`); // a size up: read at a glance
     for (const row of rows) {
       ctx.fillStyle = row.ink;
-      reading(ctx, fitText(ctx, `${App.fmt(row.value, row.value < 10 ? 1 : 0)}M`, half * scale * 1.8), x, row.at, look);
+      // A small square drops the M, then the decimal, before it cuts a number ("4.0M", "4.0",
+      // "4"): review, 30 Oct, the fitted Flow showed "4…." and "0…." on a desk.
+      const v = row.value, room = half * scale * 1.8, short = App.fmt(v, v < 10 ? 1 : 0);
+      const text = [`${short}M`, short, App.fmt(v, 0)].find((t) => ctx.measureText(t).width <= room);
+      reading(ctx, text || fitText(ctx, App.fmt(v, 0), room), x, row.at, look);
     }
     ctx.restore();
   }
@@ -8622,7 +8649,7 @@ function NoraCanvasMap(view) {
     ctx.setLineDash([6, 4]);
     ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
     ctx.setLineDash([]);
-    ctx.font = "12px Archivo, system-ui, sans-serif";
+    ctx.font = `${12 * uiK()}px Archivo, system-ui, sans-serif`;
     ctx.textBaseline = "top";
     ctx.lineJoin = "round"; ctx.lineWidth = 3; ctx.strokeStyle = C.paper; ctx.fillStyle = C.text;
     const hint = "Click the node to connect to · Esc cancels";
@@ -9095,7 +9122,8 @@ function NoraCanvasMap(view) {
     const ratio = (network.canvas && network.canvas.pixelRatio) || window.devicePixelRatio || 1;
     ctx.save();
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    ctx.font = modelFont("12px Archivo, system-ui, sans-serif");
+    const k = uiK(), rowH = 16 * k;
+    ctx.font = modelFont(`${12 * k}px Archivo, system-ui, sans-serif`);
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     const segments = {}, leaders = [], quiet = App.mix(C.text_dim, C.paper, 0.45); // a leader, not a line
@@ -9108,7 +9136,7 @@ function NoraCanvasMap(view) {
       const s = App.pipeStyle(id), p = NORA.assets[id], a = positions[p.from], b = positions[p.to];
       if (!s.label || lineHidden(id) || !a || !b) continue;
       const rows = s.pack ? [s.label, s.pack] : [s.label], w = Math.max(...rows.map((t) => ctx.measureText(t).width));
-      const height = 16 * rows.length;
+      const height = rowH * rows.length;
       /* Beside the line, not on it (Ray, 29 Oct: "settle out and pack rate covers too much
          of the pipeline ... have it just outisde the pipeline with a thin line pointing to
          the center of the pipe"): off to one side, a hairline back to the line. */
@@ -9132,7 +9160,7 @@ function NoraCanvasMap(view) {
       ctx.fillRect(spot.box[0], spot.box[1], spot.box[2] - spot.box[0], height);
       rows.forEach((text, i) => {
         ctx.fillStyle = i === 1 && s.packHigh ? App.limitInk(1) : C.text; // full ink: the dim grey was hard to read on the paper
-        ctx.fillText(text, spot.cx, spot.box[1] + 8 + 16 * i);
+        ctx.fillText(text, spot.cx, spot.box[1] + rowH / 2 + rowH * i);
       });
       boxes.push(spot.box);
       taken.push(spot.box);
