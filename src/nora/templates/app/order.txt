@@ -11,6 +11,7 @@ whatif.js
 styles.js
 indicators.js
 screens.js
+pid.js
 nav.js
 player.js
 start.js
