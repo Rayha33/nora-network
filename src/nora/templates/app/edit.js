@@ -545,6 +545,7 @@
   function start() {
     $("update").addEventListener("click", () => location.reload());
     if (BUILD) setInterval(checkBuild, 5 * 60 * 1000);
+    if (!embed) { loadPrices(); setInterval(loadPrices, 15 * 60 * 1000); } // the money counter's TTF and NOK rates
     $("crumb-overview").addEventListener("click", () => go({ screen: "overview" }));
     $("crumb-asset").addEventListener("click", () => go({ screen: "asset", asset: route.asset }));
     $("theme-toggle").addEventListener("click", () => setTheme(theme === "light" ? "dark" : "light"));
@@ -650,6 +651,7 @@
     linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
     pressureMark, flowMark, limitInk, drawFlowDirection, gasDayChart, gasQuality, pressureOutlook, pressureChart,
     airTemp: (id) => metric("air_temp_c", id),
+    money: { today: moneyToday, load: loadPrices, draw: drawMoney, throughput }, // the player's money counter (and what it sums)
     rampAhead, // the next 6 hours of nominations at an exit point
     reachAhead, // and whether its pressure holds for them with the input as now
     blending: { layout: blendingLayout, picture: blendingPicture, box: blendingBox, routes: BLEND },

@@ -51710,6 +51710,11 @@
    "step_min": 0.1,
    "peak_max": 5
   },
+  "money": {
+   "gcv_kwh_per_sm3": 11.0,
+   "currency": "NOK",
+   "prices": "data/prices.json"
+  },
   "quality": {
    "h2s_ppm": [
     2.5,

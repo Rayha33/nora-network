@@ -59,6 +59,7 @@ DEFAULTS: dict = {
         "gas_day_start_utc": 5,
     },
     "pipelines": {"gas_velocity_mps": 8.0, "step_min": 0.10, "peak_max": 5},
+    "money": {"gcv_kwh_per_sm3": 11.0, "currency": "NOK", "prices": "data/prices.json"},
     "quality": {"h2s_ppm": [2.5, 3.0, 3.3], "co2_molpct": [2.2, 2.35, 2.5], "follow_from": 0.8},
     "pressure": {
         "field": [100, 175],
@@ -128,6 +129,7 @@ DEFAULTS: dict = {
 CHOICES = {
     ("screen", "start"): ("overview", "network"),
     ("screen", "network_view"): ("map", "flow"),
+    ("money", "currency"): ("NOK", "USD"),
     ("screen", "network_mode"): ("live", "load", "risk", "plain"),
     ("screen", "theme"): ("light", "dark", "auto"),
     ("screen", "speed"): (1, 60, 120, 300, 600, 1800),
