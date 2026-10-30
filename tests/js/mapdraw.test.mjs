@@ -43,6 +43,7 @@ function fakeMapLibre() {
     constructor(options) {
       this.options = options;
       this.handlers = {};
+      this.sources = {};
       this.center = { lng: 3, lat: 58 };
       this.zoom = 4.5;
       this.touchZoomRotate = { disableRotation() {} };
@@ -51,7 +52,8 @@ function fakeMapLibre() {
     }
     on(type, layerOrFn, fn) { if (!fn) (this.handlers[type] ??= []).push(layerOrFn); return this; }
     once() { return this; }
-    fire(type) { for (const fn of this.handlers[type] || []) fn({ point: { x: 0, y: 0 } }); }
+    fire(type, event = { point: { x: 0, y: 0 } }) { for (const fn of this.handlers[type] || []) fn(event); }
+    addSource(id, spec) { this.sources[id] = spec; }
     getCanvas() { return this.options.container; }
     getContainer() { return this.options.container; }
     getCenter() { return this.center; }
@@ -86,6 +88,7 @@ async function mountMap() {
   const map = maplibregl.Map.last;
   map.fire("style.load");
   for (let i = 0; i < 5 && !App.views.map.ready; i++) await new Promise((resolve) => setImmediate(resolve));
+  map.fire("sourcedata", { sourceId: "nora-pipes", isSourceLoaded: true }); // the lines are on the map
   map.fire("render"); // MapLibre draws its first frame: the layer draws only with a camera the map has drawn
   return { ...loaded, view: App.views.map, map, el, counts };
 }
@@ -186,4 +189,31 @@ test("map without WebGL: a paused canvas map is not redrawn every frame", () => 
   assert.deepEqual(moving, { frames: 3, repaints: 0 }, "playing, the markers moved: each frame paints them over the still map");
   const fast = count(() => { for (let i = 0; i < 6; i++) { App.live.time += 1800; App.live.clock += 1 / 60; view.draw(); } });
   assert.deepEqual(fast, { frames: 2, repaints: 0 }, "at 60 frames a second, every third one: at most 20 a second");
+});
+
+/* Ray, 30 Oct: "peak lines are sometimes glitching and jumping outside pipelines". While
+   the style reloads (a light/dark switch, or the fall back to raster tiles), the map has
+   no lines: the layer of pigs and peaks is emptied, and drawn again only once the
+   pipelines are back. And the lines are drawn exactly as laid (no simplification), as
+   the peaks follow them. */
+test("map: no pig or peak while the lines are off the map; the lines are not simplified", async () => {
+  const { App, view, map, counts } = await mountMap();
+  assert.equal(map.sources["nora-pipes"].tolerance, 0, "lines exactly as laid, at every zoom");
+  App.live.playing = false;
+  view.draw();
+  const cleared = counts.clearRect || 0, drawn = () => (counts.clearRect || 0) - cleared;
+  view.theme(); // a theme switch reloads the style
+  assert.equal(drawn(), 1, "the layer is emptied at once, not left over a map with no lines");
+  map.center = { lng: 3.2, lat: 58 };
+  map.fire("render");
+  view.draw();
+  assert.equal(drawn(), 1, "and stays empty while the style loads");
+  map.fire("style.load");
+  for (let i = 0; i < 5 && !view.ready; i++) await new Promise((resolve) => setImmediate(resolve));
+  const before = drawn();
+  map.fire("render");
+  assert.equal(drawn(), before, "the layers are added, their lines not loaded yet: still empty");
+  map.fire("sourcedata", { sourceId: "nora-pipes", isSourceLoaded: true });
+  map.fire("render");
+  assert.ok(drawn() > before, "the lines are on the map: the pigs and peaks are drawn again");
 });
