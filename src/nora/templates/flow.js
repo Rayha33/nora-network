@@ -864,6 +864,16 @@
     }
     return { grid: [Math.round(stage * 100) / 100, Math.round(rank * 100) / 100], near };
   }
+  let placing = false; // Add node (the editor's toolbar) waits for a click on the drawing
+  function placeNode() {
+    placing = true;
+    connecting = null;
+    el.style.cursor = "crosshair";
+  }
+  function stopPlacing() {
+    placing = false;
+    el.style.cursor = "";
+  }
   let connecting = null; // { from, at }: "Connect to another node…" is waiting for a click
   function startConnect(from) {
     connecting = { from, at: null };
@@ -1154,6 +1164,7 @@
     network.on("click", (event) => {
       const at = event.pointer && event.pointer.DOM;
       if (connecting) { finishConnect(event.nodes[0] || (at && hitTest(at, network.getPositions(), (p) => network.canvasToDOM(p), network.getScale()))); return; }
+      if (placing) { stopPlacing(); if (at && App.state.mode === "edit") App.edit.addAt(placeAt(network.DOMtoCanvas(at))); return; }
       const mark = at && markAt(at.x, at.y); // a pig or a peak under the pointer wins
       if (mark) { App.selectMarker(mark.key); return; }
       const id = event.nodes[0] || event.edges[0] || (at && hitTest(at, network.getPositions(), (p) => network.canvasToDOM(p), network.getScale()));
@@ -1201,7 +1212,10 @@
       showOutlook(tagUnder(network.DOMtoCanvas(at)), at);
     });
     container.addEventListener("pointerleave", () => showOutlook(null));
-    addEventListener("keydown", (e) => { if (e.key === "Escape" && connecting) finishConnect(null); });
+    addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && connecting) finishConnect(null);
+      if (e.key === "Escape" && placing) { stopPlacing(); App.edit.note(""); }
+    });
   };
 
   /* Over a pressure tag: the node's pressure, the last 6 hours measured and the next 6
@@ -1503,6 +1517,8 @@
   view.pressureVisibility = pressureVisibility;
   view.overviewSquareHalf = overviewSquareHalf;
   view.clearPlaces = clearPlaces;
+  view.placeNode = placeNode; // the editor's Add node: the next click on the drawing places it
+  view.connect = (id) => { if (network) startConnect(id); }; // the node form's Connect…
   view.overviewReading = overviewReading;
   view.overviewNameLines = overviewNameLines;
   view.overviewNamePlacement = overviewNamePlacement;

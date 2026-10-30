@@ -196,6 +196,49 @@ const App = (() => {
     NORA.geo.pipes.features.push({ type: "Feature", id: nextFeatureId(NORA.geo.pipes), properties: { asset: l.id, onshore: l.type === "onshore" }, geometry: { type: "LineString", coordinates: [[a.lon, a.lat], [b.lon, b.lat]] } });
     const vis = visData(); if (vis) vis.edges.add({ id: l.id, from: l.from, to: l.to, arrows: l.bidirectional ? "to, from" : "to" });
   }
+  /* An existing node or line changed in the editor's form (Ray, 30 Oct: "the editing page
+     should be a fully fledged editing program where new nodes can be added or removed,
+     named, etc"). Only the fields given change; the id stays, so streams still find it.
+     `changed` marks the row for the files Save writes. */
+  const NODE_FIELDS = ["name", "type", "country", "lat", "lon", "capacity", "operator", "status", "notes"];
+  const LINE_FIELDS = ["name", "type", "capacity", "length", "diameter", "bidirectional", "status", "operator", "notes"];
+  function changeNode(id, changes) {
+    const d = NORA.assets[id];
+    for (const key of NODE_FIELDS) if (key in changes) d[key] = changes[key];
+    d.supply = NORA.supplyTypes.includes(d.type);
+    d.exit = d.type === "terminal" || d.type === "market";
+    d.changed = true;
+    if (changes.unit && NORA.units.some((u) => u.id === changes.unit)) {
+      for (const unit of NORA.units) unit.nodes = unit.nodes.filter((n) => n !== id);
+      NORA.units.find((u) => u.id === changes.unit).nodes.push(id);
+      // a line belongs to the unit of the node it leaves (units.py)
+      const out = Object.keys(NORA.assets).filter((pid) => NORA.assets[pid].kind === "pipeline" && NORA.assets[pid].from === id);
+      for (const unit of NORA.units) unit.pipelines = (unit.pipelines || []).filter((p) => !out.includes(p));
+      const unit = NORA.units.find((u) => u.id === changes.unit);
+      unit.pipelines = [...(unit.pipelines || []), ...out];
+    }
+    const feature = NORA.geo.nodes.features.find((f) => f.properties.asset === id);
+    if (feature) {
+      Object.assign(feature.properties, { name: d.name, type: d.type });
+      feature.geometry.coordinates = [d.lon, d.lat];
+    }
+  }
+  function changeLine(pid, changes) {
+    const d = NORA.assets[pid];
+    for (const key of LINE_FIELDS) if (key in changes) d[key] = changes[key];
+    if ("length" in changes) d.km = d.length || kmBetween(NORA.assets[d.from], NORA.assets[d.to]); // markers move by it
+    if (changes.reverse) {
+      [d.from, d.to] = [d.to, d.from];
+      const feature = NORA.geo.pipes.features.find((f) => f.properties.asset === pid);
+      if (feature) feature.geometry.coordinates = feature.geometry.coordinates.slice().reverse();
+      for (const unit of NORA.units) unit.pipelines = (unit.pipelines || []).filter((p) => p !== pid);
+      const unit = NORA.units.find((u) => u.nodes.includes(d.from));
+      if (unit) (unit.pipelines = unit.pipelines || []).push(pid);
+    }
+    d.changed = true;
+    const vis = visData();
+    if (vis && vis.edges.get(pid)) vis.edges.update({ id: pid, from: d.from, to: d.to, arrows: d.bidirectional ? "to, from" : "to" });
+  }
   // One step onto NORA; false when it no longer applies (the data changed under it).
   function applyEdit(step) {
     const A = NORA.assets, has = (id, kind) => A[id] && A[id].kind === kind;
@@ -204,6 +247,8 @@ const App = (() => {
     if (step.op === "addNode" && step.node && !A[step.node.id]) { putNode(step.node); return true; }
     if (step.op === "addLine" && step.line && !A[step.line.id] && has(step.line.from, "node") && has(step.line.to, "node")) { putLine(step.line); return true; }
     if (step.op === "moveNode" && has(step.id, "node") && Array.isArray(step.grid)) { NORA.grid[step.id] = step.grid; return true; }
+    if (step.op === "editNode" && has(step.id, "node") && step.changes) { changeNode(step.id, step.changes); return true; }
+    if (step.op === "editLine" && has(step.id, "pipeline") && step.changes) { changeLine(step.id, step.changes); return true; }
     return false;
   }
   const edits = storedEdits().filter(applyEdit);

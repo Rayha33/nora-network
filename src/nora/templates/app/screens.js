@@ -402,7 +402,7 @@
 
   /* The asset sidebar: a calm column that slides in from the right when a field,
      plant or line is clicked on the unit screen, and follows the data as it plays. */
-  const side = { id: null, marker: null, form: false }; // form: a new node or line (the editor)
+  const side = { id: null, marker: null, form: false, editing: null }; // form: the editor's; editing: the asset it changes
   function openSidebar(id) {
     if (!assets[id]) return;
     side.id = id;
@@ -424,6 +424,7 @@
     side.id = null;
     side.marker = null;
     side.form = false;
+    side.editing = null;
     $("asset-side").classList.remove("open");
     $("asset-side").setAttribute("aria-hidden", "true");
   }

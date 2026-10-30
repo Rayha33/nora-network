@@ -143,7 +143,12 @@ export function makeSandbox({ nora, document = makeDom(), search = "" } = {}) {
       removeItem: (k) => storage.delete(k),
       clear: () => storage.clear(),
     },
+    sessionStorage: (() => {
+      const tab = new Map(); // this tab's: the editor's redo list
+      return { getItem: (k) => (tab.has(k) ? tab.get(k) : null), setItem: (k, v) => tab.set(k, String(v)), removeItem: (k) => tab.delete(k) };
+    })(),
     addEventListener: (type, fn) => { (listeners[type] ??= []).push(fn); },
+    _listeners: listeners, // for tests: the page's own key and pointer handlers
     removeEventListener() {},
     dispatchEvent() { return true; },
     requestAnimationFrame: () => 0,
@@ -197,6 +202,7 @@ export function makeSandbox({ nora, document = makeDom(), search = "" } = {}) {
     history: window.history,
     location: window.location,
     localStorage: window.localStorage,
+    sessionStorage: window.sessionStorage,
     EventSource: class { close() {} addEventListener() {} },
     fetch: () => Promise.reject(new Error("no network in tests")),
   };

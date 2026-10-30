@@ -34,5 +34,12 @@ def test_the_editor_writes_files_nora_accepts(tmp_path):
     assert net.pipeline_by_id["snorre_statfjord"].to_id == "statfjord"
     units = load_units(net, tmp_path / "units.toml")
     assert any("snorre" in unit["nodes"] for unit in units)
+    # changed in the node and line forms (Ray, 30 Oct: "a fully fledged editing program")
+    statfjord = net.node_by_id["statfjord"]
+    assert (statfjord.name, statfjord.capacity_msm3d) == ("Statfjord A", 9)
+    assert statfjord.operator == 'Equinor, "Statfjord"'
+    assert any("statfjord" in unit["nodes"] and unit["id"] == "hubs" for unit in units)
+    europipe = net.pipeline_by_id["europipe_1"]
+    assert (europipe.name, europipe.length_km, europipe.bidirectional) == ("Europipe 1", 661, True)
     placed = load_flow_layout(net, tmp_path / "flow_layout.toml")
     assert placed["sleipner"] == (5.25, 3) and placed["snorre"] == (2.5, 1)
