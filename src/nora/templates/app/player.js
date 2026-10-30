@@ -166,7 +166,67 @@
     renderWhatifEditor(); // its numbers follow the hour the timeline shows
     drawSpark();
     drawInventory();
+    drawMoney();
   }
+  /* Money (Ray, 30 Oct: "show real flow of money in NOK and USD (toggle between them)
+     based on flows after the gas day started at 06:00 am. it then resets, it should check
+     current gas prices"): the gas delivered where it leaves the system since the gas day
+     began, valued at today's TTF (nora.toml [money]; scripts/fetch_prices.py writes the
+     prices on the server every 15 minutes). An estimate, and it says so: TTF is the
+     North-West European hub price, not what any contract was paid. */
+  const MONEY = C.money || { gcv_kwh_per_sm3: 11.0, currency: "NOK", prices: "data/prices.json" };
+  const SOLD_AT = ["terminal", "lng", "market"]; // where gas leaves the system
+  let prices = null, currency = MONEY.currency;
+  try { currency = ["NOK", "USD"].includes(localStorage.getItem("nora-currency")) ? localStorage.getItem("nora-currency") : currency; } catch (error) { /* the default */ }
+  async function loadPrices() {
+    try {
+      const response = await fetch(MONEY.prices, { cache: "no-store" });
+      const p = response.ok ? await response.json() : null;
+      if (p && p.ttf_eur_per_mwh > 0 && p.nok_per_eur > 0 && p.nok_per_usd > 0) prices = p;
+    } catch (error) { /* no prices here (a local build): the counter stays hidden */ }
+    drawMoney();
+  }
+  // MSm³ delivered where gas leaves the system, from the gas day's start to the playhead.
+  function soldToday() {
+    const start = T.gas_day_start_utc == null ? 5 : T.gas_day_start_utc, now = live.time;
+    if (now == null || !live.frames.length) return null;
+    const dayStart = Math.floor((now - start * 3600) / 86400) * 86400 + start * 3600;
+    const sold = nodeIds.filter((id) => SOLD_AT.includes(assets[id].type));
+    let msm3 = 0;
+    for (let i = Math.min(live.index, live.frames.length - 1); i >= 0; i--) {
+      const f = live.frames[i];
+      const from = Math.max(f.t, dayStart), to = Math.min(i < live.index ? live.frames[i + 1].t : now, now);
+      if (to > from) for (const id of sold) { const v = throughput(id, f.flows); if (v > 0) msm3 += (v * (to - from)) / 86400; }
+      if (f.t <= dayStart) break;
+    }
+    return { msm3, dayStart };
+  }
+  function moneyToday() {
+    const sold = soldToday();
+    if (!sold || !prices) return null;
+    const mwh = (sold.msm3 * 1e6 * MONEY.gcv_kwh_per_sm3) / 1000, nok = mwh * prices.ttf_eur_per_mwh * prices.nok_per_eur;
+    return { ...sold, mwh, nok, usd: nok / prices.nok_per_usd };
+  }
+  const moneyText = (v, cur) => `${cur} ${v >= 1e9 ? `${fmt(v / 1e9, 2)} bn` : `${fmt(v / 1e6, v >= 1e8 ? 0 : 1)} M`}`;
+  function drawMoney() {
+    const box = $("money");
+    if (!box || $("player").hidden) return;
+    const m = moneyToday();
+    box.hidden = !m;
+    if (!m) return;
+    const oslo = (t) => timeFormat(t, { timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit" });
+    $("money-value").textContent = moneyText(currency === "USD" ? m.usd : m.nok, currency);
+    $("money-currency").textContent = currency === "USD" ? "NOK" : "USD"; // the button offers the other
+    box.title = `An estimate: ${fmt(m.msm3, 1)} MSm³ delivered where gas leaves the system since the gas day began at ${oslo(m.dayStart)}`
+      + `${live.stream && live.stream.synthetic ? " (synthetic flows)" : ""}, at ${MONEY.gcv_kwh_per_sm3} kWh/Sm³ and TTF ${fmt(prices.ttf_eur_per_mwh, 2)} EUR/MWh`
+      + ` (${prices.ttf_source}, ${timeFormat(prices.ttf_at, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} UTC),`
+      + ` in NOK at Norges Bank's rates of ${prices.fx_date}: 1 EUR = ${prices.nok_per_eur} NOK, 1 USD = ${prices.nok_per_usd} NOK. It starts again at the next gas day.`;
+  }
+  if ($("money-currency")) $("money-currency").addEventListener("click", () => {
+    currency = currency === "USD" ? "NOK" : "USD";
+    try { localStorage.setItem("nora-currency", currency); } catch (error) { /* this page only */ }
+    drawMoney();
+  });
   /* Total inventory (Ray, 29 Oct: "a trend showing total inventory in the whole system
      would be nice to see as well. it should be minimalistic"): the number now and a
      hairline over the last 24 hours, the model's next 4 hours dashed. */
