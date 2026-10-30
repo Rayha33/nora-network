@@ -188,7 +188,9 @@ def _quality_rows(net: Network, times: list[datetime], excursions: list, seed) -
     default): a slug of off-spec gas that long to follow (Ray, 29 Oct: "simulated peaks
     are too long"). With `every_hours` it comes back that often."""
     rng = random.Random(f"quality-{seed}")  # its own generator: flows stay as they were
-    fields = sorted(n.id for n in net.nodes if n.type == "field")
+    # The fields that send gas in the model: a satellite drawn for detail (capacity 0)
+    # carries no flow, so a reading there could never travel.
+    fields = sorted(n.id for n in net.nodes if n.type == "field" and n.capacity_msm3d)
     problems, bumps = [], []
     for i, spec in enumerate(excursions, start=1):
         asset, metric = spec.get("asset", ""), spec.get("metric", "")
@@ -283,7 +285,12 @@ def _random_breaches(net: Network, times: list[datetime], spec, flow_rows: list[
     days = (times[-1] - times[0]).total_seconds() / 86400 + 1 / 24
     severe = float(spec.get("severe_share", 0.25))
     when = lambda: times[0] + timedelta(hours=rng.uniform(0, days * 24 - 8))  # noqa: E731
-    nodes = sorted(n.id for n in net.nodes if n.type in limits and n.status == "operating")
+    # Not map detail (map_min_zoom): a satellite carries no flow, so no pressure to breach.
+    nodes = sorted(
+        n.id
+        for n in net.nodes
+        if n.type in limits and n.status == "operating" and not n.map_min_zoom
+    )
 
     def flags(count):  # exactly a `severe` share of the events go on to red, in random order
         hard = [k < round(count * severe) for k in range(count)]

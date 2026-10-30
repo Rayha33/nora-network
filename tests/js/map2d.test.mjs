@@ -411,7 +411,7 @@ test("flow nodes: each outgoing line's flow sits in the quadrant facing that lin
   App.live.values = App.live.frames[0].flows;
   // Positions as the Flow view lays them out: stages top to bottom, ranks left to right.
   const pos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id, { x: rank * 178, y: stage * 124 }]));
-  const mapOnly = new Set(NORA.config.flow.hide);
+  const mapOnly = new Set([...NORA.config.flow.hide, ...Object.keys(NORA.assets).filter((id) => NORA.assets[id].min_zoom > 0)]);
   let checked = 0;
   for (const id of App.nodeIds) {
     const q = App.views.flow.quadrants(id, pos);
@@ -501,7 +501,8 @@ test("flow squares: every connected pipeline gets its own flow value inside the 
   const id = busiest(App, pos); // many connected lines: the case quadrant totals cannot represent
   const expected = App.pipeIds.filter((pid) => {
     const p = NORA.assets[pid];
-    return (p.from === id || p.to === id) && !App.pipeStyle(pid).hidden;
+    const mapOnly = (n) => NORA.config.flow.hide.includes(n) || NORA.assets[n].min_zoom > 0; // not drawn in the Flow view
+    return (p.from === id || p.to === id) && !App.pipeStyle(pid).hidden && !mapOnly(p.from) && !mapOnly(p.to);
   });
   assert.ok(expected.length >= 5);
   const labels = [];

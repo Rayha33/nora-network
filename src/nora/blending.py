@@ -36,7 +36,11 @@ def blending_routes(net: Network, stations: Iterable[str]) -> dict[str, list[str
         "internal": [],
         "outgoing": [],
     }
+    # Map detail (satellites, map_min_zoom) is not one of the main lines.
+    detail = {n.id for n in net.nodes if n.map_min_zoom}
     for pipe in sorted(net.pipelines, key=lambda p: p.id):
+        if pipe.from_id in detail or pipe.to_id in detail:
+            continue
         start, end = pipe.from_id in inside, pipe.to_id in inside
         if start and end:
             routes["internal"].append(pipe.id)

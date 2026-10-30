@@ -15,13 +15,13 @@ test("edits: applied before anything reads the network", () => {
   assert.ok(!App.nodeIds.includes("gudrun"), "the removed node is gone");
   assert.ok(!App.pipeIds.includes("gudrun_sleipner"), "and its lines with it");
   assert.ok(!App.pipeIds.includes("ogt"), "a removed line is gone");
-  assert.ok(App.nodeIds.includes("snorre") && App.pipeIds.includes("snorre_statfjord"), "the new node and its line are in");
-  assert.deepEqual(Array.from(NORA.grid.snorre), [1, 2.5], "placed where the Flow view was clicked");
-  assert.ok(NORA.units.find((u) => u.id === "northern_north_sea").nodes.includes("snorre"), "in the unit chosen for it");
+  assert.ok(App.nodeIds.includes("kveikje") && App.pipeIds.includes("kveikje_statfjord"), "the new node and its line are in");
+  assert.deepEqual(Array.from(NORA.grid.kveikje), [1, 2.5], "placed where the Flow view was clicked");
+  assert.ok(NORA.units.find((u) => u.id === "northern_north_sea").nodes.includes("kveikje"), "in the unit chosen for it");
   assert.ok(!NORA.units.some((u) => u.nodes.includes("gudrun")), "the removed node left its unit");
-  assert.ok(NORA.geo.nodes.features.some((f) => f.properties.asset === "snorre"), "the Map has it");
+  assert.ok(NORA.geo.nodes.features.some((f) => f.properties.asset === "kveikje"), "the Map has it");
   assert.ok(!NORA.geo.pipes.features.some((f) => f.properties.asset === "ogt"), "and not the removed line");
-  assert.equal(NORA.assets.snorre.supply, true, "a field supplies the network (the what-if counts it)");
+  assert.equal(NORA.assets.kveikje.supply, true, "a field supplies the network (the what-if counts it)");
   assert.deepEqual(Array.from(NORA.grid.sleipner), [3, 5.25], "a dragged node keeps its place");
   assert.equal(NORA.assets.statfjord.name, "Statfjord A", "a node renamed in its form");
   assert.ok(NORA.units.find((u) => u.id === "hubs").nodes.includes("statfjord") && !NORA.units.find((u) => u.id === "northern_north_sea").nodes.includes("statfjord"), "and moved to its new unit");
@@ -91,18 +91,18 @@ test("edits: the files to save keep every untouched row exactly", () => {
   const before = source.find((row) => row.startsWith("statfjord,")), after = nodes.find((row) => row.startsWith("statfjord,"));
   assert.ok(after.startsWith("statfjord,Statfjord A,field,NO,") && after.includes(',"Equinor, ""Statfjord""",9,'), after);
   assert.equal(after.split(",").slice(-5).join(","), before.split(",").slice(-5).join(","), "source, notes and the rest kept");
-  const added = nodes.find((row) => row.startsWith("snorre,"));
+  const added = nodes.find((row) => row.startsWith("kveikje,"));
   assert.equal(added.split(",").length, source[0].split(",").length, "a full row");
   const lines = rows(files["pipelines.csv"]);
-  assert.ok(!lines.some((row) => /^(ogt|gudrun_sleipner),/.test(row)) && lines.some((row) => row.startsWith("snorre_statfjord,")));
+  assert.ok(!lines.some((row) => /^(ogt|gudrun_sleipner),/.test(row)) && lines.some((row) => row.startsWith("kveikje_statfjord,")));
   assert.match(files["units.toml"], /^# Units for level 2/, "the comments at the top stay");
   const layout = files["flow_layout.toml"];
   assert.match(layout, /^sleipner = \[5\.25, 3\]$/m, "the dragged node's new place, [across, down]");
-  assert.match(layout, /^snorre = \[2\.5, 1\]$/m, "the new node's place");
+  assert.match(layout, /^kveikje = \[2\.5, 1\]$/m, "the new node's place");
   assert.doesNotMatch(layout, /^gudrun =/m, "the removed node's line is gone");
   assert.match(layout, /^troll = /m, "the other lines stay");
   const section = files["units.toml"].split("[units.northern_north_sea]")[1].split("[units.")[0];
-  assert.match(section, /"snorre"/, "the new node in its unit");
+  assert.match(section, /"kveikje"/, "the new node in its unit");
   assert.doesNotMatch(files["units.toml"], /"gudrun"/);
   assert.ok(files["units.toml"].split("\n").every((line) => line.length <= 100), "long lists wrap, as in the file");
 });
@@ -115,13 +115,13 @@ test("edits: the network for `nora serve --edit` has the same edits", () => {
     pipelines: [{ id: "gudrun_sleipner", from: "gudrun", to: "sleipner" }, { id: "ogt", from: "oseberg", to: "heimdal" }, { id: "keep", from: "statfjord", to: "x" }],
   };
   const sent = App.edit.network(current);
-  assert.deepEqual(sent.nodes.map((n) => n.id), ["statfjord", "snorre"]);
-  assert.deepEqual(sent.pipelines.map((p) => p.id), ["keep", "snorre_statfjord"]);
-  assert.deepEqual({ ...sent.units }, { snorre: "northern_north_sea", statfjord: "hubs" }, "new nodes and moved ones in their units");
+  assert.deepEqual(sent.nodes.map((n) => n.id), ["statfjord", "kveikje"]);
+  assert.deepEqual(sent.pipelines.map((p) => p.id), ["keep", "kveikje_statfjord"]);
+  assert.deepEqual({ ...sent.units }, { kveikje: "northern_north_sea", statfjord: "hubs" }, "new nodes and moved ones in their units");
   const statfjord = sent.nodes.find((n) => n.id === "statfjord");
   assert.equal(statfjord.name, "Statfjord A", "a changed node's row has its new values");
   assert.equal(statfjord.source, "kept", "and keeps the fields the form does not show");
-  assert.deepEqual(JSON.parse(JSON.stringify(sent.layout)), { snorre: [2.5, 1] }, "places of added and moved nodes that are sent");
+  assert.deepEqual(JSON.parse(JSON.stringify(sent.layout)), { kveikje: [2.5, 1] }, "places of added and moved nodes that are sent");
   assert.equal(sent.revision, "r", "the revision guards against a stale save");
 });
 
@@ -136,9 +136,9 @@ test("edits: a new node and line reach the Flow view's vis data, drawable before
   loadApp({ globals: { localStorage, nodes, edges } });
   assert.equal(nodes.get("gudrun"), null, "the removed node left the vis data");
   assert.equal(edges.get("ogt"), null);
-  const snorre = nodes.added.find((n) => n.id === "snorre");
+  const snorre = nodes.added.find((n) => n.id === "kveikje");
   assert.ok(snorre && snorre.shape && snorre.shape !== "circularImage", "a shape that needs no icon (vis threw on pyvis's default)");
-  assert.ok(edges.added.some((e) => e.id === "snorre_statfjord" && e.from === "snorre" && e.to === "statfjord"));
+  assert.ok(edges.added.some((e) => e.id === "kveikje_statfjord" && e.from === "kveikje" && e.to === "statfjord"));
 });
 
 test("edits: dragging a node keeps its place without a reload; dragging again updates it", () => {
