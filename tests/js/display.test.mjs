@@ -191,6 +191,17 @@ test("a field's GC: composition, calorific value, Wobbe index and dew points, pa
   const cells = [];
   const walk = (el) => { if (el && el.tagName === "TD") cells.push(el); (el && el.children || []).forEach(walk); };
   walk(screen);
-  const hcdp = cells.find((c) => c.textContent === "1.5");
-  assert.ok(hcdp && /color/.test((hcdp.attributes && hcdp.attributes.get && hcdp.attributes.get("style")) || ""), "an HCDP over −2 °C: its number coloured");
+  const coloured = (c) => /color/.test((c.attributes && c.attributes.get && c.attributes.get("style")) || "");
+  const hcdp = cells.find((c) => c.textContent === "▲ 1.5");
+  assert.ok(hcdp && coloured(hcdp), "an HCDP over −2 °C: its number coloured, with a shape (never colour alone)");
+  // A field's rich gas is over the sales-gas Wobbe range in normal running: shown, not coloured.
+  App.live.frames[0].metrics = { c1_molpct: { [id]: 82 }, c2_molpct: { [id]: 10 }, c3_molpct: { [id]: 5 }, ic4_molpct: { [id]: 1 }, n2_molpct: { [id]: 1 }, co2_molpct: { [id]: 1 } };
+  assert.ok(App.gasQuality(id).wobbe > 51.41, "a rich field gas");
+  App.go({ screen: "overview" });
+  App.go({ screen: "asset", asset: id });
+  const rows = [];
+  const walkRows = (el) => { if (el && el.tagName === "TR") rows.push(el); (el && el.children || []).forEach(walkRows); };
+  walkRows(document.getElementById("screen-asset"));
+  const wobbe = rows.find((r) => r.textContent.startsWith("Wobbe index"));
+  assert.ok(wobbe && !wobbe.children.some(coloured), "its Wobbe index is not lit up");
 });

@@ -31,8 +31,9 @@
         h("tbody", null, rows.map((s) => h("tr", pressable(`slug:${s.q.slug}`, () => go({ screen: "asset", asset: s.q.arrived ? s.q.arrived.node : s.q.pid }), { title: "Open where it is now" }),
           h("td", null, swatch(s.q.metric), ` ${QUALITY[s.q.metric].name} from ${nameOf(s.q.origin)}`),
           h("td", null, fmt(s.q.conc, QUALITY[s.q.metric].digits), ` ${QUALITY[s.q.metric].unit}`),
-          h("td", null, s.q.arrived ? `Arrived at ${nameOf(s.q.arrived.node)}` : `${nameOf(s.next.node)}, ${etaText(s.next.t)}`),
-          h("td", null, s.exit ? `${nameOf(s.exit.node)}, ${fmt(s.exit.conc, QUALITY[s.q.metric].digits)} ${QUALITY[s.q.metric].unit}, ${etaText(s.exit.t)}` : "No exit on today's flows"),
+          // The place, and when under it: the time wrapped as one piece, not "(in 19.1" and "h)" (review, 30 Oct)
+          h("td", null, s.q.arrived ? `Arrived at ${nameOf(s.q.arrived.node)}` : [nameOf(s.next.node), h("span", { class: "eta" }, etaText(s.next.t))]),
+          h("td", null, s.exit ? [`${nameOf(s.exit.node)}, ${fmt(s.exit.conc, QUALITY[s.q.metric].digits)}\u00a0${QUALITY[s.q.metric].unit.replace(/ /g, "\u00a0")}`, h("span", { class: "eta" }, etaText(s.exit.t))] : "No exit on today's flows"),
           h("td", null, badge(slugAlarm(s), ""))))))
         : h("p", { class: "empty" }, `No H₂S or CO₂ peaks in the network. Limits: ${limits}.`),
       h("p", { class: "dim small" }, `Estimate. Gas travels at ${fmt(C.pipelines.gas_velocity_mps)} m/s along the line taking most of the flow; where gas joins, it is assumed to carry the median field reading. Limits from nora.toml.`));
@@ -171,7 +172,8 @@
     const rows = exits.map((id) => ({ id, ramp: rampAhead(id), reach: reachAhead(id) })).filter((r) => r.ramp)
       .sort((a, b) => b.ramp.level - a.ramp.level || Math.abs((b.ramp.steepest || {}).change || 0) - Math.abs((a.ramp.steepest || {}).change || 0));
     const hm = (t) => timeFormat(t, { timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit" });
-    const source = live.feed ? "From Origo, the shippers' nominations." : `From the dataset${live.stream && live.stream.synthetic ? " (synthetic)" : ""}; live, from Origo.`;
+    // Honest labels: a dataset's nominations are not Origo's, and synthetic ones say so.
+    const source = live.feed ? "From Origo, the shippers' nominations." : live.stream && live.stream.synthetic ? "Synthetic, from the dataset." : "From the dataset.";
     return h("div", { class: "box" }, h("h2", null, "Nominations at the exit points, next 6 hours"),
       rows.length ? h("ul", { class: "noms" }, rows.map(({ id, ramp, reach }) => {
         const s = ramp.steepest, steady = !s || Math.abs(s.change) < 0.05;
@@ -186,7 +188,7 @@
             ? h("span", { class: "short", style: `color:${limitInk(1)}`, title: `Model estimate: with the input as now, ${nameOf(id)} would be at ${fmt(reach.first.pressure, 1)} bar at ${hm(reach.first.t)}, under its ${fmt(reach.low)} bar low limit: raise the input to the line before then.` }, `short ${hm(reach.first.t)}`)
             : ramp.level ? badge(ramp.level, "Fast ramp") : h("span", null)));
       })) : h("p", { class: "empty" }, "No nominations in this dataset."),
-      h("p", { class: "dim small" }, `${source} MSm³/d; times CET.`));
+      h("p", { class: "dim small" }, `${source} MSm³/d; Norwegian time.`)); // Europe/Oslo: CET, CEST in summer
   }
 
   /* The next 6 hours at an exit: for each hour the booked capacity (outlined) and the
@@ -333,8 +335,16 @@
   function gcBox(id) {
     const q = gasQuality(id);
     if (!q) return null;
-    const past = (v, [lo, hi] = []) => v != null && ((lo != null && v < lo) || (hi != null && v > hi));
-    const cell = (v, digits, limits) => h("td", past(v, limits) ? { style: `color:${limitInk(1)};font-weight:600` } : null, v == null ? "–" : fmt(v, digits));
+    /* Past its limit: the colour with a shape and a word, never colour alone (AGENTS.md).
+       The Wobbe index is a sales-gas limit, met where the gas is delivered after the
+       plants take out the heavier parts: a field's rich gas is above it in normal running
+       (11 of 24 fields lit up), so it is shown against the range, not coloured. */
+    const past = (v, [lo, hi] = []) => (v == null ? 0 : lo != null && v < lo ? -1 : hi != null && v > hi ? 1 : 0);
+    const cell = (v, digits, limits) => {
+      const side = past(v, limits), text = v == null ? "–" : fmt(v, digits);
+      return side ? h("td", { style: `color:${limitInk(1)};font-weight:600`, title: side > 0 ? "Over the limit" : "Under the limit" }, `${side > 0 ? "▲" : "▼"} ${text}`)
+        : h("td", null, text);
+    };
     const h2sLimit = C.quality.h2s_ppm[2];
     return h("div", { class: "box gc" }, h("h2", { title: "The field's export gas, as its gas chromatograph reads it" }, "Gas composition (GC)"),
       h("table", { class: "data gc-table" },
@@ -344,7 +354,7 @@
         h("thead", null, h("tr", null, h("th", null, "Property"), h("th", null, "Value"), h("th", null, "Limit"))),
         h("tbody", null,
           h("tr", null, h("td", null, "Calorific value (GCV), MJ/Sm³"), cell(q.gcv, 2), h("td", { class: "dim" }, "")),
-          h("tr", null, h("td", null, "Wobbe index, MJ/Sm³"), cell(q.wobbe, 2, GC_LIMITS.wobbe), h("td", { class: "dim" }, `${GC_LIMITS.wobbe[0]}–${GC_LIMITS.wobbe[1]}`)),
+          h("tr", null, h("td", null, "Wobbe index, MJ/Sm³"), cell(q.wobbe, 2), h("td", { class: "dim", title: "Sales gas, where it is delivered" }, `${GC_LIMITS.wobbe[0]}–${GC_LIMITS.wobbe[1]} sold`)),
           h("tr", null, h("td", null, "Relative density"), cell(q.density, 3), h("td", { class: "dim" }, "")),
           h("tr", null, h("td", null, "H₂S, ppm"), cell(q.h2s, 1, [null, h2sLimit]), h("td", { class: "dim" }, `≤ ${h2sLimit}`)),
           h("tr", null, h("td", null, "O₂, ppm"), cell(q.o2, 1, GC_LIMITS.o2), h("td", { class: "dim" }, `≤ ${GC_LIMITS.o2[1]}`)),

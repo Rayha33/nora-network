@@ -279,6 +279,8 @@ table.data tbody tr:hover { background: var(--band); }
    table fits its box at any width; only the value stays on one line. */
 table.data.quality th, table.data.quality td { white-space: normal; }
 table.data.quality td:nth-child(2) { white-space: nowrap; }
+table.data.quality .eta { display: block; white-space: nowrap; color: var(--text-dim); }
+table.data.quality td:first-child { min-width: 9.5em; }
 table.data.pigs th, table.data.pigs td { text-align: left; white-space: normal; }
 table.data.pigs td:first-child { white-space: nowrap; }
 .facts { display: grid; grid-template-columns: minmax(90px, auto) 1fr; gap: 8px 18px; margin: 0; }
