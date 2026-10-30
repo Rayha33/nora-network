@@ -329,16 +329,46 @@ const App = (() => {
      next stop. `taken` holds the screen boxes already used (node circles and names,
      labels already placed): the label goes in the first corner beside the dot that is
      clear of them, so it never lands on other text (Ray: no text over text). With no
-     clear corner it is left out; hovering the marker still shows it. */
-  function labelSpot(x, y, d, w, h, taken) {
-    const spots = [[x + d, y - d], [x + d, y + d], [x - d - w, y - d], [x - d - w, y + d]];
-    for (const [lx, ly] of taken ? spots : spots.slice(0, 1)) {
+     clear corner it is left out; hovering the marker still shows it.
+     A moving label holds still (Ray, 30 Oct: "info, ETA and value glitches in and out as
+     the peak or pig moves along the pipeline"): it keeps its corner while that stays
+     clear, has a second ring of corners further out before it gives up, and once left
+     out comes back only after it has had room for LABEL_SETTLE_MS. `memo` is what this
+     marker's label did in the frames before. */
+  const LABEL_SETTLE_MS = 600;
+  function labelSpot(x, y, d, w, h, taken, memo = null, now = 0) {
+    const far = d * 2.5;
+    const spots = [[x + d, y - d], [x + d, y + d], [x - d - w, y - d], [x - d - w, y + d],
+      [x + far, y - far], [x + far, y + far], [x - far - w, y - far], [x - far - w, y + far]];
+    const order = spots.map((_, i) => i);
+    if (memo && memo.spot != null) { // its own corner first, then the nearest: a slide, not a jump
+      const [mx, my] = spots[memo.spot];
+      order.sort((a, b) => Math.hypot(spots[a][0] - mx, spots[a][1] - my) - Math.hypot(spots[b][0] - mx, spots[b][1] - my));
+    }
+    for (const i of taken ? order : [0]) {
+      const [lx, ly] = spots[i];
       const box = [lx - 2, ly - h / 2, lx + w + 2, ly + h / 2];
       if (taken && taken.some((o) => box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1])) continue;
+      if (memo && !memo.shown) { // back only once it has had room for a while
+        memo.clearSince ??= now;
+        if (now - memo.clearSince < LABEL_SETTLE_MS) return null;
+      }
       if (taken) taken.push(box);
+      if (memo) Object.assign(memo, { spot: i, shown: true, clearSince: null });
       return [lx, ly];
     }
+    if (memo) Object.assign(memo, { shown: false, clearSince: null });
     return null;
+  }
+  // What each marker's label did, per canvas (the Map and the Flow keep their own).
+  const labelMemos = new WeakMap();
+  function labelMemo(ctx, marker) {
+    if (!ctx || typeof ctx !== "object") return null;
+    let memos = labelMemos.get(ctx);
+    if (!memos) labelMemos.set(ctx, memos = new Map());
+    const key = marker.key || `${marker.kind}:${marker.id}:${marker.pigId ?? ""}`;
+    if (!memos.has(key)) memos.set(key, { spot: null, shown: true, clearSince: null }); // a new label shows at once
+    return memos.get(key);
   }
   /* A gas-quality peak reads as three short lines (Ray, 29 Oct): the gas in its own
      calm colour, the concentration with its unit, and when it reaches the next stop:
@@ -369,7 +399,7 @@ const App = (() => {
     ctx.save();
     ctx.font = `${font}px Archivo, sans-serif`;
     const w = Math.max(...rows.map(([text]) => ctx.measureText(text).width));
-    const spot = labelSpot(x, y, size * 0.9, w, line * rows.length, taken);
+    const spot = labelSpot(x, y, size * 0.9, w, line * rows.length, taken, taken ? labelMemo(ctx, marker) : null, Date.now());
     if (!spot) { ctx.restore(); return; }
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";

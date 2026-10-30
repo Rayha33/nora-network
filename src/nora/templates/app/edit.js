@@ -581,7 +581,7 @@
     },
     routes: { nextOut, pigPlace, peakPlace, seeded },
     pigs: { pigSpeed, pigMessages, pigAlarm, pigRun, pigEta, pigStatus, pigConditions },
-    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, levelOf, alarmHandling, buildAlarms, fmt, signed, esc, nameOf, unitOf, units: unitById,
+    colors: COLORS, levelColor: LEVEL_COLOR, shapeMarkup, drawBadge, drawMarker, drawBand, markerSize, markerTip, labelSpot, levelOf, alarmHandling, buildAlarms, fmt, signed, esc, nameOf, unitOf, units: unitById,
     linepack, packRate, pressureRate, inventory, settleOut, // the line-pack model (PMS-style estimates)
     pressureMark, flowMark, limitInk, drawFlowDirection, gasDayChart, gasQuality, pressureOutlook, pressureChart,
     airTemp: (id) => metric("air_temp_c", id),

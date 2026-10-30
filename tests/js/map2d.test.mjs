@@ -855,9 +855,9 @@ test("marker labels: never over a node name or another label", () => {
     set(target, key, value) { target[key] = value; return true; },
   });
   const peak = { kind: "peak", value: "H₂S 3.2", eta: "09:30", id: "p" };
-  const labelAt = (taken) => {
+  const labelAt = (taken, marker = peak) => {
     texts.length = 0;
-    App.drawMarker(ctx, peak, 100, 100, 0, 6.5, 1, taken);
+    App.drawMarker(ctx, marker, 100, 100, 0, 6.5, 1, taken);
     return texts.length ? texts[0] : null;
   };
   const free = labelAt([]);
@@ -867,8 +867,8 @@ test("marker labels: never over a node name or another label", () => {
   assert.ok(moved, "a blocked corner moves the label");
   assert.ok(!(moved.x < name[2] && moved.x + 60 > name[0] && moved.y > name[1] && moved.y < name[3]), "off the name");
   assert.equal(labelAt([[0, 0, 300, 300]]), null, "with no clear corner the label is left out");
-  const taken = [];
-  const first = labelAt(taken), second = labelAt(taken);
+  const taken = []; // two other peaks at one spot (each label remembers its own corner)
+  const first = labelAt(taken, { ...peak, id: "p2" }), second = labelAt(taken, { ...peak, id: "p3" });
   assert.ok(second && (second.x !== first.x || second.y !== first.y), "a second peak at the same spot labels elsewhere");
 });
 
