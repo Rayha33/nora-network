@@ -186,21 +186,25 @@ def save(
 
 
 def edit_units(text: str, net: Network, placements: dict[str, str]) -> str:
-    """units.toml with nodes no longer in `net` dropped and each new node added to the
-    unit `placements` names. Only the touched `nodes = [...]` arrays are rewritten; the
-    comments and the rest of the file stay as they are."""
+    """units.toml with nodes no longer in `net` dropped and each node in `placements`
+    (a new one, or one the editor moved to another unit) in the unit it names. Only the
+    touched `nodes = [...]` arrays are rewritten; the comments and the rest of the file
+    stay as they are."""
     try:
         units = tomllib.loads(text).get("units", {})
     except tomllib.TOMLDecodeError as error:
         raise DataError([f"units.toml: {error}"]) from None
-    placed = {node for unit in units.values() for node in unit.get("nodes", [])}
     unknown = sorted({unit for unit in placements.values() if unit not in units})
     if unknown:
         raise DataError([f"units.toml: no unit {', '.join(unknown)}"])
     for unit_id, unit in units.items():
         before = list(unit.get("nodes", []))
-        after = [node for node in before if node in net.node_by_id]
-        after += sorted(n for n, u in placements.items() if u == unit_id and n not in placed)
+        after = [
+            node
+            for node in before
+            if node in net.node_by_id and placements.get(node, unit_id) == unit_id
+        ]
+        after += sorted(n for n, u in placements.items() if u == unit_id and n not in before)
         if after != before:
             text = _replace_nodes_array(text, unit_id, after)
     return text

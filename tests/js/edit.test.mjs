@@ -23,7 +23,13 @@ test("edits: applied before anything reads the network", () => {
   assert.ok(!NORA.geo.pipes.features.some((f) => f.properties.asset === "ogt"), "and not the removed line");
   assert.equal(NORA.assets.snorre.supply, true, "a field supplies the network (the what-if counts it)");
   assert.deepEqual(Array.from(NORA.grid.sleipner), [3, 5.25], "a dragged node keeps its place");
-  assert.equal(App.edit.list().length, 5, "a step that no longer applies is dropped");
+  assert.equal(NORA.assets.statfjord.name, "Statfjord A", "a node renamed in its form");
+  assert.ok(NORA.units.find((u) => u.id === "hubs").nodes.includes("statfjord") && !NORA.units.find((u) => u.id === "northern_north_sea").nodes.includes("statfjord"), "and moved to its new unit");
+  assert.ok(NORA.units.find((u) => u.id === "hubs").pipelines.includes("statpipe_rich"), "with the lines it sends gas into");
+  assert.equal(NORA.geo.nodes.features.find((f) => f.properties.asset === "statfjord").properties.name, "Statfjord A", "the Map has the new name");
+  assert.equal(NORA.assets.europipe_1.bidirectional, true, "a line changed in its form");
+  assert.equal(NORA.assets.europipe_1.km, 661, "its markers move by the new length");
+  assert.equal(App.edit.list().length, 7, "a step that no longer applies is dropped");
 });
 
 test("edits: right-click offers remove, connect and add", () => {
@@ -80,7 +86,11 @@ test("edits: the files to save keep every untouched row exactly", () => {
   const nodes = rows(files["nodes.csv"]), source = rows(NORA.sources["nodes.csv"]);
   assert.equal(nodes[0], source[0], "the same header");
   assert.ok(!nodes.some((row) => row.startsWith("gudrun,")), "the removed row is gone");
-  for (const row of source.slice(1)) if (!row.startsWith("gudrun,")) assert.ok(nodes.includes(row), `${row.split(",")[0]} untouched`);
+  for (const row of source.slice(1)) if (!/^(gudrun|statfjord),/.test(row)) assert.ok(nodes.includes(row), `${row.split(",")[0]} untouched`);
+  // The node changed in its form: the new values, quoted where needed; its other fields as they were.
+  const before = source.find((row) => row.startsWith("statfjord,")), after = nodes.find((row) => row.startsWith("statfjord,"));
+  assert.ok(after.startsWith("statfjord,Statfjord A,field,NO,") && after.includes(',"Equinor, ""Statfjord""",9,'), after);
+  assert.equal(after.split(",").slice(-5).join(","), before.split(",").slice(-5).join(","), "source, notes and the rest kept");
   const added = nodes.find((row) => row.startsWith("snorre,"));
   assert.equal(added.split(",").length, source[0].split(",").length, "a full row");
   const lines = rows(files["pipelines.csv"]);
@@ -101,13 +111,16 @@ test("edits: the network for `nora serve --edit` has the same edits", () => {
   const { App } = editedApp();
   const current = {
     revision: "r",
-    nodes: [{ id: "gudrun" }, { id: "statfjord" }],
+    nodes: [{ id: "gudrun" }, { id: "statfjord", name: "Statfjord", source: "kept" }],
     pipelines: [{ id: "gudrun_sleipner", from: "gudrun", to: "sleipner" }, { id: "ogt", from: "oseberg", to: "heimdal" }, { id: "keep", from: "statfjord", to: "x" }],
   };
   const sent = App.edit.network(current);
   assert.deepEqual(sent.nodes.map((n) => n.id), ["statfjord", "snorre"]);
   assert.deepEqual(sent.pipelines.map((p) => p.id), ["keep", "snorre_statfjord"]);
-  assert.deepEqual({ ...sent.units }, { snorre: "northern_north_sea" });
+  assert.deepEqual({ ...sent.units }, { snorre: "northern_north_sea", statfjord: "hubs" }, "new nodes and moved ones in their units");
+  const statfjord = sent.nodes.find((n) => n.id === "statfjord");
+  assert.equal(statfjord.name, "Statfjord A", "a changed node's row has its new values");
+  assert.equal(statfjord.source, "kept", "and keeps the fields the form does not show");
   assert.deepEqual(JSON.parse(JSON.stringify(sent.layout)), { snorre: [2.5, 1] }, "places of added and moved nodes that are sent");
   assert.equal(sent.revision, "r", "the revision guards against a stale save");
 });
@@ -180,4 +193,67 @@ test("edits: only in Edit: the menu items, the canvas menu and the bar", () => {
   App.setMode("edit"); // the Edit tab
   assert.ok(bar(), "in Edit the bar lists them");
   assert.ok(labels("sleipner").includes("Remove from the network"));
+});
+
+/* Ray, 30 Oct: "the editing page should be a fully fledged editing program where new
+   nodes can be added or removed, named, etc". In Edit a click on a node or a line opens
+   its form; what changed is one step; the files Save writes carry it. */
+const inputsOf = (form) => {
+  const inputs = {};
+  const walk = (el) => { if (el && el.attributes && el.attributes.get("name")) inputs[el.attributes.get("name")] = el; (el.children || []).forEach(walk); };
+  walk(form);
+  return inputs;
+};
+const buttonsOf = (form) => {
+  const out = [];
+  const walk = (el) => { if (el && el.tagName === "BUTTON") out.push(el); (el.children || []).forEach(walk); };
+  walk(form);
+  return out;
+};
+
+test("editor: in Edit a click on a node opens its form; a rename is one step with only what changed", () => {
+  const { App, document, localStorage } = editedApp([]);
+  App.setMode("edit");
+  App.select("troll");
+  const form = document.getElementById("side-body").children[0];
+  const inputs = inputsOf(form);
+  assert.equal(inputs.name.value, "Troll", "the form holds the node as it is");
+  assert.equal(inputs.unit.value, "northern_north_sea");
+  inputs.name.value = "Troll A";
+  inputs.status.value = "planned";
+  form._listeners.submit[0]({ preventDefault() {} });
+  assert.deepEqual(JSON.parse(localStorage.store.get("nora-edits")), [{ op: "editNode", id: "troll", changes: { name: "Troll A", status: "planned" } }]);
+  assert.ok(buttonsOf(form).some((b) => b.textContent === "Remove node"), "and it can be removed from there");
+});
+
+test("editor: a line's form changes it, reverses it, and Save writes its row", () => {
+  const steps = [{ op: "editLine", id: "zeepipe_2b", changes: { name: "Zeepipe 2B", capacity: 71, reverse: true } }];
+  const { App, NORA } = editedApp(steps);
+  const d = NORA.assets.zeepipe_2b;
+  assert.equal(d.from, "draupner_e", "reversed: from Draupner E");
+  assert.equal(d.to, "kollsnes");
+  const row = App.edit.files()["pipelines.csv"].split("\n").find((line) => line.startsWith("zeepipe_2b,"));
+  assert.ok(row.startsWith("zeepipe_2b,Zeepipe 2B,draupner_e,kollsnes,trunk,300,40,71,false,1997,operating,Gassco,"), row);
+  const source = NORA.sources["pipelines.csv"].split("\n").find((line) => line.startsWith("zeepipe_2b,"));
+  assert.equal(row.split(",").slice(12).join(","), source.split(",").slice(12).join(","), "the source and notes stay as they were");
+});
+
+test("editor: Undo and Redo, from the toolbar and the keys; Delete removes what the form shows", () => {
+  const { App, document, localStorage, window } = editedApp([]);
+  const saved = () => JSON.parse(localStorage.store.get("nora-edits") || "[]");
+  App.setMode("edit");
+  const bar = () => document.body.children.find((c) => /(^| )edits-bar( |$)/.test(c.className || ""));
+  const labels = () => buttonsOf(bar()).map((b) => b.textContent);
+  assert.ok(bar(), "the toolbar shows in Edit, with no changes yet");
+  assert.deepEqual(labels(), ["Add node", "Undo", "Redo", "Save"]);
+  App.select("heimdal");
+  const key = (e) => { for (const fn of window._listeners.keydown || []) fn({ preventDefault() {}, target: document.body, ...e }); };
+  key({ key: "Delete" });
+  assert.deepEqual(saved(), [{ op: "removeNode", id: "heimdal" }], "Delete removed the node in the form");
+  key({ key: "z", metaKey: true });
+  assert.deepEqual(saved(), [], "Cmd+Z undid it");
+  key({ key: "z", ctrlKey: true, shiftKey: true });
+  assert.deepEqual(saved(), [{ op: "removeNode", id: "heimdal" }], "Shift+Ctrl+Z redid it");
+  key({ key: "Delete", target: { tagName: "INPUT" } });
+  assert.equal(saved().length, 1, "keys typed in a field are left alone");
 });

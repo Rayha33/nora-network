@@ -346,6 +346,19 @@ def test_save_keeps_every_node_in_one_unit(tiny_dir, tiny):
     assert 'nodes = ["a_terminal", "market"]' in text
 
 
+def test_save_moves_a_renamed_node_to_its_new_unit(tiny_dir, tiny):
+    """The editor's node form (Ray, 30 Oct: "a fully fledged editing program") changes a
+    node's name and unit: the row is rewritten, the node leaves its old unit for the new
+    one, and still sits in exactly one."""
+    (tiny_dir / "units.toml").write_text(UNITS, encoding="utf-8")
+    network = edit.update_node(tiny, "hub", {"name": "Hub platform"})
+    edit.save(network, tiny_dir, {"hub": "landings"})
+    text = (tiny_dir / "units.toml").read_text(encoding="utf-8")
+    assert 'nodes = ["gas"]' in text
+    assert 'nodes = ["a_terminal", "b_terminal", "market", "hub"]' in text
+    assert "Hub platform" in (tiny_dir / "nodes.csv").read_text(encoding="utf-8")
+
+
 def test_save_refuses_a_new_node_without_a_unit(tiny_dir, tiny):
     (tiny_dir / "units.toml").write_text(UNITS, encoding="utf-8")
     network = edit.add_node(

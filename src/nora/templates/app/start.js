@@ -73,6 +73,7 @@
     if (d.kind === "node") items.push({ label: "Diagnostics", act: () => go({ screen: "diag", asset: id }) });
     if (!embed && state.mode === "edit") { // changing the network only in Edit
       items.push("-");
+      items.push({ label: d.kind === "node" ? "Change this node…" : "Change this line…", act: () => App.edit.open(id) });
       if (d.kind === "node" && ctx.connect) items.push({ label: "Connect to another node…", act: ctx.connect });
       items.push(d.kind === "node"
         ? { label: "Remove from the network", act: () => commitEdit({ op: "removeNode", id }) }
