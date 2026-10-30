@@ -67,7 +67,13 @@
         out.label = sop == null ? "" : fmt(sop, 1);
         // shown only when the line packs or unpacks (in a what-if: your packing)
         const pack = w ? (w.lines[id] ? w.lines[id].into - w.lines[id].out : null) : packRate(id);
-        out.pack = settings.pack && pack != null && Math.abs(pack) >= 0.5 ? `pack ${signed(pack, 1)}` : "";
+        /* Packing hard gets attention (Ray, 30 Oct: "if the packing is very high in one
+           pipeline it should get some attention by adding color"): at T.pack_high of its
+           capacity a day it reads "high", in the warning's amber; words and number with
+           the colour, no shape (a warning has none). */
+        const high = pack != null && d.capacity > 0 && pack >= T.pack_high * d.capacity;
+        out.pack = settings.pack && pack != null && Math.abs(pack) >= 0.5 ? `pack ${signed(pack, 1)}${high ? " high" : ""}` : "";
+        out.packHigh = Boolean(out.pack) && high;
         out.level = w ? 0 : levelOf(id);
         if (d.bidirectional) Object.assign(out, { forward: v >= 0, backward: v < 0 });
       }

@@ -58,6 +58,7 @@ nomination = [0.03, 0.06, 0.10]       # |actual - nominated| / nominated at an e
 booking = [0.95, 1.0, 1.05]           # nominated / booked capacity at an exit point
 pressure_margin = [0.10, 0.05, 0.0]   # distance to a pressure limit, as a share of the window
 step = [0.15, 0.25, 0.40]             # flow change within an hour, as a share of capacity
+pack_high = 0.20                      # a line packing faster than this share of its capacity a day: its pack reads "high", in amber
 plan_lookahead_hours = 6              # how far ahead the plan check looks
 gas_day_start_utc = 5                 # the gas day runs 05:00-05:00 UTC (06:00 CET)
 

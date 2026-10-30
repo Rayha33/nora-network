@@ -1436,7 +1436,7 @@
       ctx.fillStyle = C.paper;
       ctx.fillRect(spot.box[0], spot.box[1], spot.box[2] - spot.box[0], height);
       rows.forEach((text, i) => {
-        ctx.fillStyle = C.text; // full ink: the dim grey was hard to read on the paper
+        ctx.fillStyle = i === 1 && s.packHigh ? App.limitInk(1) : C.text; // full ink: the dim grey was hard to read on the paper
         ctx.fillText(text, spot.cx, spot.box[1] + 8 + 16 * i);
       });
       boxes.push(spot.box);
