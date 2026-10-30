@@ -57,6 +57,7 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 | `src/nora/edit.py` | the editor's JSON API (`nora serve --edit`) and lossless editing of the data files |
 | `scripts/fetch_*.py` | download real data (ENTSOG, Energinet, SODIR, National Gas) into a stream's raw file |
 | `scripts/build_satellites.py` | the producing fields and satellites shown on the zoomed-in Map, from SODIR: each at its own installation, tied back to the host SODIR names (map detail: capacity 0, `map_min_zoom`, Map only) |
+| `scripts/fetch_prices.py` | today's TTF (EUR/MWh) and Norges Bank's NOK rates as `data/prices.json`, for the player's money counter (`nora.toml` [money]); the droplet runs it every 15 minutes (`nora-prices.timer`) |
 | `scripts/mock_origo.py`, `scripts/mock_gbs.py`, `scripts/mock_api.py` | mock Origo and GBS APIs (made-up data) for `nora integrations fetch` and the tests |
 | `data/geo/coastline.json`, `scripts/build_coastline.py` | the land around the North Sea (Natural Earth, public domain) for the canvas map |
 | `data/geo/routes.json`, `scripts/build_routes.py` | laid pipeline routes from SODIR's register (NLOD), drawn on both maps |
@@ -135,7 +136,7 @@ artifact. Check a change locally with `make serve`. Merging to `main` publishes 
 automatically.
 
 NORA is published in one place only: https://factorlab.app/nora-network/, which copies
-the `gh-pages` branch (built on every merge) every 10 minutes. There are no other NORA
+the `gh-pages` branch (built on every merge) every 10 minutes, and serves `data/prices.json` beside it from the same droplet. There are no other NORA
 sites and no PR preview sites (Ray, 29 Oct). Nothing has to be deployed by hand. [HANDOVER.md](HANDOVER.md) records what has been
 done and decided so far; unmerged work in progress from earlier sessions is kept on
 `archive/*` branches.

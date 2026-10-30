@@ -63,6 +63,15 @@ pack_high = 0.20                      # a line packing faster than this share of
 plan_lookahead_hours = 6              # how far ahead the plan check looks
 gas_day_start_utc = 5                 # the gas day runs 05:00-05:00 UTC (06:00 CET)
 
+# The money counter on the player (Ray, 30 Oct: "show real flow of money in NOK and USD
+# (toggle between them) based on flows after the gas day started at 06:00 am. it then
+# resets, it should check current gas prices"): the gas delivered at the exit points since
+# the gas day began, valued at TTF. An estimate, and the page says so.
+[money]
+gcv_kwh_per_sm3 = 11.0        # energy in a standard cubic metre of sales gas (about 39.6 MJ/Sm³)
+currency = "NOK"              # NOK or USD; the counter's button switches
+prices = "data/prices.json"   # today's TTF and NOK rates (scripts/fetch_prices.py, every 15 min on the server)
+
 # Moving markers along the lines: peaks (sudden flow changes) travel with the gas,
 # pigs at their own speed.
 [pipelines]
