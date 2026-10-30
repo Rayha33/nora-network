@@ -1,0 +1,1 @@
+{"note": "No price feed on this copy of the site. The hosted site's server writes this file every 15 minutes (scripts/fetch_prices.py) and serves it in place of this one."}
