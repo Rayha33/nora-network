@@ -112,3 +112,22 @@ def test_no_line_runs_through_another_node_in_the_flow_view(north_sea):
         and _crosses_box(shown[line.from_id], shown[line.to_id], (x - 70, y - 70, x + 70, y + 70))
     ]
     assert through == []
+
+
+def test_the_exit_points_line_the_bottom_of_the_flow_view(north_sea):
+    """Ray, 30 Oct: "all exit points except nyhamna and st.fergus should be lined at the
+    bottom of the flow view, we need it to look orderly and nice". Every place where gas
+    leaves the drawing (a shown node with no line on to another shown node: the
+    terminals, Tjeldbergodden, and Nybro now that Poland is on the Map only) sits on its
+    bottom row, except St Fergus, beside the UK lines."""
+    from nora.config import load_config
+
+    hidden = set(load_config()["flow"]["hide"])
+    placed = load_flow_layout(north_sea)
+    shown = {k for k in placed if k not in hidden}
+    onward = {p.from_id for p in north_sea.pipelines if p.to_id in shown}
+    ends = {n for n in shown if n not in onward} - {"st_fergus"}
+    ends = {n for n in ends if north_sea.node_by_id[n].type not in ("field", "tee")}
+    bottom = max(placed[n][1] for n in shown)
+    assert {"tjeldbergodden", "nybro", "emden", "easington"} <= ends
+    assert {n: placed[n][1] for n in ends if placed[n][1] != bottom} == {}

@@ -23,7 +23,7 @@ dvalin = [7.6, 0]
 troll = [8.6, 0]
 kvitebjorn = [9.6, 0]
 visund = [10.8, 0]
-heidrun = [12.2, 0]
+heidrun = [14.6, 0]  # at the right end: Haltenpipe runs down the edge to Tjeldbergodden
 norne = [13.4, 0]
 # St Fergus and the UK, the processing plants, Kårstø and the Norwegian Sea
 fuka_tee = [-1.0, 1.4]  # where Martin Linge's line joins FUKA (Frigg TP1)
@@ -41,7 +41,6 @@ jotun_tee = [5.0, 4.0]  # on Heimskringla's Draupner leg
 nyhamna = [6.2, 1.45]
 dvalin_tee = [7.2, 1.55]  # on Polarled
 kollsnes = [9.0, 1.8]
-tjeldbergodden = [11.2, 1.0]
 asgard = [13.6, 1.0]
 karsto = [12.6, 1.75]
 johan_sverdrup = [11.3, 3.1]
@@ -55,14 +54,16 @@ ekofisk = [5.4, 5.15]
 valhall = [6.4, 5.9]
 ekofisk_tee = [7.4, 5.7]  # on the line from Draupner S to Emden (Area D)
 baltic_tie = [12.6, 5.1]
-nybro = [13.8, 5.1]
-# the landings, west to east
+# the exit points along the bottom, west to east; St Fergus and Nyhamna stay where their
+# lines are (Ray, 30 Oct: "all exit points except nyhamna and st.fergus should be lined at
+# the bottom of the flow view, we need it to look orderly and nice")
 easington = [0.2, 7.0]
 dunkirk = [1.6, 7.0]
 zeebrugge = [3.2, 7.0]
 emden = [10.2, 7.0]
 dornum = [12.6, 7.0]
-pl_vtp = [13.8, 7.0]
+nybro = [13.8, 7.0]  # Baltic Pipe's end in this view (Poland is on the Map only)
+tjeldbergodden = [15.0, 7.0]
 # not drawn in the Flow view (nora.toml [flow] hide, or decommissioned with no line), kept apart here
 frigg = [0.0, 8.2]
 odin = [1.2, 8.2]
@@ -75,3 +76,4 @@ aerfugl = [8.4, 8.2]
 draugen = [9.6, 8.2]
 tordis = [10.8, 8.2]
 gullfaks_sor = [12.0, 8.2]
+pl_vtp = [13.2, 8.2]
