@@ -267,9 +267,9 @@ test("editor: Undo and Redo, from the toolbar and the keys; Delete removes what 
   const saved = () => JSON.parse(localStorage.store.get("nora-edits") || "[]");
   App.setMode("edit");
   const bar = () => document.body.children.find((c) => /(^| )edits-bar( |$)/.test(c.className || ""));
-  const labels = () => buttonsOf(bar()).map((b) => b.textContent);
+  const labels = () => buttonsOf(bar()).filter((b) => b.className !== "palette-icon").map((b) => b.textContent);
   assert.ok(bar(), "the toolbar shows in Edit, with no changes yet");
-  assert.deepEqual(labels(), ["Add node", "Undo", "Redo", "Save"]);
+  assert.deepEqual(labels(), ["Add node", "Connect", "Undo", "Redo", "Save"]);
   App.select("heimdal");
   const key = (e) => { for (const fn of window._listeners.keydown || []) fn({ preventDefault() {}, target: document.body, ...e }); };
   key({ key: "Delete" });
@@ -280,4 +280,52 @@ test("editor: Undo and Redo, from the toolbar and the keys; Delete removes what 
   assert.deepEqual(saved(), [{ op: "removeNode", id: "heimdal" }], "Shift+Ctrl+Z redid it");
   key({ key: "Delete", target: { tagName: "INPUT" } });
   assert.equal(saved().length, 1, "keys typed in a field are left alone");
+});
+
+
+// Just enough of vis-network for the Flow view to mount (the icons work on its drawing).
+function fakeVis() {
+  const set = () => ({ update() {}, get: () => null, getIds: () => [] });
+  class Network {
+    constructor() { this.body = { nodes: {}, view: { scale: 0.3, translation: { x: 0, y: 0 } }, emitter: { emit() {} } }; }
+    on() {} once() {} off() {} fit() {} setOptions() {} redraw() {} selectNodes() {} unselectAll() {}
+    getScale() { return 0.3; } moveTo() {} getPositions() { return {}; } getViewPosition() { return { x: 0, y: 0 }; }
+    DOMtoCanvas(p) { return p; } canvasToDOM(p) { return p; }
+  }
+  return { vis: { Network }, nodes: set(), edges: set(), flowOptions: {} };
+}
+/* Ray, 30 Oct: "the edit page is way to simple, we are missing features like click and drag
+   of icons etc". The toolbar has an icon for each node type: drag one onto the Flow drawing
+   for a new node of that type there, or click it and then the drawing. Connect makes a line
+   with two clicks. */
+test("editor: type icons drag onto the drawing, or click then place; the form has that type", () => {
+  const { App, document } = editedApp([], fakeVis());
+  App.state.view = "flow"; // the icons work on the Flow drawing
+  App.setMode("edit");
+  const bar = document.body.children.find((c) => /(^| )edits-bar( |$)/.test(c.className || ""));
+  const icons = buttonsOf(bar).filter((b) => b.className === "palette-icon");
+  assert.deepEqual(icons.map((b) => b.getAttribute("data-type")), ["field", "hub", "tee", "processing", "terminal", "storage", "lng", "market"]);
+  assert.equal(icons[0].getAttribute("draggable"), "true");
+  const sent = {};
+  icons[3]._listeners.dragstart[0]({ dataTransfer: { setData: (k, v) => { sent[k] = v; }, set effectAllowed(v) { sent.effect = v; } } });
+  assert.equal(sent["application/x-nora-node"], "processing", "dragging carries the type");
+  assert.equal(sent.effect, "copy");
+  // What the Flow view does on the drop (and on a click after an icon): a new node there, of that type.
+  App.edit.addAt({ grid: [3, 4], near: "kollsnes", type: "processing" });
+  const form = document.getElementById("side-body").children[0];
+  const select = (() => { let hit = null; const walk = (n) => { if (!hit && n && n.tagName === "SELECT" && n.getAttribute("name") === "type") hit = n; (n && n.children || []).forEach(walk); }; walk(form); return hit; })();
+  assert.ok(select, "the new node's form opens");
+  assert.equal(select.value, "processing", "with the dragged type");
+});
+
+test("editor: Connect in the toolbar picks the first node, then the second makes the line form", () => {
+  const { App, document } = editedApp([], fakeVis());
+  App.state.view = "flow";
+  App.setMode("edit");
+  let picked = 0;
+  App.views.flow.pickToConnect = () => { picked += 1; };
+  const bar = document.body.children.find((c) => /(^| )edits-bar( |$)/.test(c.className || ""));
+  buttonsOf(bar).find((b) => b.textContent === "Connect")._listeners.click[0]();
+  assert.equal(picked, 1, "the Flow view waits for the first node");
+  assert.match(bar.textContent, /Click the node the new line starts from/);
 });

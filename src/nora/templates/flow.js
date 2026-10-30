@@ -911,16 +911,28 @@
     }
     return { grid: [Math.round(stage * 100) / 100, Math.round(rank * 100) / 100], near };
   }
-  let placing = false; // Add node (the editor's toolbar) waits for a click on the drawing
-  function placeNode() {
-    placing = true;
+  /* Add node (the editor's toolbar, or one of its type icons) waits for a click on the
+     drawing; `placing` is the type to give the new node, true for none. */
+  let placing = false;
+  function placeNode(type = true) {
+    placing = type;
     connecting = null;
+    picking = false;
     el.style.cursor = "crosshair";
   }
   function stopPlacing() {
     placing = false;
     el.style.cursor = "";
   }
+  // The toolbar's Connect: the next click picks the node a new line starts from.
+  let picking = false;
+  function pickToConnect() {
+    picking = true;
+    placing = false;
+    connecting = null;
+    el.style.cursor = "crosshair";
+  }
+  const typeOf = (wanted) => (typeof wanted === "string" ? { type: wanted } : {});
   let connecting = null; // { from, at }: "Connect to another node…" is waiting for a click
   function startConnect(from) {
     connecting = { from, at: null };
@@ -1211,7 +1223,15 @@
     network.on("click", (event) => {
       const at = event.pointer && event.pointer.DOM;
       if (connecting) { finishConnect(event.nodes[0] || (at && hitTest(at, network.getPositions(), (p) => network.canvasToDOM(p), network.getScale()))); return; }
-      if (placing) { stopPlacing(); if (at && App.state.mode === "edit") App.edit.addAt(placeAt(network.DOMtoCanvas(at))); return; }
+      if (placing) { const wanted = placing; stopPlacing(); if (at && App.state.mode === "edit") App.edit.addAt({ ...placeAt(network.DOMtoCanvas(at)), ...typeOf(wanted) }); return; }
+      if (picking) {
+        picking = false;
+        el.style.cursor = "";
+        const from = event.nodes[0] || (at && hitTest(at, network.getPositions(), (p) => network.canvasToDOM(p), network.getScale()));
+        if (from && NORA.assets[from] && NORA.assets[from].kind === "node") { startConnect(from); App.edit.note(`From ${NORA.assets[from].name}: click the node the line goes to (Esc to stop)`); }
+        else App.edit.note("");
+        return;
+      }
       const mark = at && markAt(at.x, at.y); // a pig or a peak under the pointer wins
       if (mark) { App.selectMarker(mark.key); return; }
       const id = event.nodes[0] || event.edges[0] || (at && hitTest(at, network.getPositions(), (p) => network.canvasToDOM(p), network.getScale()));
@@ -1259,9 +1279,21 @@
       showOutlook(tagUnder(network.DOMtoCanvas(at)), at);
     });
     container.addEventListener("pointerleave", () => showOutlook(null));
+    /* A type icon dragged from the editor's toolbar and dropped on the drawing: a new node
+       of that type, there (Ray, 30 Oct: "we are missing features like click and drag of
+       icons"). Only in Edit; anything else dropped here is left alone. */
+    const nodeDrag = (e) => App.state.mode === "edit" && e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("application/x-nora-node");
+    container.addEventListener("dragover", (e) => { if (nodeDrag(e)) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
+    container.addEventListener("drop", (e) => {
+      if (!nodeDrag(e)) return;
+      e.preventDefault();
+      const rect = container.getBoundingClientRect(), at = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      App.edit.addAt({ ...placeAt(network.DOMtoCanvas(at)), type: e.dataTransfer.getData("application/x-nora-node") });
+    });
     addEventListener("keydown", (e) => {
       if (e.key === "Escape" && connecting) finishConnect(null);
       if (e.key === "Escape" && placing) { stopPlacing(); App.edit.note(""); }
+      if (e.key === "Escape" && picking) { picking = false; el.style.cursor = ""; App.edit.note(""); }
     });
   };
 
@@ -1568,6 +1600,7 @@
   view.overviewSquareHalf = overviewSquareHalf;
   view.clearPlaces = clearPlaces;
   view.placeNode = placeNode; // the editor's Add node: the next click on the drawing places it
+  view.pickToConnect = () => { if (network) pickToConnect(); }; // the editor's Connect: two clicks make a line
   view.connect = (id) => { if (network) startConnect(id); }; // the node form's Connect…
   view.overviewReading = overviewReading;
   view.overviewNameLines = overviewNameLines;
