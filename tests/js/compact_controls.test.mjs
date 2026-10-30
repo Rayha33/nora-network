@@ -11,7 +11,7 @@ test("map zoom controls are compact in both renderers", () => {
 
 test("bottom player is shorter and visually simpler", () => {
   assert.match(css, /--player-h:\s*56px/);
-  assert.match(css, /\.now \.player-label, \.speed \.player-label\s*\{\s*display:\s*none/);
+  assert.match(css, /\.speed \.player-label\s*\{\s*display:\s*none/);
   assert.doesNotMatch(css, /\.inventory \.player-label\s*\{\s*display:\s*none/, "Inventory keeps its label");
   assert.match(css, /\.now\s*\{\s*display:\s*flex/);
   assert.match(css, /\.play\s*\{[^}]*width:\s*32px;[^}]*height:\s*32px/s);

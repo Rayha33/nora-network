@@ -79,6 +79,9 @@
 </aside>
 <aside class="pop key" id="key" hidden aria-label="Guide"></aside>
 <aside class="pop" id="settings" hidden aria-label="Settings"></aside>
+{#- The dataset menu lives in Settings, not on the player (Ray, 30 Oct: "remove this menu
+    from the map view page"); buildSettings moves it there. #}
+<div hidden><select id="stream-select" aria-label="Dataset"></select></div>
 <aside class="pop alarms" id="alarms" hidden aria-label="Alarms"></aside>
 
 <section class="player" id="player" hidden aria-label="Data player">
@@ -88,8 +91,6 @@
       <svg viewBox="0 0 16 16" aria-hidden="true" class="when-playing"><path d="M4.5 3.5h2.5v9H4.5zM9 3.5h2.5v9H9z"/></svg>
     </button>
     <div class="now">
-      <span class="player-label">Dataset</span>
-      <select id="stream-select" aria-label="Dataset"></select>
       <div class="clock-row"><time id="clock"></time><span class="when" id="when" hidden></span></div>
     </div>
   </div>

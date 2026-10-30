@@ -262,6 +262,7 @@
       h("h3", null, "Moving markers"),
       check("Pigs", "pigs"),
       check("H₂S and CO₂ peaks", "gasQuality"),
+      ...(NORA.streams.length > 1 ? [h("h3", null, "Data"), h("div", { class: "row" }, h("span", null, "Dataset"), $("stream-select"))] : []),
       h("h3", null, "Display"),
       choose("Theme", "theme", [["light", "Light"], ["dark", "Dark"]], (v) => setTheme(v), theme),
       choose("Spacing", "density", [["compact", "Compact"], ["comfortable", "Comfortable"], ["spacious", "Spacious"]]),
