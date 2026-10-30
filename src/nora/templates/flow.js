@@ -65,23 +65,60 @@
   function layout() {
     direction = chooseDirection();
     const [baseGap, baseRankGap] = SPACING[direction][App.settings().density] || SPACING[direction].comfortable;
-    const cells = Object.values(NORA.grid), ranks = cells.map((c) => c[1]);
+    const grid = clearPlaces(NORA.grid, placedByEdit());
+    const cells = Object.values(grid), ranks = cells.map((c) => c[1]);
     const stagesSpan = Math.max(1, Math.max(...cells.map((c) => c[0])));
     // Measure the current directional readings before spacing the ranks. A circle that
     // needs both in/out labels also gets room from its neighbours.
-    framePos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id,
+    framePos = Object.fromEntries(Object.entries(grid).map(([id, [stage, rank]]) => [id,
       direction === "vertical" ? { x: rank * baseRankGap, y: stage * baseGap } : { x: stage * baseGap, y: rank * baseRankGap }]));
     const extra = Math.max(0, (App.stateShown() ? SQUARE.live : SQUARE.plain) - CIRC.r) * 2; // base square room; overview size follows zoom separately
     const rankGap = baseRankGap + extra;
     const across = (Math.max(...ranks) - Math.min(...ranks) + 1) * rankGap;
     const aspect = direction === "vertical" ? el.clientHeight / el.clientWidth : el.clientWidth / el.clientHeight;
     const stageGap = Math.min((baseGap + extra) * 2.5, Math.max(baseGap + extra, (across * (aspect || 1)) / stagesSpan));
-    framePos = Object.fromEntries(Object.entries(NORA.grid).map(([id, [stage, rank]]) => [id,
+    framePos = Object.fromEntries(Object.entries(grid).map(([id, [stage, rank]]) => [id,
       direction === "vertical" ? { x: rank * rankGap, y: stage * stageGap } : { x: stage * stageGap, y: rank * rankGap }]));
     cell = direction === "vertical" ? { down: stageGap, across: rankGap } : { down: rankGap, across: stageGap };
     gaps = { stage: stageGap, rank: rankGap };
     nodes.update(Object.entries(framePos).map(([id, p]) => ({ id, x: p.x, y: p.y })));
   }
+
+  /* No square on another (Ray, 30 Oct: "nodes are covering other nodes, we cant have
+     that"). Squares closer than a grid step both down and across touch at some zoom (a
+     square never outgrows its cell), and a tie-in's dot under a square hides the
+     junction. The layout file keeps them apart; a node moved or added in Edit, kept in
+     this browser and replayed over newer layouts, may not be. It gives way: the nearest
+     clear place, in quarter steps, while the nodes as laid out stay put. Later edits
+     give way to earlier ones. [stage, rank] grid steps. */
+  const CLEAR = { square: 0.95, tee: 0.6 };
+  const NEAR = []; // offsets in quarter steps, nearest first
+  for (let i = -40; i <= 40; i++) for (let j = -40; j <= 40; j++) if (i || j) NEAR.push([i / 4, j / 4]);
+  NEAR.sort((a, b) => Math.hypot(...a) - Math.hypot(...b));
+  function clearPlaces(grid, yielding = []) {
+    const out = { ...grid }, placed = [], late = (id) => yielding.lastIndexOf(id);
+    const ids = Object.keys(grid).filter((id) => NORA.assets[id] && !nodeHidden(id))
+      .sort((a, b) => late(a) - late(b) || (a < b ? -1 : a > b ? 1 : 0));
+    const clash = (id, [stage, rank]) => placed.some(([other, [s, r]]) => {
+      if (isTee(id) && isTee(other)) return false; // two dots on a line may sit close
+      const room = isTee(id) || isTee(other) ? CLEAR.tee : CLEAR.square;
+      return Math.abs(stage - s) < room && Math.abs(rank - r) < room;
+    });
+    for (const id of ids) {
+      let at = grid[id];
+      if (clash(id, at)) {
+        const free = NEAR.find(([ds, dr]) => !clash(id, [at[0] + ds, at[1] + dr]));
+        if (free) at = [at[0] + free[0], at[1] + free[1]];
+      }
+      out[id] = at;
+      placed.push([id, at]);
+    }
+    return out;
+  }
+  // The nodes an edit in this browser placed (moved or added), oldest first.
+  const placedByEdit = () => App.edit.list()
+    .map((step) => (step.op === "moveNode" ? step.id : step.op === "addNode" && step.node ? step.node.id : null))
+    .filter(Boolean);
 
   // The paper: a dot grid in canvas units, so it pans and zooms with the drawing.
   let framePos = {}; // node positions for this frame (nodes can be dragged)
@@ -1149,7 +1186,13 @@
     network.on("dragEnd", ({ nodes: moved }) => {
       if (!moved || !moved.length || connecting || App.state.mode !== "edit") return;
       const at = network.getPositions(moved);
-      for (const id of moved) if (at[id]) App.edit.move(id, placeAt(at[id]).grid);
+      for (const id of moved) {
+        if (!at[id]) continue;
+        // Dropped on another node: the nearest clear place instead (clearPlaces).
+        const grid = { ...NORA.grid, [id]: placeAt(at[id]).grid };
+        App.edit.move(id, clearPlaces(grid, [...placedByEdit(), id])[id]);
+      }
+      layout();
     });
     network.once("afterDrawing", () => { layout(); view.setUnit(App.route.unit); });
     container.addEventListener("pointermove", (e) => {
@@ -1459,6 +1502,7 @@
   view.detailedFlow = detailedFlow;
   view.pressureVisibility = pressureVisibility;
   view.overviewSquareHalf = overviewSquareHalf;
+  view.clearPlaces = clearPlaces;
   view.overviewReading = overviewReading;
   view.overviewNameLines = overviewNameLines;
   view.overviewNamePlacement = overviewNamePlacement;

@@ -31,7 +31,11 @@ const clickable = (root) => all(root).filter((n) => n._listeners && n._listeners
 
 test("everything clickable on the overview is reachable and works from the keyboard", () => {
   const { App, document } = play();
+  /* The page opens at the current time, so an alarm is there only now and then: go to an
+     hour with one (the test failed whenever the week had none at the time it ran). */
+  const rows = () => clickable(document.getElementById("screen-overview")).filter((n) => n.tagName === "LI");
   App.go({ screen: "overview" });
+  for (let i = 0; i < App.live.frames.length && !rows().length; i++) { App.seek(i); App.go({ screen: "overview" }); }
   const items = clickable(document.getElementById("screen-overview"));
   assert.ok(items.length > 10, "the overview has alarm rows, names and units to open");
   const unreachable = items.filter((n) => !NATIVE.has(n.tagName) && !(n.getAttribute("tabindex") === "0" && (n._listeners.keydown || []).length));
