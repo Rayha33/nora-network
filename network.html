@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta name="nora-build" content="777b946af4fb">
+<meta name="nora-build" content="2b699375358b">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>NORA operations</title>
@@ -7898,8 +7898,12 @@ function NoraCanvasMap(view) {
     direction = chooseDirection();
     const [baseGap, baseRankGap] = SPACING[direction][App.settings().density] || SPACING[direction].comfortable;
     const grid = clearPlaces(NORA.grid, placedByEdit());
-    const cells = Object.values(grid), ranks = cells.map((c) => c[1]);
-    const stagesSpan = Math.max(1, Math.max(...cells.map((c) => c[0])));
+    // The drawing's shape from the nodes it draws: the Map's detail fields sit in rows far
+    // below, out of sight, and counted they squashed the Flow into a band across the middle
+    // of the screen (Ray, 30 Oct: "the flow view should naturally fill a normal PC screen").
+    const drawn = Object.entries(grid).filter(([id]) => NORA.assets[id] && !nodeHidden(id)).map(([, c]) => c);
+    const cells = drawn.length ? drawn : Object.values(grid), ranks = cells.map((c) => c[1]), stages = cells.map((c) => c[0]);
+    const stagesSpan = Math.max(1, Math.max(...stages) - Math.min(...stages));
     // Measure the current directional readings before spacing the ranks. A circle that
     // needs both in/out labels also gets room from its neighbours.
     framePos = Object.fromEntries(Object.entries(grid).map(([id, [stage, rank]]) => [id,
@@ -7908,7 +7912,9 @@ function NoraCanvasMap(view) {
     const rankGap = baseRankGap + extra;
     const across = (Math.max(...ranks) - Math.min(...ranks) + 1) * rankGap;
     const aspect = direction === "vertical" ? el.clientHeight / el.clientWidth : el.clientWidth / el.clientHeight;
-    const stageGap = Math.min((baseGap + extra) * 2.5, Math.max(baseGap + extra, (across * (aspect || 1)) / stagesSpan));
+    // The height the width allows, less the squares and names of the first and last rows
+    // (about one rank gap), shared between the rows: the drawing has the window's shape.
+    const stageGap = Math.min((baseGap + extra) * 2.5, Math.max(baseGap + extra, (across * (aspect || 1) - rankGap) / stagesSpan));
     framePos = Object.fromEntries(Object.entries(grid).map(([id, [stage, rank]]) => [id,
       direction === "vertical" ? { x: rank * rankGap, y: stage * stageGap } : { x: stage * stageGap, y: rank * rankGap }]));
     cell = direction === "vertical" ? { down: stageGap, across: rankGap } : { down: rankGap, across: stageGap };
@@ -7955,6 +7961,7 @@ function NoraCanvasMap(view) {
   // The paper: a dot grid in canvas units, so it pans and zooms with the drawing.
   let framePos = {}; // node positions for this frame (nodes can be dragged)
   let overviewBoxes = []; // screen-space circles and accepted names at low zoom
+  let overviewLines = []; // screen-space lines, node to node, that names keep off at low zoom
   let measurer = null; // the network's canvas context: the tags measure their text on it
   function paper(ctx) {
     App.frame.begin(); // ends after the overlay: one cache for the whole vis frame
@@ -7973,6 +7980,9 @@ function NoraCanvasMap(view) {
       const a = network.canvasToDOM({ x: t.box[0], y: t.box[1] }), b = network.canvasToDOM({ x: t.box[2], y: t.box[3] });
       overviewBoxes.push([a.x, a.y, b.x, b.y]);
     }
+    overviewLines = scale < 1 ? App.pipeIds.filter((pid) => !lineHidden(pid) && framePos[NORA.assets[pid].from] && framePos[NORA.assets[pid].to]).map((pid) => {
+      return [network.canvasToDOM(framePos[NORA.assets[pid].from]), network.canvasToDOM(framePos[NORA.assets[pid].to])];
+    }) : [];
     let step = 24;
     while (step * scale < 12) step *= 2;
     const a = network.DOMtoCanvas({ x: 0, y: 0 }), b = network.DOMtoCanvas({ x: el.clientWidth, y: el.clientHeight });
@@ -8406,7 +8416,13 @@ function NoraCanvasMap(view) {
      down below them, never to a side or over the square; only another node's square,
      tags or name in the way move it on. */
   const NAME_GAP = 4;
-  function overviewNamePlacement(point, radius, scale, width, height, boxes, bounds = null, own = []) {
+  /* Lines are soft obstacles: a name a line runs through reads as crossed out (a line left
+     Kollsnes and Kårstø straight down through their names, 30 Oct), so a clear spot no line
+     crosses comes first, still under the square, beside the line. A name with no room
+     next to its square (a phone's whole network) goes further off, `far`, and a hairline
+     ties it to its square: names stacked far off (Ormen Lange over Gullfaks) read as the
+     names of the wrong squares. */
+  function overviewNamePlacement(point, radius, scale, width, height, boxes, bounds = null, own = [], lines = []) {
     const left = point.x - width / 2;
     let below = point.y + radius * scale + NAME_GAP;
     for (let moved = true; moved;) {
@@ -8423,17 +8439,25 @@ function NoraCanvasMap(view) {
     ];
     const clear = (p) => (!bounds || (p.left >= 0 && p.top >= 0 && p.left + width <= bounds.width && p.top + height <= bounds.height))
       && !boxes.some((b) => p.left < b[2] && p.left + width > b[0] && p.top < b[3] && p.top + height > b[1]);
+    const crossed = (p) => lines.some(([a, b]) => segmentHitsBox(a, b, [p.left, p.top, p.left + width, p.top + height]));
+    if (lines.length) {
+      // Still under its square (Ray: names under the nodes, organised): centred, else nudged
+      // right or left of the line; with all three crossed, centred as before.
+      const under = [candidates[0], { left: point.x + 4, top: below }, { left: point.x - width - 4, top: below }];
+      for (const candidate of under) if (clear(candidate) && !crossed(candidate)) return candidate;
+    }
     for (const candidate of candidates) if (clear(candidate)) return candidate;
     const maxAttempts = bounds ? Math.ceil(bounds.height / (height + 4)) + 2 : 1000;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      const down = { left: point.x - width / 2, top: below + attempt * (height + 4) };
+      const far = attempt > 1;
+      const down = { left: point.x - width / 2, top: below + attempt * (height + 4), far };
       if (clear(down)) return down;
-      const up = { left: point.x - width / 2, top: point.y - radius * scale - height - 2 - attempt * (height + 4) };
+      const up = { left: point.x - width / 2, top: point.y - radius * scale - height - 2 - attempt * (height + 4), far };
       if (clear(up)) return up; // bottom-edge names move up, never off-canvas
       const shift = attempt * (height + 4);
       for (const left of [point.x + radius * scale + 6, point.x - radius * scale - 6 - width]) {
         for (const top of [point.y - height / 2 + shift, point.y - height / 2 - shift]) {
-          const side = { left, top };
+          const side = { left, top, far };
           if (clear(side)) return side; // dense columns still have shifted side slots
         }
       }
@@ -8453,10 +8477,20 @@ function NoraCanvasMap(view) {
     const textWidth = Math.max(...lines.map((line) => ctx.measureText(line).width));
     const width = textWidth + 6 * k, height = lines.length * lineH + 4 * k;
     const canvas = network.canvas.frame.canvas, bounds = { width: canvas.clientWidth, height: canvas.clientHeight };
-    const placement = overviewNamePlacement(point, radius, network.getScale(), width, height, overviewBoxes, bounds, own);
+    const placement = overviewNamePlacement(point, radius, network.getScale(), width, height, overviewBoxes, bounds, own, overviewLines);
     if (!placement) { ctx.restore(); return; } // only a genuinely full canvas may omit a name
     const box = [placement.left, placement.top, placement.left + width, placement.top + height];
     overviewBoxes.push(box);
+    if (placement.far) { // a hairline from the square's edge to the name, which it names
+      const nx = Math.min(Math.max(point.x, box[0]), box[2]), ny = Math.min(Math.max(point.y, box[1]), box[3]);
+      const dx = nx - point.x, dy = ny - point.y, edge = (radius * network.getScale()) / Math.max(Math.abs(dx), Math.abs(dy), 1e-6);
+      ctx.beginPath();
+      ctx.moveTo(point.x + dx * Math.min(1, edge), point.y + dy * Math.min(1, edge));
+      ctx.lineTo(nx, ny);
+      ctx.lineWidth = 0.8;
+      ctx.strokeStyle = C.text_dim;
+      ctx.stroke();
+    }
     ctx.lineJoin = "round";
     ctx.lineWidth = 3;
     ctx.strokeStyle = C.paper;
