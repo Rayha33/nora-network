@@ -73,7 +73,9 @@
   const ENGLISH_NAME = ["coalesce", ["get", "name:en"], ["get", "name_en"], ["get", "name:latin"], ["get", "name"]];
   // Recolour the basemap to calm greys: land is paper, water a step darker, roads,
   // parks and points of interest hidden, place names in dim text.
+  let placeLayers = []; // the basemap's place-name layers that stay on (calmBasemap)
   function calmBasemap() {
+    placeLayers = [];
     for (const layer of map.getStyle().layers) {
       const id = layer.id;
       if (id.startsWith("nora-")) continue;
@@ -95,6 +97,7 @@
             map.setPaintProperty(id, "text-color", C.text_dim);
             map.setPaintProperty(id, "text-halo-color", C.paper);
             map.setPaintProperty(id, "icon-opacity", 0);
+            placeLayers.push(id);
           } else map.setLayoutProperty(id, "visibility", "none");
         } else map.setLayoutProperty(id, "visibility", "none");
       } catch (error) { /* a layer without that property: leave it */ }
@@ -619,6 +622,18 @@
       if (!names) continue;
       const w = ctx.measureText(d.name).width, half = Math.min(w, wrap) / 2 + 2;
       out.push([p.x - half, p.y + 7 * k, p.x + half, p.y + 9 * k + Math.ceil(w / wrap) * 14 * k]);
+    }
+    /* The basemap's place names too, which MapLibre draws under this layer: a pig's
+       label sat on "Copenhagen" (review, 30 Oct: never text over text). Their boxes are
+       estimated from the name, at the basemap's size. */
+    let places = [];
+    try { places = map.queryRenderedFeatures({ layers: placeLayers.filter((id) => map.getLayer(id)) }) || []; } catch { places = []; }
+    ctx.font = "13px Archivo, system-ui, sans-serif";
+    for (const f of places) {
+      const props = f.properties || {}, text = String(props["name:en"] || props.name_en || props.name || "");
+      if (!text || !f.geometry || f.geometry.type !== "Point") continue;
+      const p = map.project(f.geometry.coordinates), half = (ctx.measureText(text).width * 1.1) / 2 + 3;
+      out.push([p.x - half, p.y - 10, p.x + half, p.y + 10]);
     }
     ctx.restore();
     return out;

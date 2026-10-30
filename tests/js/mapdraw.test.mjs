@@ -217,3 +217,28 @@ test("map: no pig or peak while the lines are off the map; the lines are not sim
   map.fire("render");
   assert.ok(drawn() > before, "the lines are on the map: the pigs and peaks are drawn again");
 });
+
+// Review, 30 Oct: a pig's label sat on "Copenhagen", the basemap's own place name.
+test("map: the labels of pigs and peaks keep off the basemap's place names", async () => {
+  const { App, NORA, document, view, map } = await mountMap();
+  document.getElementById("stream-select")._listeners.change[0]({ target: { value: NORA.streams[0].name } }); // the synthetic week: pigs
+  const city = { properties: { name: "Copenhagen" }, geometry: { type: "Point", coordinates: [12.57, 55.68] } };
+  map.getStyle = () => ({ layers: [{ id: "place_city", type: "symbol" }] });
+  map.queryRenderedFeatures = () => [city];
+  map.fire("style.load"); // calmBasemap keeps the place names and notes their layer
+  for (let i = 0; i < 5 && !view.ready; i++) await new Promise((resolve) => setImmediate(resolve));
+  map.fire("sourcedata", { sourceId: "nora-pipes", isSourceLoaded: true });
+  let taken = null;
+  let pig = null; // a real pig, moved onto a main line (on the map at every zoom)
+  for (let i = 0; i < App.live.frames.length && !pig; i++) { App.seek(i); pig = App.markers().find((m) => m.kind === "pig") || null; }
+  assert.ok(pig, "the dataset has pigs");
+  App.markers = () => [{ ...pig, id: "langeled_south", along: 0.5 }];
+  const draw = App.drawMarker;
+  App.drawMarker = (...args) => { taken = args[args.length - 1]; return draw(...args); };
+  App.live.playing = false;
+  map.center = { lng: 3.1, lat: 58 };
+  map.fire("render");
+  assert.ok(taken, "a marker was drawn");
+  const at = map.project(city.geometry.coordinates);
+  assert.ok(taken.some(([x0, y0, x1, y1]) => at.x > x0 && at.x < x1 && at.y > y0 && at.y < y1), "Copenhagen's name is taken");
+});
