@@ -51,3 +51,36 @@ test("P&ID: only fields have one; the sidebar and the right-click menu bring it 
   assert.ok(labels.includes("Open the P&ID"), "in the right-click menu");
   assert.ok(!App.menu.for("kollsnes").some((i) => i.label === "Open the P&ID"), "not for a plant");
 });
+
+/* Seen on the live Sleipner page, 30 Oct: seven lines fanned into one point on the
+   manifold, the lowest cut through its "M-100 Manifold" tag, and a seventh (Zeepipe IIA
+   from Kollsnes) was left out without a word. */
+const svgOf = (box) => find(box, (n) => /^svg$/i.test(n.tagName || ""))._innerHTML;
+const numbers = (tag, markup) => [...markup.matchAll(new RegExp(`<${tag} ([^>]*)/?>`, "g"))].map(([, attrs]) =>
+  Object.fromEntries([...attrs.matchAll(/(\w[\w-]*)="([^"]*)"/g)].map(([, k, v]) => [k, Number.isNaN(Number(v)) ? v : Number(v)])));
+
+test("P&ID: every line into Sleipner is drawn, the main lines first, each straight into the manifold", () => {
+  const { NORA, box } = page("sleipner");
+  const markup = svgOf(box);
+  const into = Object.values(NORA.assets).filter((a) => a.kind === "pipeline" && a.to === "sleipner");
+  for (const a of into) assert.match(markup, new RegExp(`data-asset="${a.from}"`), `${a.from} drawn`);
+  assert.ok(markup.indexOf('data-asset="kollsnes"') < markup.indexOf('data-asset="gungne"'), "Zeepipe IIA from Kollsnes above the tie-backs");
+  const manifold = numbers("rect", markup).find((r) => r.x === 205 && r.width === 16);
+  const inlets = numbers("line", markup).filter((l) => l.x2 === 205);
+  assert.equal(inlets.length, into.length + 1, "one line per pipeline in, and the wells");
+  for (const l of inlets) {
+    assert.equal(l.y1, l.y2, "straight in, not fanned across the tag below");
+    assert.ok(l.y1 > manifold.y && l.y1 < manifold.y + manifold.height, "into the manifold's side");
+  }
+  const tag = [...markup.matchAll(/<text x="213" y="([\d.]+)"[^>]*>M-100</g)].map((m) => Number(m[1]))[0];
+  assert.ok(tag > manifold.y + manifold.height, "its tag below it, clear of every line");
+});
+
+test("P&ID: with more than eight lines in, seven are drawn and the rest counted", () => {
+  const { NORA, box } = page("asgard");
+  const markup = svgOf(box);
+  const into = Object.values(NORA.assets).filter((a) => a.kind === "pipeline" && a.to === "asgard");
+  assert.ok(into.length > 8, "Åsgard has more than eight lines in");
+  assert.equal((markup.match(/data-asset="/g) || []).length - (markup.match(/x="876"/g) || []).length, 7, "seven drawn");
+  assert.match(markup, new RegExp(`\\+${into.length - 7} more`), "and a count of the rest, never a silent cut");
+});
