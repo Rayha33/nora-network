@@ -17,7 +17,9 @@
     if (screen === "overview") return { screen: "overview" };
     return null;
   }
-  addEventListener("popstate", () => go(fromHash() || { screen: "overview" }, false));
+  // Where a fresh visit lands: nora.toml [screen] start (the whole network, or the overview).
+  const startRoute = () => (C.screen.start === "network" ? { screen: "unit", unit: "all" } : { screen: "overview" });
+  addEventListener("popstate", () => go(fromHash() || startRoute(), false));
 
   let splitShown = false;
   function render() {

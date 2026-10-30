@@ -51617,8 +51617,8 @@
  },
  "config": {
   "screen": {
-   "start": "overview",
-   "network_view": "map",
+   "start": "network",
+   "network_view": "flow",
    "network_mode": "live",
    "theme": "light",
    "autoplay": true,

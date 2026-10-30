@@ -536,7 +536,7 @@
       select.value = wanted.name;
       setStream(wanted);
     }
-    go(fromHash() || (C.screen.start === "network" ? { screen: "unit", unit: "all" } : { screen: "overview" }), false);
+    go(fromHash() || startRoute(), false);
     // Reduced motion: nothing starts moving by itself; ▶ plays.
     if (params.get("autoplay") === "1" || (C.screen.autoplay && params.get("autoplay") !== "0" && !feed && !reduceMotion)) play();
     kiosk();
