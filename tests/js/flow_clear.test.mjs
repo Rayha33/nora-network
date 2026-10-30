@@ -11,7 +11,8 @@ function load() {
   const set = () => ({ update() {}, get: () => null, getIds: () => [] });
   const loaded = loadApp({ globals: { vis: { Network: class {} }, nodes: set(), edges: set(), flowOptions: {} } });
   const { App, NORA } = loaded;
-  const shown = Object.keys(NORA.grid).filter((id) => !NORA.config.flow.hide.includes(id) && !App.nodeStyle(id).hidden);
+  // As the Flow view draws them: not the Map-only nodes (nora.toml [flow] hide, or map detail with a map_min_zoom).
+  const shown = Object.keys(NORA.grid).filter((id) => !NORA.config.flow.hide.includes(id) && !(NORA.assets[id].min_zoom > 0) && !App.nodeStyle(id).hidden);
   const tee = (id) => NORA.assets[id].type === "tee";
   // Squares closer than 0.95 of a step both across and down touch; a dot needs 0.6.
   const clashes = (grid) => {

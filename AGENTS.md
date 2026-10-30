@@ -56,6 +56,7 @@ make live      # replay the first stream as a live feed at http://127.0.0.1:8765
 | `src/nora/cli.py` | the `nora` command |
 | `src/nora/edit.py` | the editor's JSON API (`nora serve --edit`) and lossless editing of the data files |
 | `scripts/fetch_*.py` | download real data (ENTSOG, Energinet, SODIR, National Gas) into a stream's raw file |
+| `scripts/build_satellites.py` | the producing fields and satellites shown on the zoomed-in Map, from SODIR: each at its own installation, tied back to the host SODIR names (map detail: capacity 0, `map_min_zoom`, Map only) |
 | `scripts/fetch_prices.py` | today's TTF (EUR/MWh) and Norges Bank's NOK rates as `data/prices.json`, for the player's money counter (`nora.toml` [money]); the droplet runs it every 15 minutes (`nora-prices.timer`) |
 | `scripts/mock_origo.py`, `scripts/mock_gbs.py`, `scripts/mock_api.py` | mock Origo and GBS APIs (made-up data) for `nora integrations fetch` and the tests |
 | `data/geo/coastline.json`, `scripts/build_coastline.py` | the land around the North Sea (Natural Earth, public domain) for the canvas map |

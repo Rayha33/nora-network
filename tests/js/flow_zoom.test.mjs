@@ -38,7 +38,7 @@ function mountFlow(search) {
   el.clientWidth = 1200;
   el.clientHeight = 800;
   try { App.views.flow.mount(el); } catch (error) { /* drawing needs more of vis; the zoom is wired first */ }
-  const [a, b] = Object.keys(loaded.NORA.grid).filter((id) => !loaded.NORA.config.flow.hide.includes(id)); // a drawing 3000 by 1800
+  const [a, b] = Object.keys(loaded.NORA.grid).filter((id) => !loaded.NORA.config.flow.hide.includes(id) && !(loaded.NORA.assets[id].min_zoom > 0)); // a drawing 3000 by 1800
   App.views.flow.network.positions = { [a]: { x: 0, y: 0 }, [b]: { x: 3000, y: 1800 } };
   const find = (node, cls) => (String(node.className || "").includes(cls) ? node : (node.children || []).map((c) => find(c, cls)).find(Boolean) || null);
   return { ...loaded, el, network: App.views.flow.network, buttons: find(el, "flow-zoom") };

@@ -100,7 +100,7 @@ def test_no_line_runs_through_another_node_in_the_flow_view(north_sea):
     across is 258 px, a row 204 px, and a square with its tags reaches 70 px either way."""
     from nora.config import load_config
 
-    hidden = set(load_config()["flow"]["hide"])
+    hidden = set(load_config()["flow"]["hide"]) | {n.id for n in north_sea.nodes if n.map_min_zoom}
     placed = {k: (x * 258, y * 204) for k, (x, y) in load_flow_layout(north_sea).items()}
     shown = {k: p for k, p in placed.items() if k not in hidden}
     through = [
@@ -122,7 +122,7 @@ def test_the_exit_points_line_the_bottom_of_the_flow_view(north_sea):
     bottom row, except St Fergus, beside the UK lines."""
     from nora.config import load_config
 
-    hidden = set(load_config()["flow"]["hide"])
+    hidden = set(load_config()["flow"]["hide"]) | {n.id for n in north_sea.nodes if n.map_min_zoom}
     placed = load_flow_layout(north_sea)
     shown = {k for k in placed if k not in hidden}
     onward = {p.from_id for p in north_sea.pipelines if p.to_id in shown}

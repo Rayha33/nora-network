@@ -44,7 +44,8 @@ test("what-if: more production at a field reaches the exits; packing comes off t
   App.whatif.set("supply", "troll", App.whatif.state().supply.troll + 10);
   const more = App.whatif.state().balance;
   assert.ok(near(more.produced, before.produced + 10, 1e-6) && near(more.delivered, before.delivered + 10, 1e-6), "10 more in, 10 more out");
-  const line = App.pipeIds.find((pid) => NORA.assets[pid].from === "troll" || NORA.assets[pid].to === "troll");
+  const line = "troll_kollsnes"; // Troll's export line (its satellites' tie-backs carry no flow of their own)
+  assert.equal(NORA.assets[line].from, "troll");
   App.whatif.set("pack", line, 5);
   const w = App.whatif.state();
   assert.ok(near(w.lines[line].into - w.lines[line].out, 5), "the line takes in 5 more than it delivers");

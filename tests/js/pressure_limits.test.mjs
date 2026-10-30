@@ -64,7 +64,7 @@ test("pressure limits: the tags fill with the colour, and zoomed in say which li
   for (let hour = 0; hour < week.times.length; hour++, toHour(document, 1)) {
     for (const id of block.assets) {
       const mark = App.pressureMark(id);
-      if (!mark || !pos[id] || NORA.config.flow.hide.includes(id)) continue; // not drawn in the Flow view
+      if (!mark || !pos[id] || NORA.config.flow.hide.includes(id) || NORA.assets[id].min_zoom > 0) continue; // not drawn in the Flow view
       seen.add(mark.code);
       const zoomedIn = App.views.flow.pressureTags(id, pos, 1.1, 64), zoomedOut = App.views.flow.pressureTags(id, pos, 0.6, 64);
       assert.ok(zoomedIn.length && zoomedIn.every((t) => t.mark && t.mark.code === mark.code && t.text.startsWith(`${mark.code} `)), `${id} hour ${hour}: "${mark.code}" on every tag`);

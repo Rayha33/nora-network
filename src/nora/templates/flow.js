@@ -50,8 +50,9 @@
   };
   let network = null, el = null, direction = "vertical";
   /* Nodes drawn on the Map only (nora.toml [flow] hide; Ray, 29 Oct: "remove poland vtp
-     from flow only"), and the lines to them. */
-  const mapOnly = new Set(NORA.config.flow.hide || []);
+     from flow only"), and the lines to them. A node shown only when the Map is zoomed in
+     (data/nodes.csv map_min_zoom: the fields and satellites from SODIR) is map detail too. */
+  const mapOnly = new Set([...(NORA.config.flow.hide || []), ...Object.keys(NORA.assets).filter((id) => NORA.assets[id].min_zoom > 0)]);
   const nodeHidden = (id) => mapOnly.has(id) || App.nodeStyle(id).hidden;
   const lineHidden = (pid) => App.pipeStyle(pid).hidden || mapOnly.has(NORA.assets[pid].from) || mapOnly.has(NORA.assets[pid].to);
   function chooseDirection() {

@@ -8,6 +8,10 @@ nodes = [
     "aasta_hansteen", "norne", "heidrun", "asgard", "smorbukk_nord", "mikkel", "morvin",
     "trestakk", "skarv", "aerfugl", "draugen", "ormen_lange", "nyhamna", "tjeldbergodden",
     "dvalin", "dvalin_tee",
+    # map detail from SODIR (scripts/build_satellites.py)
+    "kristin", "njord", "halten_ost", "tyrihans", "maria", "hyme", "bauge", "fenja",
+    "alve", "marulk", "skuld", "urd", "verdande", "alve_nord", "idun_nord", "aerfugl_nord",
+    "orn",
 ]
 
 [units.northern_north_sea]
@@ -16,6 +20,11 @@ nodes = [
     "gjoa", "visund", "statfjord", "gullfaks", "tordis", "gullfaks_sor", "flags_brent", "kvitebjorn", "troll",
     "oseberg", "kollsnes", "heimdal", "beryl", "edvard_grieg", "frigg", "odin", "ivar_aasen",
     "martin_linge", "fuka_tee", "mariner", "mariner_tee", "grane", "jotun", "jotun_tee",
+    # map detail from SODIR (scripts/build_satellites.py)
+    "alvheim", "snorre", "fram", "fram_h_nord", "vilje", "hanz", "symra", "solveig",
+    "volund", "boyla", "tyrving", "skogul", "breidablikk", "svalin", "ringhorne_ost", "oseberg_sor",
+    "oseberg_ost", "tune", "brage", "byrding", "vega", "nova", "duva", "valemon",
+    "gimle", "visund_sor", "statfjord_nord", "statfjord_ost", "sygna", "vigdis", "islay",
 ]
 
 [units.hubs]
@@ -23,6 +32,9 @@ name = "Kårstø, Sleipner and Draupner"
 nodes = [
     "karsto", "johan_sverdrup", "gudrun", "gina_krog", "sleipner", "draupner_s", "draupner_e",
     "ekofisk", "ekofisk_tee", "valhall",
+    # map detail from SODIR (scripts/build_satellites.py)
+    "ula", "eldfisk", "tor", "tommeliten_a", "embla", "hod", "tambar", "tambar_ost",
+    "oda", "blane", "gungne", "sigyn", "utgard", "eirin",
 ]
 
 [units.uk]

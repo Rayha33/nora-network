@@ -30,10 +30,10 @@ def test_the_editor_writes_files_nora_accepts(tmp_path):
         (tmp_path / name).write_text(text, encoding="utf-8")
     net = load_network(tmp_path)
     assert "gudrun" not in net.node_by_id and "ogt" not in net.pipeline_by_id
-    assert net.node_by_id["snorre"].capacity_msm3d == 4
-    assert net.pipeline_by_id["snorre_statfjord"].to_id == "statfjord"
+    assert net.node_by_id["kveikje"].capacity_msm3d == 4
+    assert net.pipeline_by_id["kveikje_statfjord"].to_id == "statfjord"
     units = load_units(net, tmp_path / "units.toml")
-    assert any("snorre" in unit["nodes"] for unit in units)
+    assert any("kveikje" in unit["nodes"] for unit in units)
     # changed in the node and line forms (Ray, 30 Oct: "a fully fledged editing program")
     statfjord = net.node_by_id["statfjord"]
     assert (statfjord.name, statfjord.capacity_msm3d) == ("Statfjord A", 9)
@@ -42,4 +42,4 @@ def test_the_editor_writes_files_nora_accepts(tmp_path):
     europipe = net.pipeline_by_id["europipe_1"]
     assert (europipe.name, europipe.length_km, europipe.bidirectional) == ("Europipe 1", 661, True)
     placed = load_flow_layout(net, tmp_path / "flow_layout.toml")
-    assert placed["sleipner"] == (5.25, 3) and placed["snorre"] == (2.5, 1)
+    assert placed["sleipner"] == (5.25, 3) and placed["kveikje"] == (2.5, 1)

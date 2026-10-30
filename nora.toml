@@ -37,7 +37,8 @@ density = "comfortable"     # compact, comfortable or spacious
 animation = true            # flow bands in and out of the nodes (pigs and peaks always show)
 # Node ids drawn on the Map but not in the Flow view: Poland VTP (Ray, 29 Oct), Frigg and
 # Odin (decommissioned, no line; not on Area D) and the detailed fields that appear only
-# when the map is zoomed in (data/nodes.csv map_min_zoom).
+# when the map is zoomed in. Any node with a map_min_zoom (data/nodes.csv) is Map-only too,
+# such as the fields and satellites from SODIR (scripts/build_satellites.py).
 hide = [
     "pl_vtp", "frigg", "odin", "smorbukk_nord", "mikkel", "morvin", "trestakk", "skarv", "aerfugl", "draugen",
     "tordis", "gullfaks_sor",

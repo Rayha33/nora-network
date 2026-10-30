@@ -7,8 +7,8 @@ import { loadApp } from "./harness.mjs";
 export const STEPS = [
   { op: "removeNode", id: "gudrun" },
   { op: "removeLine", id: "ogt" },
-  { op: "addNode", node: { id: "snorre", name: "Snorre", type: "field", unit: "northern_north_sea", country: "NO", lat: 61.45, lon: 2.14, capacity: 4, grid: [1, 2.5] } },
-  { op: "addLine", line: { id: "snorre_statfjord", name: "Snorre – Statfjord", from: "snorre", to: "statfjord", type: "feeder", capacity: 4, bidirectional: false } },
+  { op: "addNode", node: { id: "kveikje", name: "Kveikje", type: "field", unit: "northern_north_sea", country: "NO", lat: 61.45, lon: 2.14, capacity: 4, grid: [1, 2.5] } },
+  { op: "addLine", line: { id: "kveikje_statfjord", name: "Kveikje – Statfjord", from: "kveikje", to: "statfjord", type: "feeder", capacity: 4, bidirectional: false } },
   { op: "moveNode", id: "sleipner", grid: [3, 5.25] }, // dragged in the Flow view
   { op: "editNode", id: "statfjord", changes: { name: "Statfjord A", unit: "hubs", capacity: 9, operator: "Equinor, \"Statfjord\"" } }, // the node form
   { op: "editLine", id: "europipe_1", changes: { name: "Europipe 1", length: 661, bidirectional: true } }, // the line form
