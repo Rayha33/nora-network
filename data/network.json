@@ -1087,13 +1087,49 @@
    "name": "St Fergus",
    "type": "terminal",
    "country": "GB",
-   "lat": 57.553,
-   "lon": -1.85,
+   "lat": 57.565,
+   "lon": -1.849,
    "capacity_msm3d": null,
    "booked_msm3d": null,
    "status": "operating",
    "exit": true,
    "id": "st_fergus"
+  },
+  {
+   "name": "St Fergus PX",
+   "type": "processing",
+   "country": "GB",
+   "lat": 57.575,
+   "lon": -1.836,
+   "capacity_msm3d": null,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "st_fergus_px"
+  },
+  {
+   "name": "St Fergus SAGE",
+   "type": "processing",
+   "country": "GB",
+   "lat": 57.571,
+   "lon": -1.8445,
+   "capacity_msm3d": null,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "st_fergus_sage"
+  },
+  {
+   "name": "St Fergus SEGAL",
+   "type": "processing",
+   "country": "GB",
+   "lat": 57.583,
+   "lon": -1.842,
+   "capacity_msm3d": null,
+   "booked_msm3d": null,
+   "status": "operating",
+   "exit": false,
+   "id": "st_fergus_segal"
   },
   {
    "name": "Statfjord",
@@ -1559,7 +1595,7 @@
    "length_km": 323.0,
    "capacity": 30.0,
    "source": "beryl",
-   "target": "st_fergus"
+   "target": "st_fergus_sage"
   },
   {
    "pipeline": "blane_ula",
@@ -1774,7 +1810,7 @@
    "length_km": 450.0,
    "capacity": 33.0,
    "source": "flags_brent",
-   "target": "st_fergus"
+   "target": "st_fergus_segal"
   },
   {
    "pipeline": "fram_troll",
@@ -1801,7 +1837,7 @@
    "from_id": "fuka_tee",
    "length_km": 363.0,
    "source": "fuka_tee",
-   "target": "st_fergus"
+   "target": "st_fergus_px"
   },
   {
    "pipeline": "gimle_gullfaks",
@@ -2095,7 +2131,7 @@
    "length_km": 322.0,
    "capacity": 39.0,
    "source": "mariner_tee",
-   "target": "st_fergus"
+   "target": "st_fergus_px"
   },
   {
    "pipeline": "martin_linge_gas",
@@ -2338,6 +2374,33 @@
    "length_km": 18.41132679255631,
    "source": "solveig",
    "target": "edvard_grieg"
+  },
+  {
+   "pipeline": "px_nts",
+   "name": "PX to the NTS",
+   "type": "link",
+   "from_id": "st_fergus_px",
+   "length_km": 1.3554918558016462,
+   "source": "st_fergus_px",
+   "target": "st_fergus"
+  },
+  {
+   "pipeline": "sage_nts",
+   "name": "SAGE to the NTS",
+   "type": "link",
+   "from_id": "st_fergus_sage",
+   "length_km": 0.7191159165302997,
+   "source": "st_fergus_sage",
+   "target": "st_fergus"
+  },
+  {
+   "pipeline": "segal_nts",
+   "name": "SEGAL to the NTS",
+   "type": "link",
+   "from_id": "st_fergus_segal",
+   "length_km": 2.044561559412402,
+   "source": "st_fergus_segal",
+   "target": "st_fergus"
   },
   {
    "pipeline": "statpipe_rich",

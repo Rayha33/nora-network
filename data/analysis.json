@@ -1,7 +1,7 @@
 {
  "offline": [],
- "assets": 121,
- "pipelines": 121,
+ "assets": 124,
+ "pipelines": 124,
  "countries": [
   "BE",
   "DE",
@@ -15,11 +15,11 @@
   "field": 99,
   "hub": 3,
   "market": 2,
-  "processing": 4,
+  "processing": 7,
   "tee": 7,
   "terminal": 6
  },
- "pipeline_km": 12631,
+ "pipeline_km": 12635,
  "supply_capacity": 482.3,
  "deliverable": 419.7,
  "delivered": {
@@ -151,6 +151,9 @@
   "smorbukk_nord_asgard": 0.0,
   "snorre_gullfaks": 0.0,
   "solveig_edvard_grieg": 0.0,
+  "px_nts": 34.7,
+  "sage_nts": 16.0,
+  "segal_nts": 33.0,
   "statpipe_rich": 7.0,
   "tampen_link": 18.0,
   "statfjord_nord_statfjord": 0.0,
@@ -420,6 +423,20 @@
    "share": 0.0855
   },
   {
+   "kind": "node",
+   "id": "st_fergus_px",
+   "name": "St Fergus PX",
+   "lost": 34.7,
+   "share": 0.0827
+  },
+  {
+   "kind": "pipeline",
+   "id": "px_nts",
+   "name": "PX to the NTS",
+   "lost": 34.7,
+   "share": 0.0827
+  },
+  {
    "kind": "pipeline",
    "id": "zeepipe_2a",
    "name": "Zeepipe IIA",
@@ -434,9 +451,23 @@
    "share": 0.0786
   },
   {
+   "kind": "node",
+   "id": "st_fergus_segal",
+   "name": "St Fergus SEGAL",
+   "lost": 33.0,
+   "share": 0.0786
+  },
+  {
    "kind": "pipeline",
    "id": "flags",
    "name": "FLAGS",
+   "lost": 33.0,
+   "share": 0.0786
+  },
+  {
+   "kind": "pipeline",
+   "id": "segal_nts",
+   "name": "SEGAL to the NTS",
    "lost": 33.0,
    "share": 0.0786
   },
@@ -532,9 +563,23 @@
    "share": 0.0381
   },
   {
+   "kind": "node",
+   "id": "st_fergus_sage",
+   "name": "St Fergus SAGE",
+   "lost": 16.0,
+   "share": 0.0381
+  },
+  {
    "kind": "pipeline",
    "id": "sage",
    "name": "SAGE",
+   "lost": 16.0,
+   "share": 0.0381
+  },
+  {
+   "kind": "pipeline",
+   "id": "sage_nts",
+   "name": "SAGE to the NTS",
    "lost": 16.0,
    "share": 0.0381
   },
@@ -1891,7 +1936,7 @@
   }
  ],
  "sourced": {
-  "rows": 242,
-  "total": 242
+  "rows": 248,
+  "total": 248
  }
 }
