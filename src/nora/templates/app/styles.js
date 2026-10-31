@@ -63,7 +63,9 @@
         // pressure", and his Area D screen shows them there); its flow is in the squares.
         // The number alone (Ray, 29 Oct: "everyone knows what it is as it is in the center
         // of the pipeline").
-        const sop = settleOut(id, viewFrame());
+        // A link inside one site (St Fergus's plants into the grid entry) has no length to
+        // settle out along: no number on it.
+        const sop = d.type === "link" && !d.length ? null : settleOut(id, viewFrame());
         out.label = sop == null ? "" : fmt(sop, 1);
         // shown only when the line packs or unpacks (in a what-if: your packing)
         const pack = w ? (w.lines[id] ? w.lines[id].into - w.lines[id].out : null) : packRate(id);

@@ -31,8 +31,28 @@ def test_rows_are_spaced_without_overlap(north_sea):
 def test_pipelines_cross_as_little_as_possible(north_sea):
     # the layered layout trades row-geography for clarity: 23 straight-line
     # crossings on the real network, against 112 for the geographic order
-    # (the timeline's frigg and odin rows add some)
-    assert crossings(north_sea, flow_positions(north_sea)) <= 35
+    # (the timeline's frigg and odin rows add some). It is the fallback for a node
+    # data/flow_layout.toml does not place: St Fergus's three plants (#38) put a stage
+    # between the offshore lines and the terminal that it orders less well (36), while
+    # every node the Flow draws is placed by hand (the test below).
+    assert crossings(north_sea, flow_positions(north_sea)) <= 40
+
+
+def test_the_drawn_flow_crosses_as_little_as_laid_out(north_sea):
+    # What the Flow draws: data/flow_layout.toml's places, map detail and nora.toml's
+    # flow.hide left out. 13 crossings with one St Fergus; its three plants top left
+    # (Ray, 31 Oct) add two, the fewest a search of the free corner found.
+    from types import SimpleNamespace
+
+    from nora.config import load_config
+    from nora.layout import flow_grid, load_flow_layout
+
+    grid = flow_grid(north_sea, load_flow_layout(north_sea))
+    hide = set(load_config()["flow"].get("hide", []))
+    hide |= {n.id for n in north_sea.nodes if (n.map_min_zoom or 0) > 0}
+    drawn = [p for p in north_sea.pipelines if p.from_id not in hide and p.to_id not in hide]
+    places = {node: (rank, stage) for node, (stage, rank) in grid.items()}
+    assert crossings(SimpleNamespace(pipelines=drawn), places) <= 15
 
 
 def test_layout_is_deterministic(north_sea):

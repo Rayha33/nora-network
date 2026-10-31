@@ -31,7 +31,15 @@ flags_brent = [0.3, 1.0]
 beryl = [1.3, 1.6]
 edvard_grieg = [2.3, 1.55]
 ivar_aasen = [3.3, 1.1]
-st_fergus = [0, 2.75]
+# St Fergus top left (Ray, 31 Oct: "make space for it top left if possible. find a solution
+# that works related to geographical location partly as well"): the UK grid entry furthest
+# west, the three plants in a column east of it, in the order their lines come in from the
+# north: SEGAL (FLAGS from Brent), PX (FUKA from Frigg, Vesterled from Heimdal), SAGE (from
+# Beryl). Two crossings more than one St Fergus had; no fewer was found.
+st_fergus = [-3.3, 1.7]
+st_fergus_segal = [-2.2, 0.4]
+st_fergus_px = [-2.2, 1.7]
+st_fergus_sage = [-2.2, 3.0]
 mariner_tee = [1.8, 2.72]  # on Heimskringla's St Fergus leg
 mariner = [1.6, 3.8]  # takes gas from the tie-in
 heimdal = [3.4, 2.7]  # the Heimskringla T (Ray, 29 Oct)

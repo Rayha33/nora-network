@@ -37,7 +37,8 @@ Build = Callable[[datetime, datetime], dict]
 def exit_bookings(data_dir: Path = DATA_DIR) -> dict[str, tuple[str, float]]:
     """{node id: (Gassco's exit-point name, booked MSm3/d)} for every exit point in
     EXIT_POINTS that is in the network. A node's own booked_msm3d is used when it has
-    one; otherwise 90 % of the capacity of the export lines landing there."""
+    one; otherwise 90 % of the capacity of the export lines landing there, or at the
+    plants that deliver into it (St Fergus's SEGAL, SAGE and PX, #38)."""
     net = load_network(data_dir)
     names: dict[str, str] = {}
     for name, node_id in EXIT_POINTS.items():
@@ -47,10 +48,17 @@ def exit_bookings(data_dir: Path = DATA_DIR) -> dict[str, tuple[str, float]]:
         node = net.node_by_id.get(node_id)
         if node is None:
             continue
+        plants = {
+            p.from_id
+            for p in net.pipelines
+            if p.to_id == node_id and net.node_by_id[p.from_id].type == "processing"
+        }
         landing = sum(
             p.capacity_msm3d or 0.0
             for p in net.pipelines
-            if p.to_id == node_id and p.type == "export" and p.status == "operating"
+            if (p.to_id == node_id or p.to_id in plants)
+            and p.type == "export"
+            and p.status == "operating"
         )
         booked = node.booked_msm3d or math.floor(landing * BOOKED_SHARE * 2) / 2
         if booked > 0:

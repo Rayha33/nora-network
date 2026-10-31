@@ -39,7 +39,7 @@ nodes = [
 
 [units.uk]
 name = "UK landings"
-nodes = ["st_fergus", "easington"]
+nodes = ["st_fergus", "st_fergus_segal", "st_fergus_px", "st_fergus_sage", "easington"]
 
 [units.continent]
 name = "Continental landings"

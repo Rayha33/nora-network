@@ -179,7 +179,7 @@ def test_heimdal_is_a_t_on_heimskringla_from_oseberg_to_st_fergus_and_draupner(n
         ("heimdal", "jotun_tee"),
         ("heimdal", "grane"),
     }
-    assert (lines["vesterled"].from_id, lines["vesterled"].to_id) == ("mariner_tee", "st_fergus")
+    assert (lines["vesterled"].from_id, lines["vesterled"].to_id) == ("mariner_tee", "st_fergus_px")
     assert (lines["statpipe_heimdal"].from_id, lines["statpipe_heimdal"].to_id) == (
         "jotun_tee",
         "draupner_s",
@@ -203,7 +203,7 @@ def test_gassco_schematic_fields_join_at_their_real_tie_ins(north_sea):
         "valhall_norpipe": ("valhall", "ekofisk_tee"),
         "jotun_gas": ("jotun", "jotun_tee"),
         "martin_linge_gas": ("martin_linge", "fuka_tee"),
-        "fuka": ("fuka_tee", "st_fergus"),
+        "fuka": ("fuka_tee", "st_fergus_px"),
         "mariner_gas_import": ("mariner_tee", "mariner"),
         "grane_gas_import": ("heimdal", "grane"),
     }
@@ -224,3 +224,32 @@ def test_the_southern_north_sea_fields_and_bacton_are_gone(north_sea):
     ids = {n.id for n in north_sea.nodes} | {p.id for p in north_sea.pipelines}
     assert not ids & {"sns_fields", "sns_bacton", "bacton", "iuk"}
     assert {"zeebrugge", "zeepipe_1"} <= ids
+
+
+def test_st_fergus_is_three_plants_and_the_grid_entry(north_sea):
+    """Issue #38 (Ray, 31 Oct: "make space for it top left ... related to geographical
+    location partly as well"): St Fergus as on Gassco's schematic. FLAGS lands at Shell's
+    SEGAL plant, FUKA and Vesterled at North Sea Midstream Partners' terminal (PX), SAGE at
+    the SAGE plant, and the three deliver into National Gas's NTS entry, which stays the
+    one exit, so the streams and the deliverable total are as before."""
+    lines = {p.id: p for p in north_sea.pipelines}
+    nodes = north_sea.node_by_id
+    landing = {
+        "flags": "st_fergus_segal",
+        "fuka": "st_fergus_px",
+        "vesterled": "st_fergus_px",
+        "sage": "st_fergus_sage",
+    }
+    for pid, plant in landing.items():
+        assert lines[pid].to_id == plant, pid
+    for plant in ("st_fergus_segal", "st_fergus_px", "st_fergus_sage"):
+        assert nodes[plant].type == "processing", plant
+        assert nodes[plant].source.startswith("https://"), plant
+        out = [p for p in north_sea.pipelines if p.from_id == plant]
+        assert [(p.to_id, p.type) for p in out] == [("st_fergus", "link")], plant
+    assert nodes["st_fergus"].type == "terminal"
+    assert {p.from_id for p in north_sea.pipelines if p.to_id == "st_fergus"} == {
+        "st_fergus_segal",
+        "st_fergus_px",
+        "st_fergus_sage",
+    }
